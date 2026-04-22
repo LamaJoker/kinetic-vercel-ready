@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.vercel/
+.env
+.env.local
+*.tsbuildinfo
+tests/coverage/
+playwright-report/
+.DS_Store
+Thumbs.db

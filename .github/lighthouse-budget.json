@@ -1,0 +1,24 @@
+[
+  {
+    "path": "/*",
+    "scores": [
+      { "category": "performance",    "minScore": 0.85 },
+      { "category": "accessibility",  "minScore": 0.90 },
+      { "category": "best-practices", "minScore": 0.90 },
+      { "category": "seo",            "minScore": 0.85 },
+      { "category": "pwa",            "minScore": 0.90 }
+    ],
+    "timings": [
+      { "metric": "interactive",                "budget": 4000 },
+      { "metric": "first-contentful-paint",     "budget": 2000 },
+      { "metric": "largest-contentful-paint",   "budget": 3000 },
+      { "metric": "cumulative-layout-shift",    "budget": 0.1  },
+      { "metric": "total-blocking-time",        "budget": 300  }
+    ],
+    "resourceSizes": [
+      { "resourceType": "script",   "budget": 200 },
+      { "resourceType": "total",    "budget": 500 },
+      { "resourceType": "document", "budget": 20  }
+    ]
+  }
+]

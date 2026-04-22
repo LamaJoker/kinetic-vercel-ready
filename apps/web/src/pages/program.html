@@ -1,0 +1,308 @@
+<div x-data="programPage()" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
+
+  <div class="flex items-center gap-3 mb-6">
+    <h1 class="text-xl font-bold text-white">Programme</h1>
+  </div>
+
+  <!-- Programme actif — semaine -->
+  <div x-show="activeProgram" class="bg-gray-800 rounded-2xl p-4 mb-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold text-white" x-text="activeProgram?.name"></h2>
+      <span class="text-xs bg-kinetic-purple/20 text-kinetic-purple px-2 py-1 rounded-full"
+            x-text="activeProgram?.splitType?.toUpperCase()?.replace('_',' ')"></span>
+    </div>
+
+    <!-- Semaine visuelle -->
+    <div class="grid grid-cols-7 gap-1 mb-3">
+      <template x-for="day in weekDays">
+        <div class="flex flex-col items-center">
+          <span class="text-xs text-gray-500 mb-1" x-text="day.short"></span>
+          <div class="w-full aspect-square rounded-lg flex items-center justify-center text-xs font-semibold"
+               :class="{
+                 'bg-kinetic-purple text-white': day.isToday && !day.rest,
+                 'bg-gray-700 text-gray-400': !day.isToday && !day.rest && !day.done,
+                 'bg-kinetic-teal/20 text-kinetic-teal': day.done,
+                 'bg-gray-900 text-gray-700': day.rest,
+               }"
+               x-text="day.rest ? '—' : day.focus.charAt(0)">
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Focus du jour -->
+    <div x-show="todayFocus" class="bg-gray-900/60 rounded-xl p-3">
+      <p class="text-xs text-gray-500 mb-0.5">Aujourd'hui</p>
+      <p class="text-white font-semibold" x-text="todayFocus?.focus"></p>
+      <div class="flex flex-wrap gap-1 mt-1.5">
+        <template x-for="muscle in (todayFocus?.muscleGroups ?? [])">
+          <span class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full" x-text="muscle"></span>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Choisir un split -->
+  <div class="bg-gray-800 rounded-2xl p-4 mb-4">
+    <h2 class="font-semibold text-white mb-3">
+      <span x-show="!activeProgram">Choisir un programme</span>
+      <span x-show="activeProgram">Changer de programme</span>
+    </h2>
+
+    <div class="space-y-2">
+      <template x-for="split in availableSplits">
+        <button @click="selectSplit(split.type)"
+                class="w-full bg-gray-900/60 border rounded-xl p-3 text-left transition-colors"
+                :class="activeProgram?.splitType === split.type
+                  ? 'border-kinetic-purple bg-kinetic-purple/10'
+                  : 'border-gray-700 hover:border-gray-600'">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-white font-medium text-sm" x-text="split.name"></p>
+              <p class="text-gray-500 text-xs mt-0.5" x-text="split.description"></p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs text-gray-400" x-text="split.daysPerWeek + 'j/sem'"></p>
+              <p class="text-xs text-kinetic-teal" x-text="split.goal"></p>
+            </div>
+          </div>
+        </button>
+      </template>
+    </div>
+  </div>
+
+  <!-- Todo list muscu — exercices du jour -->
+  <div x-show="todayExercises.length > 0" class="bg-gray-800 rounded-2xl p-4 mb-4">
+    <h2 class="font-semibold text-white mb-3">Todo du jour</h2>
+    <div class="space-y-2">
+      <template x-for="ex in todayExercises" :key="ex.id">
+        <div class="flex items-center gap-3 p-3 bg-gray-900/60 rounded-xl"
+             :class="ex.done ? 'opacity-60' : ''">
+          <button @click="toggleExercise(ex.id)"
+                  class="w-6 h-6 rounded-full border-2 flex-shrink-0 transition-colors flex items-center justify-center"
+                  :class="ex.done
+                    ? 'border-kinetic-teal bg-kinetic-teal text-gray-950'
+                    : 'border-gray-600'">
+            <span x-show="ex.done" class="text-xs font-black">✓</span>
+          </button>
+          <div class="flex-1">
+            <p class="text-white text-sm font-medium" :class="ex.done ? 'line-through' : ''" x-text="ex.name"></p>
+            <p class="text-xs text-gray-500" x-text="`${ex.sets}×${ex.targetReps} reps · RPE ${ex.targetRpe}`"></p>
+          </div>
+          <button @click="startExercise(ex)" class="text-xs text-kinetic-purple hover:text-purple-400">
+            Démarrer →
+          </button>
+        </div>
+      </template>
+    </div>
+
+    <!-- Bouton séance rapide -->
+    <button @click="startTodaySession()"
+            class="w-full mt-3 py-2.5 bg-kinetic-purple text-white font-semibold rounded-xl text-sm">
+      Démarrer la séance du jour →
+    </button>
+  </div>
+
+  <!-- Progression hebdomadaire -->
+  <div x-show="activeProgram" class="bg-gray-800 rounded-2xl p-4">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="font-semibold text-white">Semaine en cours</h2>
+      <span class="text-sm font-bold text-kinetic-purple" x-text="weekProgressPct + '%'"></span>
+    </div>
+    <div class="h-2.5 bg-gray-700 rounded-full overflow-hidden">
+      <div class="h-full bg-kinetic-purple rounded-full transition-all duration-500"
+           :style="`width: ${weekProgressPct}%`"></div>
+    </div>
+    <p class="text-xs text-gray-500 mt-1.5"
+       x-text="`${completedTrainingDays} / ${totalTrainingDays} séances cette semaine`"></p>
+  </div>
+</div>
+
+<script>
+function programPage() {
+  return {
+    activeProgram: null,
+    completedDayIds: [],
+    todoStatus: {},
+
+    availableSplits: [
+      { type: 'ppl',         name: 'Push / Pull / Legs', description: 'Optimal hypertrophie, 6j/sem', daysPerWeek: 6, goal: 'hypertrophie' },
+      { type: 'upper_lower', name: 'Haut / Bas',          description: 'Force + masse, 4j/sem',       daysPerWeek: 4, goal: 'force' },
+      { type: 'full_body',   name: 'Full Body',           description: 'Fréquence maximale, 3j/sem',  daysPerWeek: 3, goal: 'débutant' },
+      { type: 'bro_split',   name: 'Bro Split',           description: '1 muscle / jour, 5j/sem',     daysPerWeek: 5, goal: 'isolation' },
+    ],
+
+    get todayFocus() {
+      if (!this.activeProgram) return null;
+      const day = new Date().getDay();
+      return this.activeProgram.schedule.find(d => d.dayOfWeek === day) ?? null;
+    },
+
+    get weekDays() {
+      const days = ['D','L','M','M','J','V','S'];
+      const today = new Date().getDay();
+      return Array.from({ length: 7 }, (_, i) => {
+        const pd = this.activeProgram?.schedule.find(d => d.dayOfWeek === i);
+        return {
+          short: days[i], isToday: i === today,
+          rest: pd?.restDay ?? true,
+          focus: pd?.focus ?? '—',
+          done: this.completedDayIds.includes(i),
+        };
+      });
+    },
+
+    get todayExercises() {
+      const focus = this.todayFocus;
+      if (!focus || focus.restDay) return [];
+      // Exercices du template lié ou exercices par défaut selon focus
+      return this.getExercisesForFocus(focus.focus);
+    },
+
+    get totalTrainingDays() {
+      return this.activeProgram?.schedule.filter(d => !d.restDay).length ?? 0;
+    },
+
+    get completedTrainingDays() {
+      return this.completedDayIds.filter(d => {
+        const pd = this.activeProgram?.schedule.find(s => s.dayOfWeek === d);
+        return pd && !pd.restDay;
+      }).length;
+    },
+
+    get weekProgressPct() {
+      if (this.totalTrainingDays === 0) return 0;
+      return Math.round((this.completedTrainingDays / this.totalTrainingDays) * 100);
+    },
+
+    getExercisesForFocus(focus) {
+      const focusLower = focus.toLowerCase();
+      const exercises = {
+        'push': [
+          { id: 'pp1', name: 'Développé couché', sets: 4, targetReps: 8, targetRpe: 8, done: false },
+          { id: 'pp2', name: 'Développé incliné', sets: 3, targetReps: 10, targetRpe: 8, done: false },
+          { id: 'pp3', name: 'Élévations latérales', sets: 3, targetReps: 15, targetRpe: 8, done: false },
+          { id: 'pp4', name: 'Extensions triceps', sets: 3, targetReps: 12, targetRpe: 8, done: false },
+        ],
+        'pull': [
+          { id: 'pl1', name: 'Tractions', sets: 4, targetReps: 8, targetRpe: 8, done: false },
+          { id: 'pl2', name: 'Rowing barre', sets: 4, targetReps: 8, targetRpe: 8, done: false },
+          { id: 'pl3', name: 'Curl biceps', sets: 3, targetReps: 12, targetRpe: 8, done: false },
+        ],
+        'jambes': [
+          { id: 'j1', name: 'Squat', sets: 4, targetReps: 6, targetRpe: 8, done: false },
+          { id: 'j2', name: 'Leg press', sets: 3, targetReps: 12, targetRpe: 8, done: false },
+          { id: 'j3', name: 'Soulevé de terre roumain', sets: 3, targetReps: 10, targetRpe: 8, done: false },
+          { id: 'j4', name: 'Mollets assis', sets: 4, targetReps: 15, targetRpe: 8, done: false },
+        ],
+        'full body': [
+          { id: 'fb1', name: 'Squat', sets: 3, targetReps: 8, targetRpe: 7, done: false },
+          { id: 'fb2', name: 'Développé couché', sets: 3, targetReps: 8, targetRpe: 7, done: false },
+          { id: 'fb3', name: 'Soulevé de terre', sets: 3, targetReps: 6, targetRpe: 8, done: false },
+          { id: 'fb4', name: 'Tractions', sets: 3, targetReps: 8, targetRpe: 8, done: false },
+        ],
+      };
+      for (const [key, exs] of Object.entries(exercises)) {
+        if (focusLower.includes(key)) {
+          return exs.map(e => ({ ...e, done: this.todoStatus[e.id] ?? false }));
+        }
+      }
+      return [];
+    },
+
+    async init() {
+      const { getDeps } = await import('/src/deps.js');
+      const deps = await getDeps();
+      const stored = await deps.storage.get('kinetic:program:active');
+      if (stored) this.activeProgram = stored;
+      const completed = await deps.storage.get('kinetic:program:completedDays:' + this.weekKey());
+      if (completed) this.completedDayIds = completed;
+      const todo = await deps.storage.get('kinetic:program:todoStatus:' + this.todayKey());
+      if (todo) this.todoStatus = todo;
+    },
+
+    weekKey() {
+      const d = new Date();
+      const week = Math.ceil(d.getDate() / 7);
+      return `${d.getFullYear()}-W${d.getMonth()}-${week}`;
+    },
+
+    todayKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    },
+
+    async selectSplit(type) {
+      const { getDeps } = await import('/src/deps.js');
+      const deps = await getDeps();
+      const splits = {
+        ppl: { name: 'Push Pull Legs', splitType: 'ppl', daysPerWeek: 6, goal: 'hypertrophie', schedule: [
+          { dayOfWeek:1, label:'Lundi',    focus:'Push A',   muscleGroups:['pectoraux','épaules','triceps'], restDay:false },
+          { dayOfWeek:2, label:'Mardi',    focus:'Pull A',   muscleGroups:['dos','biceps'],                 restDay:false },
+          { dayOfWeek:3, label:'Mercredi', focus:'Jambes A', muscleGroups:['quadriceps','ischio','fessiers'], restDay:false },
+          { dayOfWeek:4, label:'Jeudi',    focus:'Push B',   muscleGroups:['pectoraux','épaules','triceps'], restDay:false },
+          { dayOfWeek:5, label:'Vendredi', focus:'Pull B',   muscleGroups:['dos','biceps'],                 restDay:false },
+          { dayOfWeek:6, label:'Samedi',   focus:'Jambes B', muscleGroups:['quadriceps','ischio','fessiers'], restDay:false },
+          { dayOfWeek:0, label:'Dimanche', focus:'Repos',    muscleGroups:[],                               restDay:true },
+        ]},
+        upper_lower: { name: 'Haut / Bas', splitType:'upper_lower', daysPerWeek:4, goal:'force', schedule:[
+          { dayOfWeek:1, label:'Lundi',    focus:'Haut A', muscleGroups:['pectoraux','dos','épaules','bras'], restDay:false },
+          { dayOfWeek:2, label:'Mardi',    focus:'Bas A',  muscleGroups:['quadriceps','ischio','fessiers'],   restDay:false },
+          { dayOfWeek:3, label:'Mercredi', focus:'Repos',  muscleGroups:[], restDay:true },
+          { dayOfWeek:4, label:'Jeudi',    focus:'Haut B', muscleGroups:['pectoraux','dos','épaules','bras'], restDay:false },
+          { dayOfWeek:5, label:'Vendredi', focus:'Bas B',  muscleGroups:['quadriceps','ischio','fessiers'],   restDay:false },
+          { dayOfWeek:6, label:'Samedi',   focus:'Repos',  muscleGroups:[], restDay:true },
+          { dayOfWeek:0, label:'Dimanche', focus:'Repos',  muscleGroups:[], restDay:true },
+        ]},
+        full_body: { name:'Full Body', splitType:'full_body', daysPerWeek:3, goal:'débutant', schedule:[
+          { dayOfWeek:1, label:'Lundi',    focus:'Full Body A', muscleGroups:['corps entier'], restDay:false },
+          { dayOfWeek:2, label:'Mardi',    focus:'Repos',       muscleGroups:[], restDay:true },
+          { dayOfWeek:3, label:'Mercredi', focus:'Full Body B', muscleGroups:['corps entier'], restDay:false },
+          { dayOfWeek:4, label:'Jeudi',    focus:'Repos',       muscleGroups:[], restDay:true },
+          { dayOfWeek:5, label:'Vendredi', focus:'Full Body C', muscleGroups:['corps entier'], restDay:false },
+          { dayOfWeek:6, label:'Samedi',   focus:'Repos',       muscleGroups:[], restDay:true },
+          { dayOfWeek:0, label:'Dimanche', focus:'Repos',       muscleGroups:[], restDay:true },
+        ]},
+        bro_split: { name:'Bro Split', splitType:'bro_split', daysPerWeek:5, goal:'isolation', schedule:[
+          { dayOfWeek:1, label:'Lundi',    focus:'Pectoraux', muscleGroups:['pectoraux'], restDay:false },
+          { dayOfWeek:2, label:'Mardi',    focus:'Dos',       muscleGroups:['dos'],       restDay:false },
+          { dayOfWeek:3, label:'Mercredi', focus:'Épaules',   muscleGroups:['épaules'],   restDay:false },
+          { dayOfWeek:4, label:'Jeudi',    focus:'Bras',      muscleGroups:['biceps','triceps'], restDay:false },
+          { dayOfWeek:5, label:'Vendredi', focus:'Jambes',    muscleGroups:['jambes'],    restDay:false },
+          { dayOfWeek:6, label:'Samedi',   focus:'Repos',     muscleGroups:[], restDay:true },
+          { dayOfWeek:0, label:'Dimanche', focus:'Repos',     muscleGroups:[], restDay:true },
+        ]},
+      };
+      const prog = { id: crypto.randomUUID(), ...splits[type], createdAt: new Date().toISOString(), active: true };
+      this.activeProgram = prog;
+      await deps.storage.set('kinetic:program:active', prog);
+      window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind:'success', message:'Programme activé ✓' } }));
+    },
+
+    async toggleExercise(exId) {
+      const { getDeps } = await import('/src/deps.js');
+      const deps = await getDeps();
+      this.todoStatus = { ...this.todoStatus, [exId]: !(this.todoStatus[exId] ?? false) };
+      await deps.storage.set('kinetic:program:todoStatus:' + this.todayKey(), this.todoStatus);
+      // Marquer le jour comme fait si tous les exercices sont cochés
+      const exs = this.todayExercises;
+      if (exs.length > 0 && exs.every(e => this.todoStatus[e.id])) {
+        const today = new Date().getDay();
+        if (!this.completedDayIds.includes(today)) {
+          this.completedDayIds = [...this.completedDayIds, today];
+          await deps.storage.set('kinetic:program:completedDays:' + this.weekKey(), this.completedDayIds);
+          window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind:'success', message:'Séance complète ! 🏆 +50 XP' } }));
+        }
+      }
+    },
+
+    startExercise(ex) {
+      window.location.href = '/seances';
+    },
+
+    startTodaySession() {
+      window.location.href = '/seances';
+    },
+  };
+}
+</script>

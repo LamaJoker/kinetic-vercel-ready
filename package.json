@@ -1,0 +1,22 @@
+{
+  "name": "kinetic",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "build": "pnpm --filter @kinetic/web build",
+    "dev": "pnpm --filter @kinetic/web dev",
+    "preview": "pnpm --filter @kinetic/web preview",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^2"
+  }
+}

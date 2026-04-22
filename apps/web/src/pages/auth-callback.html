@@ -1,0 +1,71 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-950"
+     x-data="authCallback()" x-init="init()">
+  <div class="text-center space-y-4 p-8">
+
+    <!-- Chargement -->
+    <div x-show="!error" class="space-y-4">
+      <div class="w-14 h-14 mx-auto border-4 border-kinetic-purple border-t-transparent
+                  rounded-full animate-spin"></div>
+      <p class="text-gray-400 text-sm">Connexion en cours…</p>
+    </div>
+
+    <!-- Erreur -->
+    <div x-show="error" class="space-y-4">
+      <p class="text-5xl">❌</p>
+      <p class="text-red-400 font-medium" x-text="error"></p>
+      <a href="/login"
+         class="inline-block px-6 py-2.5 bg-kinetic-purple text-white
+                rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors">
+        Réessayer
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function authCallback() {
+  return {
+    error: null,
+
+    async init() {
+      try {
+        const { supabase } = await import('@kinetic/adapters-web');
+
+        if (!supabase) {
+          // Mode guest — pas de Supabase
+          window.location.hash = '/';
+          return;
+        }
+
+        // Supabase gère automatiquement le token depuis l'URL
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) throw error;
+
+        if (session) {
+          setTimeout(() => { window.location.hash = '/'; }, 500);
+          return;
+        }
+
+        // Attendre l'événement onAuthStateChange
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+          if (event === 'SIGNED_IN' && s) {
+            subscription.unsubscribe();
+            window.location.hash = '/';
+          }
+        });
+
+        // Timeout de sécurité
+        setTimeout(() => {
+          subscription.unsubscribe();
+          this.error = 'Délai dépassé — veuillez réessayer';
+        }, 10_000);
+
+      } catch (e) {
+        this.error = e instanceof Error ? e.message : 'Erreur de connexion';
+      }
+    },
+  };
+}
+</script>

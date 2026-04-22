@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Layout iOS-friendly ─────────────────────────────────── */
+html {
+  height: -webkit-fill-available;
+}
+body {
+  min-height: -webkit-fill-available;
+  padding-top:    env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Désactiver tap highlight iOS */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Scrollbar sombre */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+
+/* Cacher les éléments avec x-cloak avant Alpine */
+[x-cloak] { display: none !important; }
