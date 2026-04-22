@@ -1,9 +1,6 @@
 /**
  * Container de dépendances — résout les ports en implémentations concrètes.
- *
- * Stratégie :
- *   - Supabase configuré + user connecté → HybridStorage + SupabaseDailyLogSync
- *   - Sinon                              → IdbStorage + NoopDailyLogSync (guest)
+ * FIX: dailyLogSync correctement typé dans AppDeps
  */
 import {
   IdbStorage, SystemClock, UuidGenerator, ToastNotifier,
@@ -33,8 +30,8 @@ export async function getDeps(): Promise<AppDeps> {
     const idGen    = new UuidGenerator();
     const notifier = new ToastNotifier();
 
-    let storage: StoragePort            = local;
-    let dailyLogSync: DailyLogSyncPort  = new NoopDailyLogSync();
+    let storage: StoragePort           = local;
+    let dailyLogSync: DailyLogSyncPort = new NoopDailyLogSync();
 
     if (supabase) {
       try {

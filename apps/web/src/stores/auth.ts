@@ -1,8 +1,6 @@
 /**
  * Store Alpine `auth` — état de session Supabase.
- *
- * Si les variables d'env Supabase sont absentes, le store démarre en mode "guest"
- * (isAuthenticated = true par défaut pour ne pas bloquer les routes).
+ * FIX: kinetic:auth-ready dispatché dans tous les cas (guest + Supabase)
  */
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import {
@@ -15,6 +13,10 @@ import { resetDeps } from '../deps';
 
 const GUEST_MODE = supabase === null;
 
+function dispatchAuthReady(): void {
+  window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
+}
+
 export function authStore() {
   return {
     user:          null as AuthUser | null,
@@ -26,7 +28,7 @@ export function authStore() {
     async init(): Promise<void> {
       try {
         if (GUEST_MODE) {
-          // Pas de Supabase configuré → mode local, utilisateur "fictif"
+          // Mode local sans Supabase
           this.user = { id: 'guest', email: null, full_name: 'Invité', avatar_url: null };
           return;
         }
@@ -41,14 +43,17 @@ export function authStore() {
             resetDeps();
           }
           this.loading = false;
-          window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
+          dispatchAuthReady();
         });
       } catch (err) {
         console.error('[auth] init failed:', err);
         this.error = err instanceof Error ? err.message : 'Erreur auth';
+        // En cas d'erreur, passer en mode guest pour ne pas bloquer l'app
+        this.user = { id: 'guest', email: null, full_name: 'Invité', avatar_url: null };
       } finally {
         this.loading = false;
-        window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
+        // FIX: toujours dispatcher, même en guest mode
+        dispatchAuthReady();
       }
     },
 

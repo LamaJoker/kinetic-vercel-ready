@@ -1,85 +1,102 @@
 <div x-data="seances" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
   <div class="flex items-start justify-between mb-6">
     <div>
-      <h1 class="text-xl font-bold text-white">Seances</h1>
-      <p class="text-sm text-gray-500">RPE, modeles, et progression</p>
+      <h1 class="text-xl font-bold text-white">Séances</h1>
+      <p class="text-sm text-gray-500">RPE · chrono · progression</p>
     </div>
-    <a href="/profile"
-       class="w-10 h-10 rounded-full bg-kinetic-purple flex items-center justify-center
-              text-white font-bold text-sm select-none hover:bg-purple-600 transition-colors"
-       x-text="$store.auth.initials"></a>
+    <a href="/bodyweight"
+       class="flex flex-col items-center bg-gray-800 rounded-xl px-3 py-2 text-center hover:bg-gray-700 transition-colors">
+      <span class="text-lg font-black text-kinetic-teal" x-text="latestBodyweight ? latestBodyweight + ' kg' : '—'"></span>
+      <span class="text-xs text-gray-500">poids</span>
+    </a>
   </div>
 
   <!-- Quick actions -->
   <div class="grid grid-cols-2 gap-3 mb-4">
     <button @click="startFreeSession()"
-            class="bg-gray-800 rounded-2xl p-4 text-left hover:bg-gray-700 transition-colors">
-      <p class="text-xs text-gray-500 mb-1">Seance</p>
+            class="bg-gray-800 rounded-2xl p-4 text-left hover:bg-gray-700 transition-colors active:scale-95">
+      <p class="text-xs text-gray-500 mb-1">Séance</p>
       <p class="text-white font-semibold">Libre</p>
       <p class="text-xs text-gray-500 mt-1">Commencer maintenant</p>
     </button>
 
     <button @click="showTemplates = !showTemplates"
-            class="bg-gray-800 rounded-2xl p-4 text-left hover:bg-gray-700 transition-colors">
-      <p class="text-xs text-gray-500 mb-1">Seances</p>
-      <p class="text-white font-semibold">Predefinies</p>
-      <p class="text-xs text-gray-500 mt-1" x-text="templates.length + ' modele(s)'"></p>
+            class="bg-gray-800 rounded-2xl p-4 text-left hover:bg-gray-700 transition-colors active:scale-95">
+      <p class="text-xs text-gray-500 mb-1">Séances</p>
+      <p class="text-white font-semibold">Prédéfinies</p>
+      <p class="text-xs text-gray-500 mt-1" x-text="templates.length + ' modèle(s)'"></p>
     </button>
   </div>
 
   <!-- Templates -->
   <div x-show="showTemplates" x-transition class="bg-gray-800 rounded-2xl p-4 mb-4">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="font-semibold text-white">Modeles</h2>
+      <h2 class="font-semibold text-white">Modèles</h2>
       <button class="text-xs text-gray-400 hover:text-white" @click="showTemplates = false">Fermer</button>
     </div>
-
     <template x-if="templates.length === 0">
-      <p class="text-sm text-gray-500">Aucun modele pour le moment. Cree une seance puis "Enregistrer comme modele".</p>
+      <p class="text-sm text-gray-500">Aucun modèle. Crée une séance puis "Enregistrer comme modèle".</p>
     </template>
-
     <div class="space-y-2" x-show="templates.length > 0">
       <template x-for="t in templates" :key="t.id">
-        <button @click="startFromTemplate(t.id)"
-                class="w-full bg-gray-900/60 border border-gray-700 rounded-xl p-3 text-left hover:bg-gray-900 transition-colors">
-          <div class="flex items-center justify-between">
-            <p class="text-white font-medium" x-text="t.name"></p>
-            <span class="text-xs text-gray-500" x-text="t.exercises.length + ' ex'"></span>
-          </div>
-          <p class="text-xs text-gray-500 mt-1">Cliquer pour demarrer</p>
-        </button>
+        <div class="flex items-center gap-2">
+          <button @click="startFromTemplate(t.id)"
+                  class="flex-1 bg-gray-900/60 border border-gray-700 rounded-xl p-3 text-left hover:bg-gray-900 transition-colors">
+            <div class="flex items-center justify-between">
+              <p class="text-white font-medium" x-text="t.name"></p>
+              <span class="text-xs text-gray-500" x-text="t.exercises.length + ' ex'"></span>
+            </div>
+          </button>
+          <button @click="deleteTemplate(t.id)"
+                  class="text-gray-600 hover:text-red-400 p-2 text-xs">✕</button>
+        </div>
       </template>
     </div>
   </div>
 
-  <!-- Current session -->
+  <!-- Session en cours -->
   <div class="bg-gray-800 rounded-2xl p-4 mb-4">
     <div class="flex items-center justify-between mb-3">
       <div>
-        <h2 class="font-semibold text-white">Seance en cours</h2>
-        <p class="text-xs text-gray-500" x-text="currentSession ? currentSession.name : 'Aucune'"></p>
-        <p class="text-xs text-gray-500" x-show="currentSession">
-          <span class="text-white font-semibold" x-text="elapsedLabel()"></span>
-          <span class="mx-1">·</span>
-          <span x-show="estimateCurrentCalories() !== null">
-            <span class="text-gray-400">~</span><span class="text-white font-semibold" x-text="estimateCurrentCalories()"></span><span class="text-gray-400"> kcal</span>
-          </span>
-        </p>
+        <h2 class="font-semibold text-white">Séance en cours</h2>
+        <p class="text-xs text-gray-500" x-show="!currentSession">Aucune</p>
+        <div x-show="currentSession" class="flex items-center gap-2 mt-0.5">
+          <span class="text-xs font-mono text-white" x-text="elapsedLabel()"></span>
+          <span class="text-gray-600 text-xs">·</span>
+          <span class="text-xs text-gray-400" x-show="estimateCurrentCalories() !== null"
+                x-text="'~' + estimateCurrentCalories() + ' kcal'"></span>
+        </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        <div x-show="currentSession" class="flex items-center gap-2">
-          <input type="number" min="15" max="600" step="15"
-                 x-model.number="restPresetSec"
-                 class="w-16 bg-gray-950 border border-gray-700 rounded-xl px-2 py-2 text-xs"/>
-          <button @click="restRemainingSec() > 0 ? stopRest() : startRest()"
-                  class="text-xs px-3 py-2 rounded-xl bg-gray-700 text-white font-semibold hover:bg-gray-600">
-            <span x-show="restRemainingSec() === 0">Repos</span>
-            <span x-show="restRemainingSec() > 0" x-text="restLabel()"></span>
-          </button>
+      <!-- Chrono de repos -->
+      <div x-show="currentSession" class="flex items-center gap-2">
+        <!-- Presets repos -->
+        <div class="relative">
+          <button @click="showRestPresets = !showRestPresets"
+                  class="text-xs px-2 py-1.5 rounded-lg bg-gray-700 text-gray-400 hover:text-white"
+                  x-text="restPresetSec + 's'"></button>
+          <div x-show="showRestPresets" @click.outside="showRestPresets = false"
+               class="absolute right-0 top-8 bg-gray-900 border border-gray-700 rounded-xl p-2 z-10 flex flex-col gap-1 min-w-20">
+            <template x-for="p in restPresets">
+              <button @click="restPresetSec = p.sec; showRestPresets = false"
+                      class="text-xs text-gray-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-800 text-left"
+                      x-text="p.label"></button>
+            </template>
+          </div>
         </div>
+
+        <!-- Bouton chrono repos -->
+        <button @click="restRemainingSec() > 0 ? stopRest() : startRest()"
+                class="text-xs px-3 py-2 rounded-xl font-bold transition-colors"
+                :class="restRemainingSec() > 0
+                  ? 'bg-kinetic-teal text-gray-950 animate-pulse'
+                  : 'bg-gray-700 text-white hover:bg-gray-600'">
+          <span x-show="restRemainingSec() === 0">⏱ Repos</span>
+          <span x-show="restRemainingSec() > 0" x-text="restLabel()"></span>
+        </button>
+
         <button @click="saveCurrentSession()"
-                :disabled="!currentSession"
+                :disabled="!currentSession || currentEntries.length === 0"
                 class="text-xs px-3 py-2 rounded-xl bg-kinetic-purple text-white font-semibold
                        disabled:opacity-40 disabled:cursor-not-allowed">
           Sauver
@@ -88,95 +105,107 @@
     </div>
 
     <template x-if="!currentSession">
-      <p class="text-sm text-gray-500">Demarre une seance libre ou un modele.</p>
+      <p class="text-sm text-gray-500">Démarre une séance libre ou un modèle.</p>
     </template>
 
     <div x-show="currentSession" class="space-y-4">
-      <!-- Add exercise -->
+      <!-- Ajouter un exercice -->
       <div class="bg-gray-900/50 border border-gray-700 rounded-xl p-3">
         <p class="text-xs text-gray-500 mb-2">Ajouter un exercice</p>
         <div class="flex gap-2">
-          <select x-model="selectedExerciseId" class="flex-1 bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-sm">
+          <select x-model="selectedExerciseId" class="flex-1 bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white">
             <option value="">Choisir...</option>
             <template x-for="ex in exercises" :key="ex.id">
               <option :value="ex.id" x-text="ex.name"></option>
             </template>
           </select>
           <button @click="addExerciseToSession()"
-                  class="px-3 py-2 rounded-xl bg-gray-700 text-white text-sm font-semibold hover:bg-gray-600">
-            Ajouter
+                  :disabled="!selectedExerciseId"
+                  class="px-3 py-2 rounded-xl bg-gray-700 text-white text-sm font-semibold hover:bg-gray-600 disabled:opacity-40">
+            +
           </button>
         </div>
       </div>
 
-      <!-- Entries -->
+      <!-- Exercices de la séance -->
       <template x-for="entry in currentEntries" :key="entry.exerciseId">
         <div class="bg-gray-900/60 border border-gray-700 rounded-2xl p-4">
           <div class="flex items-center justify-between mb-3">
             <div>
               <p class="text-white font-semibold" x-text="exerciseName(entry.exerciseId)"></p>
               <p class="text-xs text-gray-500">
-                <span x-text="entry.sets.length"></span> serie(s)
+                <span x-text="entry.sets.length"></span> série(s)
+                <template x-if="pr(entry.exerciseId)">
+                  <span class="ml-2 text-kinetic-gold">PR : <span x-text="pr(entry.exerciseId)?.toFixed(1)"></span> kg e1RM</span>
+                </template>
               </p>
             </div>
             <button class="text-xs text-gray-400 hover:text-white" @click="removeExercise(entry.exerciseId)">Retirer</button>
           </div>
 
-          <!-- Add set -->
+          <!-- Inputs nouvelle série -->
           <div class="grid grid-cols-3 gap-2 mb-2">
             <div>
               <label class="text-xs text-gray-500">Reps</label>
               <input type="number" min="1" x-model.number="draft.reps"
-                     class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-sm"/>
+                     class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm"/>
             </div>
             <div>
               <label class="text-xs text-gray-500">Kg</label>
               <input type="number" min="0" step="0.5" x-model.number="draft.weightKg"
-                     class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-sm"/>
+                     class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm"/>
             </div>
             <div>
-              <label class="text-xs text-gray-500">RPE</label>
+              <label class="text-xs text-gray-500">RPE (6–10)</label>
               <input type="number" min="6" max="10" step="0.5" x-model.number="draft.rpe"
-                     class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-sm"/>
+                     class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm"/>
             </div>
           </div>
 
           <div class="flex items-center justify-between gap-2">
             <button @click="addSet(entry.exerciseId)"
-                    class="px-3 py-2 rounded-xl bg-kinetic-teal text-gray-950 text-sm font-black hover:brightness-110">
-              Ajouter la serie
+                    class="px-4 py-2 rounded-xl bg-kinetic-teal text-gray-950 text-sm font-black hover:brightness-110 active:scale-95">
+              + Série
             </button>
-            <p class="text-xs text-gray-400 text-right" x-show="suggestedNextWeightKg(entry.exerciseId) !== null">
-              Prochaine charge: <span class="text-white font-semibold" x-text="suggestedNextWeightKg(entry.exerciseId) + ' kg'"></span>
-            </p>
+            <div class="text-right">
+              <p class="text-xs text-gray-400" x-show="suggestedNextWeightKg(entry.exerciseId) !== null">
+                Prochaine : <span class="text-white font-bold" x-text="suggestedNextWeightKg(entry.exerciseId) + ' kg'"></span>
+              </p>
+              <p class="text-xs text-kinetic-gold" x-show="isNewPr(entry.exerciseId, draft.weightKg, draft.reps)">
+                ⭐ Nouveau PR potentiel !
+              </p>
+            </div>
           </div>
 
-          <!-- Sets table -->
-          <div class="mt-3 overflow-hidden rounded-xl border border-gray-700">
-            <div class="grid grid-cols-4 bg-gray-950 text-xs text-gray-500 px-3 py-2">
-              <div>#</div><div>Reps</div><div>Kg</div><div>RPE</div>
+          <!-- Tableau des séries -->
+          <div x-show="entry.sets.length > 0" class="mt-3 overflow-hidden rounded-xl border border-gray-700">
+            <div class="grid grid-cols-5 bg-gray-950 text-xs text-gray-500 px-3 py-2">
+              <div>#</div><div>Reps</div><div>Kg</div><div>RPE</div><div>e1RM</div>
             </div>
             <template x-for="s in entry.sets" :key="s.setIndex">
-              <div class="grid grid-cols-4 px-3 py-2 text-sm border-t border-gray-700">
+              <div class="grid grid-cols-5 px-3 py-2 text-sm border-t border-gray-700"
+                   :class="isSetPr(entry.exerciseId, s.weightKg, s.reps) ? 'bg-kinetic-gold/10' : ''">
                 <div class="text-gray-400" x-text="s.setIndex + 1"></div>
                 <div class="text-white" x-text="s.reps"></div>
                 <div class="text-white" x-text="s.weightKg"></div>
                 <div class="text-white" x-text="s.rpe"></div>
+                <div class="text-kinetic-gold font-medium" x-text="e1rm(s.weightKg, s.reps).toFixed(0)"></div>
               </div>
             </template>
           </div>
         </div>
       </template>
 
-      <!-- Save as template -->
+      <!-- Enregistrer comme modèle -->
       <div class="bg-gray-900/50 border border-gray-700 rounded-xl p-3">
-        <p class="text-xs text-gray-500 mb-2">Enregistrer comme modele</p>
+        <p class="text-xs text-gray-500 mb-2">Enregistrer comme modèle</p>
         <div class="flex gap-2">
           <input x-model="templateName"
-                 placeholder="Nom du modele (ex: Push A)"
-                 class="flex-1 bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-sm"/>
+                 placeholder="Nom du modèle (ex: Push A)"
+                 class="flex-1 bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white"/>
           <button @click="saveTemplateFromCurrent()"
-                  class="px-3 py-2 rounded-xl bg-gray-700 text-white text-sm font-semibold hover:bg-gray-600">
+                  :disabled="!templateName.trim()"
+                  class="px-3 py-2 rounded-xl bg-gray-700 text-white text-sm font-semibold hover:bg-gray-600 disabled:opacity-40">
             Enregistrer
           </button>
         </div>
@@ -184,15 +213,15 @@
     </div>
   </div>
 
-  <!-- History -->
-  <div class="bg-gray-800 rounded-2xl p-4">
+  <!-- Historique -->
+  <div class="bg-gray-800 rounded-2xl p-4 mb-4">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-semibold text-white">Historique</h2>
-      <span class="text-xs text-gray-500" x-text="sessions.length + ' seance(s)'"></span>
+      <span class="text-xs text-gray-500" x-text="sessions.length + ' séance(s)'"></span>
     </div>
 
     <template x-if="sessions.length === 0">
-      <p class="text-sm text-gray-500">Aucune seance enregistree.</p>
+      <p class="text-sm text-gray-500">Aucune séance enregistrée.</p>
     </template>
 
     <div class="space-y-2" x-show="sessions.length > 0">
@@ -214,56 +243,54 @@
     </div>
   </div>
 
-  <!-- Progress -->
-  <div class="bg-gray-800 rounded-2xl p-4 mt-4">
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="font-semibold text-white">Progression</h2>
-      <span class="text-xs text-gray-500"
-            x-text="progressMetric === 'e1rm' ? 'e1RM (approx.)' : (progressMetric === 'weight' ? 'Meilleure charge' : 'Volume')"></span>
-    </div>
+  <!-- Progression / Records -->
+  <div class="bg-gray-800 rounded-2xl p-4">
+    <h2 class="font-semibold text-white mb-3">Progression & Records</h2>
 
     <div class="flex gap-2 mb-3">
       <select x-model="progressExerciseId"
-              class="flex-1 bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-sm">
+              class="flex-1 bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white">
         <option value="">Choisir un exercice...</option>
         <template x-for="ex in exercises" :key="ex.id">
           <option :value="ex.id" x-text="ex.name"></option>
         </template>
       </select>
       <select x-model="progressMetric"
-              class="bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-sm">
+              class="bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white">
         <option value="e1rm">e1RM</option>
-        <option value="weight">Kg</option>
+        <option value="weight">Charge max</option>
         <option value="volume">Volume</option>
       </select>
-      <button @click="showProgress = !showProgress"
-              class="px-3 py-2 rounded-xl bg-gray-700 text-white text-sm font-semibold hover:bg-gray-600">
-        <span x-text="showProgress ? 'Masquer' : 'Voir'"></span>
-      </button>
     </div>
 
     <template x-if="!progressExerciseId">
-      <p class="text-sm text-gray-500">Selectionne un exercice pour voir la courbe.</p>
+      <p class="text-sm text-gray-500">Sélectionne un exercice pour voir la courbe.</p>
     </template>
 
     <template x-if="progressExerciseId && progressPoints().length === 0">
-      <p class="text-sm text-gray-500">Pas encore de donnees pour cet exercice.</p>
+      <p class="text-sm text-gray-500">Pas encore de données pour cet exercice.</p>
     </template>
 
-    <div x-show="showProgress && progressExerciseId && progressPoints().length > 0"
-         x-transition
-         class="bg-gray-900/60 border border-gray-700 rounded-2xl p-3">
-      <div class="flex items-center justify-between mb-2">
-        <p class="text-sm text-white font-medium" x-text="exerciseName(progressExerciseId)"></p>
-        <p class="text-xs text-gray-500" x-text="progressPoints().length + ' point(s)'"></p>
+    <div x-show="progressExerciseId && progressPoints().length > 0">
+      <!-- Record -->
+      <div class="flex items-center justify-between mb-3 bg-kinetic-gold/10 rounded-xl p-3">
+        <div>
+          <p class="text-xs text-gray-500">Record (e1RM)</p>
+          <p class="text-2xl font-black text-kinetic-gold" x-text="progressMax().toFixed(1) + ' kg'"></p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-gray-500">Dernier</p>
+          <p class="text-lg font-bold text-white" x-text="progressPoints().at(-1)?.y?.toFixed(1) + ' kg'"></p>
+        </div>
       </div>
 
-      <div class="overflow-hidden rounded-xl border border-gray-700 bg-gray-950">
-        <div class="p-3" x-html="progressSvg()"></div>
+      <div class="bg-gray-900/60 border border-gray-700 rounded-2xl p-3">
+        <div x-html="progressSvg()" class="overflow-hidden"></div>
       </div>
 
       <div class="mt-2 flex items-center justify-between text-xs text-gray-500">
         <span x-text="'Min: ' + progressMin().toFixed(1) + ' kg'"></span>
+        <span x-text="progressPoints().length + ' sessions'"></span>
         <span x-text="'Max: ' + progressMax().toFixed(1) + ' kg'"></span>
       </div>
     </div>

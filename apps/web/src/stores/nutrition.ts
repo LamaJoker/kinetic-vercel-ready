@@ -1,13 +1,19 @@
 /**
  * Store Alpine `nutrition` — journal macros du jour + plan cible
+ * FIX: FoodEntry défini localement (pas exporté par @kinetic/core)
  */
 import { buildNutritionPlan, macroProgress } from '@kinetic/core';
-import type { NutritionPlan, FoodEntry, MealTiming } from '@kinetic/core';
+import type { NutritionPlan } from '@kinetic/core';
 import { getDeps } from '../deps';
 
-const KEY_PLAN    = 'kinetic:nutrition:plan';
-const KEY_LOG     = (date: string) => `kinetic:nutrition:log:${date}`;
-const KEY_FOODS   = 'kinetic:nutrition:foods';
+// FIX: défini ici au lieu d'être importé depuis @kinetic/core
+export interface FoodEntry {
+  name:           string;
+  kcalPer100:     number;
+  proteinPer100:  number;
+  carbsPer100:    number;
+  fatPer100:      number;
+}
 
 export interface LoggedMeal {
   id:       string;
@@ -15,6 +21,9 @@ export interface LoggedMeal {
   items:    Array<{ food: FoodEntry; grams: number }>;
   loggedAt: string;
 }
+
+const KEY_PLAN    = 'kinetic:nutrition:plan';
+const KEY_LOG     = (date: string) => `kinetic:nutrition:log:${date}`;
 
 function todayIso(): string {
   const d = new Date();
@@ -78,20 +87,25 @@ export function nutritionStore() {
     },
 
     async recalculatePlan(): Promise<void> {
-      const deps = await getDeps();
-      const profile = await deps.storage.get<any>('kinetic:userProfile');
-      if (!profile) return;
-      const plan = buildNutritionPlan(profile);
-      this.plan = plan;
-      await deps.storage.set(KEY_PLAN, plan);
+      try {
+        const deps = await getDeps();
+        const profile = await deps.storage.get<Record<string, unknown>>('kinetic:userProfile');
+        if (!profile) return;
+        const plan = buildNutritionPlan(profile as Parameters<typeof buildNutritionPlan>[0]);
+        this.plan = plan;
+        await deps.storage.set(KEY_PLAN, plan);
+      } catch (err) {
+        console.error('[nutrition] recalculate failed:', err);
+      }
     },
 
     async addMealItem(mealName: string, food: FoodEntry, grams: number): Promise<void> {
       const deps  = await getDeps();
       const today = todayIso();
-      const meal  = this.todayLog.find((m) => m.mealName === mealName);
-      if (meal) {
-        meal.items.push({ food, grams });
+      const existing = this.todayLog.find((m) => m.mealName === mealName);
+      if (existing) {
+        existing.items.push({ food, grams });
+        this.todayLog = [...this.todayLog];
       } else {
         this.todayLog = [...this.todayLog, {
           id: crypto.randomUUID(), mealName,

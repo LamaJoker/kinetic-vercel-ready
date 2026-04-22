@@ -1,0 +1,245 @@
+<div x-data="bodyweightPage()" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
+
+  <div class="flex items-center gap-3 mb-6">
+    <h1 class="text-xl font-bold text-white">Poids corporel</h1>
+    <span class="ml-auto text-xs text-gray-500"
+          x-text="entries.length + ' entrée(s)'"></span>
+  </div>
+
+  <!-- Ajouter une entrée -->
+  <div class="bg-gray-800 rounded-2xl p-4 mb-4">
+    <p class="text-xs text-gray-500 mb-3">Enregistrer aujourd'hui</p>
+    <div class="flex gap-3">
+      <div class="flex-1">
+        <label class="text-xs text-gray-500">Poids (kg)</label>
+        <input type="number" x-model.number="newWeight" min="30" max="300" step="0.1"
+               placeholder="ex: 75.5"
+               class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2.5 text-white text-sm mt-1"/>
+      </div>
+      <div class="flex-1">
+        <label class="text-xs text-gray-500">% Masse grasse (optionnel)</label>
+        <input type="number" x-model.number="newBf" min="3" max="60" step="0.1"
+               placeholder="ex: 15.0"
+               class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2.5 text-white text-sm mt-1"/>
+      </div>
+    </div>
+    <input x-model="newNote" placeholder="Note (optionnel — ex: après entraînement)"
+           class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2.5 text-white text-sm mt-2"/>
+    <button @click="addEntry()"
+            :disabled="!newWeight || newWeight < 30"
+            class="w-full mt-3 py-2.5 bg-kinetic-purple text-white font-bold rounded-xl text-sm
+                   disabled:opacity-40 disabled:cursor-not-allowed">
+      Enregistrer
+    </button>
+  </div>
+
+  <!-- Stats rapides -->
+  <div x-show="entries.length > 0" class="grid grid-cols-3 gap-3 mb-4">
+    <div class="bg-gray-800 rounded-2xl p-3 text-center">
+      <p class="text-xs text-gray-500 mb-1">Actuel</p>
+      <p class="text-xl font-black text-white" x-text="latest?.weight?.toFixed(1) + ' kg'"></p>
+    </div>
+    <div class="bg-gray-800 rounded-2xl p-3 text-center">
+      <p class="text-xs text-gray-500 mb-1">Min</p>
+      <p class="text-xl font-black text-kinetic-teal" x-text="minWeight?.toFixed(1) + ' kg'"></p>
+    </div>
+    <div class="bg-gray-800 rounded-2xl p-3 text-center">
+      <p class="text-xs text-gray-500 mb-1">Max</p>
+      <p class="text-xl font-black text-kinetic-coral" x-text="maxWeight?.toFixed(1) + ' kg'"></p>
+    </div>
+  </div>
+
+  <!-- Delta depuis début -->
+  <div x-show="entries.length >= 2" class="bg-gray-800 rounded-2xl p-4 mb-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-xs text-gray-500">Évolution totale</p>
+        <p class="text-2xl font-black"
+           :class="delta > 0 ? 'text-kinetic-coral' : delta < 0 ? 'text-kinetic-teal' : 'text-white'"
+           x-text="(delta > 0 ? '+' : '') + delta?.toFixed(1) + ' kg'"></p>
+      </div>
+      <div class="text-right">
+        <p class="text-xs text-gray-500">Depuis</p>
+        <p class="text-xs text-white" x-text="earliest?.date"></p>
+      </div>
+    </div>
+    <!-- Tendance 7 derniers jours -->
+    <div x-show="trend7 !== null" class="mt-3 pt-3 border-t border-gray-700 flex items-center gap-2">
+      <span class="text-xs text-gray-500">Tendance 7j :</span>
+      <span class="text-sm font-semibold"
+            :class="trend7 > 0 ? 'text-kinetic-coral' : trend7 < 0 ? 'text-kinetic-teal' : 'text-gray-400'"
+            x-text="trend7 !== null ? (trend7 > 0 ? '+' : '') + trend7?.toFixed(2) + ' kg/sem' : '—'"></span>
+    </div>
+  </div>
+
+  <!-- Graphique -->
+  <div x-show="entries.length >= 2" class="bg-gray-800 rounded-2xl p-4 mb-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold text-white">Courbe de poids</h2>
+      <div class="flex gap-1">
+        <button @click="period = 30"
+                class="text-xs px-2 py-1 rounded-lg"
+                :class="period === 30 ? 'bg-kinetic-purple text-white' : 'text-gray-500 hover:text-white'">30j</button>
+        <button @click="period = 90"
+                class="text-xs px-2 py-1 rounded-lg"
+                :class="period === 90 ? 'bg-kinetic-purple text-white' : 'text-gray-500 hover:text-white'">90j</button>
+        <button @click="period = 365"
+                class="text-xs px-2 py-1 rounded-lg"
+                :class="period === 365 ? 'bg-kinetic-purple text-white' : 'text-gray-500 hover:text-white'">1an</button>
+        <button @click="period = 9999"
+                class="text-xs px-2 py-1 rounded-lg"
+                :class="period === 9999 ? 'bg-kinetic-purple text-white' : 'text-gray-500 hover:text-white'">Tout</button>
+      </div>
+    </div>
+    <div x-html="chartSvg()" class="overflow-hidden rounded-xl"></div>
+  </div>
+
+  <!-- Historique -->
+  <div class="bg-gray-800 rounded-2xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold text-white">Historique</h2>
+      <span class="text-xs text-gray-500" x-text="filteredEntries.length + ' entrées'"></span>
+    </div>
+
+    <template x-if="entries.length === 0">
+      <p class="text-sm text-gray-500 text-center py-4">Aucune entrée. Commence à te peser !</p>
+    </template>
+
+    <div class="space-y-2">
+      <template x-for="(entry, i) in filteredEntries.slice().reverse().slice(0, 20)" :key="entry.date + i">
+        <div class="flex items-center justify-between py-2 border-b border-gray-700/50">
+          <div>
+            <p class="text-sm text-white font-medium" x-text="formatDate(entry.date)"></p>
+            <p class="text-xs text-gray-500" x-show="entry.note" x-text="entry.note"></p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <p class="text-sm font-bold text-white" x-text="entry.weight.toFixed(1) + ' kg'"></p>
+              <p class="text-xs text-gray-500" x-show="entry.bodyFatPct" x-text="entry.bodyFatPct?.toFixed(1) + '% MG'"></p>
+            </div>
+            <button @click="removeEntry(entry.date)"
+                    class="text-gray-600 hover:text-red-400 text-xs p-1">✕</button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function bodyweightPage() {
+  return {
+    entries: [],
+    newWeight: null,
+    newBf: null,
+    newNote: '',
+    period: 90,
+
+    get filteredEntries() {
+      const cutoff = Date.now() - this.period * 24 * 60 * 60 * 1000;
+      return this.entries.filter(e => Date.parse(e.date) >= cutoff);
+    },
+
+    get latest() { return this.entries.at(-1) ?? null; },
+    get earliest() { return this.filteredEntries[0] ?? null; },
+
+    get minWeight() {
+      if (!this.filteredEntries.length) return null;
+      return Math.min(...this.filteredEntries.map(e => e.weight));
+    },
+    get maxWeight() {
+      if (!this.filteredEntries.length) return null;
+      return Math.max(...this.filteredEntries.map(e => e.weight));
+    },
+    get delta() {
+      if (this.filteredEntries.length < 2) return null;
+      return (this.filteredEntries.at(-1)?.weight ?? 0) - (this.filteredEntries[0]?.weight ?? 0);
+    },
+    get trend7() {
+      const recent = this.entries.filter(e => Date.now() - Date.parse(e.date) <= 7 * 86400000);
+      if (recent.length < 2) return null;
+      const delta = (recent.at(-1)?.weight ?? 0) - (recent[0]?.weight ?? 0);
+      return delta;
+    },
+
+    async init() {
+      const { getDeps } = await import('/src/deps.js');
+      const deps = await getDeps();
+      const stored = await deps.storage.get('kinetic:bodyweight:entries');
+      this.entries = Array.isArray(stored) ? stored : [];
+    },
+
+    async addEntry() {
+      if (!this.newWeight || this.newWeight < 30) return;
+      const today = new Date().toISOString().slice(0, 10);
+      const existing = this.entries.findIndex(e => e.date === today);
+      const entry = {
+        date: today,
+        weight: +this.newWeight,
+        bodyFatPct: this.newBf ? +this.newBf : null,
+        note: this.newNote.trim() || null,
+      };
+      if (existing >= 0) {
+        this.entries[existing] = entry;
+      } else {
+        this.entries = [...this.entries, entry].sort((a, b) => a.date.localeCompare(b.date));
+      }
+      const { getDeps } = await import('/src/deps.js');
+      const deps = await getDeps();
+      await deps.storage.set('kinetic:bodyweight:entries', this.entries);
+      this.newWeight = null;
+      this.newBf = null;
+      this.newNote = '';
+      window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        detail: { kind: 'success', message: `${entry.weight.toFixed(1)} kg enregistré` },
+      }));
+    },
+
+    async removeEntry(date) {
+      this.entries = this.entries.filter(e => e.date !== date);
+      const { getDeps } = await import('/src/deps.js');
+      const deps = await getDeps();
+      await deps.storage.set('kinetic:bodyweight:entries', this.entries);
+    },
+
+    formatDate(iso) {
+      try {
+        return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' });
+      } catch { return iso; }
+    },
+
+    chartSvg() {
+      const pts = this.filteredEntries;
+      if (pts.length < 2) return '';
+
+      const W = 320, H = 120, padX = 8, padY = 8;
+      const weights = pts.map(e => e.weight);
+      const minY = Math.min(...weights) - 0.5;
+      const maxY = Math.max(...weights) + 0.5;
+      const minX = Date.parse(pts[0].date);
+      const maxX = Date.parse(pts.at(-1).date);
+      const dx = Math.max(1, maxX - minX);
+      const dy = Math.max(0.1, maxY - minY);
+
+      const sx = x => padX + ((Date.parse(x) - minX) / dx) * (W - padX * 2);
+      const sy = y => H - padY - ((y - minY) / dy) * (H - padY * 2);
+
+      const linePath = pts.map((e, i) => `${i === 0 ? 'M' : 'L'} ${sx(e.date).toFixed(1)} ${sy(e.weight).toFixed(1)}`).join(' ');
+      const areaPath = linePath + ` L ${sx(pts.at(-1).date).toFixed(1)} ${H} L ${padX} ${H} Z`;
+
+      const circles = pts.slice(-10).map(e =>
+        `<circle cx="${sx(e.date).toFixed(1)}" cy="${sy(e.weight).toFixed(1)}" r="3" fill="#7F77DD"/>`
+      ).join('');
+
+      return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible">
+        <path d="${areaPath}" fill="#7F77DD" fill-opacity="0.15"/>
+        <path d="${linePath}" fill="none" stroke="#7F77DD" stroke-width="2" stroke-linecap="round"/>
+        ${circles}
+        <text x="${padX}" y="${H - 2}" fill="#6B7280" font-size="9">${minY.toFixed(1)}kg</text>
+        <text x="${padX}" y="14" fill="#6B7280" font-size="9">${maxY.toFixed(1)}kg</text>
+      </svg>`;
+    },
+  };
+}
+</script>
