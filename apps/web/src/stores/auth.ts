@@ -11,7 +11,9 @@ import {
 import type { AuthUser } from '@kinetic/adapters-web';
 import { resetDeps } from '../deps';
 
-const GUEST_MODE = supabase === null;
+const GUEST_MODE = supabase === null
+  || (import.meta.env['VITE_SUPABASE_URL'] as string | undefined)?.includes('xxxxxxxxxxxxxxxxxxxx')
+  || false;
 
 function dispatchAuthReady(): void {
   window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
@@ -28,12 +30,15 @@ export function authStore() {
     async init(): Promise<void> {
       try {
         if (GUEST_MODE) {
-          // Mode local sans Supabase
           this.user = { id: 'guest', email: null, full_name: 'Invité', avatar_url: null };
           return;
         }
 
-        this.user = await getAuthUser();
+        // Timeout 3s sur getAuthUser pour éviter le blocage
+        const userPromise = getAuthUser();
+        const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+        const user = await Promise.race([userPromise, timeout]);
+        this.user = user;
 
         supabase!.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
           if (session?.user) {
@@ -48,11 +53,9 @@ export function authStore() {
       } catch (err) {
         console.error('[auth] init failed:', err);
         this.error = err instanceof Error ? err.message : 'Erreur auth';
-        // En cas d'erreur, passer en mode guest pour ne pas bloquer l'app
         this.user = { id: 'guest', email: null, full_name: 'Invité', avatar_url: null };
       } finally {
         this.loading = false;
-        // FIX: toujours dispatcher, même en guest mode
         dispatchAuthReady();
       }
     },
