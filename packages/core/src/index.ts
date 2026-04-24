@@ -52,6 +52,10 @@ export type {
 export * from './domain/nutrition.domain.js';
 export * from './domain/program.domain.js';
 
+// Progression & Analytics (v2 — suivi intelligent)
+export * from './domain/progression.domain.js';
+export * from './domain/analytics.domain.js';
+
 // ─── Use Cases (orchestration) ────────────────────────────────
 export { completeTask_usecase }               from './usecases/complete-task.usecase.js';
 export type {
