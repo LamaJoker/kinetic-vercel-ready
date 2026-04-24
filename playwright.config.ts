@@ -41,11 +41,13 @@ export default defineConfig({
 
   projects: [
     // ── Mobile (primary target) ──────────────────────────────
-    // Pas de channel: 'chrome' — CI installe Playwright Chromium, pas Chrome stable.
+    // devices['iPhone 14 Pro'] a defaultBrowserType: 'webkit' ;
+    // on force chromium car CI n'installe que les binaires chromium.
     {
       name: 'mobile-chrome',
       use: {
         ...devices['iPhone 14 Pro'],
+        browserName: 'chromium',
       },
     },
 

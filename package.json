@@ -4,20 +4,21 @@
   "private": true,
   "packageManager": "pnpm@9.15.9",
   "scripts": {
-    "build":     "pnpm --filter @kinetic/web build",
-    "dev":       "pnpm --filter @kinetic/web dev",
-    "preview":   "pnpm --filter @kinetic/web preview",
-    "test":      "vitest run",
-    "coverage":  "vitest run --coverage",
+    "build": "pnpm --filter @kinetic/web build",
+    "dev": "pnpm --filter @kinetic/web dev",
+    "preview": "pnpm --filter @kinetic/web preview",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "typecheck": "tsc --build",
-    "e2e":       "playwright test",
-    "test:e2e":  "playwright test"
+    "e2e": "playwright test",
+    "test:e2e": "playwright test"
   },
   "engines": {
     "node": ">=20",
     "pnpm": ">=9"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@vitest/coverage-v8": "^2",
     "typescript": "^5.5.0",
     "vite-tsconfig-paths": "^6.1.1",
