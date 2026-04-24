@@ -162,15 +162,35 @@
             </div>
           </div>
 
+          <!-- Alerte deload -->
+          <div x-show="exerciseNeedsDeload(entry.exerciseId)"
+               class="mb-2 flex items-center gap-2 bg-kinetic-coral/10 border border-kinetic-coral/30 rounded-xl px-3 py-2">
+            <span class="text-kinetic-coral text-base">🔴</span>
+            <p class="text-xs text-kinetic-coral font-semibold">Deload recommandé — RPE très élevé sur plusieurs séances sans progression d'e1RM.</p>
+          </div>
+
           <div class="flex items-center justify-between gap-2">
             <button @click="addSet(entry.exerciseId)"
                     class="px-4 py-2 rounded-xl bg-kinetic-teal text-gray-950 text-sm font-black hover:brightness-110 active:scale-95">
               + Série
             </button>
-            <div class="text-right">
-              <p class="text-xs text-gray-400" x-show="suggestedNextWeightKg(entry.exerciseId) !== null">
-                Prochaine : <span class="text-white font-bold" x-text="suggestedNextWeightKg(entry.exerciseId) + ' kg'"></span>
-              </p>
+            <div class="text-right space-y-0.5">
+              <!-- Suggestion auto-progression -->
+              <template x-if="progressionSuggestion(entry.exerciseId) as sugg">
+                <div>
+                  <template x-if="sugg && sugg.strategy !== 'first_time'">
+                    <p class="text-xs leading-tight">
+                      <span class="text-gray-400">Cible : </span>
+                      <span class="text-white font-bold" x-text="sugg.suggestedWeight + ' kg × ' + sugg.suggestedReps"></span>
+                      <span class="text-gray-500" x-text="' @ RPE ' + sugg.suggestedRpe"></span>
+                    </p>
+                  </template>
+                  <template x-if="sugg">
+                    <p class="text-xs text-gray-500 leading-tight max-w-[160px] text-right" x-text="sugg.rationale"></p>
+                  </template>
+                </div>
+              </template>
+              <!-- PR potentiel -->
               <p class="text-xs text-kinetic-gold" x-show="isNewPr(entry.exerciseId, draft.weightKg, draft.reps)">
                 ⭐ Nouveau PR potentiel !
               </p>

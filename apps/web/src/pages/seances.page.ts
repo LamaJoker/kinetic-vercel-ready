@@ -2,10 +2,13 @@ import { getDeps } from '../deps';
 import { UuidGenerator } from '@kinetic/adapters-web';
 import type { Exercise, SessionExerciseEntry, WorkoutSession, WorkoutTemplate } from '../lib/training/types';
 import { loadExercises, loadSessions, loadTemplates, saveSessions, saveTemplates } from '../lib/training/storage';
-import { estimateE1rmKg, suggestNextWeightKg } from '../lib/training/rpe';
+import { estimateE1rmKg } from '../lib/training/rpe';
 import { estimateStrengthWorkoutCaloriesKcal } from '../lib/training/calories';
 import type { UserProfile } from '../lib/user/types';
 import { loadUserProfile } from '../lib/user/storage';
+import { suggestProgression, needsDeload, type ProgressionSuggestion, type PerformedSet } from '@kinetic/core';
+import { suggestedRestSec, requestNotificationPermission } from '../lib/training/rest-timer';
+import { exportAsJson, exportAsCsv } from '../lib/training/export';
 
 type Draft = { reps: number; weightKg: number; rpe: number };
 
@@ -252,21 +255,58 @@ export function seances() {
         }),
       };
 
-      // Auto-démarrer le chrono de repos après chaque série
+      // Auto-démarrer le chrono de repos après chaque série (durée basée sur le RPE)
+      this.restPresetSec = this.smartRestSec();
       this.startRest();
     },
 
-    suggestedNextWeightKg(exerciseId: string): number | null {
-      if (!this.currentSession) return null;
-      const entry = this.currentSession.entries.find(e => e.exerciseId === exerciseId);
-      const last = entry?.sets.at(-1);
-      if (!last) return null;
-      return suggestNextWeightKg({
-        currentWeightKg: last.weightKg,
-        rpe: last.rpe,
-        targetRpe: 8,
-        exercise: this.exercises.find(e => e.id === exerciseId) ?? null,
+    /** Historique de sets pour un exercice, toutes séances confondues (du plus ancien au plus récent). */
+    _historyForExercise(exerciseId: string): PerformedSet[] {
+      const sorted = [...this.sessions].sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+      return sorted.flatMap(s =>
+        (s.entries.find(e => e.exerciseId === exerciseId)?.sets ?? []).map(set => ({
+          reps:     set.reps,
+          weightKg: set.weightKg,
+          rpe:      set.rpe,
+          at:       set.performedAt,
+        }))
+      );
+    },
+
+    /** Suggestion de progression complète pour l'exercice courant. */
+    progressionSuggestion(exerciseId: string): ProgressionSuggestion | null {
+      if (!exerciseId) return null;
+      const ex = this.exercises.find(e => e.id === exerciseId);
+      const history = this._historyForExercise(exerciseId);
+      return suggestProgression({
+        exerciseId,
+        targetReps:  8,
+        targetRpe:   8,
+        incrementKg: ex?.incrementKg ?? 2.5,
+        history,
       });
+    },
+
+    /** Vrai si l'exercice est en état de deload d'après l'historique. */
+    exerciseNeedsDeload(exerciseId: string): boolean {
+      return needsDeload(this._historyForExercise(exerciseId));
+    },
+
+    /** Durée de repos recommandée selon le dernier RPE du draft. */
+    smartRestSec(): number {
+      return suggestedRestSec(Number(this.draft.rpe) || 8);
+    },
+
+    async requestNotifications(): Promise<void> {
+      await requestNotificationPermission();
+    },
+
+    exportJson(): void {
+      exportAsJson(this.sessions, this.exercises);
+    },
+
+    exportCsv(): void {
+      exportAsCsv(this.sessions, this.exercises);
     },
 
     // ─── Progression ─────────────────────────────────────────
