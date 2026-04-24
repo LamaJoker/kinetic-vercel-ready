@@ -14,6 +14,8 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     exclude: ['tests/e2e/**', 'node_modules/**'],
     coverage: {
+      provider:          'v8',
+      reportsDirectory:  'tests/coverage',
       reporter: ['text', 'json', 'html', 'json-summary'],
       include:  ['packages/*/src/**/*.ts'],
       exclude:  ['**/*.test.ts', '**/index.ts', '**/database.types.ts'],

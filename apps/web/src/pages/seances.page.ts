@@ -377,7 +377,13 @@ export function seances() {
         const avgRpe = this.avgRpeOf(this.currentSession);
         const caloriesKcal = estimateStrengthWorkoutCaloriesKcal({ durationMin, avgRpe, profile: this.userProfile });
 
-        const finalized: WorkoutSession = { ...this.currentSession, endedAt, durationMin, avgRpe: avgRpe ?? undefined, caloriesKcal: caloriesKcal ?? undefined };
+        const finalized: WorkoutSession = {
+          ...this.currentSession,
+          endedAt,
+          durationMin,
+          ...(avgRpe != null      ? { avgRpe }      : {}),
+          ...(caloriesKcal != null ? { caloriesKcal } : {}),
+        };
         this.sessions = [...this.sessions, finalized];
         await saveSessions(deps.storage, this.sessions);
         this.currentSession = null;

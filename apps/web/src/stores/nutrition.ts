@@ -91,7 +91,7 @@ export function nutritionStore() {
         const deps = await getDeps();
         const profile = await deps.storage.get<Record<string, unknown>>('kinetic:userProfile');
         if (!profile) return;
-        const plan = buildNutritionPlan(profile as Parameters<typeof buildNutritionPlan>[0]);
+        const plan = buildNutritionPlan(profile as unknown as Parameters<typeof buildNutritionPlan>[0]);
         this.plan = plan;
         await deps.storage.set(KEY_PLAN, plan);
       } catch (err) {
