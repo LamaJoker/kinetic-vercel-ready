@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev":     "vite",
-    "build":   "vite build && node ../../scripts/sync-web-dist.mjs",
-    "preview": "vite preview"
+    "dev":        "vite",
+    "build":      "vite build && node ../../scripts/sync-web-dist.mjs",
+    "preview":    "vite preview",
+    "preview:ci": "vite preview --port 3000"
   },
   "dependencies": {
     "@kinetic/adapters-web": "workspace:*",

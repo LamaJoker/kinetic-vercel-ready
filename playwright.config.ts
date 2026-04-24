@@ -5,14 +5,22 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Configuration Playwright pour Kinetic.
  * Cible : Chrome mobile (iPhone 14 Pro) + desktop.
+ *
+ * En CI : on sert le build de production via `vite preview --port 3000`
+ *   (le job E2E fait `pnpm build` avant de lancer Playwright).
+ *   Cela garantit que le Service Worker est enregistré (PROD=true).
+ *
+ * En local : serveur de dev Vite pour itération rapide.
  */
+const isCI = !!process.env['CI'];
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false, // Séquentiel pour respecter l'état IndexedDB
 
   // Retry 2x en CI pour les flaky tests réseau
-  retries: process.env['CI'] ? 2 : 0,
-  workers: process.env['CI'] ? 1 : 1,
+  retries: isCI ? 2 : 0,
+  workers: 1,
 
   reporter: [
     ['html', { outputFolder: 'tests/e2e/report', open: 'never' }],
@@ -33,11 +41,11 @@ export default defineConfig({
 
   projects: [
     // ── Mobile (primary target) ──────────────────────────────
+    // Pas de channel: 'chrome' — CI installe Playwright Chromium, pas Chrome stable.
     {
       name: 'mobile-chrome',
       use: {
         ...devices['iPhone 14 Pro'],
-        channel: 'chrome',
       },
     },
 
@@ -57,11 +65,14 @@ export default defineConfig({
     },
   ],
 
-  // Lancer le serveur de dev automatiquement
+  // En CI : servir le build de prod (SW enregistré, assets optimisés).
+  // En local : serveur de dev Vite (rechargement rapide).
   webServer: {
-    command: 'pnpm --filter @kinetic/web dev',
+    command: isCI
+      ? 'pnpm --filter @kinetic/web preview:ci'
+      : 'pnpm --filter @kinetic/web dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env['CI'],
+    reuseExistingServer: !isCI,
     timeout: 30000,
     stdout: 'ignore',
     stderr: 'pipe',
