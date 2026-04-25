@@ -117,7 +117,8 @@ test.describe('Kinetic App — Complétion de tâches', () => {
   });
 
   test('impossible de compléter deux fois la même tâche (guard)', async ({ page }) => {
-    const taskButton = page.locator('button:not([disabled])').first();
+    // button.w-full cible les tâches uniquement (le bouton ✕ toast n'a pas w-full)
+    const taskButton = page.locator('button.w-full').first();
     await taskButton.click();
 
     // Tenter de cliquer encore (doit être disabled maintenant)
