@@ -260,8 +260,7 @@ function nutritionPage() {
     async updateTimings() {
       const plan = this.$store.nutrition.plan;
       if (!plan) return;
-      const { mealTimingPlan } = await import('@kinetic/core');
-      window._mealTimings = mealTimingPlan(plan, this.trainingToday);
+      window._mealTimings = window.__kinetic.mealTimingPlan(plan, this.trainingToday);
     },
 
     async logFood() {

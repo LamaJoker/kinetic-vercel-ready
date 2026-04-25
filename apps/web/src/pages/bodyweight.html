@@ -164,8 +164,7 @@ function bodyweightPage() {
     },
 
     async init() {
-      const { getDeps } = await import('/src/deps.js');
-      const deps = await getDeps();
+      const deps = await window.__kinetic.getDeps();
       const stored = await deps.storage.get('kinetic:bodyweight:entries');
       this.entries = Array.isArray(stored) ? stored : [];
     },
@@ -185,8 +184,7 @@ function bodyweightPage() {
       } else {
         this.entries = [...this.entries, entry].sort((a, b) => a.date.localeCompare(b.date));
       }
-      const { getDeps } = await import('/src/deps.js');
-      const deps = await getDeps();
+      const deps = await window.__kinetic.getDeps();
       await deps.storage.set('kinetic:bodyweight:entries', this.entries);
       this.newWeight = null;
       this.newBf = null;
@@ -198,8 +196,7 @@ function bodyweightPage() {
 
     async removeEntry(date) {
       this.entries = this.entries.filter(e => e.date !== date);
-      const { getDeps } = await import('/src/deps.js');
-      const deps = await getDeps();
+      const deps = await window.__kinetic.getDeps();
       await deps.storage.set('kinetic:bodyweight:entries', this.entries);
     },
 

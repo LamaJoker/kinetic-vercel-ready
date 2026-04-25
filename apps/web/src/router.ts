@@ -96,6 +96,16 @@ async function render(path: string): Promise<void> {
   host.style.opacity = '0.6';
   host.innerHTML = resolveHtml(normalizedPath);
 
+  // Les <script> injectés via innerHTML ne s'exécutent pas (spec HTML5).
+  // On les recrée en tant que vrais éléments DOM pour définir les fonctions globales
+  // (profilePage, bodyweightPage, etc.) avant qu'Alpine.initTree les évalue.
+  host.querySelectorAll<HTMLScriptElement>('script').forEach((old) => {
+    const s = document.createElement('script');
+    s.textContent = old.textContent ?? '';
+    document.head.appendChild(s);
+    document.head.removeChild(s);
+  });
+
   try {
     Alpine.initTree(host);
   } catch (e) {

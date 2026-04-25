@@ -176,20 +176,18 @@
             </button>
             <div class="text-right space-y-0.5">
               <!-- Suggestion auto-progression -->
-              <template x-if="progressionSuggestion(entry.exerciseId) as sugg">
-                <div>
-                  <template x-if="sugg && sugg.strategy !== 'first_time'">
-                    <p class="text-xs leading-tight">
-                      <span class="text-gray-400">Cible : </span>
-                      <span class="text-white font-bold" x-text="sugg.suggestedWeight + ' kg × ' + sugg.suggestedReps"></span>
-                      <span class="text-gray-500" x-text="' @ RPE ' + sugg.suggestedRpe"></span>
-                    </p>
-                  </template>
-                  <template x-if="sugg">
-                    <p class="text-xs text-gray-500 leading-tight max-w-[160px] text-right" x-text="sugg.rationale"></p>
-                  </template>
-                </div>
+              <template x-if="progressionSuggestion(entry.exerciseId)?.strategy !== 'first_time' && progressionSuggestion(entry.exerciseId) !== null">
+                <p class="text-xs leading-tight">
+                  <span class="text-gray-400">Cible : </span>
+                  <span class="text-white font-bold"
+                        x-text="(progressionSuggestion(entry.exerciseId)?.suggestedWeight ?? 0) + ' kg × ' + (progressionSuggestion(entry.exerciseId)?.suggestedReps ?? 0)"></span>
+                  <span class="text-gray-500"
+                        x-text="' @ RPE ' + (progressionSuggestion(entry.exerciseId)?.suggestedRpe ?? 0)"></span>
+                </p>
               </template>
+              <p class="text-xs text-gray-500 leading-tight max-w-[160px] text-right"
+                 x-show="progressionSuggestion(entry.exerciseId) !== null"
+                 x-text="progressionSuggestion(entry.exerciseId)?.rationale ?? ''"></p>
               <!-- PR potentiel -->
               <p class="text-xs text-kinetic-gold" x-show="isNewPr(entry.exerciseId, draft.weightKg, draft.reps)">
                 ⭐ Nouveau PR potentiel !

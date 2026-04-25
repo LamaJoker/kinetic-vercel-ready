@@ -217,8 +217,7 @@ function profilePage() {
     exportLoading:    false,
 
     async init() {
-      const { getDeps } = await import('/src/deps.js');
-      const deps = await getDeps();
+      const deps = await window.__kinetic.getDeps();
 
       const profile = await deps.storage.get('kinetic:profile');
       if (profile && typeof profile === 'object') {
@@ -241,8 +240,7 @@ function profilePage() {
     async saveName() {
       const name = this.displayNameInput.trim().slice(0, 40);
       this.displayName = name;
-      const { getDeps } = await import('/src/deps.js');
-      const deps = await getDeps();
+      const deps = await window.__kinetic.getDeps();
       const profile = (await deps.storage.get('kinetic:profile')) ?? {};
       await deps.storage.set('kinetic:profile', { ...profile, displayName: name });
       const now = new Date();
@@ -253,14 +251,12 @@ function profilePage() {
     async exportJson() {
       this.exportLoading = true;
       try {
-        const { getDeps } = await import('/src/deps.js');
-        const deps = await getDeps();
+        const deps = await window.__kinetic.getDeps();
         const [sessions, exercises] = await Promise.all([
           deps.storage.get('kinetic:sessions'),
           deps.storage.get('kinetic:exercises'),
         ]);
-        const { exportAsJson } = await import('/src/lib/training/export.js');
-        exportAsJson(Array.isArray(sessions) ? sessions : [], Array.isArray(exercises) ? exercises : []);
+        window.__kinetic.exportAsJson(Array.isArray(sessions) ? sessions : [], Array.isArray(exercises) ? exercises : []);
       } catch (err) {
         console.error('[profile] exportJson failed:', err);
       } finally {
@@ -271,14 +267,12 @@ function profilePage() {
     async exportCsv() {
       this.exportLoading = true;
       try {
-        const { getDeps } = await import('/src/deps.js');
-        const deps = await getDeps();
+        const deps = await window.__kinetic.getDeps();
         const [sessions, exercises] = await Promise.all([
           deps.storage.get('kinetic:sessions'),
           deps.storage.get('kinetic:exercises'),
         ]);
-        const { exportAsCsv } = await import('/src/lib/training/export.js');
-        exportAsCsv(Array.isArray(sessions) ? sessions : [], Array.isArray(exercises) ? exercises : []);
+        window.__kinetic.exportAsCsv(Array.isArray(sessions) ? sessions : [], Array.isArray(exercises) ? exercises : []);
       } catch (err) {
         console.error('[profile] exportCsv failed:', err);
       } finally {
@@ -288,8 +282,7 @@ function profilePage() {
 
     async doReset() {
       this.showResetModal = false;
-      const { getDeps } = await import('/src/deps.js');
-      const deps = await getDeps();
+      const deps = await window.__kinetic.getDeps();
       await deps.storage.clear();
       Alpine.store('xp').setXp(0);
       window.dispatchEvent(new CustomEvent('kinetic:notify', {

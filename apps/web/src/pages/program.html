@@ -211,8 +211,7 @@ function programPage() {
     },
 
     async init() {
-      const { getDeps } = await import('/src/deps.js');
-      const deps = await getDeps();
+      const deps = await window.__kinetic.getDeps();
       const stored = await deps.storage.get('kinetic:program:active');
       if (stored) this.activeProgram = stored;
       const completed = await deps.storage.get('kinetic:program:completedDays:' + this.weekKey());
@@ -233,8 +232,7 @@ function programPage() {
     },
 
     async selectSplit(type) {
-      const { getDeps } = await import('/src/deps.js');
-      const deps = await getDeps();
+      const deps = await window.__kinetic.getDeps();
       const splits = {
         ppl: { name: 'Push Pull Legs', splitType: 'ppl', daysPerWeek: 6, goal: 'hypertrophie', schedule: [
           { dayOfWeek:1, label:'Lundi',    focus:'Push A',   muscleGroups:['pectoraux','épaules','triceps'], restDay:false },
@@ -280,8 +278,7 @@ function programPage() {
     },
 
     async toggleExercise(exId) {
-      const { getDeps } = await import('/src/deps.js');
-      const deps = await getDeps();
+      const deps = await window.__kinetic.getDeps();
       this.todoStatus = { ...this.todoStatus, [exId]: !(this.todoStatus[exId] ?? false) };
       await deps.storage.set('kinetic:program:todoStatus:' + this.todayKey(), this.todoStatus);
       // Marquer le jour comme fait si tous les exercices sont cochés

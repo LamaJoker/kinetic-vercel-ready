@@ -15,6 +15,10 @@ import { dashboard }  from './pages/dashboard.page';
 import { seances }    from './pages/seances.page';
 import { onboarding } from './pages/onboarding.page';
 
+import { getDeps }                     from './deps';
+import { exportAsJson, exportAsCsv }   from './lib/training/export';
+import { mealTimingPlan }              from '@kinetic/core';
+
 import { initRouter } from './router';
 import './styles.css';
 
@@ -42,6 +46,12 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 
 // ─── Exposition globale Alpine ───────────────────────────────
 window.Alpine = Alpine;
+
+// ─── Globals pour scripts inline des pages HTML ──────────────
+// Les <script> injectés via innerHTML sont des scripts classiques qui ne
+// peuvent pas faire `import(...)` de modules hashés par Vite. On expose les
+// helpers nécessaires sur window.__kinetic.
+window.__kinetic = { getDeps, exportAsJson, exportAsCsv, mealTimingPlan };
 
 // ─── Démarrage ───────────────────────────────────────────────
 Alpine.start();

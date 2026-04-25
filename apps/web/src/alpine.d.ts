@@ -26,4 +26,15 @@ declare module 'alpinejs' {
 // Extend Window so `window.Alpine` doesn't error in router.ts
 interface Window {
   Alpine?: import('alpinejs').Alpine;
+  // Globals exposed for inline HTML page scripts (classic scripts that cannot
+  // use module imports). Set once in main.ts before the router runs.
+  __kinetic?: {
+    getDeps: () => Promise<unknown>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    exportAsJson: (...args: any[]) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    exportAsCsv: (...args: any[]) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mealTimingPlan: (...args: any[]) => unknown[];
+  };
 }
