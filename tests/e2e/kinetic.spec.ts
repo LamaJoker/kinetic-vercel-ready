@@ -57,11 +57,12 @@ async function gotoApp(page: Page, path: string = '/'): Promise<void> {
     };
     open.onerror = (): void => resolve();
   }));
-  if (path === '/') {
-    await page.reload();
-  } else {
-    await page.goto(`http://localhost:3000${path}`);
-  }
+  // Ne PAS faire reload() : après le 1er goto('/'), le router a fait
+  // replaceState('/onboarding') donc reload() recharge /onboarding (qui est
+  // dans ONBOARDING_EXEMPT et ne re-redirige pas vers le dashboard).
+  // On force un nouveau goto vers le chemin cible pour que le router
+  // re-évalue depuis zéro avec le profil maintenant présent en IDB.
+  await page.goto(`http://localhost:3000${path}`);
   await waitForAlpineInit(page);
 }
 // ──────────────────────────────────────────────────────────────
