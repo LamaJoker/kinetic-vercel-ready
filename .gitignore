@@ -6,5 +6,7 @@ dist/
 *.tsbuildinfo
 tests/coverage/
 playwright-report/
+test-results/
+tests/e2e/report/
 .DS_Store
 Thumbs.db
