@@ -27,13 +27,49 @@ async function clearAppState(page: Page): Promise<void> {
     }
   });
 }
+
+/**
+ * Charge l'app comme un utilisateur déjà onboardé.
+ *
+ * Sans profil utilisateur en IDB, le router redirige tout vers /onboarding
+ * et masque dashboard/séances/vitalité. Pour éviter cela :
+ *   1. On charge l'app une première fois (peut redirect vers /onboarding).
+ *   2. On écrit synchronement un profil dans IDB (await la fin du write).
+ *   3. On re-navigue vers la route cible : cette fois le router lit le
+ *      profil et n'effectue plus de redirect.
+ */
+async function gotoApp(page: Page, path: string = '/'): Promise<void> {
+  await page.goto('http://localhost:3000/');
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    const open = indexedDB.open('keyval-store', 1);
+    open.onupgradeneeded = (): void => {
+      try { open.result.createObjectStore('keyval'); } catch { /* déjà créé */ }
+    };
+    open.onsuccess = (): void => {
+      const db = open.result;
+      const tx = db.transaction('keyval', 'readwrite');
+      tx.objectStore('keyval').put({
+        weightKg: 75, heightCm: 175, birthYear: 1990,
+        activityLevel: 'moderate', goal: 'lean', sex: 'M',
+      }, 'kinetic:userProfile');
+      tx.oncomplete = (): void => { db.close(); resolve(); };
+      tx.onerror = (): void => { db.close(); resolve(); };
+    };
+    open.onerror = (): void => resolve();
+  }));
+  if (path === '/') {
+    await page.reload();
+  } else {
+    await page.goto(`http://localhost:3000${path}`);
+  }
+  await waitForAlpineInit(page);
+}
 // ──────────────────────────────────────────────────────────────
 
 test.describe('Kinetic App — Navigation', () => {
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000');
-    await waitForAlpineInit(page);
+    await gotoApp(page);
   });
 
   test('affiche le dashboard au chargement', async ({ page }) => {
@@ -48,7 +84,7 @@ test.describe('Kinetic App — Navigation', () => {
   });
 
   test('le bouton retour fonctionne depuis vitalité', async ({ page }) => {
-    await page.goto('http://localhost:3000/vitalite');
+    await gotoApp(page, '/vitalite');
     await page.locator('a[href="/"]').first().click();
     await expect(page).toHaveURL(/localhost:3000\/#?\/?$/);
   });
@@ -57,11 +93,7 @@ test.describe('Kinetic App — Navigation', () => {
 test.describe('Kinetic App — Complétion de tâches', () => {
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000');
-    await clearAppState(page);
-    await page.reload();
-    await waitForAlpineInit(page);
-    await page.goto('http://localhost:3000/vitalite');
+    await gotoApp(page, '/vitalite');
   });
 
   test('complète une tâche et voit le XP augmenter', async ({ page }) => {
@@ -191,8 +223,7 @@ test.describe('Kinetic App — Sécurité', () => {
 test.describe('Kinetic App — Streak', () => {
 
   test('le streak s\'affiche sur le dashboard', async ({ page }) => {
-    await page.goto('http://localhost:3000');
-    await waitForAlpineInit(page);
+    await gotoApp(page);
 
     // Le composant streak doit être visible
     const streakEl = page.locator('[x-text*="streak"], .streak, [class*="streak"]').first();
