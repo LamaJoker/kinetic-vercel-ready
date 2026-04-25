@@ -9,7 +9,11 @@
 
 export const CSP_DIRECTIVES = {
   'default-src':              ["'self'"],
-  'script-src':               ["'self'"],
+  // Alpine.js compile chaque expression `x-*` via `new AsyncFunction(...)` —
+  // CSP traite cela comme eval, donc 'unsafe-eval' est obligatoire.
+  // 'unsafe-inline' permet les <script> injectés dynamiquement par le router
+  // (scripts inline des pages HTML recréés via createElement + textContent).
+  'script-src':               ["'self'", "'unsafe-eval'", "'unsafe-inline'"],
   'style-src':                ["'self'", "'unsafe-inline'"], // Alpine inline attrs
   'img-src':                  ["'self'", 'data:', 'https:'],
   'font-src':                 ["'self'", 'data:'],
