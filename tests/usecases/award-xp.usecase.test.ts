@@ -4,8 +4,8 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { awardXp } from '@kinetic/core';
-import { makeTestDeps } from '../../helpers/stubs.js';
-import type { TestDeps } from '../../helpers/stubs.js';
+import { makeTestDeps } from '@test-helpers/stubs.ts';
+import type { TestDeps } from '@test-helpers/stubs.ts';
 
 describe('awardXp', () => {
   let deps: TestDeps;

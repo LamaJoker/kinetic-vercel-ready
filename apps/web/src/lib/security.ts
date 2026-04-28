@@ -9,15 +9,20 @@
 
 export const CSP_DIRECTIVES = {
   'default-src':              ["'self'"],
-  'script-src':               ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com'],
-  'style-src':                ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com'],
+  // Alpine.js compile chaque expression `x-*` via `new AsyncFunction(...)` —
+  // CSP traite cela comme eval, donc 'unsafe-eval' est obligatoire.
+  // 'unsafe-inline' n'est plus nécessaire : tous les <script> inline ont été
+  // migrés vers des modules .page.ts (plus aucun script inline dans les pages).
+  'script-src':               ["'self'", "'unsafe-eval'"],
+  'style-src':                ["'self'", "'unsafe-inline'"], // Alpine inline attrs
   'img-src':                  ["'self'", 'data:', 'https:'],
-  'font-src':                 ["'self'", 'https:'],
+  'font-src':                 ["'self'", 'data:'],
   'connect-src':              ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'],
   'frame-src':                ["'none'"],
   'object-src':               ["'none'"],
   'base-uri':                 ["'self'"],
   'form-action':              ["'self'"],
+  'frame-ancestors':          ["'none'"],
   'upgrade-insecure-requests': [],
 } as const;
 

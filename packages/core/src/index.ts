@@ -7,6 +7,10 @@ export type {
   NotificationPayload,
   NotificationKind,
 }                                             from './ports/notifier.port.js';
+export type {
+  DailyLogSyncPort,
+  DailyLogEntry,
+}                                             from './ports/daily-log-sync.port.js';
 
 // ─── Domain (logique pure) ────────────────────────────────────
 export {
@@ -44,6 +48,15 @@ export type {
   TaskValidationError,
 }                                             from './domain/task.domain.js';
 
+// Nouveaux domaines Nutrition & Program
+export * from './domain/nutrition.domain.js';
+export * from './domain/program.domain.js';
+
+// Progression & Analytics (v2 — suivi intelligent)
+export * from './domain/progression.domain.js';
+export * from './domain/analytics.domain.js';
+export * from './domain/goals.domain.js';
+
 // ─── Use Cases (orchestration) ────────────────────────────────
 export { completeTask_usecase }               from './usecases/complete-task.usecase.js';
 export type {
@@ -64,3 +77,9 @@ export type {
   ResetDailyTasksDeps,
   ResetDailyTasksResult,
 }                                             from './usecases/reset-daily-tasks.usecase.js';
+
+export { syncDailyLog }                       from './usecases/sync-daily-log.usecase.js';
+export type {
+  SyncDailyLogDeps,
+  SyncDailyLogResult,
+}                                             from './usecases/sync-daily-log.usecase.js';

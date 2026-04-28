@@ -27,6 +27,13 @@ const KEY_XP           = 'kinetic:xp';
 const KEY_STREAK       = 'kinetic:streak';
 const KEY_COMPLETED    = 'kinetic:completed-keys';
 
+/** Daily XP counter — separate from cumulative `kinetic:xp` so we can
+ *  report accurate per-day XP in the daily log. Reset implicitly every day
+ *  by namespacing the key with the ISO date. */
+function dailyXpKeyFor(date: string): string {
+  return `kinetic:xp:earned:${date}`;
+}
+
 export async function completeTask_usecase(
   deps:  CompleteTaskDeps,
   input: CompleteTaskInput,
@@ -57,8 +64,17 @@ export async function completeTask_usecase(
 
   const newStreak = processActivity(currentStreak, today);
 
-  await storage.set(KEY_XP, { xp: newXp });
-  await storage.set(KEY_STREAK, newStreak);
+  // Track XP earned today so daily-log sync can report per-day stats
+  // accurately (instead of cumulative XP).
+  const dailyXpKey   = dailyXpKeyFor(today);
+  const xpEarnedToday = ((await storage.get<{ xp: number }>(dailyXpKey))?.xp ?? 0) + task.xp;
+
+  // Idempotency key written LAST: a crash between writes leaves the user
+  // able to retry, but `completedKeys` already containing `idempotencyKey`
+  // would silently skip XP. Persisting the key last keeps the user safe.
+  await storage.set(KEY_XP,      { xp: newXp });
+  await storage.set(KEY_STREAK,  newStreak);
+  await storage.set(dailyXpKey,  { xp: xpEarnedToday });
   await storage.set(KEY_COMPLETED, [...completedKeys, idempotencyKey]);
 
   notifier.notify({

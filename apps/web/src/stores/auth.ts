@@ -1,44 +1,70 @@
-import Alpine from 'alpinejs';
-import type { AuthChangeEvent, Session } from '@supabase/supabase-js'; // ← Import des types
+/**
+ * Store Alpine `auth` — état de session Supabase.
+ * FIX: kinetic:auth-ready dispatché dans tous les cas (guest + Supabase)
+ */
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import {
   supabase, getAuthUser, signInWithEmail,
   signInWithGitHub, signInWithGoogle, signOut,
+  authRateLimiter,
 } from '@kinetic/adapters-web';
-import { authRateLimiter } from '@kinetic/adapters-web';
-import { resetDeps } from '../deps.js';
+import type { AuthUser } from '@kinetic/adapters-web';
+import { resetDeps } from '../deps';
+
+const GUEST_MODE = supabase === null
+  || (import.meta.env['VITE_SUPABASE_URL'] as string | undefined)?.includes('xxxxxxxxxxxxxxxxxxxx')
+  || false;
+
+function dispatchAuthReady(): void {
+  window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
+}
 
 export function authStore() {
   return {
-    user: null as { id: string; email: string | null; full_name: string | null; avatar_url: string | null } | null,
+    user:          null as AuthUser | null,
     loading:       true,
-    error:          null as string | null,
+    error:         null as string | null,
     magicLinkSent: false,
     emailInput:    '',
-    emailMode:      false,
 
-    async init() {
-      this.user    = await getAuthUser();
-      this.loading = false;
-
-      if (!supabase) return;
-
-      // Correction du typage implicite 'any'
-      supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
-        if (session?.user) {
-          this.user = await getAuthUser();
-        } else {
-          this.user = null;
-          resetDeps();
+    async init(): Promise<void> {
+      try {
+        if (GUEST_MODE) {
+          this.user = { id: 'guest', email: null, full_name: 'Invité', avatar_url: null };
+          return;
         }
+
+        // Timeout 3s sur getAuthUser pour éviter le blocage
+        const userPromise = getAuthUser();
+        const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+        const user = await Promise.race([userPromise, timeout]);
+        this.user = user;
+
+        supabase!.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
+          if (session?.user) {
+            this.user = await getAuthUser();
+          } else {
+            this.user = null;
+            resetDeps();
+          }
+          this.loading = false;
+          dispatchAuthReady();
+        });
+      } catch (err) {
+        console.error('[auth] init failed:', err);
+        this.error = err instanceof Error ? err.message : 'Erreur auth';
+        this.user = { id: 'guest', email: null, full_name: 'Invité', avatar_url: null };
+      } finally {
         this.loading = false;
-      });
+        dispatchAuthReady();
+      }
     },
 
-    async loginWithEmail() {
+    async loginWithEmail(): Promise<void> {
       this.error = null;
-      const email = this.emailInput.trim();
+      const email = this.emailInput.trim().toLowerCase();
 
-      if (!email || !email.includes('@')) {
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         this.error = 'Adresse email invalide';
         return;
       }
@@ -53,12 +79,12 @@ export function authStore() {
         authRateLimiter.recordMagicLink(email);
         await signInWithEmail(email);
         this.magicLinkSent = true;
-      } catch (e) {
-        this.error = e instanceof Error ? e.message : 'Erreur inconnue';
+      } catch (err) {
+        this.error = err instanceof Error ? err.message : 'Erreur inconnue';
       }
     },
 
-    async loginWithGitHub() {
+    async loginWithGitHub(): Promise<void> {
       this.error = null;
       if (!authRateLimiter.canOAuth()) {
         this.error = 'Trop de tentatives. Attends un moment.';
@@ -67,12 +93,12 @@ export function authStore() {
       try {
         authRateLimiter.recordOAuth();
         await signInWithGitHub();
-      } catch (e) {
-        this.error = e instanceof Error ? e.message : 'Erreur';
+      } catch (err) {
+        this.error = err instanceof Error ? err.message : 'Erreur GitHub';
       }
     },
 
-    async loginWithGoogle() {
+    async loginWithGoogle(): Promise<void> {
       this.error = null;
       if (!authRateLimiter.canOAuth()) {
         this.error = 'Trop de tentatives. Attends un moment.';
@@ -81,23 +107,23 @@ export function authStore() {
       try {
         authRateLimiter.recordOAuth();
         await signInWithGoogle();
-      } catch (e) {
-        this.error = e instanceof Error ? e.message : 'Erreur';
+      } catch (err) {
+        this.error = err instanceof Error ? err.message : 'Erreur Google';
       }
     },
 
-    async logout() {
+    async logout(): Promise<void> {
       await signOut();
-      window.location.hash = '/login';
+      window.location.href = '/login';
     },
 
-    get isAuthenticated() { return this.user !== null; },
-    get initials() {
-      if (!this.user?.full_name && !this.user?.email) return '?';
-      const name = this.user.full_name ?? this.user.email ?? '';
-      return name.split(' ').map((n: string) => n[0] ?? '').join('').toUpperCase().slice(0, 2);
+    get isAuthenticated(): boolean {
+      return this.user !== null;
+    },
+
+    get initials(): string {
+      const name = this.user?.full_name ?? this.user?.email ?? '?';
+      return name.split(/\s+|@/).filter(Boolean).map((n) => n[0] ?? '').join('').toUpperCase().slice(0, 2) || '?';
     },
   };
 }
-
-Alpine.store('auth', authStore());

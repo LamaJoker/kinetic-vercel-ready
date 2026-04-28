@@ -1,0 +1,121 @@
+import type { Exercise } from './types';
+import type { WorkoutTemplate } from './types';
+
+export const DEFAULT_EXERCISES: readonly Exercise[] = [
+  { id: 'sq',          name: 'Back Squat',           muscles: ['quads', 'glutes'],          equipment: 'barbell',    incrementKg: 2.5 },
+  { id: 'bp',          name: 'Bench Press',           muscles: ['chest', 'triceps'],         equipment: 'barbell',    incrementKg: 2.5 },
+  { id: 'dl',          name: 'Deadlift',              muscles: ['posterior', 'back'],        equipment: 'barbell',    incrementKg: 5   },
+  { id: 'ohp',         name: 'Overhead Press',        muscles: ['shoulders', 'triceps'],     equipment: 'barbell',    incrementKg: 2.5 },
+  { id: 'row',         name: 'Barbell Row',           muscles: ['back'],                     equipment: 'barbell',    incrementKg: 2.5 },
+  { id: 'ibp',         name: 'Incline Bench Press',   muscles: ['chest', 'triceps'],         equipment: 'barbell',    incrementKg: 2.5 },
+  { id: 'rdl',         name: 'Romanian Deadlift',     muscles: ['hamstrings', 'glutes'],     equipment: 'barbell',    incrementKg: 2.5 },
+  { id: 'hipthrust',   name: 'Hip Thrust',            muscles: ['glutes'],                   equipment: 'barbell',    incrementKg: 5   },
+  { id: 'pullup',      name: 'Pull-up',               muscles: ['back', 'biceps'],           equipment: 'bodyweight', incrementKg: 2.5 },
+  { id: 'dip',         name: 'Dip',                   muscles: ['chest', 'triceps'],         equipment: 'bodyweight', incrementKg: 2.5 },
+  { id: 'pushup',      name: 'Push-up',               muscles: ['chest', 'triceps'],         equipment: 'bodyweight', incrementKg: 2.5 },
+  { id: 'curl',        name: 'Dumbbell Curl',         muscles: ['biceps'],                   equipment: 'dumbbell',   incrementKg: 1   },
+  { id: 'hammercurl',  name: 'Hammer Curl',           muscles: ['biceps', 'brachialis'],     equipment: 'dumbbell',   incrementKg: 1   },
+  { id: 'dbbp',        name: 'Dumbbell Bench Press',  muscles: ['chest', 'triceps'],         equipment: 'dumbbell',   incrementKg: 2   },
+  { id: 'latraise',    name: 'Lateral Raise',         muscles: ['shoulders'],                equipment: 'dumbbell',   incrementKg: 1   },
+  { id: 'lat',         name: 'Lat Pulldown',          muscles: ['back'],                     equipment: 'cable',      incrementKg: 2.5 },
+  { id: 'triext',      name: 'Triceps Pushdown',      muscles: ['triceps'],                  equipment: 'cable',      incrementKg: 2.5 },
+  { id: 'cableRow',    name: 'Seated Cable Row',      muscles: ['back'],                     equipment: 'cable',      incrementKg: 2.5 },
+  { id: 'facepull',    name: 'Face Pull',             muscles: ['rear_delts', 'upper_back'], equipment: 'cable',      incrementKg: 2.5 },
+  { id: 'fly',         name: 'Cable Fly',             muscles: ['chest'],                    equipment: 'cable',      incrementKg: 2.5 },
+  { id: 'legpress',    name: 'Leg Press',             muscles: ['quads', 'glutes'],          equipment: 'machine',    incrementKg: 5   },
+  { id: 'legcurl',     name: 'Leg Curl',              muscles: ['hamstrings'],               equipment: 'machine',    incrementKg: 2.5 },
+  { id: 'calfraise',   name: 'Calf Raise',            muscles: ['calves'],                   equipment: 'machine',    incrementKg: 2.5 },
+  { id: 'plank',       name: 'Plank',                 muscles: ['core'],                     equipment: 'bodyweight', incrementKg: 2.5 },
+];
+
+export const DEFAULT_TEMPLATES: readonly WorkoutTemplate[] = [
+  {
+    id: 'tpl-push-a',
+    name: 'Push A',
+    createdAt: new Date(0).toISOString(),
+    exercises: [
+      { exerciseId: 'bp',      sets: 4, targetReps: 8,  targetRpe: 8 },
+      { exerciseId: 'ohp',     sets: 3, targetReps: 8,  targetRpe: 8 },
+      { exerciseId: 'dip',     sets: 3, targetReps: 10, targetRpe: 8 },
+    ],
+  },
+  {
+    id: 'tpl-pull-a',
+    name: 'Pull A',
+    createdAt: new Date(0).toISOString(),
+    exercises: [
+      { exerciseId: 'row',     sets: 4, targetReps: 8,  targetRpe: 8 },
+      { exerciseId: 'lat',     sets: 3, targetReps: 10, targetRpe: 8 },
+      { exerciseId: 'curl',    sets: 3, targetReps: 12, targetRpe: 8 },
+    ],
+  },
+  {
+    id: 'tpl-legs-a',
+    name: 'Legs A',
+    createdAt: new Date(0).toISOString(),
+    exercises: [
+      { exerciseId: 'sq',      sets: 4, targetReps: 6,  targetRpe: 8 },
+      { exerciseId: 'legpress',sets: 3, targetReps: 12, targetRpe: 8 },
+      { exerciseId: 'dl',      sets: 2, targetReps: 5,  targetRpe: 8 },
+    ],
+  },
+  {
+    id: 'tpl-push-b',
+    name: 'Push B',
+    createdAt: new Date(0).toISOString(),
+    exercises: [
+      { exerciseId: 'ibp',     sets: 4, targetReps: 10, targetRpe: 8 },
+      { exerciseId: 'dbbp',    sets: 3, targetReps: 12, targetRpe: 8 },
+      { exerciseId: 'fly',     sets: 3, targetReps: 15, targetRpe: 8 },
+      { exerciseId: 'latraise',sets: 4, targetReps: 15, targetRpe: 8 },
+      { exerciseId: 'triext',  sets: 3, targetReps: 12, targetRpe: 8 },
+    ],
+  },
+  {
+    id: 'tpl-pull-b',
+    name: 'Pull B',
+    createdAt: new Date(0).toISOString(),
+    exercises: [
+      { exerciseId: 'pullup',  sets: 4, targetReps: 8,  targetRpe: 8 },
+      { exerciseId: 'cableRow',sets: 3, targetReps: 12, targetRpe: 8 },
+      { exerciseId: 'facepull',sets: 3, targetReps: 15, targetRpe: 8 },
+      { exerciseId: 'hammercurl', sets: 3, targetReps: 12, targetRpe: 8 },
+    ],
+  },
+  {
+    id: 'tpl-legs-b',
+    name: 'Legs B',
+    createdAt: new Date(0).toISOString(),
+    exercises: [
+      { exerciseId: 'rdl',     sets: 4, targetReps: 10, targetRpe: 8 },
+      { exerciseId: 'hipthrust',sets: 4, targetReps: 12, targetRpe: 8 },
+      { exerciseId: 'legcurl', sets: 3, targetReps: 12, targetRpe: 8 },
+      { exerciseId: 'calfraise',sets: 4, targetReps: 15, targetRpe: 8 },
+    ],
+  },
+  {
+    id: 'tpl-upper-a',
+    name: 'Upper A',
+    createdAt: new Date(0).toISOString(),
+    exercises: [
+      { exerciseId: 'bp',      sets: 4, targetReps: 8,  targetRpe: 8 },
+      { exerciseId: 'row',     sets: 4, targetReps: 8,  targetRpe: 8 },
+      { exerciseId: 'ohp',     sets: 3, targetReps: 10, targetRpe: 8 },
+      { exerciseId: 'lat',     sets: 3, targetReps: 10, targetRpe: 8 },
+      { exerciseId: 'curl',    sets: 3, targetReps: 12, targetRpe: 8 },
+      { exerciseId: 'triext',  sets: 3, targetReps: 12, targetRpe: 8 },
+    ],
+  },
+  {
+    id: 'tpl-fullbody-a',
+    name: 'Full Body',
+    createdAt: new Date(0).toISOString(),
+    exercises: [
+      { exerciseId: 'sq',      sets: 3, targetReps: 8,  targetRpe: 8 },
+      { exerciseId: 'bp',      sets: 3, targetReps: 8,  targetRpe: 8 },
+      { exerciseId: 'row',     sets: 3, targetReps: 8,  targetRpe: 8 },
+      { exerciseId: 'ohp',     sets: 3, targetReps: 8,  targetRpe: 8 },
+      { exerciseId: 'dl',      sets: 2, targetReps: 5,  targetRpe: 8 },
+    ],
+  },
+];

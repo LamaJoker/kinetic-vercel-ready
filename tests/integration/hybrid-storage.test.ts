@@ -1,12 +1,27 @@
 /**
  * tests/integration/hybrid-storage.test.ts
  *
- * Tests d'intégration du HybridStorage.
- * Stratégie : mock le remote Supabase, utilise un InMemoryStorage local.
+ * Tests d'intégration du HybridStorage RÉEL (importé du package),
+ * pas d'une copie inline qui peut diverger silencieusement.
+ *
+ * Stratégie : InMemoryStorage côté local et remote, mock de window.online
+ * via un jsdom-light minimal.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { StoragePort } from '@kinetic/core';
+import { HybridStorage } from '@kinetic/adapters-web';
+
+// jsdom n'est pas chargé dans cet env vitest — on patch les globals minimums
+// dont HybridStorage a besoin (navigator.onLine, window.addEventListener).
+beforeEach(() => {
+  (globalThis as any).navigator ??= { onLine: true };
+  (globalThis as any).navigator.onLine = true;
+  (globalThis as any).window ??= {
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  };
+});
 
 // ─── InMemoryStorage — remplace IDB en test ──────────────────────────────
 class InMemoryStorage implements StoragePort {
@@ -34,41 +49,6 @@ class InMemoryStorage implements StoragePort {
 
   get size(): number {
     return this.store.size;
-  }
-}
-// ─────────────────────────────────────────────────────────────────────────
-
-// ─── HybridStorage inline (copie de packages/adapters-web/src/supabase/HybridStorage.ts)
-class HybridStorage implements StoragePort {
-  constructor(
-    private readonly local: StoragePort,
-    private readonly remote: StoragePort,
-  ) {}
-
-  async get<T>(key: string): Promise<T | null> {
-    return this.local.get<T>(key);
-  }
-
-  async set<T>(key: string, value: T): Promise<void> {
-    await this.local.set(key, value);
-    // fire-and-forget
-    this.remote.set(key, value).catch((err: unknown) => {
-      console.warn('[HybridStorage] remote sync failed', err);
-    });
-  }
-
-  async remove(key: string): Promise<void> {
-    await this.local.remove(key);
-    this.remote.remove(key).catch(() => {});
-  }
-
-  async keys(): Promise<readonly string[]> {
-    return this.local.keys();
-  }
-
-  async clear(): Promise<void> {
-    await this.local.clear();
-    this.remote.clear().catch(() => {});
   }
 }
 // ─────────────────────────────────────────────────────────────────────────
@@ -121,10 +101,8 @@ describe('HybridStorage', () => {
       await expect(hybrid.set('key', 'value')).resolves.toBeUndefined();
 
       await new Promise((r) => setTimeout(r, 10));
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[HybridStorage]'),
-        expect.anything()
-      );
+      const calls = consoleSpy.mock.calls.flat().map(String).join(' ');
+      expect(calls).toContain('[HybridStorage]');
       consoleSpy.mockRestore();
     });
   });
@@ -165,11 +143,80 @@ describe('HybridStorage', () => {
     });
 
     it('les écritures fonctionnent en mode offline (local uniquement)', async () => {
+      (globalThis as any).navigator.onLine = false;
       vi.spyOn(remote, 'set').mockRejectedValue(new Error('Offline'));
 
       await hybrid.set('offline-data', { xp: 100 });
       const data = await hybrid.get<{ xp: number }>('offline-data');
       expect(data?.xp).toBe(100);
+    });
+  });
+
+  describe('syncFromRemote (anti-perte de données)', () => {
+    it("ne ré-écrit PAS les clés déjà présentes en local (mode défaut)", async () => {
+      // Scénario du bug rapporté : utilisateur sauvegarde une séance
+      // localement, puis recharge la page avant que l'upsert remote ne soit
+      // visible. syncFromRemote ne doit pas restaurer la version stale.
+      await local.set('kinetic:training:sessions', [{ id: 'fresh', name: 'Nouvelle' }]);
+      await remote.set('kinetic:training:sessions', [{ id: 'old', name: 'Ancienne' }]);
+
+      await hybrid.syncFromRemote();
+
+      const value = await hybrid.get<Array<{ id: string }>>('kinetic:training:sessions');
+      expect(value).toEqual([{ id: 'fresh', name: 'Nouvelle' }]);
+    });
+
+    it('pull les clés MANQUANTES en local (cas nouvel appareil)', async () => {
+      await remote.set('kinetic:userProfile', { name: 'Val' });
+      await remote.set('kinetic:training:sessions', [{ id: 's1' }]);
+      // Le local n'a rien — premier sign-in sur un nouvel appareil
+
+      await hybrid.syncFromRemote();
+
+      expect(await hybrid.get('kinetic:userProfile')).toEqual({ name: 'Val' });
+      expect(await hybrid.get('kinetic:training:sessions')).toEqual([{ id: 's1' }]);
+    });
+
+    it("force: true écrase explicitement le local (bouton Restaurer)", async () => {
+      await local.set('kinetic:training:sessions', [{ id: 'local-only' }]);
+      await remote.set('kinetic:training:sessions', [{ id: 'remote-version' }]);
+
+      await hybrid.syncFromRemote({ force: true });
+
+      expect(await hybrid.get('kinetic:training:sessions'))
+        .toEqual([{ id: 'remote-version' }]);
+    });
+
+    it("ignore le flag de sync interne lors de la lecture des clés", async () => {
+      await remote.set('kinetic:training:sessions', [{ id: 's1' }]);
+
+      await hybrid.syncFromRemote();
+
+      const keys = await hybrid.keys();
+      // Le flag interne est OK (peut exister) — il ne doit juste pas être
+      // remonté côté UI ni déclencher d'erreur. Vérification indirecte :
+      // la séance a bien été pullée.
+      expect(keys).toContain('kinetic:training:sessions');
+    });
+
+    it("est idempotent : 2 appels successifs ne corrompent pas le local", async () => {
+      await local.set('kinetic:training:sessions', [{ id: 'fresh' }]);
+      await remote.set('kinetic:training:sessions', [{ id: 'old' }]);
+
+      await hybrid.syncFromRemote();
+      await hybrid.syncFromRemote();
+
+      expect(await hybrid.get('kinetic:training:sessions'))
+        .toEqual([{ id: 'fresh' }]);
+    });
+
+    it("ne fait rien si offline", async () => {
+      (globalThis as any).navigator.onLine = false;
+      await remote.set('kinetic:training:sessions', [{ id: 's1' }]);
+
+      await hybrid.syncFromRemote();
+
+      expect(await hybrid.get('kinetic:training:sessions')).toBeNull();
     });
   });
 });

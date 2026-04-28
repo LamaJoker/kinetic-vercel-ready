@@ -2,22 +2,23 @@
  * apps/web/src/lib/sync.ts
  *
  * CRDT Vector Clock pour la résolution de conflits multi-device.
+ *
  * Stratégie : Last-Write-Wins avec vecteur d'horloge.
+ * Chaque device a un ID unique. Les conflits sont résolus
+ * par la valeur avec le timestamp logique le plus élevé.
  */
 
-import type { StoragePort } from '@kinetic/core';
-
-export type DeviceId = string;
+export type DeviceId    = string;
 export type VectorClock = Record<DeviceId, number>;
 
 export interface SyncedValue<T> {
-  value: T;
-  clock: VectorClock;
+  value:    T;
+  clock:    VectorClock;
   deviceId: DeviceId;
-  wallTime: number; // Timestamp réel pour tiebreak (LWW)
+  wallTime: number;
 }
 
-// ─── Horloges Vectorielles ────────────────────────────────────────
+// ─── Vector Clock Operations ──────────────────────────────────
 
 export function createClock(deviceId: DeviceId): VectorClock {
   return { [deviceId]: 0 };
@@ -38,35 +39,43 @@ export function mergeClock(a: VectorClock, b: VectorClock): VectorClock {
   return merged;
 }
 
+/**
+ * compareClocks — ordre causal entre deux horloges.
+ *
+ * Sémantique :
+ *   'before'     → a est causalement AVANT b  (a ≤ b sur tous les devices, strict sur au moins un)
+ *   'after'      → a est causalement APRÈS b  (b ≤ a sur tous les devices, strict sur au moins un)
+ *   'equal'      → horloges identiques
+ *   'concurrent' → ni l'un ni l'autre ne domine
+ */
 export type CausalOrder = 'before' | 'after' | 'concurrent' | 'equal';
 
-/**
- * Compare deux horloges pour déterminer leur relation causale.
- */
 export function compareClocks(a: VectorClock, b: VectorClock): CausalOrder {
   const allDevices = new Set([...Object.keys(a), ...Object.keys(b)]);
 
-  let aLeqB = true; // a <= b
-  let bLeqA = true; // b <= a
+  let aLessOrEqual = true; // a[d] <= b[d] pour tout d → a est "avant ou égal" à b
+  let bLessOrEqual = true; // b[d] <= a[d] pour tout d → b est "avant ou égal" à a
 
   for (const device of allDevices) {
     const aTime = a[device] ?? 0;
     const bTime = b[device] ?? 0;
-    if (aTime > bTime) aLeqB = false;
-    if (bTime > aTime) bLeqA = false;
+    if (aTime > bTime) bLessOrEqual = false; // a a avancé sur ce device → b n'est plus ≤ a
+    if (bTime > aTime) aLessOrEqual = false; // b a avancé sur ce device → a n'est plus ≤ b
   }
 
-  if (aLeqB && bLeqA) return 'equal';
-  if (aLeqB) return 'before';
-  if (bLeqA) return 'after';
+  if (aLessOrEqual && bLessOrEqual) return 'equal';
+  if (aLessOrEqual) return 'before'; // a ≤ b partout → a est dans le passé de b
+  if (bLessOrEqual) return 'after';  // b ≤ a partout → a est dans le futur de b
   return 'concurrent';
 }
 
 /**
- * Résout le conflit entre un état local et un état distant.
+ * resolveConflict — choisit la valeur gagnante entre deux états.
+ * En cas de concurrence vraie : wallTime gagne (LWW).
+ * Tiebreak final : ordre lexicographique du deviceId (déterministe).
  */
 export function resolveConflict<T>(
-  local: SyncedValue<T>,
+  local:  SyncedValue<T>,
   remote: SyncedValue<T>,
 ): SyncedValue<T> {
   const order = compareClocks(local.clock, remote.clock);
@@ -80,103 +89,91 @@ export function resolveConflict<T>(
       return remote;
 
     case 'concurrent':
-      // En cas de concurrence pure, on utilise le temps réel (Last-Write-Wins)
-      if (local.wallTime > remote.wallTime) return local;
-      if (remote.wallTime > local.wallTime) return remote;
-      // Tiebreak déterministe par ID de device en dernier recours
+      if (local.wallTime  > remote.wallTime) return local;
+      if (remote.wallTime > local.wallTime)  return remote;
       return local.deviceId > remote.deviceId ? local : remote;
   }
 }
 
-// ─── Identité du Device ───────────────────────────────────────────
+// ─── Device Identity ──────────────────────────────────────────
 
 const DEVICE_ID_KEY = 'kinetic:deviceId';
 
 export function getOrCreateDeviceId(): DeviceId {
-  let id = typeof window !== 'undefined' ? localStorage.getItem(DEVICE_ID_KEY) : null;
+  let id = localStorage.getItem(DEVICE_ID_KEY);
   if (!id) {
     id = crypto.randomUUID();
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(DEVICE_ID_KEY, id);
-    }
+    localStorage.setItem(DEVICE_ID_KEY, id);
   }
   return id;
 }
 
-// ─── Sync Manager ─────────────────────────────────────────────────
+// ─── Sync Manager ─────────────────────────────────────────────
 
-const SYNC_META_KEY = 'kinetic:sync:meta';
+import type { StoragePort } from '@kinetic/core';
+
+const SYNC_META_KEY      = 'kinetic:sync:meta';
 const PENDING_WRITES_KEY = 'kinetic:sync:pending';
 
 interface SyncMeta {
   lastSyncAt: string;
-  deviceId: DeviceId;
-  clock: VectorClock;
+  deviceId:   DeviceId;
+  clock:      VectorClock;
 }
 
 interface PendingWrite {
-  key: string;
+  key:         string;
+  value:       unknown;
   syncedValue: SyncedValue<unknown>;
-  retries: number;
+  retries:     number;
 }
 
 export class SyncManager {
   private readonly deviceId: DeviceId;
-  private clock: VectorClock;
-  private pendingWrites = new Map<string, PendingWrite>();
-  private syncTimer: ReturnType<typeof setTimeout> | null = null;
-  private isSyncing = false;
+  private clock:             VectorClock;
+  private pendingWrites      = new Map<string, PendingWrite>();
+  private syncTimer:         ReturnType<typeof setTimeout> | null = null;
+  private isSyncing          = false;
 
   constructor(
-    private readonly local: StoragePort,
+    private readonly local:  StoragePort,
     private readonly remote: StoragePort,
   ) {
     this.deviceId = getOrCreateDeviceId();
-    this.clock = createClock(this.deviceId);
+    this.clock    = createClock(this.deviceId);
   }
 
   async initialize(): Promise<void> {
     const meta = await this.local.get<SyncMeta>(SYNC_META_KEY);
-    if (meta) {
-      this.clock = meta.clock;
-    }
+    if (meta) this.clock = meta.clock;
 
     const pending = await this.local.get<[string, PendingWrite][]>(PENDING_WRITES_KEY);
-    if (pending) {
-      this.pendingWrites = new Map(pending);
-    }
+    if (pending) this.pendingWrites = new Map(pending);
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('online', () => {
-        void this.syncFromRemote();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type === 'SYNC_REQUESTED') {
+          this.scheduleSyncFlush();
+        }
       });
-
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('message', (event) => {
-          if (event.data?.type === 'SYNC_REQUESTED') {
-            this.scheduleSyncFlush();
-          }
-        });
-      }
     }
+
+    window.addEventListener('online', () => { void this.syncFromRemote(); });
   }
 
   async write<T>(key: string, value: T): Promise<void> {
-    // Incrémenter l'horloge logique du device
     this.clock = incrementClock(this.clock, this.deviceId);
 
     const syncedValue: SyncedValue<T> = {
       value,
-      clock: { ...this.clock },
+      clock:    { ...this.clock },
       deviceId: this.deviceId,
       wallTime: Date.now(),
     };
 
-    // 1. Persistance locale immédiate
     await this.local.set(key, syncedValue);
 
-    // 2. File d'attente pour synchronisation distante
-    this.pendingWrites.set(key, { key, syncedValue, retries: 0 });
+    this.pendingWrites.set(key, { key, value, syncedValue, retries: 0 });
     await this._savePendingWrites();
 
     this.scheduleSyncFlush();
@@ -184,45 +181,42 @@ export class SyncManager {
 
   async read<T>(key: string): Promise<T | null> {
     const synced = await this.local.get<SyncedValue<T>>(key);
-    return synced ? synced.value : null;
+    return synced?.value ?? null;
   }
 
   async syncFromRemote(): Promise<void> {
-    if (this.isSyncing || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+    if (this.isSyncing) return;
     this.isSyncing = true;
 
     try {
       const remoteKeys = await this.remote.keys();
-      let workingClock = { ...this.clock };
 
-      for (const key of remoteKeys) {
-        const remoteValue = await this.remote.get<SyncedValue<unknown>>(key);
-        if (!remoteValue?.clock) continue;
+      await Promise.all(
+        remoteKeys.map(async (key) => {
+          const remoteValue = await this.remote.get<SyncedValue<unknown>>(key);
+          if (!remoteValue?.clock) return;
 
-        const localValue = await this.local.get<SyncedValue<unknown>>(key);
+          const localValue = await this.local.get<SyncedValue<unknown>>(key);
 
-        if (!localValue || resolveConflict(localValue, remoteValue) === remoteValue) {
-          await this.local.set(key, remoteValue);
-        }
+          if (!localValue) {
+            await this.local.set(key, remoteValue);
+            return;
+          }
 
-        // On fusionne les horloges pour maintenir la causalité
-        workingClock = mergeClock(workingClock, remoteValue.clock);
-      }
+          const winner = resolveConflict(localValue, remoteValue);
+          await this.local.set(key, winner);
 
-      this.clock = workingClock;
+          this.clock = mergeClock(this.clock, remoteValue.clock);
+        }),
+      );
 
       const meta: SyncMeta = {
         lastSyncAt: new Date().toISOString(),
-        deviceId: this.deviceId,
-        clock: this.clock,
+        deviceId:   this.deviceId,
+        clock:      this.clock,
       };
       await this.local.set(SYNC_META_KEY, meta);
-      
-      // Après avoir récupéré le distant, on tente de pousser le local
-      await this.flushPendingWrites();
 
-    } catch (error) {
-      console.error('[SyncManager] Remote sync failed:', error);
     } finally {
       this.isSyncing = false;
     }
@@ -230,14 +224,11 @@ export class SyncManager {
 
   private scheduleSyncFlush(): void {
     if (this.syncTimer) clearTimeout(this.syncTimer);
-    this.syncTimer = setTimeout(() => {
-      void this.flushPendingWrites();
-    }, 2000);
+    this.syncTimer = setTimeout(() => { void this.flushPendingWrites(); }, 2000);
   }
 
   private async flushPendingWrites(): Promise<void> {
-    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
-    if (this.pendingWrites.size === 0) return;
+    if (!navigator.onLine || this.pendingWrites.size === 0) return;
 
     const MAX_RETRIES = 3;
 
@@ -245,10 +236,10 @@ export class SyncManager {
       try {
         await this.remote.set(key, pending.syncedValue);
         this.pendingWrites.delete(key);
-      } catch (e) {
+      } catch {
         pending.retries++;
         if (pending.retries >= MAX_RETRIES) {
-          console.warn(`[SyncManager] Max retries reached for ${key}, removing from queue.`);
+          console.warn(`[Sync] Abandon après ${MAX_RETRIES} tentatives pour`, key);
           this.pendingWrites.delete(key);
         }
       }
@@ -260,7 +251,7 @@ export class SyncManager {
   private async _savePendingWrites(): Promise<void> {
     await this.local.set(
       PENDING_WRITES_KEY,
-      Array.from(this.pendingWrites.entries())
+      [...this.pendingWrites.entries()],
     );
   }
 }

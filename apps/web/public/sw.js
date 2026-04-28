@@ -1,169 +1,169 @@
 // apps/web/public/sw.js
-// Service Worker Kinetic — offline-first PWA
+// Service Worker Kinetic — offline-first PWA avec SPA routing.
 
-const VERSION      = 'kinetic-v1.0.0';
+// __SW_BUILD__ is replaced at build time by the Vite injectSwVersion plugin
+// with a unique timestamp, guaranteeing a new cache name on every deployment.
+const VERSION       = '__SW_BUILD__';
 const STATIC_CACHE  = `${VERSION}-static`;
-const DYNAMIC_CACHE = `${VERSION}-dynamic`;
-const API_CACHE     = `${VERSION}-api`;
+const RUNTIME_CACHE = `${VERSION}-runtime`;
 
-// Assets critiques à précacher à l'installation
+// Shell minimal à précacher.
+// Les assets hashés (/static/*) sont cachés runtime au fur et à mesure.
 const PRECACHE_URLS = [
   '/',
   '/offline.html',
   '/manifest.json',
-  '/src/pages/dashboard.html',
-  '/src/pages/vitalite.html',
-  '/src/pages/login.html',
-  '/src/pages/profile.html',
-  '/src/pages/auth-callback.html',
 ];
 
-// ─── Install ──────────────────────────────────────────────────
+// ─── Install ────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting())
+    (async () => {
+      const cache = await caches.open(STATIC_CACHE);
+      // addAll() est all-or-nothing. On tolère les 404 unitaires.
+      await Promise.all(
+        PRECACHE_URLS.map(async (url) => {
+          try {
+            const resp = await fetch(url, { cache: 'reload' });
+            if (resp.ok) await cache.put(url, resp);
+          } catch (e) {
+            console.warn('[SW] precache skipped:', url, e);
+          }
+        }),
+      );
+      await self.skipWaiting();
+    })(),
   );
 });
 
-// ─── Activate : purge anciennes versions ─────────────────────
+// ─── Activate ───────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((k) => k !== STATIC_CACHE && k !== DYNAMIC_CACHE && k !== API_CACHE)
-            .map((k) => caches.delete(k))
-        )
-      )
-      .then(() => self.clients.claim())
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((k) => k !== STATIC_CACHE && k !== RUNTIME_CACHE)
+          .map((k) => caches.delete(k)),
+      );
+      await self.clients.claim();
+    })(),
   );
 });
 
-// ─── Fetch : stratégie par type de ressource ─────────────────
+// ─── Fetch — routing par type ───────────────────────────────
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
+  const req = event.request;
 
-  // Ne pas intercepter les requêtes non-GET
-  if (request.method !== 'GET') return;
+  // Non-GET → passthrough
+  if (req.method !== 'GET') return;
 
-  // Supabase API → Network First + cache fallback
-  if (url.hostname.includes('supabase.co')) {
-    event.respondWith(networkFirstWithCache(request, API_CACHE, 60));
+  const url = new URL(req.url);
+
+  // Ignore cross-origin (Supabase, analytics, etc.) → passthrough
+  if (url.origin !== self.location.origin) return;
+
+  // Navigations (SPA) → toujours renvoyer /index.html depuis le cache
+  // (ou réseau en fallback), puis laisser le client-side router prendre le relais.
+  if (req.mode === 'navigate') {
+    event.respondWith(handleNavigation(req));
     return;
   }
 
-  // Pages HTML → Stale-While-Revalidate
-  if (request.headers.get('accept')?.includes('text/html')) {
-    event.respondWith(staleWhileRevalidate(request, STATIC_CACHE));
+  // Assets hashés immutables → cache first (long TTL)
+  if (url.pathname.startsWith('/static/')) {
+    event.respondWith(cacheFirst(req, RUNTIME_CACHE));
     return;
   }
 
-  // Assets statiques (JS, CSS, fonts, images) → Cache First
-  if (url.pathname.match(/\.(js|css|woff2?|png|svg|ico|webp|json)$/)) {
-    event.respondWith(cacheFirst(request, STATIC_CACHE));
-    return;
-  }
-
-  // Défaut → Network with cache fallback
-  event.respondWith(networkFirstWithCache(request, DYNAMIC_CACHE, 300));
+  // Autres assets (manifest, icons, etc.) → stale-while-revalidate
+  event.respondWith(staleWhileRevalidate(req, RUNTIME_CACHE));
 });
 
-// ─── Stratégies de cache ──────────────────────────────────────
+// ─── Stratégies ─────────────────────────────────────────────
 
-async function cacheFirst(request, cacheName) {
-  const cached = await caches.match(request);
+async function handleNavigation(req) {
+  // 1. Essayer le réseau en priorité (utilisateur online = dernière version)
+  try {
+    const fresh = await fetch(req);
+    if (fresh.ok) {
+      const cache = await caches.open(STATIC_CACHE);
+      cache.put('/', fresh.clone()).catch(() => {});
+      return fresh;
+    }
+  } catch {
+    // offline → continue
+  }
+  // 2. Fallback cache '/' (l'index SPA sert toutes les routes)
+  const cached = await caches.match('/', { ignoreSearch: true });
   if (cached) return cached;
+  // 3. Dernière roue de secours
+  const offline = await caches.match('/offline.html');
+  if (offline) return offline;
+  return new Response('Offline', { status: 503, statusText: 'Offline' });
+}
 
+async function cacheFirst(req, cacheName) {
+  const cached = await caches.match(req);
+  if (cached) return cached;
   try {
-    const response = await fetch(request);
-    if (response.ok) {
+    const resp = await fetch(req);
+    if (resp.ok) {
       const cache = await caches.open(cacheName);
-      cache.put(request, response.clone());
+      cache.put(req, resp.clone()).catch(() => {});
     }
-    return response;
+    return resp;
   } catch {
-    return caches.match('/offline.html') ?? new Response('Offline', { status: 503 });
+    return new Response('Offline', { status: 503 });
   }
 }
 
-async function networkFirstWithCache(request, cacheName, maxAgeSeconds) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache   = await caches.open(cacheName);
-      const headers = new Headers(response.headers);
-      headers.set('sw-fetched-at', Date.now().toString());
-      headers.set('sw-max-age', maxAgeSeconds.toString());
-      const toCache = new Response(await response.clone().blob(), {
-        status: response.status,
-        headers,
-      });
-      cache.put(request, toCache);
-    }
-    return response;
-  } catch {
-    const cached = await caches.match(request);
-    if (cached) {
-      const fetchedAt = parseInt(cached.headers.get('sw-fetched-at') || '0');
-      const maxAge    = parseInt(cached.headers.get('sw-max-age') || '0');
-      if (Date.now() - fetchedAt < maxAge * 1000) return cached;
-    }
-    return caches.match('/offline.html') ?? new Response('Offline', { status: 503 });
-  }
+async function staleWhileRevalidate(req, cacheName) {
+  const cached  = await caches.match(req);
+  const network = fetch(req)
+    .then((resp) => {
+      if (resp.ok) {
+        caches.open(cacheName).then((c) => c.put(req, resp.clone())).catch(() => {});
+      }
+      return resp;
+    })
+    .catch(() => null);
+  return cached || (await network) || new Response('Offline', { status: 503 });
 }
 
-async function staleWhileRevalidate(request, cacheName) {
-  const cached  = caches.match(request);
-  const fetched = fetch(request).then((response) => {
-    if (response.ok) {
-      caches.open(cacheName).then((cache) => cache.put(request, response.clone()));
-    }
-    return response;
-  }).catch(() => null);
-
-  return (await cached) || (await fetched) ||
-    caches.match('/offline.html') ||
-    new Response('Offline', { status: 503 });
-}
-
-// ─── Background Sync ─────────────────────────────────────────
+// ─── Background sync (optionnel) ────────────────────────────
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-storage') {
-    event.waitUntil(notifyClientsSync());
+    event.waitUntil(
+      (async () => {
+        const clients = await self.clients.matchAll();
+        clients.forEach((c) => c.postMessage({ type: 'SYNC_REQUESTED' }));
+      })(),
+    );
   }
 });
 
-async function notifyClientsSync() {
-  const clients = await self.clients.matchAll();
-  clients.forEach((client) => client.postMessage({ type: 'SYNC_REQUESTED' }));
-}
-
-// ─── Push Notifications ──────────────────────────────────────
+// ─── Push notifications ─────────────────────────────────────
 self.addEventListener('push', (event) => {
-  const data = event.data?.json() ?? {};
+  let data = {};
+  try { data = event.data?.json() ?? {}; } catch { /* noop */ }
   event.waitUntil(
     self.registration.showNotification(data.title || 'Kinetic', {
-      body:  data.body  || 'Ta routine t\'attend !',
+      body:  data.body  || "Ta routine t'attend !",
       icon:  '/icons/icon-192.png',
-      badge: '/badge.png',
+      badge: '/icons/icon-192.png',
       tag:   data.tag   || 'kinetic-reminder',
       data:  { url: data.url || '/' },
       actions: [
-        { action: 'open',    title: 'Ouvrir Kinetic' },
+        { action: 'open',    title: 'Ouvrir' },
         { action: 'dismiss', title: 'Plus tard' },
       ],
-    })
+    }),
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   if (event.action === 'dismiss') return;
-  event.waitUntil(
-    clients.openWindow(event.notification.data?.url || '/')
-  );
+  event.waitUntil(self.clients.openWindow(event.notification.data?.url || '/'));
 });

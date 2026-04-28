@@ -4,11 +4,21 @@ import type { Database } from './database.types.js';
 const SUPABASE_URL      = import.meta.env['VITE_SUPABASE_URL'] as string | undefined;
 const SUPABASE_ANON_KEY = import.meta.env['VITE_SUPABASE_ANON_KEY'] as string | undefined;
 
+// Vérifier que les variables ne sont pas des placeholders
+const isValidUrl = typeof SUPABASE_URL === 'string'
+  && SUPABASE_URL.startsWith('https://')
+  && SUPABASE_URL.includes('.supabase.co')
+  && !SUPABASE_URL.includes('xxxxxxxxxxxxxxxxxxxx');
+
+const isValidKey = typeof SUPABASE_ANON_KEY === 'string'
+  && SUPABASE_ANON_KEY.startsWith('eyJ')
+  && SUPABASE_ANON_KEY.length > 100;
+
 /**
- * Client Supabase singleton — partagé dans toute l'app.
- * Si les variables d'env sont absentes, retourne null (mode guest).
+ * Client Supabase singleton.
+ * null si les variables d'env sont absentes ou invalides (mode guest).
  */
-export const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY)
+export const supabase = (isValidUrl && isValidKey && SUPABASE_URL && SUPABASE_ANON_KEY)
   ? createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
         persistSession:     true,
@@ -26,25 +36,22 @@ export type AuthUser = {
   full_name: string | null;
 };
 
-/**
- * getAuthUser — retourne l'utilisateur courant ou null.
- */
 export async function getAuthUser(): Promise<AuthUser | null> {
   if (!supabase) return null;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  return {
-    id:         user.id,
-    email:      user.email ?? null,
-    avatar_url: user.user_metadata['avatar_url'] as string | null,
-    full_name:  user.user_metadata['full_name']  as string | null,
-  };
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) return null;
+    return {
+      id:         user.id,
+      email:      user.email ?? null,
+      avatar_url: user.user_metadata['avatar_url'] as string | null,
+      full_name:  user.user_metadata['full_name']  as string | null,
+    };
+  } catch {
+    return null;
+  }
 }
 
-/**
- * signInWithEmail — Magic Link (sans mot de passe).
- */
 export async function signInWithEmail(email: string): Promise<void> {
   if (!supabase) throw new Error('Supabase non configuré');
   const { error } = await supabase.auth.signInWithOtp({
@@ -54,9 +61,6 @@ export async function signInWithEmail(email: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-/**
- * signInWithGitHub — OAuth redirect.
- */
 export async function signInWithGitHub(): Promise<void> {
   if (!supabase) throw new Error('Supabase non configuré');
   await supabase.auth.signInWithOAuth({
@@ -65,9 +69,6 @@ export async function signInWithGitHub(): Promise<void> {
   });
 }
 
-/**
- * signInWithGoogle — OAuth redirect.
- */
 export async function signInWithGoogle(): Promise<void> {
   if (!supabase) throw new Error('Supabase non configuré');
   await supabase.auth.signInWithOAuth({

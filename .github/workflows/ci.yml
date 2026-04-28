@@ -1,10 +1,4 @@
 # .github/workflows/ci.yml
-#
-# CI Kinetic — GitHub Actions
-#
-# Déclenché sur :
-#   - push vers main / develop
-#   - Pull Request vers main
 
 name: CI
 
@@ -15,8 +9,8 @@ on:
     branches: [main]
 
 env:
-  NODE_VERSION:  '20'
-  PNPM_VERSION:  '9'
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
 
 jobs:
 
@@ -40,7 +34,7 @@ jobs:
       - name: Build packages/core
         run: pnpm --filter @kinetic/core build
 
-      - name: Build packages/adapters-web
+      - name: Build packages/adapter-web
         run: pnpm --filter @kinetic/adapters-web build
 
       - run: pnpm typecheck
@@ -65,7 +59,7 @@ jobs:
       - name: Build packages/core
         run: pnpm --filter @kinetic/core build
 
-      - name: Build packages/adapters-web
+      - name: Build packages/adapter-web
         run: pnpm --filter @kinetic/adapters-web build
 
       - name: Run Vitest with coverage
@@ -84,7 +78,7 @@ jobs:
         if: always()
         with:
           json-summary-path: tests/coverage/coverage-summary.json
-          json-final-path: tests/coverage/coverage-final.json
+          json-final-path:   tests/coverage/coverage-final.json
 
   # ─── 3. Tests E2E ───────────────────────────────────────────
   e2e:
@@ -107,7 +101,7 @@ jobs:
       - name: Build packages/core
         run: pnpm --filter @kinetic/core build
 
-      - name: Build packages/adapters-web
+      - name: Build packages/adapter-web
         run: pnpm --filter @kinetic/adapters-web build
 
       - name: Install Playwright browsers
@@ -153,7 +147,7 @@ jobs:
       - name: Build packages/core
         run: pnpm --filter @kinetic/core build
 
-      - name: Build packages/adapters-web
+      - name: Build packages/adapter-web
         run: pnpm --filter @kinetic/adapters-web build
 
       - name: Build
@@ -161,7 +155,7 @@ jobs:
         env:
           VITE_SUPABASE_URL:      ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_APP_VERSION:        ${{ github.sha }}
+          VITE_APP_VERSION:       ${{ github.sha }}
 
       - name: Check bundle size
         run: |

@@ -1,8 +1,10 @@
-import Alpine from 'alpinejs';
-
+/**
+ * Store Alpine `notifications` — toasts.
+ * Écoute `kinetic:notify` et maintient une file de toasts.
+ */
 interface NotificationPayload {
-  kind: 'success' | 'error' | 'warning' | 'info';
-  message: string;
+  kind:      'success' | 'error' | 'warning' | 'info';
+  message:   string;
   duration?: number;
 }
 
@@ -13,33 +15,29 @@ export function notificationsStore() {
     toasts:   [] as Toast[],
     _counter: 0,
 
-    init() {
+    init(): void {
       window.addEventListener('kinetic:notify', (e: Event) => {
         const payload = (e as CustomEvent<NotificationPayload>).detail;
-        this.push(payload);
+        if (payload) this.push(payload);
       });
     },
 
-    push(payload: NotificationPayload) {
-      const id    = ++this._counter;
+    push(payload: NotificationPayload): void {
+      const id = ++this._counter;
       const toast: Toast = { ...payload, id, visible: true };
-      this.toasts = [...this.toasts, toast]; // spread pour réactivité Alpine
+      this.toasts = [...this.toasts, toast];
 
       const duration = payload.duration ?? 3500;
       setTimeout(() => {
-        this.toasts = this.toasts.map((t) =>
-          t.id === id ? { ...t, visible: false } : t,
-        );
+        this.toasts = this.toasts.map((t) => (t.id === id ? { ...t, visible: false } : t));
         setTimeout(() => {
           this.toasts = this.toasts.filter((t) => t.id !== id);
         }, 300);
       }, duration);
     },
 
-    dismiss(id: number) {
-      this.toasts = this.toasts.map((t) =>
-        t.id === id ? { ...t, visible: false } : t,
-      );
+    dismiss(id: number): void {
+      this.toasts = this.toasts.map((t) => (t.id === id ? { ...t, visible: false } : t));
       setTimeout(() => {
         this.toasts = this.toasts.filter((t) => t.id !== id);
       }, 300);
@@ -47,13 +45,11 @@ export function notificationsStore() {
 
     kindClass(kind: string): string {
       return ({
-        success: 'bg-kinetic-teal',
-        error:   'bg-red-500',
-        warning: 'bg-amber-500',
-        info:    'bg-kinetic-purple',
-      } as Record<string, string>)[kind] ?? 'bg-gray-600';
+        success: 'bg-kinetic-neon text-gray-950',
+        error:   'bg-kinetic-electric text-white',
+        warning: 'bg-kinetic-electric/80 text-white',
+        info:    'bg-kinetic-surface text-white ring-1 ring-white/10',
+      } as Record<string, string>)[kind] ?? 'bg-kinetic-surface text-white';
     },
   };
 }
-
-Alpine.store('notifications', notificationsStore());

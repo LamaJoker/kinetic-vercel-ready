@@ -1,102 +1,166 @@
-import Alpine from 'alpinejs';
-import { getDeps } from '../deps.js';
+/**
+ * Store Alpine `vitalite` — pilote la routine quotidienne.
+ *
+ * Délègue la logique métier aux use-cases du core :
+ *   - completeTask_usecase (persiste XP, streak, idempotence)
+ *
+ * Trois guards anti-exploit :
+ *   1. `_pendingIds`      — bloque le double-click
+ *   2. `task.done`        — état UI
+ *   3. idempotency key    — bloqué côté use-case (source de vérité)
+ */
+import { createTask, completeTask_usecase, syncDailyLog } from '@kinetic/core';
+import type { Task } from '@kinetic/core';
+import { getDeps } from '../deps';
 
-interface VitaliteTask {
-  id: string;
-  title: string;
-  icon: string;
-  xp: number;
-  priority: 'high' | 'med' | 'low';
-  done: boolean;
+const DEFAULT_TASKS_SPEC = [
+  { id: 'morning-stretch', title: 'Étirements matin',    icon: '🧘', xp: 50, priority: 'high' as const },
+  { id: 'cold-shower',     title: 'Douche froide',       icon: '🚿', xp: 50, priority: 'high' as const },
+  { id: 'breakfast',       title: 'Petit-déjeuner sain', icon: '🥗', xp: 50, priority: 'med'  as const },
+  { id: 'meditation',      title: 'Méditation 5 min',    icon: '🧠', xp: 50, priority: 'med'  as const },
+  { id: 'hydration',       title: "Boire 2L d'eau",      icon: '💧', xp: 50, priority: 'low'  as const },
+  { id: 'evening-walk',   title: 'Promenade du soir',   icon: '🚶', xp: 40, priority: 'low'  as const },
+  { id: 'reading',         title: 'Lecture 20 min',      icon: '📚', xp: 40, priority: 'low'  as const },
+  { id: 'journaling',      title: 'Journaling',          icon: '📝', xp: 40, priority: 'med'  as const },
+  { id: 'gratitude',       title: '3 gratitudes',        icon: '🙏', xp: 40, priority: 'med'  as const },
+  { id: 'sleep-routine',   title: 'Routine sommeil',     icon: '🌙', xp: 50, priority: 'high' as const },
+];
+
+function todayIso(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
 }
 
-const DEFAULT_TASKS: VitaliteTask[] = [
-  { id: 'morning-stretch', title: 'Étirements matin',  icon: '🧘', xp: 50, priority: 'high', done: false },
-  { id: 'cold-shower',     title: 'Douche froide',     icon: '🚿', xp: 50, priority: 'high', done: false },
-  { id: 'breakfast',       title: 'Petit-déjeuner sain', icon: '🥗', xp: 50, priority: 'med',  done: false },
-  { id: 'meditation',      title: 'Méditation 5 min',  icon: '🧠', xp: 50, priority: 'med',  done: false },
-  { id: 'hydration',       title: 'Boire 2L d\'eau',   icon: '💧', xp: 50, priority: 'low',  done: false },
-];
+function buildDefaultTasks(): Task[] {
+  const today = todayIso();
+  return DEFAULT_TASKS_SPEC.map((spec) =>
+    createTask({
+      id:        spec.id,
+      title:     spec.title,
+      icon:      spec.icon,
+      xp:        spec.xp,
+      priority:  spec.priority,
+      type:      'recurring',
+      createdAt: today,
+    }),
+  );
+}
 
 export function vitaliteStore() {
   return {
-    tasks:        [...DEFAULT_TASKS] as VitaliteTask[],
-    loading:      false,
+    tasks:        [] as Task[],
+    loading:      true,
     completingId: null as string | null,
+    _pendingIds:  new Set<string>(),
 
-    // Triple guard anti-exploit
-    _completedToday: new Set<string>(),
-    _pendingIds:     new Set<string>(),
+    async init(): Promise<void> {
+      try {
+        const deps  = await getDeps();
+        const today = todayIso();
+        const doneKey = `kinetic:vitalite:done:${today}`;
+        const doneIds = (await deps.storage.get<string[]>(doneKey)) ?? [];
 
-    async init() {
-      const deps    = await getDeps();
-      const today   = new Date().toISOString().slice(0, 10);
-      const doneKey = `kinetic:vitalite:done:${today}`;
-      const doneIds = await deps.storage.get<string[]>(doneKey) ?? [];
-
-      this._completedToday = new Set(doneIds);
-      this.tasks = this.tasks.map((t) => ({
-        ...t,
-        done: doneIds.includes(t.id),
-      }));
+        this.tasks = buildDefaultTasks().map((t) =>
+          doneIds.includes(t.id)
+            ? { ...t, done: true, completedAt: today, completionCount: 1 }
+            : t,
+        );
+      } catch (err) {
+        console.error('[vitalite] init failed:', err);
+        this.tasks = buildDefaultTasks();
+      } finally {
+        this.loading = false;
+      }
     },
 
-    async complete(taskId: string) {
-      // Guard 1 : déjà en cours (double-click)
+    async complete(taskId: string): Promise<void> {
       if (this._pendingIds.has(taskId)) return;
-
-      // Guard 2 : tâche déjà done (état UI)
       const task = this.tasks.find((t) => t.id === taskId);
       if (!task || task.done) return;
-
-      // Guard 3 : completed set (exploit console)
-      if (this._completedToday.has(taskId)) return;
 
       this._pendingIds.add(taskId);
       this.completingId = taskId;
 
       try {
-        const today   = new Date().toISOString().slice(0, 10);
+        const deps     = await getDeps();
+        const today    = todayIso();
         const idempKey = `vitalite:${taskId}:${today}`;
 
-        // Marquer localement (optimiste)
-        this.tasks = this.tasks.map((t) =>
-          t.id === taskId ? { ...t, done: true } : t,
+        const result = await completeTask_usecase(
+          { storage: deps.storage, clock: deps.clock, notifier: deps.notifier },
+          { task, idempotencyKey: idempKey },
         );
-        this._completedToday.add(taskId);
 
-        // Persister les IDs complétés
-        const deps    = await getDeps();
+        if (!result.ok) {
+          if (result.reason === 'already_completed_today' || result.reason === 'already_done') {
+            // Re-sync état UI — la tâche est déjà validée côté storage
+            this.tasks = this.tasks.map((t) =>
+              t.id === taskId
+                ? { ...t, done: true, completedAt: today, completionCount: t.completionCount + 1 }
+                : t,
+            );
+          }
+          return;
+        }
+
+        // Succès → update UI (spread pour réactivité Alpine)
+        this.tasks = this.tasks.map((t) =>
+          t.id === taskId
+            ? { ...t, done: true, completedAt: today, completionCount: t.completionCount + 1 }
+            : t,
+        );
+
+        // Mettre à jour la liste "done ids du jour" (historique activity graph)
         const doneKey = `kinetic:vitalite:done:${today}`;
-        await deps.storage.set(doneKey, [...this._completedToday]);
+        const doneIds = (await deps.storage.get<string[]>(doneKey)) ?? [];
+        if (!doneIds.includes(taskId)) {
+          await deps.storage.set(doneKey, [...doneIds, taskId]);
+        }
 
-        // Créditer le XP via le store XP (avec idempotence)
-        const xpStore = Alpine.store('xp') as {
-          award: (amount: number, key?: string) => Promise<void>;
-        };
-        await xpStore.award(task.xp, idempKey);
+        // Rafraîchir le store XP (le use-case a déjà persisté, on relit)
+        await this._refreshXpStore();
 
-        // Notifier
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
-          detail: { kind: 'success', message: `+${task.xp} XP — ${task.title} ✓` },
-          bubbles: true,
-        }));
+        // Remonter l'activité du jour vers Supabase (no-op en mode guest)
+        void syncDailyLog({
+          storage:      deps.storage,
+          clock:        deps.clock,
+          dailyLogSync: deps.dailyLogSync,
+        }).catch((err) => console.warn('[vitalite] daily log sync failed:', err));
 
+        if (result.leveledUp && result.newLevel !== undefined) {
+          window.dispatchEvent(new CustomEvent('kinetic:levelup', {
+            detail: { level: result.newLevel, title: '' },
+          }));
+        }
+      } catch (err) {
+        console.error('[vitalite] complete failed:', err);
+        deps_notify('error', 'Impossible de valider la tâche. Réessaie.');
       } finally {
         this._pendingIds.delete(taskId);
         this.completingId = null;
       }
     },
 
-    get doneCount()  { return this.tasks.filter((t) => t.done).length; },
-    get totalCount() { return this.tasks.length; },
-    get progress()   { return Math.round((this.doneCount / this.totalCount) * 100); },
-    get allDone()    { return this.doneCount === this.totalCount; },
+    async _refreshXpStore(): Promise<void> {
+      // Délègue au store xp pour recalculer depuis le storage
+      const Alpine = (window as unknown as { Alpine: { store: (n: string) => unknown } }).Alpine;
+      const xp = Alpine.store('xp') as { reload: () => Promise<void> } | undefined;
+      await xp?.reload();
+    },
+
+    get doneCount():  number  { return this.tasks.filter((t) => t.done).length; },
+    get totalCount(): number  { return this.tasks.length; },
+    get progress():   number  { return this.totalCount === 0 ? 0 : Math.round((this.doneCount / this.totalCount) * 100); },
+    get allDone():    boolean { return this.totalCount > 0 && this.doneCount === this.totalCount; },
 
     isLocked(id: string): boolean {
-      return this._pendingIds.has(id) || this._completedToday.has(id);
+      return this._pendingIds.has(id) || (this.tasks.find((t) => t.id === id)?.done ?? false);
     },
   };
 }
 
-Alpine.store('vitalite', vitaliteStore());
+function deps_notify(kind: 'success' | 'error' | 'warning' | 'info', message: string): void {
+  window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind, message } }));
+}

@@ -1,10 +1,31 @@
-import { defineConfig, splitVendorChunkPlugin } from 'vite';
+import { defineConfig, splitVendorChunkPlugin, type Plugin } from 'vite';
 import { resolve } from 'path';
+import { readFileSync, writeFileSync } from 'fs';
+
+/**
+ * Injects a build-time cache-busting version into dist/sw.js.
+ * public/sw.js is copied verbatim by Vite (not run through Rollup) so we
+ * post-process the output file in closeBundle instead.
+ * Replaces __SW_BUILD__ with a unique timestamp on every production build.
+ */
+function injectSwVersion(): Plugin {
+  const version = `kinetic-v${Date.now()}`;
+  return {
+    name: 'inject-sw-version',
+    closeBundle() {
+      const swOut = resolve(__dirname, 'dist/sw.js');
+      try {
+        const src = readFileSync(swOut, 'utf8');
+        writeFileSync(swOut, src.replace(/__SW_BUILD__/g, version), 'utf8');
+      } catch {
+        // Not a production build (e.g. vite dev) — silently skip.
+      }
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [
-    splitVendorChunkPlugin(),
-  ],
+  plugins: [splitVendorChunkPlugin(), injectSwVersion()],
 
   resolve: {
     alias: {
@@ -14,16 +35,16 @@ export default defineConfig({
   },
 
   build: {
-    target:    'es2022',
-    outDir:    'dist',
-    sourcemap: false,
-    minify:    'esbuild',
-    cssMinify: true,
+    target:      'es2022',
+    outDir:      'dist',
+    emptyOutDir: true,
+    sourcemap:   false,
+    minify:      'esbuild',
+    cssMinify:   true,
 
     rollupOptions: {
       input: { main: resolve(__dirname, 'index.html') },
       output: {
-        // Chunking dynamique pour éviter l'erreur de résolution d'entry module
         manualChunks(id) {
           if (id.includes('alpinejs')) return 'alpine';
           if (id.includes('@supabase/supabase-js')) return 'supabase';
@@ -38,11 +59,6 @@ export default defineConfig({
 
   server: {
     port: 3000,
-    open: true,
-    headers: {
-      'Cross-Origin-Opener-Policy':   'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
   },
 
   preview: {
@@ -52,11 +68,10 @@ export default defineConfig({
 
   optimizeDeps: {
     include: ['alpinejs', 'idb-keyval'],
-    exclude: ['@supabase/supabase-js'],
   },
 
   esbuild: {
-    drop: process.env['NODE_ENV'] === 'production' ? ['console'] : [],
+    drop: process.env['NODE_ENV'] === 'production' ? ['console', 'debugger'] : [],
     legalComments: 'none',
   },
 });

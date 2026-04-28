@@ -1,96 +1,172 @@
 /**
- * Router SPA minimaliste basé sur les hash routes.
- *
- * Routes :
- *   #/              → dashboard
- *   #/vitalite      → routine vitalité
- *   #/login         → auth
- *   #/profile       → profil
- *   #/auth/callback → callback OAuth
+ * SPA Router - History API + pages bundled by Vite.
+ * FIXES:
+ * 1. render() ne bloque plus la navigation
+ * 2. Route /bodyweight ajoutée
+ * 3. capture:true sur les clics pour intercepter avant Alpine
  */
+import Alpine from 'alpinejs';
+import { getDeps } from './deps';
 
-const ROUTES: Record<string, string> = {
-  '/':             '/src/pages/dashboard.html',
-  '/vitalite':     '/src/pages/vitalite.html',
-  '/login':        '/src/pages/login.html',
-  '/profile':      '/src/pages/profile.html',
-  '/auth/callback':'/src/pages/auth-callback.html',
+const PAGE_MODULES = import.meta.glob('./pages/*.html', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
+
+type RouteKey =
+  | '/'
+  | '/onboarding'
+  | '/seances'
+  | '/vitalite'
+  | '/nutrition'
+  | '/program'
+  | '/login'
+  | '/profile'
+  | '/auth/callback'
+  | '/bodyweight'
+  | '/progression'
+  | '/mensurations';
+
+const ROUTES: Record<RouteKey, string> = {
+  '/':              './pages/dashboard.html',
+  '/onboarding':    './pages/onboarding.html',
+  '/seances':       './pages/seances.html',
+  '/vitalite':      './pages/vitalite.html',
+  '/nutrition':     './pages/nutrition.html',
+  '/program':       './pages/program.html',
+  '/login':         './pages/login.html',
+  '/profile':       './pages/profile.html',
+  '/auth/callback': './pages/auth-callback.html',
+  '/bodyweight':    './pages/bodyweight.html',
+  '/progression':   './pages/progression.html',
+  '/mensurations':  './pages/mensurations.html',
 };
 
-// Cache pages en mémoire
-const PAGE_CACHE = new Map<string, string>();
+const ONBOARDING_EXEMPT: readonly RouteKey[] = ['/onboarding', '/login', '/auth/callback'];
 
 const outlet = (): HTMLElement => {
   const el = document.getElementById('app-outlet');
-  if (!el) throw new Error('Missing #app-outlet');
+  if (!el) throw new Error('[router] #app-outlet not found');
   return el;
 };
 
-async function navigate(path: string): Promise<void> {
-  const src = ROUTES[path] ?? ROUTES['/']!;
+const NOT_FOUND_HTML = `
+  <div class="min-h-screen flex items-center justify-center p-8 text-center">
+    <div>
+      <p class="text-5xl mb-3">404</p>
+      <p class="text-gray-300 font-medium mb-1">Page introuvable</p>
+      <a href="/" class="text-kinetic-purple underline text-sm">Retour au dashboard</a>
+    </div>
+  </div>`;
 
-  // Skeleton
-  const o = outlet();
-  o.style.opacity = '0.5';
-  o.style.transition = 'opacity 0.15s';
+function resolveHtml(path: string): string {
+  const file = ROUTES[path as RouteKey];
+  if (!file) return NOT_FOUND_HTML;
+  return PAGE_MODULES[file] ?? NOT_FOUND_HTML;
+}
 
+let _onboardingKnown: boolean | null = null;
+
+async function hasCompletedOnboarding(): Promise<boolean> {
+  if (_onboardingKnown !== null) return _onboardingKnown;
   try {
-    // Depuis le cache ou réseau
-    let html = PAGE_CACHE.get(src);
-    if (!html) {
-      const res = await fetch(src);
-      if (!res.ok) throw new Error(`HTTP ${res.status} — ${src}`);
-      html = await res.text();
-      PAGE_CACHE.set(src, html);
-    }
-
-    o.innerHTML = html;
-    o.style.opacity = '1';
-
-    // Réinitialiser Alpine sur le nouveau contenu
-    if (window.Alpine) {
-      window.Alpine.initTree(o);
-    }
-
-    // Scroll en haut
-    window.scrollTo({ top: 0, behavior: 'instant' });
-
-  } catch (e) {
-    console.error('[Router]', e);
-    o.style.opacity = '1';
-    o.innerHTML = `
-      <div class="min-h-screen flex items-center justify-center p-8 text-center">
-        <div>
-          <p class="text-4xl mb-3">🔍</p>
-          <p class="text-gray-400 mb-4">Page introuvable</p>
-          <a href="#/" class="text-kinetic-purple underline text-sm">Retour au dashboard</a>
-        </div>
-      </div>`;
+    const deps = await getDeps();
+    const profile = await deps.storage.get('kinetic:userProfile');
+    _onboardingKnown = Boolean(profile);
+    return _onboardingKnown;
+  } catch {
+    _onboardingKnown = true;
+    return true;
   }
 }
 
-/** prefetch — précharge une page en arrière-plan au survol d'un lien */
-export function prefetchRoute(path: string): void {
-  const src = ROUTES[path];
-  if (!src || PAGE_CACHE.has(src)) return;
-  fetch(src).then(async (r) => {
-    if (r.ok) PAGE_CACHE.set(src, await r.text());
-  }).catch(() => {});
-}
+async function render(path: string): Promise<void> {
+  const normalizedPath = (path || '/').split('?')[0]!;
 
-export function initRouter(): void {
-  const getPath = (): string => window.location.hash.slice(1) || '/';
+  if (!ONBOARDING_EXEMPT.includes(normalizedPath as RouteKey)) {
+    try {
+      const ok = await hasCompletedOnboarding();
+      if (!ok && normalizedPath !== '/onboarding') {
+        navigate('/onboarding', true);
+        return;
+      }
+    } catch {
+      // Ne pas bloquer en cas d'erreur
+    }
+  }
 
-  window.addEventListener('hashchange', () => navigate(getPath()));
+  const host = outlet();
+  host.style.opacity = '0.6';
 
-  // Prefetch au survol des liens de navigation
-  document.addEventListener('mouseover', (e) => {
-    const a = (e.target as HTMLElement).closest('a[href^="#"]');
-    if (a) {
-      const path = (a.getAttribute('href') ?? '').slice(1) || '/';
-      prefetchRoute(path);
+  // Manually call destroy() on any Alpine components in the outgoing tree
+  // so their timers/listeners don't leak.  Done via direct property access
+  // instead of Alpine.destroyTree() because the latter touches Alpine's
+  // internal cleanup state in ways that have triggered "nothing-clickable"
+  // regressions on production builds.
+  host.querySelectorAll<HTMLElement>('[x-data]').forEach((el) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = (el as any)._x_dataStack?.[0];
+    if (data && typeof data.destroy === 'function') {
+      try { data.destroy(); }
+      catch (err) { console.warn('[router] component destroy failed:', err); }
     }
   });
 
-  navigate(getPath());
+  host.innerHTML = resolveHtml(normalizedPath);
+
+  try {
+    Alpine.initTree(host);
+  } catch (e) {
+    console.warn('[router] Alpine.initTree failed:', e);
+  }
+
+  requestAnimationFrame(() => {
+    host.style.opacity = '1';
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  });
+}
+
+export function navigate(path: string, replace = false): void {
+  const target = path.startsWith('/') ? path : `/${path}`;
+  if (replace) {
+    window.history.replaceState({}, '', target);
+  } else if (target !== window.location.pathname) {
+    window.history.pushState({}, '', target);
+  }
+  void render(target);
+}
+
+export function initRouter(): void {
+  // capture: true pour intercepter avant Alpine
+  document.addEventListener('click', (e) => {
+    const link = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;
+    if (!link) return;
+    const href = link.getAttribute('href') ?? '';
+    if (/^(https?:)?\/\//i.test(href)) return;
+    if (href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+    if (!href.startsWith('/')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(href);
+  }, { capture: true });
+
+  window.addEventListener('popstate', () => void render(window.location.pathname || '/'));
+
+  window.addEventListener('kinetic:auth-ready', () => {
+    void render(window.location.pathname || '/');
+  }, { once: true });
+
+  window.addEventListener('kinetic:onboarding-complete', () => {
+    _onboardingKnown = true;
+    void render(window.location.pathname || '/');
+  });
+
+  // Fallback si auth-ready tarde (ex: Supabase lent)
+  setTimeout(() => {
+    const host = outlet();
+    if (host.querySelector('.animate-pulse')) {
+      void render(window.location.pathname || '/');
+    }
+  }, 1500);
 }

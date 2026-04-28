@@ -1,0 +1,5 @@
+tests
+playwright.config.ts
+vitest.config.ts
+.github
+coverage

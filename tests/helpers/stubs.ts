@@ -5,7 +5,7 @@
  * À importer dans les tests unitaires et d'intégration.
  *
  * Usage :
- *   import { makeTestDeps, FakeClock } from '../helpers/stubs.js';
+ *   import { makeTestDeps, FakeClock } from '../helpers/stubs';
  *   const deps = makeTestDeps({ clock: new FakeClock('2026-04-20') });
  */
 

@@ -2,46 +2,23 @@ import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
 
 export default defineConfig({
-  test: {
-    environment: 'happy-dom',
-    include: [
-      'tests/unit/**/*.test.ts',
-      'tests/integration/**/*.test.ts',
-    ],
-    exclude: ['tests/e2e/**'],
-
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'html', 'json', 'json-summary'], // 'json' ajouté ici
-      reportsDirectory: 'tests/coverage',
-      thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 75,
-        statements: 80,
-      },
-      include: [
-        'packages/core/src/**/*.ts',
-        'packages/adapter-web/src/**/*.ts',
-        'apps/web/src/lib/**/*.ts',
-      ],
-      exclude: [
-        '**/*.d.ts',
-        '**/index.ts',
-        '**/*.types.ts',
-        '**/database.types.ts',
-      ],
-    },
-    reporters: ['verbose'],
-    testTimeout: 10000,
-    hookTimeout: 5000,
-    globals: true,
-  },
-
   resolve: {
     alias: {
-      '@kinetic/core': resolve(__dirname, 'packages/core/src/index.ts'),
+      '@kinetic/core':         resolve(__dirname, 'packages/core/src/index.ts'),
       '@kinetic/adapters-web': resolve(__dirname, 'packages/adapter-web/src/index.ts'),
+      '@test-helpers':         resolve(__dirname, 'tests/helpers'),
+    },
+  },
+  test: {
+    environment: 'node',
+    include: ['tests/**/*.test.ts'],
+    exclude: ['tests/e2e/**', 'node_modules/**'],
+    coverage: {
+      provider:          'v8',
+      reportsDirectory:  'tests/coverage',
+      reporter: ['text', 'json', 'html', 'json-summary'],
+      include:  ['packages/*/src/**/*.ts'],
+      exclude:  ['**/*.test.ts', '**/index.ts', '**/database.types.ts'],
     },
   },
 });

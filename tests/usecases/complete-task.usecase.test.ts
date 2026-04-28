@@ -8,8 +8,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { completeTask_usecase } from '@kinetic/core';
 import { createTask }           from '@kinetic/core';
-import { makeTestDeps }         from '../../helpers/stubs.js';
-import type { TestDeps }        from '../../helpers/stubs.js';
+import { makeTestDeps }         from '@test-helpers/stubs.ts';
+import type { TestDeps }        from '@test-helpers/stubs.ts';
 import type { Task }            from '@kinetic/core';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -82,6 +82,33 @@ describe('completeTask_usecase', () => {
 
       const keys = await deps.storage.get<string[]>('kinetic:completed-keys');
       expect(keys).toContain('vitalite-stretch:2026-04-20');
+    });
+
+    it('incrémente le XP du jour (séparé du cumul)', async () => {
+      const today = deps.clock.todayIsoDate();
+      // XP cumulé déjà à 200 (jours précédents)
+      await deps.storage.set('kinetic:xp', { xp: 200 });
+
+      const task = makeRecurringTask(); // 50 XP
+      await completeTask_usecase(deps, { task, idempotencyKey: 'k1' });
+
+      // Cumul = 250, daily = 50
+      const cumul = await deps.storage.get<{ xp: number }>('kinetic:xp');
+      const daily = await deps.storage.get<{ xp: number }>(`kinetic:xp:earned:${today}`);
+      expect(cumul?.xp).toBe(250);
+      expect(daily?.xp).toBe(50);
+    });
+
+    it('le XP du jour s\'accumule sur plusieurs tâches', async () => {
+      const today = deps.clock.todayIsoDate();
+      const task = makeRecurringTask(); // 50 XP
+
+      await completeTask_usecase(deps, { task, idempotencyKey: 'k1' });
+      await completeTask_usecase(deps, { task, idempotencyKey: 'k2' });
+      await completeTask_usecase(deps, { task, idempotencyKey: 'k3' });
+
+      const daily = await deps.storage.get<{ xp: number }>(`kinetic:xp:earned:${today}`);
+      expect(daily?.xp).toBe(150);
     });
 
     it('émet une notification de succès', async () => {

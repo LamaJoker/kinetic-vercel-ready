@@ -33,8 +33,8 @@ function compareClocks(a: VectorClock, b: VectorClock): CausalOrder {
   for (const device of allDevices) {
     const aTime = a[device] ?? 0;
     const bTime = b[device] ?? 0;
-    if (aTime > bTime) bLessOrEqual = false;
-    if (bTime > aTime) aLessOrEqual = false;
+    if (aTime > bTime) aLessOrEqual = false;
+    if (bTime > aTime) bLessOrEqual = false;
   }
 
   if (aLessOrEqual && bLessOrEqual) return 'equal';

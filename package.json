@@ -2,54 +2,26 @@
   "name": "kinetic",
   "version": "1.0.0",
   "private": true,
-  "description": "Kinetic — Gamified Performance OS",
-
-  "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
-  },
-
-  "packageManager": "pnpm@9.1.0",
-
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
-
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
-    "dev":        "pnpm --filter @kinetic/web dev",
-    "build":      "pnpm --filter @kinetic/web build",
-    "preview":    "pnpm --filter @kinetic/web preview",
-
-    "test":       "vitest run",
-    "test:watch": "vitest",
-    "test:ui":    "vitest --ui",
-    "coverage":   "vitest run --coverage",
-
-    "e2e":        "playwright test",
-    "e2e:ui":     "playwright test --ui",
-    "e2e:headed": "playwright test --headed",
-
-    "typecheck":  "pnpm -r exec tsc --noEmit",
-    "lint":       "eslint . --ext .ts,.html --max-warnings 0",
-
-    "icons":      "node scripts/generate-icons.mjs",
-    "db:push":    "supabase db push",
-    "db:reset":   "supabase db reset",
-
-    "clean":      "rimraf apps/web/dist tests/coverage tests/e2e/report",
-    "ci":         "pnpm typecheck && pnpm coverage && pnpm build"
+    "build": "pnpm --filter @kinetic/web build",
+    "dev": "pnpm --filter @kinetic/web dev",
+    "preview": "pnpm --filter @kinetic/web preview",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "typecheck": "tsc --build",
+    "e2e": "playwright test",
+    "test:e2e": "playwright test"
   },
-
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
   "devDependencies": {
-    "@playwright/test":          "^1.44.0",
-    "@types/node":               "^20.14.0",
-    "@vitest/coverage-v8":       "^1.6.0",
-    "@vitest/ui":                "^1.6.0",
-    "happy-dom":                 "^14.12.0",
-    "rimraf":                    "^5.0.7",
-    "typescript":                "^5.5.0",
-    "vitest":                    "^1.6.0",
-    "sharp":                     "^0.33.4"
+    "@playwright/test": "^1.59.1",
+    "@vitest/coverage-v8": "^2",
+    "typescript": "^5.5.0",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^2"
   }
 }

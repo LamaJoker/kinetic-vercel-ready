@@ -1,94 +1,44 @@
 {
-  "buildCommand":    "pnpm --filter @kinetic/web build",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm --filter @kinetic/web build",
   "outputDirectory": "apps/web/dist",
-  "installCommand":  "pnpm install",
-  "framework":       null,
-  "regions":         ["cdg1"],
-
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": null,
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/:path*", "destination": "/index.html" }
+  ],
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/static/(.*)",
       "headers": [
-        {
-          "key":   "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
-        },
-        {
-          "key":   "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key":   "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key":   "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key":   "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=(self), notifications=(self)"
-        },
-        {
-          "key":   "Strict-Transport-Security",
-          "value": "max-age=63072000; includeSubDomains; preload"
-        },
-        {
-          "key":   "Cross-Origin-Opener-Policy",
-          "value": "same-origin"
-        },
-        {
-          "key":   "Cross-Origin-Embedder-Policy",
-          "value": "require-corp"
-        }
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
       "source": "/sw.js",
       "headers": [
-        {
-          "key":   "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key":   "Service-Worker-Allowed",
-          "value": "/"
-        }
-      ]
-    },
-    {
-      "source": "/static/(.*)",
-      "headers": [
-        {
-          "key":   "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/(.*\\.html)",
-      "headers": [
-        {
-          "key":   "Cache-Control",
-          "value": "no-cache, must-revalidate"
-        }
+        { "key": "Cache-Control", "value": "no-store, must-revalidate" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
       ]
     },
     {
       "source": "/manifest.json",
       "headers": [
-        {
-          "key":   "Cache-Control",
-          "value": "public, max-age=86400"
-        }
+        { "key": "Cache-Control", "value": "public, max-age=3600" }
       ]
-    }
-  ],
-
-  "rewrites": [
+    },
     {
-      "source":      "/(.*)",
-      "destination": "/index.html"
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options",    "value": "nosniff" },
+        { "key": "X-Frame-Options",           "value": "DENY" },
+        { "key": "Referrer-Policy",           "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy",        "value": "camera=(), microphone=(), geolocation=(self), interest-cohort=()" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+        { "key": "Content-Security-Policy",   "value": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" }
+      ]
     }
   ]
 }

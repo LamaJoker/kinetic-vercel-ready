@@ -5,8 +5,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { resetDailyTasks, createTask, completeTask } from '@kinetic/core';
 import type { Task } from '@kinetic/core';
-import { makeTestDeps, FakeClock } from '../../helpers/stubs.js';
-import type { TestDeps } from '../../helpers/stubs.js';
+import { makeTestDeps, FakeClock } from '@test-helpers/stubs.ts';
+import type { TestDeps } from '@test-helpers/stubs.ts';
 
 const KEY_TASKS      = 'kinetic:vitalite:tasks';
 const KEY_LAST_RESET = 'kinetic:vitalite:last-reset';

@@ -1,0 +1,98 @@
+/**
+ * Store Alpine `goals` — objectifs hebdomadaires d'entraînement.
+ * La logique pure vit dans `@kinetic/core/domain/goals.domain`.
+ * Ce store gère uniquement la persistance IDB et le bridge UI/event.
+ */
+import {
+  evaluateWeeklyGoals,
+  shouldAwardWeeklyBonusXp,
+  WEEKLY_GOAL_BONUS_XP,
+} from '@kinetic/core';
+import { getDeps } from '../deps';
+import { loadSessions } from '../lib/training/storage';
+
+const KEY_GOALS = 'kinetic:goals:weekly';
+const KEY_XP    = 'kinetic:xp';
+
+export function goalsStore() {
+  return {
+    targetSessions:  3,
+    targetTonnageKg: 0,
+    doneSessions:    0,
+    doneTonnageKg:   0,
+    sessionsPercent: 0,
+    tonnagePercent:  100,
+    sessionsOk:      false,
+    tonnageOk:       true,
+    allOk:           false,
+    weekKey:         '',
+    xpAwardedWeek:   '',
+    loading:         true,
+
+    async init(): Promise<void> {
+      await this.reload();
+      window.addEventListener('kinetic:session-saved', () => void this.reload());
+    },
+
+    async reload(): Promise<void> {
+      this.loading = true;
+      try {
+        const deps = await getDeps();
+
+        const saved = await deps.storage.get<{
+          targetSessions: number; targetTonnageKg: number; xpAwardedWeek: string;
+        }>(KEY_GOALS);
+        if (saved) {
+          this.targetSessions  = saved.targetSessions  ?? 3;
+          this.targetTonnageKg = saved.targetTonnageKg ?? 0;
+          this.xpAwardedWeek   = saved.xpAwardedWeek   ?? '';
+        }
+
+        const sessions = await loadSessions(deps.storage);
+        const state = evaluateWeeklyGoals(sessions, {
+          targetSessions:  this.targetSessions,
+          targetTonnageKg: this.targetTonnageKg,
+        });
+
+        this.weekKey         = state.weekKey;
+        this.doneSessions    = state.doneSessions;
+        this.doneTonnageKg   = state.doneTonnageKg;
+        this.sessionsPercent = state.sessionsPercent;
+        this.tonnagePercent  = state.tonnagePercent;
+        this.sessionsOk      = state.sessionsOk;
+        this.tonnageOk       = state.tonnageOk;
+        this.allOk           = state.allOk;
+
+        if (shouldAwardWeeklyBonusXp(state, this.xpAwardedWeek)) {
+          await this._awardBonus(deps);
+        }
+      } catch (err) {
+        console.error('[goals] reload failed:', err);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async save(): Promise<void> {
+      const deps = await getDeps();
+      await deps.storage.set(KEY_GOALS, {
+        targetSessions:  this.targetSessions,
+        targetTonnageKg: this.targetTonnageKg,
+        xpAwardedWeek:   this.xpAwardedWeek,
+      });
+    },
+
+    async _awardBonus(deps: Awaited<ReturnType<typeof getDeps>>): Promise<void> {
+      const raw = await deps.storage.get<{ xp: number }>(KEY_XP);
+      const cur = raw?.xp ?? 0;
+      await deps.storage.set(KEY_XP, { xp: cur + WEEKLY_GOAL_BONUS_XP });
+      this.xpAwardedWeek = this.weekKey;
+      await this.save();
+
+      window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        detail: { kind: 'success', message: `🏆 Objectifs semaine atteints — +${WEEKLY_GOAL_BONUS_XP} XP !` },
+      }));
+      window.dispatchEvent(new CustomEvent('kinetic:xp-updated'));
+    },
+  };
+}
