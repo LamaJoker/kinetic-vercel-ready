@@ -29,6 +29,7 @@ import { initRouter } from './router';
 import { scheduleStreakReminder } from './lib/streak-reminder';
 import { autoCompactOnStartup } from './lib/storage-maintenance';
 import { runMigrationsIfNeeded } from './lib/migrations';
+import { initMobile } from './lib/mobile';
 import './styles.css';
 
 // ─── Stores ──────────────────────────────────────────────────
@@ -73,6 +74,8 @@ Alpine.start();
 requestAnimationFrame(() => {
   initRouter();
 });
+
+void initMobile();
 
 scheduleStreakReminder();
 

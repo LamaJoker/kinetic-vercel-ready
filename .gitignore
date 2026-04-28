@@ -11,3 +11,15 @@ tests/e2e/report/
 .DS_Store
 Thumbs.db
 .claude/
+
+# Android / Capacitor build artifacts
+apps/web/android/app/build/
+apps/web/android/build/
+apps/web/android/.gradle/
+apps/web/android/local.properties
+apps/web/android/keystore.properties
+apps/web/android/**/*.keystore
+apps/web/android/captures/
+apps/web/android/app/src/main/assets/public/
+apps/web/android/app/src/main/assets/capacitor.config.json
+apps/web/android/app/src/main/assets/capacitor.plugins.json

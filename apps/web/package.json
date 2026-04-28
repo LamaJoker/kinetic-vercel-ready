@@ -7,9 +7,19 @@
     "dev": "vite",
     "build": "vite build && node ../../scripts/sync-web-dist.mjs",
     "preview": "vite preview",
-    "preview:ci": "vite preview --port 3000"
+    "preview:ci": "vite preview --port 3000",
+    "android:sync": "cap sync android",
+    "android:open": "cap open android",
+    "android:build": "vite build && cap sync android && cd android && gradlew.bat assembleDebug",
+    "android:build:release": "vite build && cap sync android && cd android && gradlew.bat assembleRelease",
+    "android:run": "cap run android"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
     "@fontsource/outfit": "^5.2.8",
     "@kinetic/adapters-web": "workspace:*",
     "@kinetic/core": "workspace:*",
@@ -18,6 +28,8 @@
     "idb-keyval": "^6.2.1"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
     "@types/alpinejs": "^3.13.10",
     "@types/node": "^20.14.0",
     "autoprefixer": "^10.4.19",
