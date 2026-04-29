@@ -50,6 +50,27 @@
     </div>
   </div>
 
+  <!-- ── Objectif Coach IA ──────────────────────────────────────────────────── -->
+  <div class="mb-4">
+    <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-2">Objectif d'entraînement</p>
+    <div class="grid grid-cols-3 gap-2">
+      <template x-for="(preset, key) in coachGoals" :key="key">
+        <button @click="setCoachGoal(key)"
+                class="flex flex-col items-center gap-1 p-3 rounded-xl ring-1 transition-all text-center"
+                :class="coachGoal === key
+                  ? 'bg-kinetic-neon/15 ring-kinetic-neon text-white scale-[1.03] shadow-[0_0_12px_rgba(168,255,0,0.3)]'
+                  : 'bg-kinetic-surface ring-white/10 text-gray-400 hover:ring-white/20 hover:text-gray-200'">
+          <span class="text-2xl" x-text="preset.emoji"></span>
+          <span class="text-xs font-bold leading-tight" x-text="preset.label"></span>
+          <span class="text-[10px] text-gray-500 leading-tight" x-text="preset.rpeZone"></span>
+        </button>
+      </template>
+    </div>
+    <!-- Source scientifique de l'objectif actif -->
+    <p class="text-[10px] text-gray-600 mt-1.5 text-center italic"
+       x-text="'Source : ' + coachGoals[coachGoal].science"></p>
+  </div>
+
   <!-- Session en cours -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4">
     <div class="flex items-center justify-between mb-3">
@@ -169,6 +190,8 @@
               <div class="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-900/60 to-kinetic-ink">
                 <span class="text-base">🤖</span>
                 <span class="text-xs font-bold text-white uppercase tracking-wider">Coach IA</span>
+                <span class="ml-auto text-[10px] text-gray-400"
+                      x-text="coachGoals[coachGoal].emoji + ' ' + coachGoals[coachGoal].label"></span>
               </div>
               <!-- Conseil principal -->
               <div class="px-3 py-2 bg-kinetic-elevated/40">
@@ -202,6 +225,9 @@
                 <!-- Message conseil -->
                 <p class="text-xs text-gray-300 leading-relaxed"
                    x-text="coachAdvice(entry.exerciseId)?.message"></p>
+                <!-- Source scientifique -->
+                <p class="text-[10px] text-gray-600 italic mt-1"
+                   x-text="'Source : ' + (coachAdvice(entry.exerciseId)?.science ?? '')"></p>
               </div>
             </div>
           </template>

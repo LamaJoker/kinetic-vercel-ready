@@ -61,6 +61,46 @@ const _idGen = new UuidGenerator();
 function newId(): string { return _idGen.newId(); }
 function nowIso(): string { return new Date().toISOString(); }
 
+// ─── Objectifs Coach IA ──────────────────────────────────────────────────────
+
+type CoachGoal = 'force' | 'hypertrophie' | 'endurance';
+
+interface GoalPreset {
+  label:      string;
+  emoji:      string;
+  targetReps: number;
+  targetRpe:  number;
+  rpeZone:    string;          // description courte de la zone RPE cible
+  science:    string;          // source/référence courte
+}
+
+const COACH_GOALS: Record<CoachGoal, GoalPreset> = {
+  force: {
+    label:      'Force',
+    emoji:      '🏋️',
+    targetReps: 4,
+    targetRpe:  8.5,
+    rpeZone:    '3–5 reps @ RPE 8–9',
+    science:    'Prilepin (1974) · NSCA Strength Guidelines',
+  },
+  hypertrophie: {
+    label:      'Hypertrophie',
+    emoji:      '💪',
+    targetReps: 9,
+    targetRpe:  8,
+    rpeZone:    '6–12 reps @ RPE 7–9',
+    science:    'Schoenfeld (2010) · Helms et al. (2018)',
+  },
+  endurance: {
+    label:      'Endurance musculaire',
+    emoji:      '🔄',
+    targetReps: 15,
+    targetRpe:  7,
+    rpeZone:    '15–20 reps @ RPE 6–8',
+    science:    'ACSM Position Stand (2009)',
+  },
+};
+
 function defaultSessionName(): string {
   const d = new Date();
   const label = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -75,6 +115,9 @@ export function seances() {
     sessions: [] as WorkoutSession[],
     userProfile: null as UserProfile | null,
     latestBodyweight: null as number | null,
+
+    coachGoal: (localStorage.getItem('kinetic:coach-goal') ?? 'hypertrophie') as CoachGoal,
+    coachGoals: COACH_GOALS,
 
     showTemplates: false,
     selectedExerciseId: '',
@@ -395,55 +438,71 @@ export function seances() {
 
     // ─── Coach IA ────────────────────────────────────────────────────────────
 
+    setCoachGoal(goal: CoachGoal): void {
+      this.coachGoal = goal;
+      localStorage.setItem('kinetic:coach-goal', goal);
+    },
+
     /**
-     * Retourne un conseil de poids personnalisé pour un exercice donné,
-     * basé sur le dernier set réalisé (RPE + reps) et la progression historique.
+     * Retourne un conseil de poids personnalisé selon l'objectif choisi.
+     * Bases scientifiques :
+     *  - Force       : Prilepin (1974), NSCA — 3–5 reps @ RPE 8–9
+     *  - Hypertrophie: Schoenfeld (2010), Helms et al. (2018) — 6–12 reps @ RPE 7–9
+     *  - Endurance   : ACSM (2009) — 15+ reps @ RPE 6–8
      */
-    coachAdvice(exerciseId: string): { weightKg: number; reps: number; rpe: number; message: string } | null {
+    coachAdvice(exerciseId: string): { weightKg: number; reps: number; rpe: number; message: string; goalLabel: string; science: string } | null {
       if (!exerciseId) return null;
       const ex      = this.exercises.find(e => e.id === exerciseId);
       const history = this._historyForExercise(exerciseId);
+      const preset  = COACH_GOALS[this.coachGoal as CoachGoal];
+
       if (!history.length) {
-        // Première fois → suggérer une charge légère pour trouver le bon niveau
         return {
-          weightKg: 0,
-          reps: 8,
-          rpe: 7,
-          message: '🆕 Première séance sur cet exercice. Commence léger (RPE 6–7) pour trouver ta charge de travail.',
+          weightKg:  0,
+          reps:      preset.targetReps,
+          rpe:       preset.targetRpe,
+          goalLabel: preset.label,
+          science:   preset.science,
+          message:   `🆕 Première séance. Commence léger (RPE 6–7) pour trouver ta charge, puis vise ${preset.rpeZone}.`,
         };
       }
 
-      // Dernier set réalisé
       const last = history[history.length - 1]!;
       const inc  = ex?.incrementKg ?? 2.5;
 
-      // e1RM du dernier set
+      // e1RM Epley du dernier set
       const lastE1rm = estimateE1rmKg(last.weightKg, last.reps);
 
-      // Poids suggéré pour 8 reps @ RPE 8 depuis l'e1RM
-      // formule Epley inverse : w = e1RM / (1 + reps/30)
-      const targetReps = 8;
-      const targetRpe  = 8;
-      const rawWeight  = lastE1rm / (1 + targetReps / 30);
-      // Arrondi à l'incrément
+      // Poids de travail pour la cible de l'objectif (Epley inverse)
+      const rawWeight       = lastE1rm / (1 + preset.targetReps / 30);
       const suggestedWeight = Math.round(rawWeight / inc) * inc;
 
-      // Ajustement selon RPE du dernier set
+      // Ajustement selon RPE du dernier set vs RPE cible
+      const rpeDelta = last.rpe - preset.targetRpe;
       let message = '';
-      if (last.rpe <= 6.5) {
-        message = `💪 Ton dernier set était facile (RPE ${last.rpe}). Tu peux augmenter la charge — essaie **${suggestedWeight + inc} kg × ${targetReps}**.`;
-      } else if (last.rpe <= 7.5) {
-        message = `✅ Bonne intensité la dernière fois (RPE ${last.rpe}). Vise **${suggestedWeight} kg × ${targetReps} @ RPE ${targetRpe}**.`;
-      } else if (last.rpe <= 8.5) {
-        message = `🎯 RPE ${last.rpe} — tu étais bien dans la zone. Maintiens **${suggestedWeight} kg × ${targetReps}** ou +${inc} kg si tu te sens bien.`;
+
+      if (!history.length || last.weightKg === 0) {
+        message = `🆕 Commence léger pour calibrer — vise ${preset.rpeZone}.`;
+      } else if (rpeDelta <= -1.5) {
+        const higher = Math.round((suggestedWeight + inc) / inc) * inc;
+        message = `💪 Trop facile la dernière fois (RPE ${last.rpe} vs cible ${preset.targetRpe}). Monte à **${higher} kg × ${preset.targetReps}**.`;
+      } else if (rpeDelta <= -0.5) {
+        message = `✅ Légèrement en dessous de la cible (RPE ${last.rpe}). Essaie **${suggestedWeight + inc} kg × ${preset.targetReps}** ou reste sur ${suggestedWeight} kg.`;
+      } else if (rpeDelta <= 0.5) {
+        message = `🎯 Tu es exactement dans la zone (RPE ${last.rpe}). Maintiens **${suggestedWeight} kg × ${preset.targetReps} @ RPE ${preset.targetRpe}**.`;
+      } else if (rpeDelta <= 1.5) {
+        message = `⚠️ Un peu au-dessus de la cible (RPE ${last.rpe}). Reste sur **${suggestedWeight} kg** et cible ${preset.targetRpe} de RPE.`;
       } else {
-        message = `⚠️ RPE ${last.rpe} — c'était lourd. Reste sur **${suggestedWeight} kg × ${targetReps}** ou recule de ${inc} kg si tu es fatigué.`;
+        const lower = Math.max(0, Math.round((suggestedWeight - inc) / inc) * inc);
+        message = `🔴 RPE ${last.rpe} — c'était trop lourd pour cet objectif. Recule à **${lower} kg × ${preset.targetReps}** pour rester dans la zone ${preset.rpeZone}.`;
       }
 
       return {
-        weightKg: suggestedWeight,
-        reps:     targetReps,
-        rpe:      targetRpe,
+        weightKg:  suggestedWeight,
+        reps:      preset.targetReps,
+        rpe:       preset.targetRpe,
+        goalLabel: preset.label,
+        science:   preset.science,
         message,
       };
     },
