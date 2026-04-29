@@ -12,6 +12,51 @@ import { exportAsJson, exportAsCsv } from '../lib/training/export';
 
 type Draft = { reps: number; weightKg: number; rpe: number };
 
+// ─── Catégorisation par groupe musculaire ────────────────────────────────────
+
+const CATEGORY_ORDER = [
+  'Polyarticulaires',
+  'Pectoraux',
+  'Dos',
+  'Épaules',
+  'Biceps',
+  'Triceps',
+  'Jambes',
+  'Abdos / Core',
+  'Cardio',
+  'Autre',
+] as const;
+
+type MuscleCategory = (typeof CATEGORY_ORDER)[number];
+
+function getMuscleCategory(muscles: readonly string[]): MuscleCategory {
+  const ms = new Set(muscles);
+
+  // Détection polyarticulaire : exercice impliquant 2+ grands groupes
+  const upperPush = ms.has('chest') || ms.has('shoulders') || ms.has('triceps');
+  const upperPull = ms.has('back') || ms.has('upper_back') || ms.has('traps') || ms.has('biceps') || ms.has('rear_delts');
+  const lower     = ms.has('quads') || ms.has('hamstrings') || ms.has('glutes') || ms.has('calves') || ms.has('hip_flexors') || ms.has('legs') || ms.has('adductors') || ms.has('abductors');
+  const coreArea  = ms.has('core') || ms.has('lower_back');
+
+  const majorCount = [upperPush, upperPull, lower, coreArea].filter(Boolean).length;
+  if (majorCount >= 2 || ms.has('full_body') || ms.has('posterior')) return 'Polyarticulaires';
+
+  if (ms.has('chest'))                                                          return 'Pectoraux';
+  if (ms.has('upper_back') || ms.has('back') || ms.has('traps') || ms.has('rear_delts')) return 'Dos';
+  if (ms.has('shoulders') || ms.has('rotator_cuff'))                           return 'Épaules';
+  if (ms.has('biceps') || ms.has('brachialis') || ms.has('forearms') || ms.has('grip')) return 'Biceps';
+  if (ms.has('triceps'))                                                        return 'Triceps';
+  if (lower)                                                                    return 'Jambes';
+  if (coreArea)                                                                 return 'Abdos / Core';
+  if (ms.has('conditioning'))                                                   return 'Cardio';
+  return 'Autre';
+}
+
+export interface ExerciseGroup {
+  category: MuscleCategory;
+  exercises: Exercise[];
+}
+
 const _idGen = new UuidGenerator();
 function newId(): string { return _idGen.newId(); }
 function nowIso(): string { return new Date().toISOString(); }
@@ -62,6 +107,19 @@ export function seances() {
 
     get currentEntries(): SessionExerciseEntry[] {
       return (this.currentSession?.entries ?? []) as SessionExerciseEntry[];
+    },
+
+    /** Exercices regroupés par groupe musculaire, dans l'ordre CATEGORY_ORDER. */
+    get exercisesByGroup(): ExerciseGroup[] {
+      const map = new Map<MuscleCategory, Exercise[]>();
+      for (const cat of CATEGORY_ORDER) map.set(cat, []);
+      for (const ex of this.exercises) {
+        const cat = getMuscleCategory(ex.muscles);
+        map.get(cat)!.push(ex);
+      }
+      return CATEGORY_ORDER
+        .filter(cat => map.get(cat)!.length > 0)
+        .map(cat => ({ category: cat, exercises: map.get(cat)! }));
     },
 
     async init(): Promise<void> {

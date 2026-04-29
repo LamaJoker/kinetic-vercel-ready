@@ -110,9 +110,13 @@
         <p class="text-xs text-gray-500 mb-2">Ajouter un exercice</p>
         <div class="flex gap-2">
           <select x-model="selectedExerciseId" class="flex-1 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white">
-            <option value="">Choisir...</option>
-            <template x-for="ex in exercises" :key="ex.id">
-              <option :value="ex.id" x-text="ex.name"></option>
+            <option value="">Choisir un exercice...</option>
+            <template x-for="group in exercisesByGroup" :key="group.category">
+              <optgroup :label="group.category">
+                <template x-for="ex in group.exercises" :key="ex.id">
+                  <option :value="ex.id" x-text="ex.name"></option>
+                </template>
+              </optgroup>
             </template>
           </select>
           <button @click="addExerciseToSession()"
@@ -263,8 +267,12 @@
       <select x-model="progressExerciseId"
               class="flex-1 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white">
         <option value="">Choisir un exercice...</option>
-        <template x-for="ex in exercises" :key="ex.id">
-          <option :value="ex.id" x-text="ex.name"></option>
+        <template x-for="group in exercisesByGroup" :key="group.category">
+          <optgroup :label="group.category">
+            <template x-for="ex in group.exercises" :key="ex.id">
+              <option :value="ex.id" x-text="ex.name"></option>
+            </template>
+          </optgroup>
         </template>
       </select>
       <select x-model="progressMetric"
