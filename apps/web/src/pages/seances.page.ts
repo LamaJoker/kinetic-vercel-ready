@@ -393,6 +393,70 @@ export function seances() {
       exportAsCsv(this.sessions, this.exercises);
     },
 
+    // ─── Coach IA ────────────────────────────────────────────────────────────
+
+    /**
+     * Retourne un conseil de poids personnalisé pour un exercice donné,
+     * basé sur le dernier set réalisé (RPE + reps) et la progression historique.
+     */
+    coachAdvice(exerciseId: string): { weightKg: number; reps: number; rpe: number; message: string } | null {
+      if (!exerciseId) return null;
+      const ex      = this.exercises.find(e => e.id === exerciseId);
+      const history = this._historyForExercise(exerciseId);
+      if (!history.length) {
+        // Première fois → suggérer une charge légère pour trouver le bon niveau
+        return {
+          weightKg: 0,
+          reps: 8,
+          rpe: 7,
+          message: '🆕 Première séance sur cet exercice. Commence léger (RPE 6–7) pour trouver ta charge de travail.',
+        };
+      }
+
+      // Dernier set réalisé
+      const last = history[history.length - 1]!;
+      const inc  = ex?.incrementKg ?? 2.5;
+
+      // e1RM du dernier set
+      const lastE1rm = estimateE1rmKg(last.weightKg, last.reps);
+
+      // Poids suggéré pour 8 reps @ RPE 8 depuis l'e1RM
+      // formule Epley inverse : w = e1RM / (1 + reps/30)
+      const targetReps = 8;
+      const targetRpe  = 8;
+      const rawWeight  = lastE1rm / (1 + targetReps / 30);
+      // Arrondi à l'incrément
+      const suggestedWeight = Math.round(rawWeight / inc) * inc;
+
+      // Ajustement selon RPE du dernier set
+      let message = '';
+      if (last.rpe <= 6.5) {
+        message = `💪 Ton dernier set était facile (RPE ${last.rpe}). Tu peux augmenter la charge — essaie **${suggestedWeight + inc} kg × ${targetReps}**.`;
+      } else if (last.rpe <= 7.5) {
+        message = `✅ Bonne intensité la dernière fois (RPE ${last.rpe}). Vise **${suggestedWeight} kg × ${targetReps} @ RPE ${targetRpe}**.`;
+      } else if (last.rpe <= 8.5) {
+        message = `🎯 RPE ${last.rpe} — tu étais bien dans la zone. Maintiens **${suggestedWeight} kg × ${targetReps}** ou +${inc} kg si tu te sens bien.`;
+      } else {
+        message = `⚠️ RPE ${last.rpe} — c'était lourd. Reste sur **${suggestedWeight} kg × ${targetReps}** ou recule de ${inc} kg si tu es fatigué.`;
+      }
+
+      return {
+        weightKg: suggestedWeight,
+        reps:     targetReps,
+        rpe:      targetRpe,
+        message,
+      };
+    },
+
+    /** Calcule le poids de travail recommandé depuis un e1RM entré manuellement. */
+    e1rmToWorkingWeight(e1rm: number, reps: number, exerciseId: string): number {
+      if (!e1rm || !reps) return 0;
+      const ex  = this.exercises.find(e => e.id === exerciseId);
+      const inc = ex?.incrementKg ?? 2.5;
+      const raw = e1rm / (1 + reps / 30);
+      return Math.round(raw / inc) * inc;
+    },
+
     // ─── Progression ─────────────────────────────────────────
 
     progressPoints(): { x: number; y: number; label: string }[] {
