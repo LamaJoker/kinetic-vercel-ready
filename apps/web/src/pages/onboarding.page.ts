@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import { getDeps } from '../deps';
 import type { ActivityLevel, UserGoal, UserProfile } from '../lib/user/types';
 import { saveUserProfile, loadUserProfile } from '../lib/user/storage';
@@ -44,16 +46,31 @@ export function onboarding() {
         console.warn('[onboarding] init failed:', err);
       }
 
-      if (typeof Notification !== 'undefined') {
+      if (Capacitor.isNativePlatform()) {
+        // Sur Android, vérifier l'état actuel via LocalNotifications
+        try {
+          const { display } = await LocalNotifications.checkPermissions();
+          this.notifPerm = display === 'granted' ? 'granted' : 'default';
+        } catch {
+          this.notifPerm = 'default';
+        }
+      } else if (typeof Notification !== 'undefined') {
         this.notifPerm = Notification.permission;
       }
     },
 
     async enableNotifications(): Promise<void> {
-      if (typeof Notification === 'undefined' || this.notifPerm !== 'default') return;
       try {
-        const result = await Notification.requestPermission();
-        this.notifPerm = result;
+        if (Capacitor.isNativePlatform()) {
+          // Android native : utiliser Capacitor LocalNotifications
+          const { display } = await LocalNotifications.requestPermissions();
+          this.notifPerm = display === 'granted' ? 'granted' : 'denied';
+        } else {
+          // Web : utiliser l'API Notification standard
+          if (typeof Notification === 'undefined' || this.notifPerm !== 'default') return;
+          const result = await Notification.requestPermission();
+          this.notifPerm = result;
+        }
       } catch (err) {
         console.warn('[onboarding] notification permission failed:', err);
       }
