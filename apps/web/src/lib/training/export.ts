@@ -1,8 +1,14 @@
 /**
  * Export — sérialise l'historique d'entraînement en JSON ou CSV.
- * Le fichier est déclenché via un blob + lien <a download>.
+ *
+ * Sur le web : déclenche un téléchargement classique via blob + lien `<a download>`.
+ * Sur Capacitor (Android/iOS) : écrit le fichier dans Documents puis ouvre la
+ * feuille de partage native (le `<a download>` ne fonctionne pas en WebView).
  */
 
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import type { WorkoutSession, Exercise } from './types';
 
 export interface ExportBundle {
@@ -77,9 +83,58 @@ export function buildCsvExport(
 }
 
 /**
- * downloadBlob — écrit un blob côté navigateur. No-op côté serveur / tests.
+ * downloadOrShare — écrit le fichier de la bonne façon selon la plateforme.
+ *
+ *  - Web    : Blob + <a download>
+ *  - Native : Filesystem.writeFile (Documents) + Share.share()
+ *
+ * Sur Android, certaines versions de WebView refusent silencieusement le
+ * `<a download>` ou produisent un fichier inaccessible — d'où le fallback
+ * natif obligatoire.
  */
-export function downloadBlob(content: string, filename: string, mime: string): void {
+export async function downloadOrShare(
+  content:  string,
+  filename: string,
+  mime:     string,
+): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    await downloadNative(content, filename, mime);
+  } else {
+    downloadWeb(content, filename, mime);
+  }
+}
+
+async function downloadNative(content: string, filename: string, mime: string): Promise<void> {
+  // Écrit dans Documents/ — accessible par tous les explorateurs de fichiers
+  // Android. UTF-8 pour préserver le BOM CSV et les accents.
+  const result = await Filesystem.writeFile({
+    path:      filename,
+    data:      content,
+    directory: Directory.Documents,
+    encoding:  Encoding.UTF8,
+    recursive: true,
+  });
+
+  // Tente d'ouvrir la feuille de partage native (l'utilisateur peut alors
+  // sauvegarder vers Drive, mail, etc.). Pas bloquant si échec.
+  try {
+    await Share.share({
+      title:    'Export Kinetic',
+      text:     `Export de tes données : ${filename}`,
+      url:      result.uri,
+      dialogTitle: 'Sauvegarder ton export',
+    });
+  } catch (err) {
+    // L'utilisateur a annulé OU le partage n'est pas dispo.
+    // Le fichier est déjà écrit dans Documents/, on l'informe juste.
+    console.info('[export] Share cancelled or unavailable, file saved at:', result.uri);
+    notify('success', `Fichier sauvegardé dans Documents/${filename}`);
+    return;
+  }
+  notify('success', `Export prêt : ${filename}`);
+}
+
+function downloadWeb(content: string, filename: string, mime: string): void {
   if (typeof document === 'undefined') return;
   const blob = new Blob([content], { type: mime });
   const url  = URL.createObjectURL(blob);
@@ -92,16 +147,21 @@ export function downloadBlob(content: string, filename: string, mime: string): v
   URL.revokeObjectURL(url);
 }
 
-export function exportAsJson(sessions: readonly WorkoutSession[], exercises: readonly Exercise[]): void {
-  const content = buildJsonExport(sessions, exercises);
-  const stamp   = new Date().toISOString().slice(0, 10);
-  downloadBlob(content, `kinetic-export-${stamp}.json`, 'application/json');
+/** Compatibilité descendante — anciens appels. */
+export function downloadBlob(content: string, filename: string, mime: string): void {
+  void downloadOrShare(content, filename, mime);
 }
 
-export function exportAsCsv(sessions: readonly WorkoutSession[], exercises: readonly Exercise[]): void {
+export async function exportAsJson(sessions: readonly WorkoutSession[], exercises: readonly Exercise[]): Promise<void> {
+  const content = buildJsonExport(sessions, exercises);
+  const stamp   = new Date().toISOString().slice(0, 10);
+  await downloadOrShare(content, `kinetic-export-${stamp}.json`, 'application/json');
+}
+
+export async function exportAsCsv(sessions: readonly WorkoutSession[], exercises: readonly Exercise[]): Promise<void> {
   const content = buildCsvExport(sessions, exercises);
   const stamp   = new Date().toISOString().slice(0, 10);
-  downloadBlob(content, `kinetic-export-${stamp}.csv`, 'text/csv;charset=utf-8;');
+  await downloadOrShare(content, `kinetic-export-${stamp}.csv`, 'text/csv;charset=utf-8;');
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -109,4 +169,9 @@ export function exportAsCsv(sessions: readonly WorkoutSession[], exercises: read
 /** Toujours entre guillemets (RFC 4180 — plus sûr pour Excel/Sheets). */
 function csvCell(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
+}
+
+function notify(kind: 'success' | 'error' | 'info', message: string): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind, message } }));
 }

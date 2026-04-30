@@ -15,7 +15,7 @@ import type { Exercise, WorkoutSession } from '../lib/training/types';
 import { loadExercises, loadSessions } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
 
-type Tab = 'force' | 'volume' | 'muscles' | 'records';
+type Tab = 'force' | 'volume' | 'muscles' | 'records' | 'heatmap';
 
 export function progression() {
   return {
@@ -208,6 +208,88 @@ export function progression() {
 
     get records(): PersonalRecord[] {
       return [...detectPRs(this._analyticsSets())].reverse();
+    },
+
+    // ─── Onglet HEATMAP : activité 20 semaines ───────────────
+
+    /**
+     * Retourne une grille de 20 semaines × 7 jours.
+     * Chaque cellule : { iso, count, label }
+     * count = nombre de séances ce jour-là (0, 1, 2+)
+     */
+    get heatmapGrid(): Array<Array<{ iso: string; count: number; label: string; dayIdx: number }>> {
+      // Compter les séances par date ISO (YYYY-MM-DD)
+      const byDate = new Map<string, number>();
+      for (const s of this.sessions) {
+        const iso = s.startedAt.slice(0, 10);
+        byDate.set(iso, (byDate.get(iso) ?? 0) + 1);
+      }
+
+      const WEEKS = 20;
+      const today = new Date();
+      // Aller au lundi de la semaine en cours
+      const dayOfWeek = today.getDay(); // 0=dimanche
+      // Reculer jusqu'au dimanche précédent pour avoir des semaines L→D
+      const weekStart = new Date(today);
+      // On veut que chaque colonne = une semaine (lundi → dimanche)
+      // On part du dernier dimanche passé
+      const diffToSunday = dayOfWeek; // 0 si dimanche, 1 si lundi…
+      weekStart.setDate(today.getDate() - diffToSunday - (WEEKS - 1) * 7);
+
+      const weeks: Array<Array<{ iso: string; count: number; label: string; dayIdx: number }>> = [];
+      for (let w = 0; w < WEEKS; w++) {
+        const days: Array<{ iso: string; count: number; label: string; dayIdx: number }> = [];
+        for (let d = 0; d < 7; d++) {
+          const cell = new Date(weekStart);
+          cell.setDate(weekStart.getDate() + w * 7 + d);
+          const iso = cell.toISOString().slice(0, 10);
+          const count = byDate.get(iso) ?? 0;
+          const isFuture = cell > today;
+          days.push({
+            iso,
+            count: isFuture ? -1 : count,
+            label: isFuture ? '' : cell.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }),
+            dayIdx: d,
+          });
+        }
+        weeks.push(days);
+      }
+      return weeks;
+    },
+
+    heatmapColor(count: number): string {
+      if (count < 0) return 'bg-kinetic-elevated/20';       // futur
+      if (count === 0) return 'bg-kinetic-ink ring-1 ring-white/5';
+      if (count === 1) return 'bg-kinetic-neon/30';
+      if (count === 2) return 'bg-kinetic-neon/60';
+      return 'bg-kinetic-neon shadow-[0_0_6px_rgba(168,255,0,0.6)]';
+    },
+
+    get longestStreak(): number {
+      if (this.sessions.length === 0) return 0;
+      const dates = [...new Set(this.sessions.map(s => s.startedAt.slice(0, 10)))].sort();
+      let best = 1, cur = 1;
+      for (let i = 1; i < dates.length; i++) {
+        const prev = new Date(dates[i - 1]!);
+        const curr = new Date(dates[i]!);
+        const diff = (curr.getTime() - prev.getTime()) / 86_400_000;
+        if (diff === 1) { cur++; best = Math.max(best, cur); }
+        else cur = 1;
+      }
+      return best;
+    },
+
+    get avgSessionsPerWeek(): number {
+      if (this.sessions.length < 2) return this.sessions.length;
+      const dates = this.sessions.map(s => Date.parse(s.startedAt));
+      const span = (Math.max(...dates) - Math.min(...dates)) / (7 * 86_400_000);
+      return span < 0.5 ? this.sessions.length : Math.round((this.sessions.length / span) * 10) / 10;
+    },
+
+    get avgDurationMin(): number {
+      const withDuration = this.sessions.filter(s => s.durationMin);
+      if (!withDuration.length) return 0;
+      return Math.round(withDuration.reduce((a, s) => a + (s.durationMin ?? 0), 0) / withDuration.length);
     },
   };
 }

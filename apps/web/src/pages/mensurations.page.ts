@@ -1,4 +1,6 @@
 import { getDeps } from '../deps';
+import { Capacitor } from '@capacitor/core';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 export interface MeasurementEntry {
   id: string;
@@ -43,6 +45,15 @@ const METRICS: readonly MetricDef[] = [
 ] as const;
 
 const STORAGE_KEY = 'kinetic:measurements:entries';
+const PHOTOS_KEY  = 'kinetic:measurements:photos';
+
+export interface ProgressPhoto {
+  id:    string;
+  date:  string;   // ISO date (YYYY-MM-DD)
+  takenAt: string; // ISO timestamp
+  base64: string;  // data:image/jpeg;base64,…
+  note?: string;
+}
 
 function val(entry: MeasurementEntry, key: MetricKey): number | undefined {
   return (entry as unknown as Record<string, unknown>)[key] as number | undefined;
@@ -54,6 +65,12 @@ export function mensurations() {
     activeMetric: 'chest' as MetricKey,
     period:       90,
     metrics:      METRICS as MetricDef[],
+
+    // ── Photos ────────────────────────────────────────────────
+    photos:          [] as ProgressPhoto[],
+    showPhotos:      false,
+    selectedPhotoId: null as string | null,
+    takingPhoto:     false,
 
     // Form bindings (flat — Alpine x-model requires direct properties)
     fNeck:       null as number | null,
@@ -123,6 +140,105 @@ export function mensurations() {
       const deps = await getDeps();
       const stored = await deps.storage.get(STORAGE_KEY);
       this.entries = Array.isArray(stored) ? (stored as MeasurementEntry[]) : [];
+
+      const storedPhotos = await deps.storage.get(PHOTOS_KEY);
+      this.photos = Array.isArray(storedPhotos) ? (storedPhotos as ProgressPhoto[]) : [];
+    },
+
+    // ── Photos de progression ─────────────────────────────────
+
+    get photosDesc(): ProgressPhoto[] {
+      return [...this.photos].sort((a, b) => b.takenAt.localeCompare(a.takenAt));
+    },
+
+    async takePhoto(): Promise<void> {
+      if (this.takingPhoto) return;
+      this.takingPhoto = true;
+      try {
+        let base64 = '';
+
+        if (Capacitor.isNativePlatform()) {
+          // Caméra native via Capacitor
+          const photo = await Camera.getPhoto({
+            quality:      85,
+            allowEditing: false,
+            resultType:   CameraResultType.Base64,
+            source:       CameraSource.Camera,
+            correctOrientation: true,
+          });
+          base64 = `data:image/jpeg;base64,${photo.base64String ?? ''}`;
+        } else {
+          // Fallback web — input[type=file]
+          base64 = await this._pickPhotoWeb();
+        }
+
+        if (!base64 || base64 === 'data:image/jpeg;base64,') return;
+
+        const today = new Date().toISOString().slice(0, 10);
+        const entry: ProgressPhoto = {
+          id:      crypto.randomUUID(),
+          date:    today,
+          takenAt: new Date().toISOString(),
+          base64,
+        };
+
+        const next = [...this.photos, entry];
+        const deps = await getDeps();
+        await deps.storage.set(PHOTOS_KEY, next);
+        this.photos = next;
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'success', message: 'Photo de progression ajoutée ✓' },
+        }));
+      } catch (err) {
+        console.error('[mensurations] takePhoto failed:', err);
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'error', message: 'Impossible de prendre la photo.' },
+        }));
+      } finally {
+        this.takingPhoto = false;
+      }
+    },
+
+    /** Sélection photo depuis l'appareil photo ou galerie (navigateur web). */
+    _pickPhotoWeb(): Promise<string> {
+      return new Promise((resolve, reject) => {
+        const input = document.createElement('input');
+        input.type  = 'file';
+        input.accept = 'image/*';
+        input.capture = 'environment';
+        input.onchange = async () => {
+          const file = input.files?.[0];
+          if (!file) { resolve(''); return; }
+          try {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          } catch (e) { reject(e); }
+        };
+        input.oncancel = () => resolve('');
+        input.click();
+      });
+    },
+
+    async deletePhoto(id: string): Promise<void> {
+      const next = this.photos.filter(p => p.id !== id);
+      try {
+        const deps = await getDeps();
+        await deps.storage.set(PHOTOS_KEY, next);
+        this.photos = next;
+        if (this.selectedPhotoId === id) this.selectedPhotoId = null;
+      } catch (err) {
+        console.error('[mensurations] deletePhoto failed:', err);
+      }
+    },
+
+    formatPhotoDate(iso: string): string {
+      try {
+        return new Date(iso).toLocaleDateString('fr-FR', {
+          weekday: 'short', day: 'numeric', month: 'short', year: '2-digit',
+        });
+      } catch { return iso; }
     },
 
     async addEntry(): Promise<void> {

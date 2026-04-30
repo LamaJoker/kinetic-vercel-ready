@@ -6,6 +6,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Thèmes de couleur (récompense niveau 7) ─────────────────
+   Format : R G B (entiers séparés par espaces) pour compatibilité
+   avec les modificateurs d'opacité Tailwind (bg-kinetic-neon/20…).
+   Le thème par défaut (⚡ Électrique) est défini sur :root.
+─────────────────────────────────────────────────────────────── */
+:root,
+[data-theme="electrique"] {
+  --kinetic-neon:     168 255 0;    /* lime vert */
+  --kinetic-electric: 255 106 0;    /* orange */
+}
+
+[data-theme="cyber"] {
+  --kinetic-neon:     0 224 255;    /* cyan */
+  --kinetic-electric: 0 112 255;    /* bleu électrique */
+}
+
+[data-theme="violet"] {
+  --kinetic-neon:     192 96 255;   /* violet */
+  --kinetic-electric: 255 64 160;   /* rose magenta */
+}
+
+[data-theme="phoenix"] {
+  --kinetic-neon:     255 210 0;    /* or */
+  --kinetic-electric: 255 60 50;    /* rouge vif */
+}
+
+[data-theme="fantome"] {
+  --kinetic-neon:     220 220 230;  /* blanc cassé */
+  --kinetic-electric: 140 140 160;  /* gris argenté */
+}
+
 /* ─── Layout iOS-friendly ─────────────────────────────────── */
 html {
   height: -webkit-fill-available;
@@ -18,8 +49,8 @@ body {
      Néon en haut-gauche, orange en bas-droite — donne de la profondeur
      sans saturer le contenu. */
   background-image:
-    radial-gradient(circle at 12% 0%,  rgba(168, 255, 0, 0.06)  0%, transparent 45%),
-    radial-gradient(circle at 88% 100%, rgba(255, 106, 0, 0.05) 0%, transparent 45%);
+    radial-gradient(circle at 12% 0%,  rgb(var(--kinetic-neon)     / 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 88% 100%, rgb(var(--kinetic-electric) / 0.05) 0%, transparent 45%);
   background-attachment: fixed;
 }
 

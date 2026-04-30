@@ -9,6 +9,7 @@ import { loadUserProfile } from '../lib/user/storage';
 import { suggestProgression, needsDeload, type ProgressionSuggestion, type PerformedSet } from '@kinetic/core';
 import { suggestedRestSec, requestNotificationPermission } from '../lib/training/rest-timer';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
+import { hapticLight, hapticMedium, hapticSuccess, hapticHeavy } from '../lib/haptics';
 
 type Draft = { reps: number; weightKg: number; rpe: number };
 
@@ -136,6 +137,10 @@ export function seances() {
     restEndsAtMs: 0,
     restPresetSec: 90,
     _restNotifTimer: null as ReturnType<typeof setTimeout> | null,
+    // ── PR Celebration ────────────────────────────────────────
+    prCelebration: null as { exerciseName: string; weightKg: number; reps: number; e1rmKg: number } | null,
+    _prDismissTimer: null as ReturnType<typeof setTimeout> | null,
+
     // Cache for progressionSuggestion — keyed by exerciseId, invalidated when
     // sessions array changes (tracked via its length as a cheap version counter).
     _suggestionCache: null as Map<string, ProgressionSuggestion | null> | null,
@@ -178,6 +183,19 @@ export function seances() {
         const bwEntries = await deps.storage.get<Array<{weight: number}>>('kinetic:bodyweight:entries');
         if (Array.isArray(bwEntries) && bwEntries.length > 0) {
           this.latestBodyweight = bwEntries.at(-1)?.weight ?? null;
+        }
+
+        // ── Auto-démarrer depuis le programme du jour ─────────────────────
+        const autoTemplateId = sessionStorage.getItem('kinetic:program:auto-template');
+        if (autoTemplateId) {
+          sessionStorage.removeItem('kinetic:program:auto-template');
+          const t = this.templates.find(x => x.id === autoTemplateId);
+          if (t) {
+            this.startFromTemplate(t.id);
+            window.dispatchEvent(new CustomEvent('kinetic:notify', {
+              detail: { kind: 'info', message: `Séance "${t.name}" chargée depuis ton programme 🎯` },
+            }));
+          }
         }
       } catch (err) {
         console.error('[seances] init failed:', err);
@@ -303,11 +321,18 @@ export function seances() {
       const sec = Math.max(15, Math.min(600, Math.floor(Number(this.restPresetSec)) || 90));
       this.restPresetSec = sec;
       this.restEndsAtMs = this.nowMs + sec * 1000;
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(100);
+      hapticMedium();
       if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
         if (this._restNotifTimer) clearTimeout(this._restNotifTimer);
         this._restNotifTimer = setTimeout(() => {
+          hapticHeavy();
           new Notification('⏱ Repos terminé !', { body: 'Prêt pour la série suivante', icon: '/icons/icon-96.png', tag: 'rest' });
+        }, sec * 1000);
+      } else {
+        // Vibration de fin même sans notifications
+        if (this._restNotifTimer) clearTimeout(this._restNotifTimer);
+        this._restNotifTimer = setTimeout(() => {
+          hapticHeavy();
         }, sec * 1000);
       }
     },
@@ -363,6 +388,9 @@ export function seances() {
       const entry = this.currentSession.entries.find(e => e.exerciseId === exerciseId);
       if (!entry) return;
 
+      // ── Détecter PR AVANT d'ajouter la série ─────────────────────────────
+      const isPr = this.isNewPr(exerciseId, weightKg, reps);
+
       this.currentSession = {
         ...this.currentSession,
         entries: this.currentSession.entries.map(e => {
@@ -371,9 +399,30 @@ export function seances() {
         }),
       };
 
+      if (isPr) {
+        const e1rmKg = Math.round(estimateE1rmKg(weightKg, reps) * 10) / 10;
+        this.prCelebration = {
+          exerciseName: this.exerciseName(exerciseId),
+          weightKg,
+          reps,
+          e1rmKg,
+        };
+        hapticSuccess();
+        // Dismiss automatique après 5 s
+        if (this._prDismissTimer) clearTimeout(this._prDismissTimer);
+        this._prDismissTimer = setTimeout(() => { this.prCelebration = null; }, 5000);
+      } else {
+        hapticLight();
+      }
+
       // Auto-démarrer le chrono de repos après chaque série (durée basée sur le RPE)
       this.restPresetSec = this.smartRestSec();
       this.startRest();
+    },
+
+    dismissPrCelebration(): void {
+      this.prCelebration = null;
+      if (this._prDismissTimer) { clearTimeout(this._prDismissTimer); this._prDismissTimer = null; }
     },
 
     /** Historique de sets pour un exercice, toutes séances confondues (du plus ancien au plus récent). */
@@ -428,12 +477,97 @@ export function seances() {
       await requestNotificationPermission();
     },
 
-    exportJson(): void {
-      exportAsJson(this.sessions, this.exercises);
+    async exportJson(): Promise<void> {
+      try {
+        await exportAsJson(this.sessions, this.exercises);
+      } catch (err) {
+        console.error('[seances] exportJson failed:', err);
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'error', message: 'Échec export JSON. Réessaie.' },
+        }));
+      }
     },
 
-    exportCsv(): void {
-      exportAsCsv(this.sessions, this.exercises);
+    async exportCsv(): Promise<void> {
+      try {
+        await exportAsCsv(this.sessions, this.exercises);
+      } catch (err) {
+        console.error('[seances] exportCsv failed:', err);
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'error', message: 'Échec export CSV. Réessaie.' },
+        }));
+      }
+    },
+
+    // ─── Détails / suppression d'une séance ─────────────────────────────────
+
+    expandedSessionId: null as string | null,
+    confirmDeleteId:   null as string | null,
+    deletingSession:   false,
+
+    /** Bascule l'affichage détaillé d'une séance dans l'historique. */
+    toggleSessionDetail(id: string): void {
+      this.expandedSessionId = this.expandedSessionId === id ? null : id;
+    },
+
+    /** Demande de confirmation avant suppression. */
+    askDeleteSession(id: string): void {
+      this.confirmDeleteId = id;
+    },
+
+    cancelDelete(): void {
+      this.confirmDeleteId = null;
+    },
+
+    /** Supprime définitivement une séance et persiste. */
+    async deleteSession(id: string): Promise<void> {
+      if (this.deletingSession) return;
+      this.deletingSession = true;
+      try {
+        const deps = await getDeps();
+        const next = this.sessions.filter((s) => s.id !== id);
+        await saveSessions(deps.storage, next);
+        this.sessions          = next;
+        this.confirmDeleteId   = null;
+        this.expandedSessionId = null;
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'success', message: 'Séance supprimée.' },
+        }));
+      } catch (err) {
+        console.error('[seances] deleteSession failed:', err);
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'error', message: 'Échec de la suppression.' },
+        }));
+      } finally {
+        this.deletingSession = false;
+      }
+    },
+
+    /** Retourne le nom de l'exercice à partir de son id. */
+    exerciseNameOf(id: string): string {
+      return this.exercises.find((e) => e.id === id)?.name ?? id;
+    },
+
+    /** e1RM Epley pour un set donné. */
+    setE1rm(weightKg: number, reps: number): number {
+      return Math.round(estimateE1rmKg(weightKg, reps) * 10) / 10;
+    },
+
+    /** Date au format long pour l'entête de détail. */
+    formatDateLong(iso: string): string {
+      try {
+        return new Date(iso).toLocaleDateString('fr-FR', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+        });
+      } catch { return iso; }
+    },
+
+    /** Heure HH:mm. */
+    formatTime(iso: string): string {
+      try {
+        const d = new Date(iso);
+        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      } catch { return ''; }
     },
 
     // ─── Coach IA ────────────────────────────────────────────────────────────
@@ -450,7 +584,7 @@ export function seances() {
      *  - Hypertrophie: Schoenfeld (2010), Helms et al. (2018) — 6–12 reps @ RPE 7–9
      *  - Endurance   : ACSM (2009) — 15+ reps @ RPE 6–8
      */
-    coachAdvice(exerciseId: string): { weightKg: number; reps: number; rpe: number; message: string; goalLabel: string; science: string } | null {
+    coachAdvice(exerciseId: string): { weightKg: number; reps: number; rpe: number; message: string; goalLabel: string; science: string; periodizationNote: string } | null {
       if (!exerciseId) return null;
       const ex      = this.exercises.find(e => e.id === exerciseId);
       const history = this._historyForExercise(exerciseId);
@@ -464,6 +598,7 @@ export function seances() {
           goalLabel: preset.label,
           science:   preset.science,
           message:   `🆕 Première séance. Commence léger (RPE 6–7) pour trouver ta charge, puis vise ${preset.rpeZone}.`,
+          periodizationNote: '',
         };
       }
 
@@ -497,6 +632,23 @@ export function seances() {
         message = `🔴 RPE ${last.rpe} — c'était trop lourd pour cet objectif. Recule à **${lower} kg × ${preset.targetReps}** pour rester dans la zone ${preset.rpeZone}.`;
       }
 
+      // ── Note de périodisation (Coach Avancé, niveau 3+) ─────────────────
+      let periodizationNote = '';
+      if (history.length >= 3) {
+        const recent3 = history.slice(-3);
+        const avgRpe  = recent3.reduce((s, h) => s + h.rpe, 0) / 3;
+        const e1rms   = recent3.map((h) => estimateE1rmKg(h.weightKg, h.reps));
+        const e1rmProgression = e1rms[2]! - e1rms[0]!;
+
+        if (avgRpe >= 9.0) {
+          periodizationNote = '📉 Fatigue accumulée détectée (RPE moyen ≥ 9 sur 3 séances). Envisage une semaine de décharge à 60 % du volume habituel.';
+        } else if (e1rmProgression > 0 && avgRpe < preset.targetRpe + 0.5) {
+          periodizationNote = `📈 Bonne progression : +${e1rmProgression.toFixed(1)} kg d'e1RM sur les 3 dernières séances. Continue la surcharge progressive.`;
+        } else if (Math.abs(e1rmProgression) < 1.5 && history.length >= 4) {
+          periodizationNote = '🔄 Stagnation possible : l\'e1RM évolue peu depuis 3–4 séances. Envisage de changer le schéma de répétitions ou d\'ajouter une série.';
+        }
+      }
+
       return {
         weightKg:  suggestedWeight,
         reps:      preset.targetReps,
@@ -504,6 +656,7 @@ export function seances() {
         goalLabel: preset.label,
         science:   preset.science,
         message,
+        periodizationNote,
       };
     },
 

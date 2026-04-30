@@ -122,7 +122,7 @@ export function profile() {
             detail: { kind: 'info', message: 'Aucune séance à exporter pour le moment.' },
           }));
         }
-        exportAsJson(s, e);
+        await exportAsJson(s, e);
       } catch (err) {
         console.error('[profile] exportJson failed:', err);
         window.dispatchEvent(new CustomEvent('kinetic:notify', {
@@ -148,7 +148,7 @@ export function profile() {
             detail: { kind: 'info', message: 'Aucune séance à exporter pour le moment.' },
           }));
         }
-        exportAsCsv(s, e);
+        await exportAsCsv(s, e);
       } catch (err) {
         console.error('[profile] exportCsv failed:', err);
         window.dispatchEvent(new CustomEvent('kinetic:notify', {

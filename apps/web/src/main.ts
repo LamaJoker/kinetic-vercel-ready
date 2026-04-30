@@ -8,6 +8,7 @@ import { authStore }          from './stores/auth';
 import { notificationsStore } from './stores/notifications';
 import { xpStore }            from './stores/xp';
 import { vitaliteStore }      from './stores/vitalite';
+import { rewardsStore }       from './stores/rewards';
 import { offlineStore }       from './stores/offline';
 import { nutritionStore }     from './stores/nutrition';
 import { goalsStore }         from './stores/goals';
@@ -38,6 +39,7 @@ Alpine.store('offline',       offlineStore());
 Alpine.store('auth',          authStore());
 Alpine.store('xp',            xpStore());
 Alpine.store('vitalite',      vitaliteStore());
+Alpine.store('rewards',       rewardsStore());
 Alpine.store('nutrition',     nutritionStore());
 Alpine.store('goals',         goalsStore());
 

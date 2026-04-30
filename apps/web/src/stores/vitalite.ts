@@ -6,7 +6,7 @@
  *  - Annuler une tâche cochée par erreur (undo)
  *  - Historique des 7 derniers jours
  */
-import { createTask, completeTask_usecase, syncDailyLog } from '@kinetic/core';
+import { createTask, completeTask_usecase, syncDailyLog, REWARDS } from '@kinetic/core';
 import type { Task } from '@kinetic/core';
 import { getDeps } from '../deps';
 
@@ -168,8 +168,22 @@ export function vitaliteStore() {
         void syncDailyLog({ storage: deps.storage, clock: deps.clock, dailyLogSync: deps.dailyLogSync })
           .catch(err => console.warn('[vitalite] sync failed:', err));
 
+        // Bonus XP +20 % débloqué au niveau 5
+        if (this._hasXpBonus()) {
+          const bonusXp = Math.round(task.xp * 0.2);
+          try {
+            const xpData  = await deps.storage.get<{ xp: number }>('kinetic:xp');
+            const newBonus = (xpData?.xp ?? 0) + bonusXp;
+            await deps.storage.set('kinetic:xp', { xp: newBonus });
+            await this._refreshXpStore();
+          } catch { /* silently ignore bonus errors */ }
+        }
+
         if (result.leveledUp && result.newLevel !== undefined) {
-          window.dispatchEvent(new CustomEvent('kinetic:levelup', { detail: { level: result.newLevel, title: '' } }));
+          const reward = REWARDS.find((r) => r.level === result.newLevel);
+          window.dispatchEvent(new CustomEvent('kinetic:levelup', {
+            detail: { level: result.newLevel, title: reward?.title ?? '' },
+          }));
         }
       } catch (err) {
         console.error('[vitalite] complete failed:', err);
@@ -293,8 +307,9 @@ export function vitaliteStore() {
         const taskMap = new Map(allSpecs.map(s => [s.id, { id: s.id, title: s.title, icon: s.icon }]));
 
         const days: HistoryDay[] = [];
-        // Charger les 7 derniers jours (excluant aujourd'hui)
-        for (let i = 1; i <= 7; i++) {
+        // Nombre de jours selon récompense débloquée (7 / 14 / 30)
+        const maxDays = this._rewardsHistoryDays();
+        for (let i = 1; i <= maxDays; i++) {
           const date   = dateIso(-i);
           const doneIds = (await deps.storage.get<string[]>(`kinetic:vitalite:done:${date}`)) ?? [];
           days.push({
@@ -337,6 +352,22 @@ export function vitaliteStore() {
 
     // Emojis proposés pour les tâches custom
     emojiSuggestions: ['⭐','🏋️','🧘','🚶','🥗','💧','📚','📝','🎯','🔥','💪','🏃','🧠','😴','🚴','🤸','🥦','🫁','⚡','🎸'],
+
+    // ─── Helpers récompenses ─────────────────────────────────────────────────
+
+    _hasXpBonus(): boolean {
+      try {
+        const Alpine = (window as unknown as { Alpine: { store: (n: string) => { currentLevel?: number } } }).Alpine;
+        return (Alpine?.store('xp')?.currentLevel ?? 1) >= 5;
+      } catch { return false; }
+    },
+
+    _rewardsHistoryDays(): number {
+      try {
+        const Alpine = (window as unknown as { Alpine: { store: (n: string) => { historyDays?: number } } }).Alpine;
+        return (Alpine?.store('rewards') as { historyDays?: number })?.historyDays ?? 7;
+      } catch { return 7; }
+    },
   };
 }
 

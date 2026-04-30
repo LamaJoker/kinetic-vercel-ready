@@ -12,8 +12,11 @@ export default {
         'kinetic-teal':     '#00C2A0',
         'kinetic-coral':    '#FF6B6B',
         'kinetic-gold':     '#FFD166',
-        'kinetic-neon':     '#A8FF00',   // vert lime — croissance / complétion
-        'kinetic-electric': '#FF6A00',   // orange — énergie / intensité
+        // Les deux couleurs thématiques sont pilotées par des variables CSS
+        // pour permettre le changement de thème au runtime (récompense Lv7).
+        // Format "R G B" (sans #) pour que les modificateurs d'opacité Tailwind fonctionnent.
+        'kinetic-neon':     'rgb(var(--kinetic-neon) / <alpha-value>)',
+        'kinetic-electric': 'rgb(var(--kinetic-electric) / <alpha-value>)',
         'kinetic-ink':      '#070708',   // body — noir profond bleuté
         'kinetic-surface':  '#121214',   // cards
         'kinetic-elevated': '#1A1A1D',   // panneaux internes (formulaires)

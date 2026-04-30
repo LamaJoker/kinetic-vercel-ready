@@ -343,7 +343,30 @@ export function program() {
       window.location.href = '/seances';
     },
 
-    startTodaySession(): void {
+    /**
+     * Démarre la séance du jour en pré-chargeant le modèle correspondant
+     * au focus du jour. Si aucun template n'est encore généré, on redirige
+     * simplement vers la page séances en mode libre.
+     */
+    async startTodaySession(): Promise<void> {
+      const focus = this.todayFocus;
+      if (!focus || focus.restDay) {
+        window.location.href = '/seances';
+        return;
+      }
+      try {
+        const deps = await getDeps();
+        const templates = (await deps.storage.get<TrainingTemplate[]>('kinetic:training:templates')) ?? [];
+        const match = templates.find(t =>
+          t.name.toLowerCase() === focus.focus.toLowerCase() ||
+          t.name.toLowerCase().includes(focus.focus.toLowerCase()) ||
+          focus.focus.toLowerCase().includes(t.name.toLowerCase())
+        );
+        if (match) {
+          // Passe le template ID via sessionStorage — seances.page.ts le récupère dans init()
+          sessionStorage.setItem('kinetic:program:auto-template', match.id);
+        }
+      } catch {}
       window.location.href = '/seances';
     },
   };

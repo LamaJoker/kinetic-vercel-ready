@@ -107,3 +107,85 @@ export function getNewLevel(xpBefore: number, xpAfter: number): Level | null {
   }
   return null;
 }
+
+// ─── Récompenses par niveau ──────────────────────────────────────────────────
+
+export type RewardKind = 'base' | 'history' | 'coach' | 'xp_boost' | 'streak_freeze' | 'theme' | 'badge';
+
+export interface Reward {
+  /** Niveau requis pour débloquer cette récompense. */
+  level:       number;
+  emoji:       string;
+  title:       string;
+  description: string;
+  kind:        RewardKind;
+}
+
+/**
+ * REWARDS — une récompense concrète par niveau.
+ * Les effets fonctionnels sont appliqués dans les stores Alpine
+ * qui lisent `$store.rewards.*` ou `$store.xp.currentLevel`.
+ */
+export const REWARDS: readonly Reward[] = [
+  {
+    level: 1,
+    emoji: '⚡',
+    title: 'App débloquée',
+    description: 'Accès à toutes les fonctionnalités de base de Kinetic.',
+    kind: 'base',
+  },
+  {
+    level: 2,
+    emoji: '📅',
+    title: 'Historique 14 jours',
+    description: 'Remonte jusqu\'à 14 jours dans ton historique de routine vitalité.',
+    kind: 'history',
+  },
+  {
+    level: 3,
+    emoji: '🎯',
+    title: 'Coach Avancé',
+    description: 'Le Coach IA affiche des notes de périodisation et l\'indice de fatigue RPE.',
+    kind: 'coach',
+  },
+  {
+    level: 4,
+    emoji: '📊',
+    title: 'Historique 30 jours',
+    description: 'Visualise un mois complet d\'historique pour analyser tes tendances.',
+    kind: 'history',
+  },
+  {
+    level: 5,
+    emoji: '⚡',
+    title: 'Bonus XP +20 %',
+    description: 'Toutes tes tâches vitalité accordent 20 % de XP en plus. Bien mérité.',
+    kind: 'xp_boost',
+  },
+  {
+    level: 6,
+    emoji: '🧊',
+    title: 'Gel de Streak',
+    description: '1 jeton par semaine pour protéger ton streak sans activité ce jour-là.',
+    kind: 'streak_freeze',
+  },
+  {
+    level: 7,
+    emoji: '🎨',
+    title: 'Thèmes de couleur',
+    description: '5 palettes de couleurs débloquées : Électrique, Cyber, Violet, Phoenix, Fantôme.',
+    kind: 'theme',
+  },
+  {
+    level: 8,
+    emoji: '👑',
+    title: 'Badge Légende',
+    description: 'Profil doré. Tu as tout débloqué — tu es une légende Kinetic.',
+    kind: 'badge',
+  },
+] as const;
+
+/** Retourne la récompense associée à un niveau, ou undefined. */
+export function getRewardForLevel(level: number): Reward | undefined {
+  return REWARDS.find((r) => r.level === level);
+}

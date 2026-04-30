@@ -15,12 +15,14 @@ export type {
 // ─── Domain (logique pure) ────────────────────────────────────
 export {
   LEVELS,
+  REWARDS,
   computeXpState,
   addXp,
   didLevelUp,
   getNewLevel,
+  getRewardForLevel,
 }                                             from './domain/xp.domain.js';
-export type { Level, XpState }                from './domain/xp.domain.js';
+export type { Level, XpState, Reward, RewardKind } from './domain/xp.domain.js';
 
 export {
   createStreak,

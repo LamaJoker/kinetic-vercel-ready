@@ -1,4 +1,48 @@
 <div x-data="seances" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
+
+  <!-- ── Overlay Nouveau PR ──────────────────────────────────────────────── -->
+  <div x-show="prCelebration !== null"
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="opacity-0 scale-90"
+       x-transition:enter-end="opacity-100 scale-100"
+       x-transition:leave="transition ease-in duration-200"
+       x-transition:leave-start="opacity-100 scale-100"
+       x-transition:leave-end="opacity-0 scale-90"
+       @click="dismissPrCelebration()"
+       class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm cursor-pointer">
+    <div class="relative w-full max-w-xs bg-gradient-to-br from-kinetic-ink via-gray-900 to-kinetic-ink
+                border-2 border-kinetic-electric rounded-3xl p-6 text-center overflow-hidden
+                shadow-[0_0_60px_rgba(255,106,0,0.4)]">
+      <!-- Particules decoratives -->
+      <div class="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
+        <div class="absolute -top-8 -left-8 w-32 h-32 bg-kinetic-electric/20 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute -bottom-8 -right-8 w-32 h-32 bg-kinetic-neon/20 rounded-full blur-3xl animate-pulse"></div>
+      </div>
+      <!-- Contenu -->
+      <div class="relative z-10">
+        <div class="text-5xl mb-2 animate-bounce">🏆</div>
+        <p class="text-xs uppercase tracking-[0.25em] font-bold text-kinetic-electric mb-1">Nouveau Record</p>
+        <p class="text-white font-black text-xl mb-3 leading-tight" x-text="prCelebration?.exerciseName"></p>
+        <div class="flex items-center justify-center gap-3 mb-4">
+          <div class="text-center">
+            <p class="text-[10px] text-gray-400 uppercase tracking-wider">Charge</p>
+            <p class="text-3xl font-black text-white" x-text="prCelebration?.weightKg + ' kg'"></p>
+          </div>
+          <div class="text-gray-500 text-xl">×</div>
+          <div class="text-center">
+            <p class="text-[10px] text-gray-400 uppercase tracking-wider">Reps</p>
+            <p class="text-3xl font-black text-white" x-text="prCelebration?.reps"></p>
+          </div>
+        </div>
+        <div class="bg-kinetic-electric/15 ring-1 ring-kinetic-electric/40 rounded-2xl px-4 py-2.5 mb-4">
+          <p class="text-[10px] text-gray-400 uppercase tracking-wider">e1RM estimé</p>
+          <p class="text-2xl font-black text-kinetic-electric" x-text="prCelebration?.e1rmKg + ' kg'"></p>
+        </div>
+        <p class="text-xs text-gray-500">Appuie n'importe où pour fermer</p>
+      </div>
+    </div>
+  </div>
+
   <div class="flex items-center gap-3 mb-6">
     <a href="/" class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
@@ -228,6 +272,15 @@
                 <!-- Source scientifique -->
                 <p class="text-[10px] text-gray-600 italic mt-1"
                    x-text="'Source : ' + (coachAdvice(entry.exerciseId)?.science ?? '')"></p>
+
+                <!-- Note de périodisation (Coach Avancé — niveau 3+) -->
+                <template x-if="$store.rewards.hasAdvancedCoach && coachAdvice(entry.exerciseId)?.periodizationNote">
+                  <div class="mt-2 flex items-start gap-1.5 bg-purple-900/30 ring-1 ring-purple-500/20 rounded-lg px-2.5 py-2">
+                    <span class="text-xs text-purple-300 font-semibold uppercase tracking-wide mr-1">Périodisation</span>
+                    <p class="text-xs text-purple-200 leading-relaxed"
+                       x-text="coachAdvice(entry.exerciseId)?.periodizationNote"></p>
+                  </div>
+                </template>
               </div>
             </div>
           </template>
@@ -311,21 +364,102 @@
     </template>
 
     <div class="space-y-2" x-show="sessions.length > 0">
-      <template x-for="s in sessions.slice().reverse().slice(0, 10)" :key="s.id">
-        <div class="bg-kinetic-elevated/60 border border-white/10 rounded-xl p-3">
-          <div class="flex items-center justify-between gap-2">
-            <p class="text-white font-medium min-w-0 truncate" x-text="s.name"></p>
-            <span class="text-xs text-gray-500 flex-shrink-0" x-text="formatDate(s.startedAt)"></span>
+      <template x-for="s in sessions.slice().reverse().slice(0, 20)" :key="s.id">
+        <div class="bg-kinetic-elevated/60 border border-white/10 rounded-xl overflow-hidden">
+
+          <!-- Ligne résumé (cliquable pour étendre) -->
+          <button @click="toggleSessionDetail(s.id)"
+                  class="w-full text-left p-3 hover:bg-white/5 active:bg-white/10 transition-colors">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-white font-medium min-w-0 truncate" x-text="s.name"></p>
+              <span class="text-xs text-gray-500 flex-shrink-0" x-text="formatDate(s.startedAt)"></span>
+            </div>
+            <div class="flex items-center justify-between gap-2 mt-1">
+              <p class="text-xs text-gray-500">
+                <span x-text="s.entries.length"></span> exercice(s)
+                <span x-show="s.durationMin" class="mx-1">·</span>
+                <span x-show="s.durationMin" x-text="s.durationMin + ' min'"></span>
+                <span x-show="s.caloriesKcal" class="mx-1">·</span>
+                <span x-show="s.caloriesKcal" x-text="'~' + s.caloriesKcal + ' kcal'"></span>
+              </p>
+              <span class="text-xs text-gray-500 transition-transform"
+                    :class="expandedSessionId === s.id ? 'rotate-180' : ''">▾</span>
+            </div>
+          </button>
+
+          <!-- Détail étendu -->
+          <div x-show="expandedSessionId === s.id"
+               x-transition:enter="transition ease-out duration-200"
+               x-transition:enter-start="opacity-0 -translate-y-1"
+               x-transition:enter-end="opacity-100 translate-y-0"
+               class="border-t border-white/10 px-3 pt-3 pb-3 bg-kinetic-ink/40">
+
+            <!-- Méta -->
+            <div class="flex items-center justify-between text-[11px] text-gray-500 mb-3">
+              <span x-text="formatDateLong(s.startedAt)"></span>
+              <span class="font-mono"
+                    x-text="formatTime(s.startedAt) + (s.endedAt ? ' → ' + formatTime(s.endedAt) : '')"></span>
+            </div>
+
+            <!-- Liste exercices + sets -->
+            <div class="space-y-2 mb-3">
+              <template x-for="entry in s.entries" :key="entry.exerciseId">
+                <div class="bg-kinetic-surface/60 rounded-lg p-2.5">
+                  <p class="text-sm font-semibold text-white mb-1.5"
+                     x-text="exerciseNameOf(entry.exerciseId)"></p>
+                  <div class="space-y-1">
+                    <template x-for="set in entry.sets" :key="set.setIndex">
+                      <div class="flex items-center justify-between text-xs gap-2">
+                        <span class="text-gray-500 w-6 shrink-0"
+                              x-text="'#' + (set.setIndex + 1)"></span>
+                        <span class="text-white flex-1">
+                          <span class="font-mono font-bold" x-text="set.weightKg + ' kg'"></span>
+                          <span class="text-gray-500 mx-1">×</span>
+                          <span class="font-mono" x-text="set.reps + ' reps'"></span>
+                        </span>
+                        <span class="text-kinetic-electric text-[10px] font-bold w-12 text-right"
+                              x-text="'RPE ' + set.rpe"></span>
+                        <span class="text-gray-600 text-[10px] font-mono w-14 text-right"
+                              x-text="setE1rm(set.weightKg, set.reps) + ' kg'"
+                              :title="'e1RM estimé'"></span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-2">
+              <template x-if="confirmDeleteId !== s.id">
+                <button @click="askDeleteSession(s.id)"
+                        class="flex-1 text-xs px-3 py-2 rounded-lg bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30 text-kinetic-electric font-semibold hover:bg-kinetic-electric/20 transition-colors">
+                  🗑 Supprimer
+                </button>
+              </template>
+              <template x-if="confirmDeleteId === s.id">
+                <div class="flex-1 flex gap-2">
+                  <button @click="cancelDelete()"
+                          :disabled="deletingSession"
+                          class="flex-1 text-xs px-3 py-2 rounded-lg bg-kinetic-surface ring-1 ring-white/10 text-gray-300 font-semibold hover:ring-white/20 transition-colors">
+                    Annuler
+                  </button>
+                  <button @click="deleteSession(s.id)"
+                          :disabled="deletingSession"
+                          class="flex-1 text-xs px-3 py-2 rounded-lg bg-kinetic-electric text-white font-bold hover:brightness-110 disabled:opacity-50 transition-all">
+                    <span x-show="!deletingSession">Confirmer</span>
+                    <span x-show="deletingSession">…</span>
+                  </button>
+                </div>
+              </template>
+            </div>
           </div>
-          <p class="text-xs text-gray-500 mt-1">
-            <span x-text="s.entries.length"></span> exercice(s)
-            <span x-show="s.durationMin" class="mx-1">·</span>
-            <span x-show="s.durationMin" x-text="s.durationMin + ' min'"></span>
-            <span x-show="s.caloriesKcal" class="mx-1">·</span>
-            <span x-show="s.caloriesKcal" x-text="'~' + s.caloriesKcal + ' kcal'"></span>
-          </p>
         </div>
       </template>
+
+      <p class="text-[10px] text-gray-600 text-center pt-1"
+         x-show="sessions.length > 20"
+         x-text="`+${sessions.length - 20} séance(s) plus anciennes — exporte en JSON pour tout consulter.`"></p>
     </div>
   </div>
 

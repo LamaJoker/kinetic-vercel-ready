@@ -91,57 +91,114 @@
         </button>
       </div>
 
-      <!-- Formulaire ajout rapide -->
+      <!-- Formulaire ajout avec recherche intelligente -->
       <div x-show="showAddForm" x-transition class="bg-kinetic-elevated/60 rounded-xl p-3 mb-3">
-        <p class="text-xs text-gray-500 mb-2">Ajout rapide</p>
+
+        <!-- Repas -->
         <select x-model="newMeal.mealName"
-                class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm mb-2">
-          <option value="Matin">Matin</option>
-          <option value="Déjeuner">Déjeuner</option>
-          <option value="Collation">Collation</option>
-          <option value="Dîner">Dîner</option>
+                class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm mb-3 text-white">
+          <option value="Matin">🌅 Matin</option>
+          <option value="Déjeuner">☀️ Déjeuner</option>
+          <option value="Collation">🍎 Collation</option>
+          <option value="Dîner">🌙 Dîner</option>
         </select>
-        <input x-model="newMeal.name" placeholder="Aliment (ex: Blanc de poulet)"
-               class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm mb-2"/>
-        <div class="grid grid-cols-2 gap-2 mb-2">
-          <div>
-            <label class="text-xs text-gray-500">Grammes</label>
-            <input x-model.number="newMeal.grams" type="number" min="1"
-                   class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm"/>
+
+        <!-- Recherche aliment -->
+        <div class="relative mb-3">
+          <div class="flex gap-2 items-center">
+            <div class="relative flex-1">
+              <input x-model="foodQuery"
+                     @input.debounce.200ms="searchFood()"
+                     @focus="searchFood()"
+                     placeholder="🔍 Rechercher un aliment…"
+                     class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 pr-8"/>
+              <button x-show="foodQuery" @click="clearFoodSelection()"
+                      class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs">✕</button>
+            </div>
           </div>
-          <div>
-            <label class="text-xs text-gray-500">Kcal / 100g</label>
-            <input x-model.number="newMeal.kcal" type="number" min="1"
-                   class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm"/>
+
+          <!-- Badge aliment sélectionné depuis la DB -->
+          <template x-if="selectedFood">
+            <div class="mt-1.5 flex items-center gap-2 bg-kinetic-neon/10 ring-1 ring-kinetic-neon/30 rounded-lg px-2.5 py-1.5">
+              <span class="text-kinetic-neon text-xs">✓</span>
+              <span class="text-xs text-white font-medium" x-text="selectedFood.name"></span>
+              <span class="ml-auto text-[10px] text-gray-500"
+                    x-text="`${selectedFood.kcal} kcal · P${selectedFood.protein}g · G${selectedFood.carbs}g · L${selectedFood.fat}g /100g`"></span>
+            </div>
+          </template>
+
+          <!-- Liste résultats -->
+          <div x-show="foodResults.length > 0"
+               class="absolute z-20 left-0 right-0 top-full mt-1 bg-kinetic-surface border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+            <template x-for="food in foodResults" :key="food.id">
+              <button @click="selectFood(food)"
+                      class="w-full text-left px-3 py-2.5 hover:bg-kinetic-elevated border-b border-white/5 last:border-0 transition-colors">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm text-white" x-text="food.name"></span>
+                  <span class="text-[10px] text-gray-500 shrink-0"
+                        x-text="`${food.kcal}kcal · P${food.protein}g`"></span>
+                </div>
+              </button>
+            </template>
+            <button @click="foodResults = []"
+                    class="w-full text-center py-2 text-xs text-gray-600 hover:text-gray-400 border-t border-white/5">
+              Saisie manuelle →
+            </button>
           </div>
         </div>
-        <div class="grid grid-cols-3 gap-2 mb-3">
-          <div>
-            <label class="text-xs text-gray-500">Prot /100g</label>
-            <input x-model.number="newMeal.protein" type="number" min="0" step="0.1"
-                   class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm"/>
+
+        <!-- Saisie manuelle si pas de sélection depuis DB -->
+        <template x-if="!selectedFood">
+          <div class="mb-3">
+            <input x-model="newMeal.name" placeholder="Nom de l'aliment (saisie manuelle)"
+                   class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm mb-2 text-white"/>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+              <div>
+                <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1">Kcal/100g</label>
+                <input x-model.number="newMeal.kcal" type="number" min="0"
+                       class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"/>
+              </div>
+              <div>
+                <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1">Protéines/100g</label>
+                <input x-model.number="newMeal.protein" type="number" min="0" step="0.1"
+                       class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"/>
+              </div>
+              <div>
+                <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1">Glucides/100g</label>
+                <input x-model.number="newMeal.carbs" type="number" min="0" step="0.1"
+                       class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"/>
+              </div>
+              <div>
+                <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1">Lipides/100g</label>
+                <input x-model.number="newMeal.fat" type="number" min="0" step="0.1"
+                       class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"/>
+              </div>
+            </div>
           </div>
-          <div>
-            <label class="text-xs text-gray-500">Gluc /100g</label>
-            <input x-model.number="newMeal.carbs" type="number" min="0" step="0.1"
-                   class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm"/>
+        </template>
+
+        <!-- Quantité -->
+        <div class="flex items-center gap-3 mb-3">
+          <div class="flex-1">
+            <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1">Quantité (g)</label>
+            <input x-model.number="newMeal.grams" type="number" min="1" step="5"
+                   class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white font-mono text-center text-lg font-bold"/>
           </div>
-          <div>
-            <label class="text-xs text-gray-500">Lip /100g</label>
-            <input x-model.number="newMeal.fat" type="number" min="0" step="0.1"
-                   class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm"/>
+          <!-- Aperçu macros dynamique -->
+          <div class="flex-1 bg-kinetic-ink rounded-xl p-2.5 text-center">
+            <p class="text-kinetic-neon font-black text-lg leading-none"
+               x-text="Math.round(newMeal.kcal * newMeal.grams / 100)"></p>
+            <p class="text-[10px] text-gray-500 mt-0.5">kcal</p>
+            <p class="text-[10px] text-gray-400 mt-1"
+               x-text="`P${(newMeal.protein*newMeal.grams/100).toFixed(0)} G${(newMeal.carbs*newMeal.grams/100).toFixed(0)} L${(newMeal.fat*newMeal.grams/100).toFixed(0)}`"></p>
           </div>
         </div>
-        <div class="flex justify-between text-xs text-gray-400 mb-3 bg-kinetic-ink rounded-xl p-2">
-          <span>Apport estimé :</span>
-          <span class="text-white font-medium"
-                x-text="`${Math.round(newMeal.kcal * newMeal.grams / 100)} kcal · P${(newMeal.protein * newMeal.grams / 100).toFixed(0)}g · G${(newMeal.carbs * newMeal.grams / 100).toFixed(0)}g · L${(newMeal.fat * newMeal.grams / 100).toFixed(0)}g`">
-          </span>
-        </div>
-        <button @click="logFood()" :disabled="!newMeal.name || newMeal.grams <= 0"
+
+        <button @click="logFood()"
+                :disabled="!newMeal.name || newMeal.grams <= 0"
                 class="w-full py-2.5 bg-kinetic-neon text-gray-950 font-bold rounded-xl text-sm
-                       disabled:opacity-40">
-          Enregistrer
+                       disabled:opacity-40 hover:brightness-105 transition-all">
+          ✓ Ajouter au journal
         </button>
       </div>
 
