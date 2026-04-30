@@ -221,13 +221,26 @@ export function seances() {
 
     // ─── Records (PR) ────────────────────────────────────────
 
-    /** Meilleur e1RM historique pour un exercice */
+    /**
+     * Meilleur e1RM pour un exercice — inclut TOUTES les séries déjà
+     * enregistrées (séances passées + séance en cours). Sans ça, faire 5×
+     * la même série dans la séance actuelle déclencherait 5× la célébration
+     * PR car la séance en cours n'est pas dans `this.sessions`.
+     */
     pr(exerciseId: string): number | null {
       let best = 0;
       for (const s of this.sessions) {
         const entry = s.entries.find(e => e.exerciseId === exerciseId);
         if (!entry) continue;
         for (const set of entry.sets) {
+          const e1rm = estimateE1rmKg(set.weightKg, set.reps);
+          if (e1rm > best) best = e1rm;
+        }
+      }
+      // ── Inclure aussi les séries déjà ajoutées à la séance en cours ──
+      const currentEntry = this.currentSession?.entries.find(e => e.exerciseId === exerciseId);
+      if (currentEntry) {
+        for (const set of currentEntry.sets) {
           const e1rm = estimateE1rmKg(set.weightKg, set.reps);
           if (e1rm > best) best = e1rm;
         }
@@ -752,6 +765,7 @@ export function seances() {
         this.currentSession = null;
         this.templateName = '';
         this.stopRest();
+        this.dismissPrCelebration();
 
         window.dispatchEvent(new CustomEvent('kinetic:notify', {
           detail: { kind: 'success', message: `Séance sauvegardée — ${durationMin} min${caloriesKcal ? ` · ~${caloriesKcal} kcal` : ''}` },

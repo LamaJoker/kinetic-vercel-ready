@@ -58,9 +58,9 @@
       <!-- Barres macros -->
       <div class="space-y-2">
         <template x-for="macro in [
-          { label: 'Protéines', key: 'proteinG', color: '#A8FF00', unit: 'g' },
-          { label: 'Glucides',  key: 'carbsG',   color: '#FF6A00', unit: 'g' },
-          { label: 'Lipides',   key: 'fatG',      color: '#FFFFFF', unit: 'g' }
+          { label: 'Protéines', key: 'proteinG', pctKey: 'proteinPct', color: '#A8FF00', unit: 'g' },
+          { label: 'Glucides',  key: 'carbsG',   pctKey: 'carbsPct',   color: '#FF6A00', unit: 'g' },
+          { label: 'Lipides',   key: 'fatG',     pctKey: 'fatPct',     color: '#FFFFFF', unit: 'g' }
         ]">
           <div>
             <div class="flex justify-between text-xs mb-1">
@@ -74,7 +74,7 @@
             </div>
             <div class="h-2 bg-kinetic-elevated rounded-full overflow-hidden">
               <div class="h-full rounded-full transition-all duration-500"
-                   :style="`width: ${Math.min(100, ($store.nutrition.progress?.[macro.key+'Pct'] ?? 0))}%; background: ${macro.color}`"></div>
+                   :style="`width: ${Math.min(100, ($store.nutrition.progress?.[macro.pctKey] ?? 0))}%; background: ${macro.color}`"></div>
             </div>
           </div>
         </template>

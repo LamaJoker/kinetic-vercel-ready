@@ -224,7 +224,7 @@ export function vitaliteStore() {
 
         // 4. Mettre à jour UI
         this.tasks = this.tasks.map(t =>
-          t.id === taskId ? { ...t, done: false, completedAt: undefined, completionCount: Math.max(0, t.completionCount - 1) } : t,
+          t.id === taskId ? { ...t, done: false, completedAt: null, completionCount: Math.max(0, t.completionCount - 1) } : t,
         );
 
         await this._refreshXpStore();
