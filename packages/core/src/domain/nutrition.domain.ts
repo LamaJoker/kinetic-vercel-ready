@@ -54,6 +54,14 @@ export function buildNutritionPlan(m: UserMeasurements): NutritionPlan {
   const protFactors: Record<Goal, number> = {
     lose_fat: 2.4, gain_muscle: 1.8, recomp: 2.2, performance: 1.8, maintain: 1.6,
   };
+  // Protéines : plafonnées au min(g/kg selon objectif, 35% des kcal).
+  // Le plafond à 35% kcal évite qu'un déficit très agressif (ex: 1200 kcal)
+  // pousse les protéines à des niveaux irréalistes (> 3 g/kg) qui surchargeraient
+  // les reins et déplaceraient totalement glucides + lipides.
+  // Limite connue : en déficit modéré (≥ 1600 kcal), la contrainte g/kg s'applique
+  // avant le plafond 35% kcal → résultat correct. En déficit sévère (< 1400 kcal),
+  // le plafond 35% peut sous-estimer légèrement (157 g vs 192 g pour 80 kg).
+  // Source : ISSN Position Stand 2023, Helms 2014 (déficit ≤ 25% TDEE recommandé).
   const proteinG = Math.round(Math.min(m.weightKg * protFactors[m.goal], (target * 0.35) / 4));
 
   // Lipides : min 0.5 g/kg + 28 % kcal

@@ -1,4 +1,5 @@
 import type { StoragePort, StorageKey } from '@kinetic/core';
+import { STORAGE_KEYS } from '@kinetic/core';
 
 /**
  * HybridStorage — offline-first combination of:
@@ -11,16 +12,23 @@ import type { StoragePort, StorageKey } from '@kinetic/core';
  * - if offline or remote fails: keep a small in-memory pending queue, flushed on 'online'
  *
  * syncFromRemote:
+ * - DELTA SYNC by default: fetches only keys changed since lastSyncAt using
+ *   the remote.keysSince(timestamp) API when available, falling back to full
+ *   keys() scan. This prevents the N+1 query problem on large datasets.
  * - SAFE BY DEFAULT: never overwrites existing local data.
  *   Only pulls keys that are missing locally (initial sync on a new device).
- * - Without this guard, a fresh page load could race with an in-flight remote
- *   upsert and resurrect stale data over a freshly saved session.
  * - Use { force: true } only for an explicit user-triggered "pull from cloud".
  */
 
 type PendingWrite = { key: StorageKey; value: unknown; attempts: number };
 
-const SYNC_FLAG_KEY = '_kinetic:initial-sync-done';
+/** Remote that supports delta sync (optional interface) */
+interface DeltaCapableStorage {
+  keysSince?(since: string): Promise<readonly StorageKey[]>;
+}
+
+const SYNC_FLAG_KEY = STORAGE_KEYS.SYNC_INITIAL_DONE;
+const SYNC_LAST_AT_KEY = STORAGE_KEYS.SYNC_LAST_AT;
 
 export class HybridStorage implements StoragePort {
   private pendingWrites = new Map<StorageKey, PendingWrite>();
@@ -71,29 +79,42 @@ export class HybridStorage implements StoragePort {
   }
 
   /**
-   * syncFromRemote — pull from remote into local.
+   * syncFromRemote — pull changes from remote into local.
    *
-   * Default mode (called on startup):
-   *   Only pulls keys that DO NOT exist locally. Never overwrites local data.
-   *   This prevents a startup sync from clobbering a write that is still
-   *   in-flight to the remote (lost-update on reload).
+   * Delta mode (default):
+   *   Uses lastSyncAt timestamp to fetch only keys modified since last sync.
+   *   Falls back to full scan if no lastSyncAt recorded (first sync ever).
+   *   Only pulls keys that DO NOT exist locally (prevents lost-update on reload).
    *
    * Force mode ({ force: true }):
-   *   Pulls every remote key and overwrites local. Reserved for an explicit
+   *   Pulls every remote key and overwrites local. Reserved for explicit
    *   user-triggered "restore from cloud" action.
    */
   async syncFromRemote(opts: { force?: boolean } = {}): Promise<void> {
     if (!this.isOnline()) return;
 
-    const remoteKeys = await this.remote.keys();
-    const BATCH_SIZE = 20;
     const force = opts.force === true;
+    const lastSyncAt = await this.local.get<string>(SYNC_LAST_AT_KEY);
 
-    for (let i = 0; i < remoteKeys.length; i += BATCH_SIZE) {
-      const batch = remoteKeys.slice(i, i + BATCH_SIZE);
+    // ── Delta sync: fetch only keys changed since last sync ──────────────
+    let keysToSync: readonly StorageKey[];
+
+    if (!force && lastSyncAt && this._hasDeltaSupport()) {
+      // Remote supports delta queries — avoids N+1 on large datasets
+      keysToSync = await (this.remote as DeltaCapableStorage).keysSince!(lastSyncAt);
+    } else {
+      // Fallback: full scan (first sync, or remote doesn't support delta)
+      keysToSync = await this.remote.keys();
+    }
+
+    // ── Apply changes in batches of 20 ──────────────────────────────────
+    const BATCH_SIZE = 20;
+    for (let i = 0; i < keysToSync.length; i += BATCH_SIZE) {
+      const batch = keysToSync.slice(i, i + BATCH_SIZE);
       await Promise.all(
         batch.map(async (key) => {
-          if (key === SYNC_FLAG_KEY) return;
+          // Skip internal sync meta keys
+          if (key === SYNC_FLAG_KEY || key === SYNC_LAST_AT_KEY) return;
           try {
             if (!force) {
               const localValue = await this.local.get(key);
@@ -108,6 +129,9 @@ export class HybridStorage implements StoragePort {
       );
     }
 
+    // ── Record sync timestamp for next delta ─────────────────────────────
+    const now = new Date().toISOString();
+    await this.local.set(SYNC_LAST_AT_KEY, now);
     await this.local.set(SYNC_FLAG_KEY, true);
   }
 
@@ -149,5 +173,8 @@ export class HybridStorage implements StoragePort {
   private isOnline(): boolean {
     return typeof navigator === 'undefined' || navigator.onLine;
   }
-}
 
+  private _hasDeltaSupport(): boolean {
+    return typeof (this.remote as DeltaCapableStorage).keysSince === 'function';
+  }
+}

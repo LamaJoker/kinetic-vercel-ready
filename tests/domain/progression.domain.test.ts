@@ -7,8 +7,13 @@ import {
   type PerformedSet,
 } from '@kinetic/core';
 
+/**
+ * Crée un PerformedSet avec une date relative à maintenant.
+ * dayOffset négatif = N jours dans le passé.
+ * Par défaut les sets sont récents (dans la fenêtre de 14j utilisée par deload).
+ */
 function set(reps: number, weightKg: number, rpe: number, dayOffset = 0): PerformedSet {
-  const d = new Date('2025-01-01T12:00:00Z');
+  const d = new Date();
   d.setUTCDate(d.getUTCDate() + dayOffset);
   return { reps, weightKg, rpe, at: d.toISOString() };
 }

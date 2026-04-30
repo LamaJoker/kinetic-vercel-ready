@@ -1,5 +1,6 @@
 import { get, set, del, keys, clear, createStore } from 'idb-keyval';
 import type { StoragePort, StorageKey } from '@kinetic/core';
+import { validateStorageKey, validateStorageValue } from './validation.js';
 
 /**
  * IdbStorage — StoragePort implemented with idb-keyval (IndexedDB wrapper).
@@ -7,6 +8,7 @@ import type { StoragePort, StorageKey } from '@kinetic/core';
  * Notes:
  * - We use a dedicated store (createStore) to avoid collisions if multiple apps share the domain.
  * - Defaults keep idb-keyval's "keyval-store" / "keyval" names to preserve existing data.
+ * - All keys/values are validated before write to prevent silent corruption.
  */
 export class IdbStorage implements StoragePort {
   private readonly store: ReturnType<typeof createStore>;
@@ -26,6 +28,16 @@ export class IdbStorage implements StoragePort {
   }
 
   async set<T>(key: StorageKey, value: T): Promise<void> {
+    // Validate key format before write to catch typos early
+    if (!validateStorageKey(key)) {
+      throw new Error(`IdbStorage: invalid key format "${key}" — expected /^[a-zA-Z0-9:_-]{1,200}$/`);
+    }
+
+    // Validate value size to prevent QuotaExceededError surprises
+    if (!validateStorageValue(value)) {
+      throw new Error(`IdbStorage: value for key "${key}" exceeds 1 MB limit or is not serialisable`);
+    }
+
     try {
       await set(key, value, this.store);
     } catch (err) {
@@ -71,4 +83,3 @@ export class IdbStorage implements StoragePort {
     }
   }
 }
-

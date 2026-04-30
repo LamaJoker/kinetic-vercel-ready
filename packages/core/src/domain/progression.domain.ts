@@ -8,6 +8,7 @@
  *   - Mike Tuchscherer (RPE-based autoregulation)
  *   - Helms, Morgan, Valdez — Muscle & Strength Pyramid (2019)
  *   - Schoenfeld — Science & Development of Muscle Hypertrophy (2020)
+ *   - Israetel, Hoffmann, Case — Scientific Principles of Strength Training (2015)
  *
  * Pur — aucune dépendance, aucun I/O.
  */
@@ -59,6 +60,14 @@ function avg(xs: readonly number[]): number {
 
 /**
  * e1RM — Epley (standard, bonne corrélation <= 10 reps).
+ *
+ * Pourquoi bridé à 20 reps :
+ *   La formule d'Epley devient imprécise au-delà de ~10 reps car elle suppose
+ *   une relation linéaire force/fatigue qui n'est plus valide en haute répétition.
+ *   Le bridage à 20 est conservateur — en pratique, on ne calcule l'e1RM que pour
+ *   des séries de force (1–10 reps). Si jamais ce plafond est levé, la précision
+ *   du moteur de suggestion se dégradera significativement.
+ *   Source : Epley (1985), validé par Brzycki (1993) pour la plage 1–10 reps.
  */
 export function e1rm(weightKg: number, reps: number): number {
   const r = Math.max(1, Math.min(20, Math.floor(reps)));
@@ -86,12 +95,24 @@ export function slope(values: readonly number[]): number {
 // ─── Algorithme principal ────────────────────────────────────────────────────
 
 /**
+ * Fenêtre temporelle pour le deload (14 jours).
+ *
+ * Pourquoi 14 jours et non "3 dernières séances" :
+ *   Le critère "3 séances à RPE >= 9.5" était insensible à la fréquence.
+ *   Un athlète s'entraînant 3×/sem déclenchait le deload après 7 jours,
+ *   un 2×/sem attendait 10+ jours. La fenêtre de 14j normalise ce biais.
+ *   Source : Israetel — Block periodization recommends ~2-week assessment
+ *   windows for fatigue monitoring.
+ */
+const DELOAD_WINDOW_MS = 14 * 24 * 60 * 60 * 1_000;
+
+/**
  * suggestProgression — stratégie de progression basée sur RPE + trend e1RM.
  *
  * Règles (dans cet ordre) :
  *   1. Historique vide → 'first_time', charge "sécuritaire" (barre à vide si pas fourni).
- *   2. 3 dernières séances à RPE >= 9.5 ET e1RM stagnant → 'deload' (-10%).
- *   3. Dernier set à RPE <= targetRpe - 1 ET reps >= targetReps → 'increase_weight' (+incrémen).
+ *   2. Dans la fenêtre de 14j : RPE moyen >= 9.5 ET e1RM stagnant → 'deload' (-10%).
+ *   3. Dernier set à RPE <= targetRpe - 1 ET reps >= targetReps → 'increase_weight' (+incrément).
  *   4. Dernier set à RPE dans [target-0.5, target+0.5] ET reps < targetReps → 'increase_reps'.
  *   5. Sinon → 'hold' (même charge, garder la qualité).
  */
@@ -110,21 +131,27 @@ export function suggestProgression(input: ProgressionInput): ProgressionSuggesti
   }
 
   const last = history[history.length - 1]!;
-  const last3 = history.slice(-3);
-  const e1rmSeries = history.slice(-6).map((s) => e1rm(s.weightKg, s.reps));
-  const trend = slope(e1rmSeries);
-  const avgRpe3 = avg(last3.map((s) => s.rpe));
 
-  // 2. Deload : 3 dernières séances brûlées + e1RM plat/descendant
-  if (last3.length >= 3 && avgRpe3 >= 9.5 && trend <= 0) {
-    return {
-      strategy:        'deload',
-      suggestedWeight: roundTo(last.weightKg * 0.9, incrementKg),
-      suggestedReps:   targetReps,
-      suggestedRpe:    Math.max(6, targetRpe - 2),
-      confidence:      0.8,
-      rationale:       'RPE très élevé sur 3 séances sans gain d’e1RM — semaine de deload (-10%) recommandée.',
-    };
+  // 2. Deload : évaluation sur fenêtre temporelle de 14 jours
+  //    (pas juste les 3 dernières séances — sensible à la fréquence d'entraînement)
+  const windowStart = Date.now() - DELOAD_WINDOW_MS;
+  const recentSets = history.filter(s => Date.parse(s.at) >= windowStart);
+
+  if (recentSets.length >= 3) {
+    const avgRpeRecent = avg(recentSets.map((s) => s.rpe));
+    const e1rmRecent   = recentSets.map((s) => e1rm(s.weightKg, s.reps));
+    const trendRecent  = slope(e1rmRecent);
+
+    if (avgRpeRecent >= 9.5 && trendRecent <= 0) {
+      return {
+        strategy:        'deload',
+        suggestedWeight: roundTo(last.weightKg * 0.9, incrementKg),
+        suggestedReps:   targetReps,
+        suggestedRpe:    Math.max(6, targetRpe - 2),
+        confidence:      0.8,
+        rationale:       `RPE moyen ${avgRpeRecent.toFixed(1)} sur ${recentSets.length} séances (14j) sans gain d'e1RM — semaine de deload (-10%) recommandée.`,
+      };
+    }
   }
 
   // 3. Charge trop facile ET objectif reps atteint
@@ -159,7 +186,7 @@ export function suggestProgression(input: ProgressionInput): ProgressionSuggesti
       suggestedReps:   targetReps,
       suggestedRpe:    targetRpe,
       confidence:      0.6,
-      rationale:       `RPE ${last.rpe} > cible ${targetRpe} — consolider avant d’augmenter.`,
+      rationale:       `RPE ${last.rpe} > cible ${targetRpe} — consolider avant d'augmenter.`,
     };
   }
 

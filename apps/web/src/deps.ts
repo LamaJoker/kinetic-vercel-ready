@@ -1,7 +1,11 @@
 /**
  * Container de dépendances — résout les ports en implémentations concrètes.
- * FIX CRITIQUE : timeout 3s sur Supabase, fallback local garanti.
- * L'app ne bloque JAMAIS même si Supabase est inaccessible.
+ *
+ * Garanties :
+ *  - Timeout 3s sur Supabase → fallback local garanti. L'app ne bloque JAMAIS.
+ *  - Un seul appel Supabase en cours à la fois grâce au pattern inflight.
+ *  - Protection contre les race conditions post-resetDeps() : une AbortController
+ *    annule les résolutions en cours si resetDeps() est appelé (ex: logout).
  */
 import {
   IdbStorage, SystemClock, UuidGenerator, ToastNotifier,
@@ -20,6 +24,8 @@ export interface AppDeps {
 
 let _deps: AppDeps | null = null;
 let _inflight: Promise<AppDeps> | null = null;
+// AbortController actif pour le build courant — permet d'annuler si resetDeps() est appelé
+let _abortCtrl: AbortController | null = null;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   return Promise.race([
@@ -31,6 +37,10 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
 export async function getDeps(): Promise<AppDeps> {
   if (_deps) return _deps;
   if (_inflight) return _inflight;
+
+  // Nouveau build — crée un AbortController pour ce cycle
+  const ctrl = new AbortController();
+  _abortCtrl = ctrl;
 
   _inflight = (async (): Promise<AppDeps> => {
     const local    = new IdbStorage();
@@ -52,6 +62,13 @@ export async function getDeps(): Promise<AppDeps> {
       try {
         // Timeout 3s — si Supabase ne répond pas, on part en mode local
         const user = await withTimeout(getAuthUser(), 3000);
+
+        // Si resetDeps() a été appelé pendant la résolution (ex: logout mid-flight),
+        // on abandonne ce build pour ne pas créer une connexion Supabase obsolète.
+        if (ctrl.signal.aborted) {
+          return { storage: local, clock, idGen, notifier, dailyLogSync };
+        }
+
         if (user) {
           const remote = new SupabaseStorage(supabase, user.id);
           const hybrid = new HybridStorage(local, remote);
@@ -66,8 +83,14 @@ export async function getDeps(): Promise<AppDeps> {
       }
     }
 
-    _deps = { storage, clock, idGen, notifier, dailyLogSync };
-    return _deps;
+    const result: AppDeps = { storage, clock, idGen, notifier, dailyLogSync };
+
+    // Ne sauvegarder que si ce build n'a pas été annulé par resetDeps()
+    if (!ctrl.signal.aborted) {
+      _deps = result;
+    }
+
+    return result;
   })();
 
   try {
@@ -78,7 +101,11 @@ export async function getDeps(): Promise<AppDeps> {
 }
 
 export function resetDeps(): void {
-  _deps = null;
+  // Annuler toute résolution en cours
+  _abortCtrl?.abort();
+  _abortCtrl = null;
+  _deps      = null;
+  // _inflight se vide seul via le `finally` ci-dessus
 }
 
 export function _resetDepsForTesting(mock: AppDeps): void {

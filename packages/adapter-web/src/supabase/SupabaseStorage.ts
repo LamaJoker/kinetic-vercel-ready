@@ -55,6 +55,23 @@ export class SupabaseStorage implements StoragePort {
     return (data ?? []).map((row) => row.key);
   }
 
+  /**
+   * keysSince — delta sync: returns only keys modified after `since` (ISO timestamp).
+   * Uses the updated_at column set by Supabase triggers on upsert.
+   *
+   * Called by HybridStorage.syncFromRemote() to avoid fetching every key on each
+   * sync (N+1 problem). Falls back to full keys() scan on first sync (no lastSyncAt).
+   */
+  async keysSince(since: string): Promise<readonly StorageKey[]> {
+    const { data } = await this.client
+      .from('user_storage')
+      .select('key')
+      .eq('user_id', this.userId)
+      .gte('updated_at', since);
+
+    return (data ?? []).map((row) => row.key);
+  }
+
   async clear(): Promise<void> {
     await this.client
       .from('user_storage')

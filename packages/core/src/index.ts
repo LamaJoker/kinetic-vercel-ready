@@ -1,3 +1,21 @@
+// ─── Constants ────────────────────────────────────────────────
+export { STORAGE_KEYS }                       from './constants/storage-keys.js';
+export type { StaticStorageKey }              from './constants/storage-keys.js';
+
+// ─── CRDT (Vector Clock) ──────────────────────────────────────
+export {
+  createClock,
+  incrementClock,
+  mergeClock,
+  compareClocks,
+  resolveConflict,
+}                                             from './crdt.js';
+export type {
+  VectorClock,
+  ClockComparison,
+  CRDTValue,
+}                                             from './crdt.js';
+
 // ─── Ports (interfaces) ───────────────────────────────────────
 export type { StoragePort, StorageKey }       from './ports/storage.port.js';
 export type { ClockPort }                     from './ports/clock.port.js';

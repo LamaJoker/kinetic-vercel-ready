@@ -3,117 +3,62 @@
  *
  * CRDT Vector Clock pour la résolution de conflits multi-device.
  *
- * Stratégie : Last-Write-Wins avec vecteur d'horloge.
- * Chaque device a un ID unique. Les conflits sont résolus
- * par la valeur avec le timestamp logique le plus élevé.
- */
-
-export type DeviceId    = string;
-export type VectorClock = Record<DeviceId, number>;
-
-export interface SyncedValue<T> {
-  value:    T;
-  clock:    VectorClock;
-  deviceId: DeviceId;
-  wallTime: number;
-}
-
-// ─── Vector Clock Operations ──────────────────────────────────
-
-export function createClock(deviceId: DeviceId): VectorClock {
-  return { [deviceId]: 0 };
-}
-
-export function incrementClock(clock: VectorClock, deviceId: DeviceId): VectorClock {
-  return {
-    ...clock,
-    [deviceId]: (clock[deviceId] ?? 0) + 1,
-  };
-}
-
-export function mergeClock(a: VectorClock, b: VectorClock): VectorClock {
-  const merged: VectorClock = { ...a };
-  for (const [device, time] of Object.entries(b)) {
-    merged[device] = Math.max(merged[device] ?? 0, time);
-  }
-  return merged;
-}
-
-/**
- * compareClocks — ordre causal entre deux horloges.
+ * Les types et fonctions CRDT vivaient ici en doublon de packages/core/src/crdt.ts.
+ * Ce fichier re-exporte désormais depuis @kinetic/core pour éviter toute divergence.
  *
- * Sémantique :
- *   'before'     → a est causalement AVANT b  (a ≤ b sur tous les devices, strict sur au moins un)
- *   'after'      → a est causalement APRÈS b  (b ≤ a sur tous les devices, strict sur au moins un)
- *   'equal'      → horloges identiques
- *   'concurrent' → ni l'un ni l'autre ne domine
+ * SyncedValue<T> est un alias de CRDTValue<T> pour la rétro-compatibilité avec
+ * le code qui l'importait depuis ce fichier.
  */
-export type CausalOrder = 'before' | 'after' | 'concurrent' | 'equal';
 
-export function compareClocks(a: VectorClock, b: VectorClock): CausalOrder {
-  const allDevices = new Set([...Object.keys(a), ...Object.keys(b)]);
+// ── Tous les imports en haut ─────────────────────────────────────────────
+import {
+  createClock,
+  incrementClock,
+  mergeClock,
+  compareClocks,
+  resolveConflict,
+  STORAGE_KEYS,
+} from '@kinetic/core';
+import type {
+  VectorClock,
+  ClockComparison,
+  CRDTValue,
+  StoragePort,
+} from '@kinetic/core';
 
-  let aLessOrEqual = true; // a[d] <= b[d] pour tout d → a est "avant ou égal" à b
-  let bLessOrEqual = true; // b[d] <= a[d] pour tout d → b est "avant ou égal" à a
+// ── Re-exports pour les consommateurs de ce module ────────────────────────
+export { createClock, incrementClock, mergeClock, compareClocks, resolveConflict };
+export type { VectorClock, ClockComparison as CausalOrder };
+// Alias rétro-compat : CRDTValue était nommé SyncedValue ici
+export type { CRDTValue as SyncedValue };
 
-  for (const device of allDevices) {
-    const aTime = a[device] ?? 0;
-    const bTime = b[device] ?? 0;
-    if (aTime > bTime) bLessOrEqual = false; // a a avancé sur ce device → b n'est plus ≤ a
-    if (bTime > aTime) aLessOrEqual = false; // b a avancé sur ce device → a n'est plus ≤ b
-  }
+// ── Device Identity ───────────────────────────────────────────────────────
 
-  if (aLessOrEqual && bLessOrEqual) return 'equal';
-  if (aLessOrEqual) return 'before'; // a ≤ b partout → a est dans le passé de b
-  if (bLessOrEqual) return 'after';  // b ≤ a partout → a est dans le futur de b
-  return 'concurrent';
-}
+export type DeviceId = string;
 
 /**
- * resolveConflict — choisit la valeur gagnante entre deux états.
- * En cas de concurrence vraie : wallTime gagne (LWW).
- * Tiebreak final : ordre lexicographique du deviceId (déterministe).
+ * getOrCreateDeviceId — retourne le device ID persisté en localStorage.
+ *
+ * Note: localStorage est utilisé intentionnellement (pas IDB) pour que
+ * le device ID survive à un clear() de la base IndexedDB. Il est aussi
+ * synchrone, ce qui le rend utilisable avant l'init async des stores.
+ *
+ * Ne pas appeler en contexte SSR — vérifier `typeof window !== 'undefined'`.
  */
-export function resolveConflict<T>(
-  local:  SyncedValue<T>,
-  remote: SyncedValue<T>,
-): SyncedValue<T> {
-  const order = compareClocks(local.clock, remote.clock);
-
-  switch (order) {
-    case 'after':
-    case 'equal':
-      return local;
-
-    case 'before':
-      return remote;
-
-    case 'concurrent':
-      if (local.wallTime  > remote.wallTime) return local;
-      if (remote.wallTime > local.wallTime)  return remote;
-      return local.deviceId > remote.deviceId ? local : remote;
-  }
-}
-
-// ─── Device Identity ──────────────────────────────────────────
-
-const DEVICE_ID_KEY = 'kinetic:deviceId';
-
 export function getOrCreateDeviceId(): DeviceId {
-  let id = localStorage.getItem(DEVICE_ID_KEY);
+  if (typeof window === 'undefined') {
+    // SSR / test context — retourne un ID stable temporaire
+    return 'server-0000-0000-0000-000000000000';
+  }
+  let id = localStorage.getItem(STORAGE_KEYS.DEVICE_ID);
   if (!id) {
     id = crypto.randomUUID();
-    localStorage.setItem(DEVICE_ID_KEY, id);
+    localStorage.setItem(STORAGE_KEYS.DEVICE_ID, id);
   }
   return id;
 }
 
-// ─── Sync Manager ─────────────────────────────────────────────
-
-import type { StoragePort } from '@kinetic/core';
-
-const SYNC_META_KEY      = 'kinetic:sync:meta';
-const PENDING_WRITES_KEY = 'kinetic:sync:pending';
+// ── Sync Manager ──────────────────────────────────────────────────────────
 
 interface SyncMeta {
   lastSyncAt: string;
@@ -124,9 +69,12 @@ interface SyncMeta {
 interface PendingWrite {
   key:         string;
   value:       unknown;
-  syncedValue: SyncedValue<unknown>;
+  syncedValue: CRDTValue<unknown>;
   retries:     number;
 }
+
+const SYNC_META_KEY      = STORAGE_KEYS.SYNC_LAST_AT;
+const PENDING_WRITES_KEY = 'kinetic:sync:pending';
 
 export class SyncManager {
   private readonly deviceId: DeviceId;
@@ -150,7 +98,7 @@ export class SyncManager {
     const pending = await this.local.get<[string, PendingWrite][]>(PENDING_WRITES_KEY);
     if (pending) this.pendingWrites = new Map(pending);
 
-    if ('serviceWorker' in navigator) {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data?.type === 'SYNC_REQUESTED') {
           this.scheduleSyncFlush();
@@ -158,13 +106,15 @@ export class SyncManager {
       });
     }
 
-    window.addEventListener('online', () => { void this.syncFromRemote(); });
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => { void this.syncFromRemote(); });
+    }
   }
 
   async write<T>(key: string, value: T): Promise<void> {
     this.clock = incrementClock(this.clock, this.deviceId);
 
-    const syncedValue: SyncedValue<T> = {
+    const syncedValue: CRDTValue<T> = {
       value,
       clock:    { ...this.clock },
       deviceId: this.deviceId,
@@ -180,7 +130,7 @@ export class SyncManager {
   }
 
   async read<T>(key: string): Promise<T | null> {
-    const synced = await this.local.get<SyncedValue<T>>(key);
+    const synced = await this.local.get<CRDTValue<T>>(key);
     return synced?.value ?? null;
   }
 
@@ -193,10 +143,10 @@ export class SyncManager {
 
       await Promise.all(
         remoteKeys.map(async (key) => {
-          const remoteValue = await this.remote.get<SyncedValue<unknown>>(key);
+          const remoteValue = await this.remote.get<CRDTValue<unknown>>(key);
           if (!remoteValue?.clock) return;
 
-          const localValue = await this.local.get<SyncedValue<unknown>>(key);
+          const localValue = await this.local.get<CRDTValue<unknown>>(key);
 
           if (!localValue) {
             await this.local.set(key, remoteValue);
@@ -228,7 +178,8 @@ export class SyncManager {
   }
 
   private async flushPendingWrites(): Promise<void> {
-    if (!navigator.onLine || this.pendingWrites.size === 0) return;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+    if (this.pendingWrites.size === 0) return;
 
     const MAX_RETRIES = 3;
 
