@@ -95,8 +95,9 @@ test.describe('Kinetic App — Complétion de tâches', () => {
   });
 
   test('complète une tâche et la marque disabled', async ({ page }) => {
-    // Cibler explicitement un bouton de tâche (pas les boutons de nav)
-    const taskButton = page.locator('button:not([disabled])').first();
+    // Cibler spécifiquement un bouton de tâche via son texte "+N XP"
+    // (même pattern que le test guard ci-dessous)
+    const taskButton = page.locator('button').filter({ hasText: /\+\d+ XP/ }).first();
     await expect(taskButton).toBeVisible({ timeout: 5000 });
     await taskButton.click();
 
