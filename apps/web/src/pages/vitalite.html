@@ -192,7 +192,7 @@
         <!-- Carte principale -->
         <button
           @click="!task.done && $store.vitalite.complete(task.id)"
-          :disabled="$store.vitalite.isLocked(task.id)"
+          :disabled="task.done || $store.vitalite.isLocked(task.id)"
           class="w-full flex items-center gap-4 p-4 bg-kinetic-surface rounded-2xl transition-all duration-300 text-left active:scale-[0.98] disabled:cursor-not-allowed"
           :class="task.done
             ? 'ring-1 ring-kinetic-neon/30 opacity-75'
