@@ -4,16 +4,16 @@
 -- ─── Index supplémentaires ────────────────────────────────────
 
 -- Index composite covering (évite les heap fetches)
-create index concurrently if not exists idx_user_storage_user_key
+create index if not exists idx_user_storage_user_key
   on public.user_storage (user_id, key)
   include (value, updated_at);
 
 -- Index pour sync delta : "tout ce qui a changé depuis X"
-create index concurrently if not exists idx_user_storage_updated
+create index if not exists idx_user_storage_updated
   on public.user_storage (user_id, updated_at desc);
 
 -- Index sur profiles pour les lookups email
-create index concurrently if not exists idx_profiles_email
+create index if not exists idx_profiles_email
   on public.profiles (email)
   where email is not null;
 
