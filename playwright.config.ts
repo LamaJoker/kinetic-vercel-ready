@@ -6,11 +6,14 @@ import { defineConfig, devices } from '@playwright/test';
  * Configuration Playwright pour Kinetic.
  * Cible : Chrome mobile (iPhone 14 Pro) + desktop.
  *
- * En CI : on sert le build de production via `vite preview --port 3000`
- *   (le job E2E fait `pnpm build` avant de lancer Playwright).
- *   Cela garantit que le Service Worker est enregistré (PROD=true).
+ * En CI comme en local, on sert TOUJOURS le build de production via
+ * `vite preview --port 3000`. Cela garantit :
+ *   1. Parité exacte entre CI et local (plus de "passe en CI, échoue local")
+ *   2. Service Worker enregistré → le test offline est valide
+ *   3. Assets optimisés → timings réalistes
  *
- * En local : serveur de dev Vite pour itération rapide.
+ * Workflow local : `pnpm build && pnpm e2e`
+ * CI : le job `e2e` fait `pnpm build` avant de lancer Playwright.
  */
 const isCI = !!process.env['CI'];
 
@@ -19,7 +22,7 @@ export default defineConfig({
   fullyParallel: false, // Séquentiel pour respecter l'état IndexedDB
 
   // Retry 2x en CI pour les flaky tests réseau
-  retries: isCI ? 2 : 0,
+  retries: isCI ? 2 : 1,
   workers: 1,
 
   reporter: [
@@ -67,13 +70,13 @@ export default defineConfig({
     },
   ],
 
-  // En CI : servir le build de prod (SW enregistré, assets optimisés).
-  // En local : serveur de dev Vite (rechargement rapide).
+  // Toujours servir le build de production (local et CI identiques).
+  // En local : `pnpm build && pnpm e2e` (ou `pnpm e2e:full`).
+  // Si le build est absent, vite preview affichera une erreur claire.
   webServer: {
-    command: isCI
-      ? 'pnpm --filter @kinetic/web preview:ci'
-      : 'pnpm --filter @kinetic/web dev',
+    command: 'pnpm --filter @kinetic/web preview:ci',
     url: 'http://localhost:3000',
+    // reuseExistingServer: permet de lancer pnpm e2e plusieurs fois sans rebuild
     reuseExistingServer: !isCI,
     timeout: 30000,
     stdout: 'ignore',

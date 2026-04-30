@@ -1,5 +1,6 @@
 import Alpine from 'alpinejs';
 import { getDeps } from '../deps';
+import { navigate } from '../router';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import {
   compactStorage,
@@ -195,7 +196,7 @@ export function profile() {
       window.dispatchEvent(new CustomEvent('kinetic:notify', {
         detail: { kind: 'success', message: 'Données réinitialisées ✓' },
       }));
-      setTimeout(() => { window.location.hash = '/'; }, 1200);
+      setTimeout(() => { navigate('/'); }, 1200);
     },
   };
 }

@@ -185,6 +185,9 @@ test.describe('Kinetic App — PWA & Offline', () => {
   });
 
   test("l'app se charge en mode offline (assets cachés)", async ({ page, context }) => {
+    // Ce test nécessite le build de production (Service Worker enregistré).
+    // playwright.config.ts utilise désormais `preview:ci` en local ET en CI
+    // → ce test est valide dans les deux contextes.
     await page.goto('http://localhost:3000');
 
     // Attendre la fin de l'init Alpine avant de couper le réseau
@@ -192,10 +195,10 @@ test.describe('Kinetic App — PWA & Offline', () => {
 
     await context.setOffline(true);
 
-    // Recharger sans crash
+    // Recharger sans crash (SW sert depuis le cache, ou offline.html)
     await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
 
-    // L'app ou la page offline doit afficher quelque chose
+    // L'app ou la page offline doit afficher quelque chose (pas de page blanche)
     const bodyText = await page.locator('body').innerText({ timeout: 8000 }).catch(() => '');
     expect(bodyText.length).toBeGreaterThan(0);
 
