@@ -10,14 +10,31 @@ const isValidUrl = typeof SUPABASE_URL === 'string'
   && SUPABASE_URL.includes('.supabase.co')
   && !SUPABASE_URL.includes('xxxxxxxxxxxxxxxxxxxx');
 
+// Accepte l'ancien format JWT (eyJ...) et le nouveau format publishable (sb_publishable_...)
 const isValidKey = typeof SUPABASE_ANON_KEY === 'string'
-  && SUPABASE_ANON_KEY.startsWith('eyJ')
-  && SUPABASE_ANON_KEY.length > 100;
+  && (SUPABASE_ANON_KEY.startsWith('eyJ') || SUPABASE_ANON_KEY.startsWith('sb_publishable_'))
+  && SUPABASE_ANON_KEY.length > 20;
+
+/** Détecte Capacitor (APK Android / iOS) */
+const isCapacitor = typeof window !== 'undefined'
+  && !!(window as unknown as Record<string, unknown>)['Capacitor'];
+
+/** URL de callback selon l'environnement */
+function callbackUrl(): string {
+  // Sur mobile Capacitor : deep link via le scheme de l'app
+  if (isCapacitor) return 'com.lamajoker.kinetic://auth-callback';
+  return `${window.location.origin}/auth-callback`;
+}
 
 /**
  * Client Supabase singleton.
  * null si les variables d'env sont absentes ou invalides (mode guest).
  */
+// Sur Capacitor mobile : flow implicit (tokens directs dans l'URL hash, pas de PKCE verifier).
+// Le verifier PKCE peut être perdu entre le call signInWithOtp et le retour du deep link
+// si le WebView est rechargé. Implicit est plus fiable pour le mobile.
+const flowType: 'pkce' | 'implicit' = isCapacitor ? 'implicit' : 'pkce';
+
 export const supabase = (isValidUrl && isValidKey && SUPABASE_URL && SUPABASE_ANON_KEY)
   ? createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
@@ -25,6 +42,7 @@ export const supabase = (isValidUrl && isValidKey && SUPABASE_URL && SUPABASE_AN
         autoRefreshToken:   true,
         detectSessionInUrl: true,
         storageKey:         'kinetic-auth',
+        flowType,
       },
     })
   : null;
@@ -56,25 +74,56 @@ export async function signInWithEmail(email: string): Promise<void> {
   if (!supabase) throw new Error('Supabase non configuré');
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    options: { emailRedirectTo: callbackUrl() },
   });
   if (error) throw new Error(error.message);
 }
 
-export async function signInWithGitHub(): Promise<void> {
+/**
+ * OAuth avec support Capacitor.
+ * Sur mobile : ouvre un vrai navigateur (Chrome Custom Tabs) via @capacitor/browser
+ * pour contourner le blocage Google/GitHub dans les WebViews.
+ */
+async function signInWithOAuth(provider: 'google' | 'github'): Promise<void> {
   if (!supabase) throw new Error('Supabase non configuré');
-  await supabase.auth.signInWithOAuth({
-    provider: 'github',
-    options: { redirectTo: `${window.location.origin}/auth/callback` },
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo:  callbackUrl(),
+      skipBrowserRedirect: isCapacitor, // on gère la redirection nous-mêmes sur mobile
+    },
   });
+
+  if (error) throw new Error(error.message);
+
+  // Sur Capacitor, ouvrir l'URL OAuth dans un vrai navigateur (Chrome Custom Tabs)
+  // windowName omis intentionnellement — '_self' forcerait la WebView au lieu du Custom Tab
+  if (isCapacitor && data.url) {
+    const { Browser } = await import('@capacitor/browser');
+
+    // Fallback browserFinished : si appUrlOpen ne se déclenche pas (certains appareils),
+    // on relit la session quand le navigateur se ferme
+    Browser.addListener('browserFinished', async () => {
+      try {
+        const { data: { session } } = await supabase!.auth.getSession();
+        if (session) {
+          // Session établie — recharger l'app pour mettre à jour l'UI
+          window.location.href = '/';
+        }
+      } catch { /* ignore */ }
+    });
+
+    await Browser.open({ url: data.url });
+  }
+}
+
+export async function signInWithGitHub(): Promise<void> {
+  return signInWithOAuth('github');
 }
 
 export async function signInWithGoogle(): Promise<void> {
-  if (!supabase) throw new Error('Supabase non configuré');
-  await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: `${window.location.origin}/auth/callback` },
-  });
+  return signInWithOAuth('google');
 }
 
 export async function signOut(): Promise<void> {

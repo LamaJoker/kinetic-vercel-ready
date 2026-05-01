@@ -22,6 +22,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Deep link pour le callback OAuth Supabase (Google / GitHub / Magic Link) -->
+            <!-- autoVerify intentionnellement absent : ne s'applique qu'aux https://, -->
+            <!-- le laisser sur un scheme custom bloque l'intent filter sur Android 12+ -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.lamajoker.kinetic" />
+            </intent-filter>
+
         </activity>
 
         <provider
