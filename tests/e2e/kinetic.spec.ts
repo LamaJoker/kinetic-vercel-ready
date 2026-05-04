@@ -55,6 +55,22 @@ async function gotoApp(page: Page, path = '/'): Promise<void> {
   // 3. Naviguer vers la route cible (profil déjà en IDB → pas de redirect onboarding)
   await page.goto(`http://localhost:3000${path}`);
   await waitForAlpineInit(page);
+
+  // 4. Forcer le 1er rendu du router. En CI, l'init du store auth peut hang
+  //    sur supabase.auth.getUser() ou onAuthStateChange (réseau bloqué/lent),
+  //    et le router attend kinetic:auth-ready avant tout rendu. En dispatchant
+  //    manuellement l'event après que le router a installé son listener
+  //    (initRouter() est appelé via requestAnimationFrame post-Alpine.start),
+  //    on garantit que la page se rend même si l'auth ne résout jamais.
+  //    Le listener du router a `{ once: true }`, donc un dispatch ultérieur
+  //    par le finally du auth store est sans effet (idempotent).
+  await page.waitForFunction(
+    () => typeof (window as any).Alpine?.store === 'function',
+    { timeout: 5000 },
+  );
+  await page.evaluate(() => {
+    window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
+  });
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -90,16 +106,12 @@ test.describe('Kinetic App — Complétion de tâches', () => {
 
   test.beforeEach(async ({ page }) => {
     await gotoApp(page, '/vitalite');
-    // Attendre qu'au moins un bouton de tâche "+N XP" soit visible dans l'outlet.
-    // Couvre : auth-ready (≤ 8s timeout Supabase) + rendu router + Alpine x-for.
-    // Le fix onAuthStateChange garantit qu'on ne fait qu'un seul getDeps() de 8s
-    // au lieu de deux (INITIAL_SESSION null ne remet plus _deps à null).
-    await page.waitForFunction(
-      () => Array.from(document.querySelectorAll('#app-outlet button')).some(
-        (btn) => /\+\d+\s*XP/.test((btn as HTMLElement).innerText),
-      ),
-      { timeout: 15000 },
-    );
+    // Le dispatch manuel de kinetic:auth-ready dans gotoApp() force le rendu
+    // immédiat du router. Le store vitalite finit son init() rapidement
+    // (getDeps cached), donc les buttons "+N XP" apparaissent en quelques ms.
+    await expect(
+      page.locator('#app-outlet button').filter({ hasText: /\+\d+ XP/ }).first(),
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test('complète une tâche et la marque disabled', async ({ page }) => {
