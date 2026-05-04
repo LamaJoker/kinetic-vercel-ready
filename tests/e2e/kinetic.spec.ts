@@ -90,20 +90,15 @@ test.describe('Kinetic App — Complétion de tâches', () => {
 
   test.beforeEach(async ({ page }) => {
     await gotoApp(page, '/vitalite');
-    // Attendre que les boutons de tâches soient réellement dans le DOM.
-    //
-    // Deux conditions doivent être réunies :
-    //   1. Le router a reçu kinetic:auth-ready et injecté le HTML vitalite
-    //      (peut prendre jusqu'à ~8s en CI si Supabase timeout s'écoule)
-    //   2. Alpine a traité le x-for et rendu les task-buttons avec le texte "+N XP"
-    //
-    // Attendre directement la présence du bouton dans le DOM plutôt que de
-    // sonder le store couvre les deux conditions en une seule assertion.
+    // Attendre qu'au moins un bouton de tâche "+N XP" soit visible dans l'outlet.
+    // Couvre : auth-ready (≤ 8s timeout Supabase) + rendu router + Alpine x-for.
+    // Le fix onAuthStateChange garantit qu'on ne fait qu'un seul getDeps() de 8s
+    // au lieu de deux (INITIAL_SESSION null ne remet plus _deps à null).
     await page.waitForFunction(
       () => Array.from(document.querySelectorAll('#app-outlet button')).some(
         (btn) => /\+\d+\s*XP/.test((btn as HTMLElement).innerText),
       ),
-      { timeout: 20000 },
+      { timeout: 15000 },
     );
   });
 

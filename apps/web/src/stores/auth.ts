@@ -90,9 +90,18 @@ export function authStore() {
               resetDeps(); // force la reconstruction avec SupabaseStorage
               // Note : les stores Alpine rechargeront leurs données au prochain getDeps()
             }
-          } else {
+          } else if (event === 'SIGNED_OUT') {
+            // Déconnexion explicite : réinitialiser les deps vers le mode local.
+            // NE PAS appeler resetDeps() sur INITIAL_SESSION null — ce serait
+            // l'état normal d'un utilisateur non connecté au démarrage.
+            // Appeler resetDeps() sur INITIAL_SESSION force un double getDeps()
+            // (8s Supabase timeout × 2) avant que la page se rende.
             this.user = null;
             resetDeps();
+          } else if (!session?.user) {
+            // INITIAL_SESSION, TOKEN_REFRESHED, etc. sans session active :
+            // mettre à jour l'état local sans invalider le cache deps.
+            this.user = null;
           }
           this.loading = false;
 
