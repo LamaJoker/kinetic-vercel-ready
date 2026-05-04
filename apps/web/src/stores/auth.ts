@@ -17,7 +17,7 @@ import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import {
   supabase, getAuthUser, signInWithEmail,
   signInWithGitHub, signInWithGoogle, signOut,
-  authRateLimiter,
+  authRateLimiter, callbackUrl,
 } from '@kinetic/adapters-web';
 import type { AuthUser } from '@kinetic/adapters-web';
 import { resetDeps } from '../deps';
@@ -185,6 +185,16 @@ export function authStore() {
     destroy(): void {
       this._authSubscription?.unsubscribe();
       this._authSubscription = null;
+    },
+
+    /** Diagnostic : URL de callback qui sera envoyée à Supabase */
+    _diagCallbackUrl(): string {
+      try { return callbackUrl(); } catch { return '(erreur)'; }
+    },
+
+    /** Diagnostic : URL Supabase configurée */
+    _diagSupabaseUrl(): string {
+      return SUPABASE_URL ?? '(non définie)';
     },
 
     get isAuthenticated(): boolean {

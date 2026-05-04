@@ -16,6 +16,7 @@ export {
   signInWithGitHub,
   signInWithGoogle,
   signOut,
+  callbackUrl,
 } from './supabase/auth.js';
 export type { AuthUser }    from './supabase/auth.js';
 export type { Database, Json } from './supabase/database.types.js';

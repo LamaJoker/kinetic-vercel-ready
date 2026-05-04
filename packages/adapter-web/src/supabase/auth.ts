@@ -35,11 +35,21 @@ if (
 const isCapacitor = typeof window !== 'undefined'
   && !!(window as unknown as Record<string, unknown>)['Capacitor'];
 
-/** URL de callback selon l'environnement */
-function callbackUrl(): string {
+/**
+ * URL publique canonique de l'app (configurée via env var).
+ * Évite que `window.location.origin` capture une URL Vercel preview/branch
+ * (ex: kinetic-vercel-ready-eckiemzif-…vercel.app) au lieu de l'alias prod.
+ * Si non définie → fallback sur l'origin courante (dev/local).
+ */
+const PUBLIC_SITE_URL = (import.meta.env['VITE_PUBLIC_SITE_URL'] as string | undefined)?.replace(/\/+$/, '');
+
+/** URL de callback selon l'environnement (exportée pour diagnostic) */
+export function callbackUrl(): string {
   // Sur mobile Capacitor : deep link via le scheme de l'app
   if (isCapacitor) return 'com.lamajoker.kinetic://auth-callback';
-  return `${window.location.origin}/auth-callback`;
+  // Sur web : URL publique canonique si configurée, sinon origin courante
+  const base = PUBLIC_SITE_URL ?? window.location.origin;
+  return `${base}/auth-callback`;
 }
 
 /**
