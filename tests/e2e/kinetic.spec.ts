@@ -90,8 +90,12 @@ test.describe('Kinetic App — Complétion de tâches', () => {
 
   test.beforeEach(async ({ page }) => {
     await gotoApp(page, '/vitalite');
-    // Attendre que les tâches soient rendues avant d'interagir
-    await page.waitForSelector('[x-data]', { timeout: 8000 });
+    // Attendre que le store vitalite ait fini son init() async
+    // (tasks = [] jusqu'à ce que loading passe à false)
+    await page.waitForFunction(
+      () => (window as any).Alpine?.store('vitalite')?.loading === false,
+      { timeout: 8000 },
+    );
   });
 
   test('complète une tâche et la marque disabled', async ({ page }) => {
