@@ -45,9 +45,15 @@ const PUBLIC_SITE_URL = (import.meta.env['VITE_PUBLIC_SITE_URL'] as string | und
 
 /** URL de callback selon l'environnement (exportée pour diagnostic) */
 export function callbackUrl(): string {
-  // Sur mobile Capacitor : deep link via le scheme de l'app
-  if (isCapacitor) return 'com.lamajoker.kinetic://auth-callback';
-  // Sur web : URL publique canonique si configurée, sinon origin courante
+  // Sur Capacitor (Android/iOS) : on utilise l'URL HTTPS /auth-callback,
+  // PAS le deep link custom scheme directement. Pourquoi :
+  //   Chrome Custom Tabs (utilisé par signInWithOAuth) ne peut pas naviguer
+  //   vers un custom scheme (com.lamajoker.kinetic://…) après le redirect OAuth
+  //   → Google/Supabase redirige dessus → Chrome affiche about:blank.
+  // Solution : Supabase redirige vers /auth-callback (HTTPS, ouvrable dans
+  // Chrome Custom Tabs). Cette page extrait les tokens et fait ensuite
+  //   window.location.href = 'com.lamajoker.kinetic://auth-callback#tokens…'
+  // pour hand-off vers l'APK via l'Intent filter Android.
   const base = PUBLIC_SITE_URL ?? window.location.origin;
   return `${base}/auth-callback`;
 }

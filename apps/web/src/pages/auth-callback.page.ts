@@ -8,8 +8,23 @@
  *
  * FIX #7 : Le timer de 10s est stocké et annulé (destroy()) pour éviter les
  *   mutations de state sur un composant démonté.
+ *
+ * FIX APK about:blank : Sur Capacitor, callbackUrl() pointe désormais vers
+ *   /auth-callback HTTPS (et non plus le custom scheme com.lamajoker.kinetic://).
+ *   Chrome Custom Tabs ne peut pas naviguer vers un custom scheme après OAuth →
+ *   about:blank. Le flow corrigé :
+ *     1. Google/Supabase redirige vers https://…/auth-callback (HTTPS, OK dans CTab)
+ *     2. Cette page parse les tokens
+ *     3. Si on est dans un WebView Capacitor → hand-off vers le deep link APK
+ *        via window.location.href = 'com.lamajoker.kinetic://auth-callback#tokens'
+ *        afin que l'APK prenne la main (Intent filter Android)
+ *     4. Sinon (web) → naviguer vers /
  */
 import { supabase } from '@kinetic/adapters-web';
+
+/** Détecte si on est dans un WebView Capacitor (APK Android/iOS) */
+const _isCapacitor = typeof window !== 'undefined'
+  && !!(window as unknown as Record<string, unknown>)['Capacitor'];
 
 export function authCallback() {
   return {
@@ -52,12 +67,26 @@ export function authCallback() {
 
         // Implicit flow : tokens directs dans le hash
         if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
-            access_token:  accessToken,
-            refresh_token: refreshToken,
-          });
-          if (error) throw error;
-          this._navigateHome();
+          // FIX APK about:blank : Si on est dans un WebView Capacitor, cette page
+          // a été ouverte dans Chrome Custom Tabs (l'APK ne peut pas recevoir le
+          // redirect custom scheme directement depuis CTab). On hand-off les tokens
+          // vers l'APK via le deep link → l'Intent filter Android ouvre l'APK.
+          if (_isCapacitor) {
+            const deepLink =
+              `com.lamajoker.kinetic://auth-callback` +
+              `#access_token=${encodeURIComponent(accessToken)}` +
+              `&refresh_token=${encodeURIComponent(refreshToken)}` +
+              `&token_type=bearer`;
+            window.location.href = deepLink;
+            // Fallback web au cas où le deep link ne s'ouvre pas (émulateur
+            // sans APK installé, ou navigateur desktop pendant les tests)
+            this._timeoutId = setTimeout(() => {
+              this._timeoutId = null;
+              this._setSessionAndNavigate(accessToken, refreshToken);
+            }, 1500);
+            return;
+          }
+          await this._setSessionAndNavigate(accessToken, refreshToken);
           return;
         }
 
@@ -99,6 +128,16 @@ export function authCallback() {
         this._cleanup();
         this.error = e instanceof Error ? e.message : 'Erreur de connexion';
       }
+    },
+
+    async _setSessionAndNavigate(accessToken: string, refreshToken: string): Promise<void> {
+      if (!supabase) { this._navigateHome(); return; }
+      const { error } = await supabase.auth.setSession({
+        access_token:  accessToken,
+        refresh_token: refreshToken,
+      });
+      if (error) throw error;
+      this._navigateHome();
     },
 
     _navigateHome(): void {

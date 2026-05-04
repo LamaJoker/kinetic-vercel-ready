@@ -56,21 +56,35 @@ async function gotoApp(page: Page, path = '/'): Promise<void> {
   await page.goto(`http://localhost:3000${path}`);
   await waitForAlpineInit(page);
 
-  // 4. Forcer le 1er rendu du router. En CI, l'init du store auth peut hang
-  //    sur supabase.auth.getUser() ou onAuthStateChange (réseau bloqué/lent),
-  //    et le router attend kinetic:auth-ready avant tout rendu. En dispatchant
-  //    manuellement l'event après que le router a installé son listener
-  //    (initRouter() est appelé via requestAnimationFrame post-Alpine.start),
-  //    on garantit que la page se rend même si l'auth ne résout jamais.
-  //    Le listener du router a `{ once: true }`, donc un dispatch ultérieur
-  //    par le finally du auth store est sans effet (idempotent).
+  // 4. Attendre que l'auth soit terminée (loading === false).
+  //    En mode guest (pas de Supabase en CI), authStore.init() retourne
+  //    SYNCHRONEMENT pendant Alpine.start(), avant que le rAF de initRouter()
+  //    ait pu enregistrer son listener kinetic:auth-ready.
+  //    → on attend explicitement loading=false, puis on dispatche l'event
+  //    (utile si le listener est déjà en place), puis on attend le rendu.
   await page.waitForFunction(
-    () => typeof (window as any).Alpine?.store === 'function',
-    { timeout: 5000 },
+    () => {
+      const a = (window as any).Alpine;
+      if (!a?.store) return false;
+      const auth = a.store('auth') as { loading?: boolean } | null;
+      return auth != null && auth.loading === false;
+    },
+    { timeout: 10_000 },
   );
+  // Belt-and-suspenders : si le listener du router est déjà enregistré (réseau lent
+  // mais Supabase configuré), ce dispatch le déclenche. En mode guest le fallback
+  // setTimeout(0) de initRouter() prend le relais (voir router.ts).
   await page.evaluate(() => {
     window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
   });
+  // Attendre que #app-outlet contienne vraiment du DOM rendu
+  await page.waitForFunction(
+    () => {
+      const el = document.getElementById('app-outlet');
+      return el != null && el.hasChildNodes();
+    },
+    { timeout: 10_000 },
+  );
 }
 
 // ──────────────────────────────────────────────────────────────
