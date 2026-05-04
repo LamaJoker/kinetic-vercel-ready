@@ -118,13 +118,13 @@ async function signInWithOAuth(provider: 'google' | 'github'): Promise<void> {
   if (isCapacitor && data.url) {
     const { Browser } = await import('@capacitor/browser');
 
-    // Fallback browserFinished : si appUrlOpen ne se déclenche pas (certains appareils),
-    // on relit la session quand le navigateur se ferme
-    Browser.addListener('browserFinished', async () => {
+    // H2 FIX: stocker le handle pour supprimer le listener après le premier appel
+    // (évite l'accumulation de listeners sur chaque tentative OAuth)
+    const listenerHandle = await Browser.addListener('browserFinished', async () => {
+      await listenerHandle.remove();
       try {
         const { data: { session } } = await supabase!.auth.getSession();
         if (session) {
-          // Session établie — recharger l'app pour mettre à jour l'UI
           window.location.href = '/';
         }
       } catch { /* ignore */ }

@@ -6,59 +6,15 @@
  */
 
 import { describe, it, expect } from 'vitest';
+// M5 FIX: importer les vraies fonctions depuis le module de production
+import {
+  createClock,
+  incrementClock,
+  mergeClock,
+  compareClocks,
+  resolveConflict,
+} from '../../apps/web/src/lib/sync.js';
 import type { VectorClock, SyncedValue, CausalOrder } from '../../apps/web/src/lib/sync.js';
-
-// ─── Inline implementation pour isolation ────────────────────────────────
-function createClock(deviceId: string): VectorClock {
-  return { [deviceId]: 0 };
-}
-
-function incrementClock(clock: VectorClock, deviceId: string): VectorClock {
-  return { ...clock, [deviceId]: (clock[deviceId] ?? 0) + 1 };
-}
-
-function mergeClock(a: VectorClock, b: VectorClock): VectorClock {
-  const merged: VectorClock = { ...a };
-  for (const [device, time] of Object.entries(b)) {
-    merged[device] = Math.max(merged[device] ?? 0, time);
-  }
-  return merged;
-}
-
-function compareClocks(a: VectorClock, b: VectorClock): CausalOrder {
-  const allDevices = new Set([...Object.keys(a), ...Object.keys(b)]);
-  let aLessOrEqual = true;
-  let bLessOrEqual = true;
-
-  for (const device of allDevices) {
-    const aTime = a[device] ?? 0;
-    const bTime = b[device] ?? 0;
-    if (aTime > bTime) aLessOrEqual = false;
-    if (bTime > aTime) bLessOrEqual = false;
-  }
-
-  if (aLessOrEqual && bLessOrEqual) return 'equal';
-  if (aLessOrEqual) return 'before';
-  if (bLessOrEqual) return 'after';
-  return 'concurrent';
-}
-
-function resolveConflict<T>(
-  local: SyncedValue<T>,
-  remote: SyncedValue<T>
-): SyncedValue<T> {
-  const order = compareClocks(local.clock, remote.clock);
-  switch (order) {
-    case 'after':
-    case 'equal': return local;
-    case 'before': return remote;
-    case 'concurrent':
-      if (local.wallTime > remote.wallTime) return local;
-      if (remote.wallTime > local.wallTime) return remote;
-      return local.deviceId > remote.deviceId ? local : remote;
-  }
-}
-// ─────────────────────────────────────────────────────────────────────────
 
 describe('CRDT Vector Clock', () => {
 

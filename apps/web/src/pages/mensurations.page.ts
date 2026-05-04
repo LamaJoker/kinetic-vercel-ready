@@ -44,15 +44,25 @@ const METRICS: readonly MetricDef[] = [
   { key: 'neck',       label: 'Cou',       color: '#FFD166' },
 ] as const;
 
-const STORAGE_KEY = 'kinetic:measurements:entries';
-const PHOTOS_KEY  = 'kinetic:measurements:photos';
+const STORAGE_KEY   = 'kinetic:measurements:entries';
+const PHOTOS_KEY    = 'kinetic:measurements:photos'; // array of PhotoMeta (sans base64)
 
-export interface ProgressPhoto {
-  id:    string;
-  date:  string;   // ISO date (YYYY-MM-DD)
-  takenAt: string; // ISO timestamp
+/** Métadonnées d'une photo (persisté dans PHOTOS_KEY) */
+interface PhotoMeta {
+  id:      string;
+  date:    string;   // ISO date (YYYY-MM-DD)
+  takenAt: string;   // ISO timestamp
+  note?:   string;
+}
+
+/** Photo complète en mémoire (base64 chargé depuis la clé séparée) */
+export interface ProgressPhoto extends PhotoMeta {
   base64: string;  // data:image/jpeg;base64,…
-  note?: string;
+}
+
+/** Clé IDB individuelle pour le base64 d'une photo */
+function photoDataKey(id: string): string {
+  return `kinetic:measurements:photo:${id}`;
 }
 
 function val(entry: MeasurementEntry, key: MetricKey): number | undefined {
@@ -141,8 +151,69 @@ export function mensurations() {
       const stored = await deps.storage.get(STORAGE_KEY);
       this.entries = Array.isArray(stored) ? (stored as MeasurementEntry[]) : [];
 
-      const storedPhotos = await deps.storage.get(PHOTOS_KEY);
-      this.photos = Array.isArray(storedPhotos) ? (storedPhotos as ProgressPhoto[]) : [];
+      // FIX C3: photos stockées par clé séparée (évite le dépassement du seuil 1 MB par entrée)
+      const storedMeta = await deps.storage.get<unknown[]>(PHOTOS_KEY);
+      if (Array.isArray(storedMeta) && storedMeta.length > 0) {
+        const first = storedMeta[0] as Record<string, unknown>;
+        if ('base64' in first) {
+          // Migration : ancien format (base64 inline) → nouveau format (clés séparées)
+          await this._migratePhotos(storedMeta as ProgressPhoto[], deps);
+        } else {
+          this.photos = await this._loadPhotos(storedMeta as PhotoMeta[], deps);
+        }
+      }
+    },
+
+    /** Migration one-shot : déplace le base64 hors du tableau de métadonnées */
+    async _migratePhotos(
+      old: ProgressPhoto[],
+      deps: Awaited<ReturnType<typeof getDeps>>,
+    ): Promise<void> {
+      await Promise.all(old.map(async (p) => {
+        try {
+          await deps.storage.set(photoDataKey(p.id), { base64: p.base64 });
+        } catch (err) {
+          console.warn('[mensurations] migration photo failed for', p.id, err);
+        }
+      }));
+      // Mettre à jour PHOTOS_KEY sans les base64
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const meta: PhotoMeta[] = old.map(({ base64: _b, ...rest }) => rest);
+      await deps.storage.set(PHOTOS_KEY, meta);
+      this.photos = old; // base64 déjà en mémoire
+    },
+
+    /** Charge les base64 en parallèle depuis leurs clés individuelles */
+    async _loadPhotos(
+      meta: PhotoMeta[],
+      deps: Awaited<ReturnType<typeof getDeps>>,
+    ): Promise<ProgressPhoto[]> {
+      const dataArr = await Promise.all(
+        meta.map(m => deps.storage.get<{ base64: string }>(photoDataKey(m.id)))
+      );
+      return meta.map((m, i) => ({ ...m, base64: dataArr[i]?.base64 ?? '' }));
+    },
+
+    /**
+     * Compresse une image (dataURL) via Canvas.
+     * Max 1 200 px sur le plus grand côté, qualité JPEG 0.75 → ~100-250 KB typique.
+     */
+    _compressPhoto(dataUrl: string, maxPx = 1200, quality = 0.75): Promise<string> {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxPx / Math.max(img.width || 1, img.height || 1));
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width  = w;
+          canvas.height = h;
+          canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => reject(new Error('Impossible de charger l\'image'));
+        img.src = dataUrl;
+      });
     },
 
     // ── Photos de progression ─────────────────────────────────
@@ -174,18 +245,32 @@ export function mensurations() {
 
         if (!base64 || base64 === 'data:image/jpeg;base64,') return;
 
+        // FIX C3: compresser avant de stocker (max 1 200 px, JPEG 75%)
+        let compressed = base64;
+        try { compressed = await this._compressPhoto(base64); } catch { /* garder original */ }
+
         const today = new Date().toISOString().slice(0, 10);
         const entry: ProgressPhoto = {
           id:      crypto.randomUUID(),
           date:    today,
           takenAt: new Date().toISOString(),
-          base64,
+          base64:  compressed,
         };
 
-        const next = [...this.photos, entry];
         const deps = await getDeps();
-        await deps.storage.set(PHOTOS_KEY, next);
-        this.photos = next;
+
+        // FIX C3: stocker le base64 dans une clé dédiée (évite le seuil 1 MB du tableau)
+        await deps.storage.set(photoDataKey(entry.id), { base64: compressed });
+
+        // Mettre à jour le tableau de métadonnées (sans base64)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { base64: _b, ...meta } = entry;
+        const existingMeta: PhotoMeta[] = this.photos.map(
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          ({ base64: _b2, ...m }) => m
+        );
+        await deps.storage.set(PHOTOS_KEY, [...existingMeta, meta]);
+        this.photos = [...this.photos, entry];
         window.dispatchEvent(new CustomEvent('kinetic:notify', {
           detail: { kind: 'success', message: 'Photo de progression ajoutée ✓' },
         }));
@@ -225,7 +310,11 @@ export function mensurations() {
       const next = this.photos.filter(p => p.id !== id);
       try {
         const deps = await getDeps();
-        await deps.storage.set(PHOTOS_KEY, next);
+        // FIX C3: supprimer aussi la clé de données séparée
+        await deps.storage.remove(photoDataKey(id));
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const meta: PhotoMeta[] = next.map(({ base64: _b, ...m }) => m);
+        await deps.storage.set(PHOTOS_KEY, meta);
         this.photos = next;
         if (this.selectedPhotoId === id) this.selectedPhotoId = null;
       } catch (err) {

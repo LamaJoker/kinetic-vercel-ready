@@ -6,47 +6,13 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-
-// ─── Inline (même logique que security.ts) ───────────────────────────────
-function sanitizeUserInput(input: unknown, maxLength = 500): string {
-  if (input === null || input === undefined) return '';
-  const str = String(input).trim();
-  return str
-    .replace(/[<>]/g, '')
-    .replace(/javascript:/gi, '')
-    .replace(/on\w+\s*=/gi, '')
-    .replace(/data:/gi, '')
-    .slice(0, maxLength);
-}
-
-function sanitizeEmail(email: string): string {
-  return email.trim().toLowerCase().replace(/[^a-z0-9@._+-]/g, '');
-}
-
-function sanitizeNumber(value: unknown, min: number, max: number): number | null {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-  if (n < min || n > max) return null;
-  return Math.round(n * 100) / 100;
-}
-
-interface RateLimitEntry { count: number; resetAt: number; }
-const rateLimitStore = new Map<string, RateLimitEntry>();
-
-function checkRateLimit(key: string, max: number, windowMs: number) {
-  const now = Date.now();
-  const entry = rateLimitStore.get(key);
-  if (!entry || now > entry.resetAt) {
-    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, remainingMs: windowMs, remaining: max - 1 };
-  }
-  if (entry.count >= max) {
-    return { allowed: false, remainingMs: entry.resetAt - now, remaining: 0 };
-  }
-  entry.count++;
-  return { allowed: true, remainingMs: entry.resetAt - now, remaining: max - entry.count };
-}
-// ─────────────────────────────────────────────────────────────────────────
+// M5 FIX: importer les vraies fonctions au lieu d'une ré-implémentation inline
+import {
+  sanitizeUserInput,
+  sanitizeEmail,
+  sanitizeNumber,
+  checkRateLimit,
+} from '../../apps/web/src/lib/security.js';
 
 describe('Security Module', () => {
 

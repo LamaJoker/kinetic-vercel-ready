@@ -1,6 +1,4 @@
-import Alpine from 'alpinejs';
 import { getDeps } from '../deps';
-import { navigate } from '../router';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import {
   compactStorage,
@@ -20,10 +18,6 @@ interface StreakShape {
 
 interface StatsShape {
   tasksCompleted?: number;
-}
-
-interface XpStoreShape {
-  setXp(n: number): void;
 }
 
 export function profile() {
@@ -191,12 +185,13 @@ export function profile() {
     async doReset(): Promise<void> {
       this.showResetModal = false;
       const deps = await getDeps();
+      // Clear all storage — les stores Alpine se rechargent proprement au reload
       await deps.storage.clear();
-      (Alpine.store('xp') as XpStoreShape).setXp(0);
       window.dispatchEvent(new CustomEvent('kinetic:notify', {
         detail: { kind: 'success', message: 'Données réinitialisées ✓' },
       }));
-      setTimeout(() => { navigate('/'); }, 1200);
+      // Reload complet pour repartir de zéro (tous les stores Alpine sont réinitialisés)
+      setTimeout(() => { window.location.reload(); }, 1200);
     },
   };
 }

@@ -6,7 +6,7 @@
  *  - Annuler une tâche cochée par erreur (undo)
  *  - Historique des 7 derniers jours
  */
-import { createTask, completeTask_usecase, syncDailyLog, REWARDS } from '@kinetic/core';
+import { createTask, completeTask_usecase, syncDailyLog, REWARDS, awardXp } from '@kinetic/core';
 import type { Task } from '@kinetic/core';
 import { getDeps } from '../deps';
 
@@ -169,12 +169,14 @@ export function vitaliteStore() {
           .catch(err => console.warn('[vitalite] sync failed:', err));
 
         // Bonus XP +20 % débloqué au niveau 5
+        // H3 FIX: utiliser awardXp() au lieu de mutation directe
         if (this._hasXpBonus()) {
           const bonusXp = Math.round(task.xp * 0.2);
           try {
-            const xpData  = await deps.storage.get<{ xp: number }>('kinetic:xp');
-            const newBonus = (xpData?.xp ?? 0) + bonusXp;
-            await deps.storage.set('kinetic:xp', { xp: newBonus });
+            await awardXp(
+              { storage: deps.storage, notifier: deps.notifier },
+              { amount: bonusXp, silent: true },
+            );
             await this._refreshXpStore();
           } catch { /* silently ignore bonus errors */ }
         }
@@ -306,20 +308,21 @@ export function vitaliteStore() {
         ];
         const taskMap = new Map(allSpecs.map(s => [s.id, { id: s.id, title: s.title, icon: s.icon }]));
 
-        const days: HistoryDay[] = [];
-        // Nombre de jours selon récompense débloquée (7 / 14 / 30)
+        // M2 FIX: Promise.all au lieu de lectures IDB séquentielles (N round-trips → 1 batch)
         const maxDays = this._rewardsHistoryDays();
-        for (let i = 1; i <= maxDays; i++) {
-          const date   = dateIso(-i);
-          const doneIds = (await deps.storage.get<string[]>(`kinetic:vitalite:done:${date}`)) ?? [];
-          days.push({
+        const dates = Array.from({ length: maxDays }, (_, i) => dateIso(-(i + 1)));
+        const allDoneIds = await Promise.all(
+          dates.map(date => deps.storage.get<string[]>(`kinetic:vitalite:done:${date}`))
+        );
+        this.historyDays = dates.map((date, i) => {
+          const doneIds = allDoneIds[i] ?? [];
+          return {
             date,
             label:   dateLabel(date),
             doneIds,
             tasks:   doneIds.map(id => taskMap.get(id) ?? { id, title: id, icon: '✓' }),
-          });
-        }
-        this.historyDays = days;
+          };
+        });
       } catch (err) {
         console.error('[vitalite] loadHistory failed:', err);
       } finally {

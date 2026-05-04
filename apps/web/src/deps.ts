@@ -124,8 +124,12 @@ export function _resetDepsForTesting(mock: AppDeps): void {
  * Scénario : getDeps() timeout → mode local → SIGNED_IN arrive après →
  * authStore dispatche 'kinetic:auth-changed' → on reset et reconstruit.
  */
-if (typeof window !== 'undefined') {
-  window.addEventListener('kinetic:auth-changed', async () => {
+// M4 FIX: flag module-level pour éviter le double enregistrement en HMR Vite
+const _WIN = typeof window !== 'undefined' ? (window as Window & { _kineticAuthChangedListening?: boolean }) : null;
+
+if (_WIN && !_WIN._kineticAuthChangedListening) {
+  _WIN._kineticAuthChangedListening = true;
+  _WIN.addEventListener('kinetic:auth-changed', async () => {
     // Si les deps courantes sont déjà en mode Hybrid, rien à faire
     if (_deps?.storage instanceof HybridStorage) return;
 
@@ -140,6 +144,6 @@ if (typeof window !== 'undefined') {
     }
 
     // Notifier les stores Alpine pour qu'ils rechargent leurs données cloud
-    window.dispatchEvent(new CustomEvent('kinetic:deps-ready'));
+    _WIN!.dispatchEvent(new CustomEvent('kinetic:deps-ready'));
   });
 }

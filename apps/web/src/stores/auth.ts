@@ -54,6 +54,8 @@ export function authStore() {
     emailInput:    '',
     /** FIX #5 : track si on est déjà allé chercher l'user une fois */
     _initDone:     false,
+    /** H5 FIX : handle pour unsubscribe à la destruction */
+    _authSubscription: null as { unsubscribe: () => void } | null,
 
     async init(): Promise<void> {
       _authReadyDispatched = false; // reset au cas où le store est réinstancié
@@ -76,7 +78,7 @@ export function authStore() {
         //   - SIGNED_IN après un magic link / OAuth (si l'init a timeout)
         //   - SIGNED_OUT sur logout
         //   - TOKEN_REFRESHED en arrière-plan
-        supabase!.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+        const { data: { subscription } } = supabase!.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
           if (session?.user) {
             const freshUser = await getAuthUser();
             this.user = freshUser;
@@ -102,6 +104,7 @@ export function authStore() {
             window.dispatchEvent(new CustomEvent('kinetic:auth-changed'));
           }
         });
+        this._authSubscription = subscription;
 
       } catch (err) {
         console.error('[auth] init failed:', err);
@@ -168,6 +171,11 @@ export function authStore() {
     async logout(): Promise<void> {
       await signOut();
       window.location.href = '/login';
+    },
+
+    destroy(): void {
+      this._authSubscription?.unsubscribe();
+      this._authSubscription = null;
     },
 
     get isAuthenticated(): boolean {

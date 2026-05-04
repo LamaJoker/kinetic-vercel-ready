@@ -1,4 +1,5 @@
 import { getDeps } from '../deps';
+import { navigate } from '../router';
 
 interface ProgramDay {
   dayOfWeek: number;
@@ -296,13 +297,18 @@ export function program() {
 
     weekKey(): string {
       const d = new Date();
+      // FIX C2: getMonth() retourne 0-11, on ajoute 1 et on zero-pad
+      const m    = String(d.getMonth() + 1).padStart(2, '0');
       const week = Math.ceil(d.getDate() / 7);
-      return `${d.getFullYear()}-W${d.getMonth()}-${week}`;
+      return `${d.getFullYear()}-W${m}-${week}`;
     },
 
     todayKey(): string {
       const d = new Date();
-      return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      // FIX C2: getMonth() retourne 0-11, on ajoute 1 et on zero-pad
+      const m   = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${d.getFullYear()}-${m}-${day}`;
     },
 
     async selectSplit(type: ActiveProgram['splitType']): Promise<void> {
@@ -340,7 +346,7 @@ export function program() {
     },
 
     startExercise(_ex: TodoExercise): void {
-      window.location.href = '/seances';
+      navigate('/seances');
     },
 
     /**
@@ -351,7 +357,7 @@ export function program() {
     async startTodaySession(): Promise<void> {
       const focus = this.todayFocus;
       if (!focus || focus.restDay) {
-        window.location.href = '/seances';
+        navigate('/seances');
         return;
       }
       try {
@@ -367,7 +373,7 @@ export function program() {
           sessionStorage.setItem('kinetic:program:auto-template', match.id);
         }
       } catch {}
-      window.location.href = '/seances';
+      navigate('/seances');
     },
   };
 }

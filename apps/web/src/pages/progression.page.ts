@@ -24,9 +24,12 @@ export function progression() {
     sessions: [] as WorkoutSession[],
     exercises: [] as Exercise[],
     selectedExerciseId: '',
+    // M1 FIX: cache pour éviter de recalculer O(sessions×sets) à chaque getter Alpine
+    _cachedSets: null as AnalyticsSet[] | null,
 
     async init(): Promise<void> {
       this.loading = true;
+      this._cachedSets = null; // invalider le cache au rechargement
       try {
         const deps = await getDeps();
         this.exercises = await loadExercises(deps.storage);
@@ -48,9 +51,12 @@ export function progression() {
     // ─── Projection : sessions → AnalyticsSet[] ──────────────
 
     _analyticsSets(): AnalyticsSet[] {
+      // M1 FIX: résultat mémoïzé — recalculé uniquement si le cache est null
+      // (invalidé dans init() à chaque rechargement des sessions)
+      if (this._cachedSets !== null) return this._cachedSets;
       const muscleByEx = new Map<string, readonly string[]>();
       for (const ex of this.exercises) muscleByEx.set(ex.id, ex.muscles ?? []);
-      return this.sessions.flatMap(sess =>
+      this._cachedSets = this.sessions.flatMap(sess =>
         sess.entries.flatMap(e =>
           e.sets.map(s => ({
             sessionId:   sess.id,
@@ -63,6 +69,7 @@ export function progression() {
           }))
         )
       );
+      return this._cachedSets;
     },
 
     _stats(): ExerciseStats[] {

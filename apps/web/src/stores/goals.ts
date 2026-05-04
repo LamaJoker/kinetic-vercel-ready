@@ -7,12 +7,12 @@ import {
   evaluateWeeklyGoals,
   shouldAwardWeeklyBonusXp,
   WEEKLY_GOAL_BONUS_XP,
+  awardXp,
 } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { loadSessions } from '../lib/training/storage';
 
 const KEY_GOALS = 'kinetic:goals:weekly';
-const KEY_XP    = 'kinetic:xp';
 
 export function goalsStore() {
   return {
@@ -29,9 +29,20 @@ export function goalsStore() {
     xpAwardedWeek:   '',
     loading:         true,
 
+    // M3 FIX: stocker le handler pour pouvoir le retirer dans destroy()
+    _sessionSavedHandler: null as (() => void) | null,
+
     async init(): Promise<void> {
+      this._sessionSavedHandler = () => void this.reload();
+      window.addEventListener('kinetic:session-saved', this._sessionSavedHandler);
       await this.reload();
-      window.addEventListener('kinetic:session-saved', () => void this.reload());
+    },
+
+    destroy(): void {
+      if (this._sessionSavedHandler) {
+        window.removeEventListener('kinetic:session-saved', this._sessionSavedHandler);
+        this._sessionSavedHandler = null;
+      }
     },
 
     async reload(): Promise<void> {
@@ -83,9 +94,13 @@ export function goalsStore() {
     },
 
     async _awardBonus(deps: Awaited<ReturnType<typeof getDeps>>): Promise<void> {
-      const raw = await deps.storage.get<{ xp: number }>(KEY_XP);
-      const cur = raw?.xp ?? 0;
-      await deps.storage.set(KEY_XP, { xp: cur + WEEKLY_GOAL_BONUS_XP });
+      // H3 FIX: utiliser awardXp() pour mettre à jour correctement
+      // kinetic:xp ET les logs journaliers de sync cloud (silent=true car
+      // on gère nous-mêmes la notification)
+      await awardXp(
+        { storage: deps.storage, notifier: deps.notifier },
+        { amount: WEEKLY_GOAL_BONUS_XP, silent: true },
+      );
       this.xpAwardedWeek = this.weekKey;
       await this.save();
 

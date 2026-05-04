@@ -171,10 +171,7 @@ export function initRouter(): void {
     void render(window.location.pathname || '/');
   });
 
-  setTimeout(() => {
-    const host = outlet();
-    if (host.querySelector('.animate-pulse')) {
-      void render(window.location.pathname || '/');
-    }
-  }, 1500);
+  // M9 FIX: timer fallback 1.5s supprimé — dispatchAuthReady() est garanti
+  // via le finally() de authStore.init(), ce double render était inutile
+  // et pouvait déclencher une race condition avec le render de kinetic:auth-ready.
 }

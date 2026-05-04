@@ -199,6 +199,10 @@ export class HybridStorage implements StoragePort {
           if (nextAttempts >= 3) {
             console.warn(`[HybridStorage] giving up after ${nextAttempts} attempts for key "${key}"`);
             this.pendingWrites.delete(key);
+            // M10 FIX: notifier l'UI que la donnée n'a pas pu être synchronisée
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('kinetic:sync-failed', { detail: { key } }));
+            }
           }
         }
       }

@@ -1,9 +1,15 @@
 import { Capacitor } from '@capacitor/core';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 const DEBUG_KEY = 'kinetic:auth-debug';
 
-/** Stocke un message de debug visible au prochain démarrage */
+/**
+ * Stocke un message de debug dans localStorage.
+ * H1/L5 FIX : uniquement en mode DEV — aucun log en production
+ * pour éviter la fuite d'informations OAuth sur appareils partagés.
+ */
 function debugLog(msg: string): void {
+  if (!import.meta.env.DEV) return;
   try {
     const prev = localStorage.getItem(DEBUG_KEY) ?? '';
     const stamp = new Date().toISOString().slice(11, 19);
@@ -74,10 +80,10 @@ export async function initMobile(): Promise<void> {
  * handleOAuthCallback — extrait le token de l'URL et établit la session.
  * Implicit flow (mobile) : tokens dans le hash → setSession()
  * PKCE flow : ?code= → exchangeCodeForSession()
+ * M8 FIX : paramètre supabase correctement typé (était `any`)
  */
 export async function handleOAuthCallback(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
+  supabase: SupabaseClient,
   url: string,
 ): Promise<void> {
   try {

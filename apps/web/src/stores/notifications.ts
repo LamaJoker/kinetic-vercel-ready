@@ -14,12 +14,22 @@ export function notificationsStore() {
   return {
     toasts:   [] as Toast[],
     _counter: 0,
+    // M3 FIX: handler stocké pour removeEventListener dans destroy()
+    _notifyHandler: null as ((e: Event) => void) | null,
 
     init(): void {
-      window.addEventListener('kinetic:notify', (e: Event) => {
+      this._notifyHandler = (e: Event) => {
         const payload = (e as CustomEvent<NotificationPayload>).detail;
         if (payload) this.push(payload);
-      });
+      };
+      window.addEventListener('kinetic:notify', this._notifyHandler);
+    },
+
+    destroy(): void {
+      if (this._notifyHandler) {
+        window.removeEventListener('kinetic:notify', this._notifyHandler);
+        this._notifyHandler = null;
+      }
     },
 
     push(payload: NotificationPayload): void {

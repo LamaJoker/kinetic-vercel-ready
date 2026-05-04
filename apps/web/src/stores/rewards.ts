@@ -78,26 +78,37 @@ export function rewardsStore() {
     // Référence statique pour les templates
     allRewards: REWARDS,
 
+    // M3 FIX: handler stocké pour removeEventListener dans destroy()
+    _levelupHandler: null as ((e: Event) => void) | null,
+    _xpUpdatedHandler: null as (() => void) | null,
+
     // ─────────────────────────────────────────────────────────────────────────
     init(): void {
-      // Écouter les level-up pour afficher la modale de récompense
-      window.addEventListener('kinetic:levelup', (e: Event) => {
+      // M3 FIX: stocker les handlers pour cleanup
+      this._levelupHandler = (e: Event) => {
         const detail = (e as CustomEvent<{ level: number; title: string }>).detail;
         if (!detail) return;
         const reward = REWARDS.find((r) => r.level === detail.level);
-        // On n'affiche pas la modale pour le niveau 1 (récompense "base")
         if (reward && reward.kind !== 'base') {
           this.pendingReward   = reward;
           this.pendingLevel    = detail.level;
           this.showRewardModal = true;
         }
-      });
+      };
+      window.addEventListener('kinetic:levelup', this._levelupHandler);
 
       // Charger / renouveler les jetons de gel
       void this._initFreezeTokens();
 
       // Appliquer le thème sauvegardé
       void this._loadTheme();
+    },
+
+    destroy(): void {
+      if (this._levelupHandler) {
+        window.removeEventListener('kinetic:levelup', this._levelupHandler);
+        this._levelupHandler = null;
+      }
     },
 
     // ─── Jetons de gel ───────────────────────────────────────────────────────
