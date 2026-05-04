@@ -12,6 +12,7 @@ import {
   sanitizeEmail,
   sanitizeNumber,
   checkRateLimit,
+  _clearRateLimitStoreForTesting,
 } from '../../apps/web/src/lib/security.js';
 
 describe('Security Module', () => {
@@ -95,7 +96,7 @@ describe('Security Module', () => {
 
   describe('checkRateLimit', () => {
     beforeEach(() => {
-      rateLimitStore.clear();
+      _clearRateLimitStoreForTesting();
     });
 
     it('permet les requêtes sous la limite', () => {
