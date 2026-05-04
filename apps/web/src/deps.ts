@@ -1,8 +1,14 @@
 /**
  * Container de dépendances — résout les ports en implémentations concrètes.
  *
+ * FIX #5 : Deux améliorations :
+ *   1. Timeout porté de 3s → 8s pour absorber les cold starts Supabase et les
+ *      connexions 3G. En dessous de 8s, l'app reste en attente sans dégradation.
+ *   2. Écoute de 'kinetic:auth-changed' : si le user se connecte APRÈS le timeout,
+ *      on reconstruit les deps avec HybridStorage pour ne pas rester en mode local.
+ *
  * Garanties :
- *  - Timeout 3s sur Supabase → fallback local garanti. L'app ne bloque JAMAIS.
+ *  - Timeout 8s sur Supabase → fallback local garanti. L'app ne bloque JAMAIS.
  *  - Un seul appel Supabase en cours à la fois grâce au pattern inflight.
  *  - Protection contre les race conditions post-resetDeps() : une AbortController
  *    annule les résolutions en cours si resetDeps() est appelé (ex: logout).
@@ -60,8 +66,8 @@ export async function getDeps(): Promise<AppDeps> {
 
     if (hasRealSupabase && supabase) {
       try {
-        // Timeout 3s — si Supabase ne répond pas, on part en mode local
-        const user = await withTimeout(getAuthUser(), 3000);
+        // FIX #5 : Timeout porté à 8s (était 3s) — cold start Supabase ≈ 2-4s, 3G RTT ≈ 3-5s
+        const user = await withTimeout(getAuthUser(), 8000);
 
         // Si resetDeps() a été appelé pendant la résolution (ex: logout mid-flight),
         // on abandonne ce build pour ne pas créer une connexion Supabase obsolète.
@@ -110,4 +116,30 @@ export function resetDeps(): void {
 
 export function _resetDepsForTesting(mock: AppDeps): void {
   _deps = mock;
+}
+
+/**
+ * FIX #5 : Écouter kinetic:auth-changed pour rebascule HybridStorage.
+ *
+ * Scénario : getDeps() timeout → mode local → SIGNED_IN arrive après →
+ * authStore dispatche 'kinetic:auth-changed' → on reset et reconstruit.
+ */
+if (typeof window !== 'undefined') {
+  window.addEventListener('kinetic:auth-changed', async () => {
+    // Si les deps courantes sont déjà en mode Hybrid, rien à faire
+    if (_deps?.storage instanceof HybridStorage) return;
+
+    console.info('[deps] auth-changed received after timeout — rebuilding with HybridStorage');
+    resetDeps();
+
+    try {
+      await getDeps();
+    } catch (err) {
+      console.warn('[deps] rebuild after auth-changed failed:', err);
+      return;
+    }
+
+    // Notifier les stores Alpine pour qu'ils rechargent leurs données cloud
+    window.dispatchEvent(new CustomEvent('kinetic:deps-ready'));
+  });
 }

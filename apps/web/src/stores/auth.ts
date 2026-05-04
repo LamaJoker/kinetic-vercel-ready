@@ -1,6 +1,17 @@
 /**
- * Store Alpine `auth` — état de session Supabase.
- * FIX: kinetic:auth-ready dispatché dans tous les cas (guest + Supabase)
+ * stores/auth.ts
+ *
+ * FIX #1 : dispatchAuthReady() appelé UNE SEULE FOIS.
+ *   Avant : appelé dans finally() ET dans onAuthStateChange → double navigation.
+ *   Après : seul le finally() dispatche. onAuthStateChange réagit uniquement
+ *   aux changements APRÈS l'init initiale (ex: logout, refresh de token).
+ *
+ * FIX #4 : Logging explicite si la clé Supabase a un format inconnu — l'app
+ *   ne se dégrade pas silencieusement en mode guest sans avertissement console.
+ *
+ * FIX #5 : Timeout porté à 8s (cold starts Supabase / 3G). Plus important :
+ *   si onAuthStateChange arrive APRÈS le timeout (user connecté sur réseau lent),
+ *   on rebascule sur HybridStorage au lieu de rester bloqué en mode local.
  */
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import {
@@ -11,11 +22,26 @@ import {
 import type { AuthUser } from '@kinetic/adapters-web';
 import { resetDeps } from '../deps';
 
-const GUEST_MODE = supabase === null
-  || (import.meta.env['VITE_SUPABASE_URL'] as string | undefined)?.includes('xxxxxxxxxxxxxxxxxxxx')
-  || false;
+// FIX #4 : Log explicite plutôt que dégradation silencieuse
+const SUPABASE_URL      = import.meta.env['VITE_SUPABASE_URL'] as string | undefined;
+const SUPABASE_ANON_KEY = import.meta.env['VITE_SUPABASE_ANON_KEY'] as string | undefined;
+
+const GUEST_MODE = supabase === null;
+
+if (GUEST_MODE && SUPABASE_URL && !SUPABASE_URL.includes('xxxxxxxxxxxxxxxxxxxx')) {
+  // L'URL est configurée mais le client est null → clé probablement invalide
+  console.warn(
+    '[auth] Supabase client is null. Check VITE_SUPABASE_ANON_KEY format. ' +
+    'Expected: starts with "eyJ" (JWT) or "sb_publishable_". ' +
+    `Got: "${SUPABASE_ANON_KEY?.slice(0, 20) ?? 'undefined'}..."`
+  );
+}
+
+let _authReadyDispatched = false; // FIX #1 : guard contre le double dispatch
 
 function dispatchAuthReady(): void {
+  if (_authReadyDispatched) return; // FIX #1 : idempotent
+  _authReadyDispatched = true;
   window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
 }
 
@@ -26,37 +52,64 @@ export function authStore() {
     error:         null as string | null,
     magicLinkSent: false,
     emailInput:    '',
+    /** FIX #5 : track si on est déjà allé chercher l'user une fois */
+    _initDone:     false,
 
     async init(): Promise<void> {
+      _authReadyDispatched = false; // reset au cas où le store est réinstancié
+
       try {
         if (GUEST_MODE) {
           this.user = { id: 'guest', email: null, full_name: 'Invité', avatar_url: null };
           return;
         }
 
-        // Timeout 3s sur getAuthUser pour éviter le blocage
+        // FIX #5 : Timeout porté à 8s pour les connexions lentes
         const userPromise = getAuthUser();
-        const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+        const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000));
         const user = await Promise.race([userPromise, timeout]);
         this.user = user;
+        this._initDone = true;
 
-        supabase!.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
+        // FIX #1 : onAuthStateChange NE dispatche plus authReady.
+        //   Il gère uniquement les transitions POST-init :
+        //   - SIGNED_IN après un magic link / OAuth (si l'init a timeout)
+        //   - SIGNED_OUT sur logout
+        //   - TOKEN_REFRESHED en arrière-plan
+        supabase!.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
           if (session?.user) {
-            this.user = await getAuthUser();
+            const freshUser = await getAuthUser();
+            this.user = freshUser;
+
+            // FIX #5 : Si l'init avait timeout (user null), on rebascule les deps
+            // sur HybridStorage maintenant qu'on sait que l'user est connecté.
+            if (!this._initDone || !freshUser) {
+              this._initDone = true;
+              resetDeps(); // force la reconstruction avec SupabaseStorage
+              // Note : les stores Alpine rechargeront leurs données au prochain getDeps()
+            }
           } else {
             this.user = null;
             resetDeps();
           }
           this.loading = false;
-          dispatchAuthReady();
+
+          // FIX #1 : Pas de dispatchAuthReady ici — le finally() s'en charge.
+          // Exception : si l'init a timeout ET que SIGNED_IN arrive après, on
+          // dispatche une notification de mise à jour pour que les composants
+          // qui en ont besoin puissent se recharger (ex: dashboard).
+          if (event === 'SIGNED_IN' && _authReadyDispatched) {
+            window.dispatchEvent(new CustomEvent('kinetic:auth-changed'));
+          }
         });
+
       } catch (err) {
         console.error('[auth] init failed:', err);
         this.error = err instanceof Error ? err.message : 'Erreur auth';
         this.user = { id: 'guest', email: null, full_name: 'Invité', avatar_url: null };
       } finally {
         this.loading = false;
-        dispatchAuthReady();
+        dispatchAuthReady(); // FIX #1 : dispatché UNE SEULE FOIS ici
       }
     },
 

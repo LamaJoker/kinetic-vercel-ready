@@ -10,10 +10,26 @@ const isValidUrl = typeof SUPABASE_URL === 'string'
   && SUPABASE_URL.includes('.supabase.co')
   && !SUPABASE_URL.includes('xxxxxxxxxxxxxxxxxxxx');
 
-// Accepte l'ancien format JWT (eyJ...) et le nouveau format publishable (sb_publishable_...)
+// FIX #4 : Validation élargie — accepte tous les formats Supabase connus
+const _knownKeyPrefixes = ['eyJ', 'sb_publishable_', 'sb_anon_', 'sbp_'];
 const isValidKey = typeof SUPABASE_ANON_KEY === 'string'
-  && (SUPABASE_ANON_KEY.startsWith('eyJ') || SUPABASE_ANON_KEY.startsWith('sb_publishable_'))
-  && SUPABASE_ANON_KEY.length > 20;
+  && SUPABASE_ANON_KEY.length > 20
+  && _knownKeyPrefixes.some(p => SUPABASE_ANON_KEY!.startsWith(p));
+
+// Log explicite si le format est inconnu (nouveau format Supabase ?)
+if (
+  typeof SUPABASE_ANON_KEY === 'string'
+  && SUPABASE_ANON_KEY.length > 20
+  && !isValidKey
+) {
+  console.warn(
+    '[Supabase] VITE_SUPABASE_ANON_KEY has an unrecognized format. ' +
+    `Starts with: "${SUPABASE_ANON_KEY.slice(0, 15)}...". ` +
+    'Known prefixes: eyJ (JWT), sb_publishable_, sb_anon_, sbp_. ' +
+    'The Supabase client will NOT be initialized. ' +
+    'Update the isValidKey check in adapter-web/src/supabase/auth.ts if Supabase changed their key format.'
+  );
+}
 
 /** Détecte Capacitor (APK Android / iOS) */
 const isCapacitor = typeof window !== 'undefined'
