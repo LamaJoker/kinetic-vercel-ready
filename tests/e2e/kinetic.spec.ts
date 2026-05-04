@@ -90,11 +90,20 @@ test.describe('Kinetic App — Complétion de tâches', () => {
 
   test.beforeEach(async ({ page }) => {
     await gotoApp(page, '/vitalite');
-    // Attendre que le store vitalite ait fini son init() async
-    // (tasks = [] jusqu'à ce que loading passe à false)
+    // Attendre que les boutons de tâches soient réellement dans le DOM.
+    //
+    // Deux conditions doivent être réunies :
+    //   1. Le router a reçu kinetic:auth-ready et injecté le HTML vitalite
+    //      (peut prendre jusqu'à ~8s en CI si Supabase timeout s'écoule)
+    //   2. Alpine a traité le x-for et rendu les task-buttons avec le texte "+N XP"
+    //
+    // Attendre directement la présence du bouton dans le DOM plutôt que de
+    // sonder le store couvre les deux conditions en une seule assertion.
     await page.waitForFunction(
-      () => (window as any).Alpine?.store('vitalite')?.loading === false,
-      { timeout: 8000 },
+      () => Array.from(document.querySelectorAll('#app-outlet button')).some(
+        (btn) => /\+\d+\s*XP/.test((btn as HTMLElement).innerText),
+      ),
+      { timeout: 20000 },
     );
   });
 
