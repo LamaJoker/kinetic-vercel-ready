@@ -102,6 +102,11 @@ export function checkRateLimit(
   };
 }
 
+/** @internal Test helper — réinitialise le store rate-limit entre les tests. Ne pas utiliser en production. */
+export function _clearRateLimitStoreForTesting(): void {
+  rateLimitStore.clear();
+}
+
 // ─── Storage validation ───────────────────────────────────────
 
 export function validateStorageKey(key: string): boolean {
