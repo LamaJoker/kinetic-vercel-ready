@@ -26,19 +26,61 @@ export function authCallback() {
           return;
         }
 
-        // Supabase lit window.location.hash automatiquement grâce à
-        // detectSessionInUrl: true. On force un getSession() pour que
-        // le SDK traite le fragment #access_token présent dans l'URL.
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        // ─── Parse manuel des tokens dans l'URL ────────────────────────────
+        // detectSessionInUrl ne se déclenche QUE lors d'un load complet du
+        // SDK. En navigation SPA (push/popState), les tokens dans
+        // window.location.hash ou .search ne sont jamais extraits → la page
+        // reste en attente jusqu'au timeout. On parse manuellement et on
+        // appelle setSession()/exchangeCodeForSession() pour fiabiliser.
+        const hashStr   = window.location.hash.replace(/^#/, '');
+        const hashParams  = new URLSearchParams(hashStr);
+        const queryParams = new URLSearchParams(window.location.search);
 
-        if (session) {
-          // Session déjà établie (PKCE ou implicit traité par le SDK)
+        // Erreur explicite renvoyée par Supabase ou le provider OAuth
+        const errorDesc = hashParams.get('error_description')
+          ?? queryParams.get('error_description')
+          ?? hashParams.get('error')
+          ?? queryParams.get('error');
+        if (errorDesc) {
+          this.error = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
+          return;
+        }
+
+        const accessToken  = hashParams.get('access_token')  ?? queryParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token') ?? queryParams.get('refresh_token');
+        const code         = queryParams.get('code');
+
+        // Implicit flow : tokens directs dans le hash
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token:  accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) throw error;
           this._navigateHome();
           return;
         }
 
-        // Attendre l'événement SIGNED_IN (cas où le SDK traite le hash en async)
+        // PKCE flow : ?code= → échange contre une session
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          this._navigateHome();
+          return;
+        }
+
+        // ─── Pas de tokens dans l'URL : peut-être déjà traités par le SDK ──
+        // Force un getSession() pour récupérer la session si detectSessionInUrl
+        // a fonctionné lors du load initial (cas plein refresh).
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+
+        if (session) {
+          this._navigateHome();
+          return;
+        }
+
+        // ─── Attendre SIGNED_IN au cas où le SDK traite le hash en async ──
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
           if (event === 'SIGNED_IN' && s) {
             this._cleanup();
@@ -50,7 +92,7 @@ export function authCallback() {
         // FIX #7 : Stocker le timer pour le cleanup dans destroy()
         this._timeoutId = setTimeout(() => {
           this._cleanup();
-          this.error = 'Délai dépassé — veuillez réessayer';
+          this.error = 'Délai dépassé — aucun token reçu. Vérifie la config Supabase (Redirect URLs) ou clique à nouveau sur le lien magique.';
         }, 10_000);
 
       } catch (e) {
