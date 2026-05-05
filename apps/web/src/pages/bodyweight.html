@@ -2,105 +2,95 @@
 
   <!-- En-tête -->
   <div class="flex items-center gap-3 mb-6">
-    <a href="/"
-       class="flex items-center justify-center w-9 h-9 rounded-xl transition-colors flex-shrink-0"
-       style="background: var(--k-surface); color: var(--k-tx3);"
-       onmouseover="this.style.color='var(--k-tx)'"
-       onmouseout="this.style.color='var(--k-tx3)'"
-       aria-label="Retour">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
-      </svg>
+    <a href="/" class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface" aria-label="Retour">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
     </a>
     <div class="flex-1">
-      <h1 class="font-display-v2 font-bold text-k-tx" style="font-size: 20px; letter-spacing: -0.02em;">Poids corporel</h1>
+      <h1 class="text-2xl font-display font-black tracking-tight text-white">Poids corporel</h1>
     </div>
     <!-- Badge tendance 7j -->
     <div x-show="entries.length >= 2 && trend7 !== null"
-         class="flex items-center gap-1 font-display-v2 font-bold"
-         style="font-size: 11px; padding: 4px 10px; border-radius: 99px;"
-         :style="trend7 > 0.05
-           ? 'background: rgba(255,122,51,.12); color: var(--k-e); border: 1px solid rgba(255,122,51,.25);'
+         class="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ring-1"
+         :class="trend7 > 0.05
+           ? 'bg-kinetic-electric/15 text-kinetic-electric ring-kinetic-electric/30'
            : trend7 < -0.05
-             ? 'background: oklch(82% 0.28 145 / 0.12); color: var(--k-p); border: 1px solid oklch(82% 0.28 145 / 0.25);'
-             : 'background: rgba(255,255,255,.06); color: var(--k-tx3); border: 1px solid var(--k-line);'">
+             ? 'bg-kinetic-neon/15 text-kinetic-neon ring-kinetic-neon/30'
+             : 'bg-white/5 text-gray-400 ring-white/10'">
       <span x-text="trend7 > 0.05 ? '↑' : trend7 < -0.05 ? '↓' : '→'"></span>
       <span x-text="(trend7 > 0 ? '+' : '') + (trend7 ?? 0).toFixed(1) + ' kg/sem'"></span>
     </div>
   </div>
 
-  <!-- Hero : poids actuel + évolution -->
+  <!-- Hero : poids actuel + evolution -->
   <div x-show="entries.length > 0"
-       class="k-card mb-4 relative overflow-hidden"
-       style="padding: 20px; background: linear-gradient(135deg, var(--k-surface) 0%, var(--k-elevated) 100%);">
-    <!-- Glow -->
+       class="bg-gradient-to-br from-kinetic-surface to-kinetic-ink rounded-3xl p-5 mb-4 ring-1 ring-white/8 relative overflow-hidden">
+    <!-- Glow décoratif -->
     <div class="absolute -top-8 -right-8 w-32 h-32 rounded-full blur-3xl pointer-events-none"
-         :style="delta > 0 ? 'background: rgba(255,122,51,.1);' : 'background: oklch(82% 0.28 145 / 0.1);'"></div>
+         :class="delta > 0 ? 'bg-kinetic-electric/10' : 'bg-kinetic-neon/10'"></div>
 
     <div class="flex items-end justify-between relative z-10">
       <div>
-        <p class="font-display-v2 font-bold mb-1" style="font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--k-tx3);">Poids actuel</p>
+        <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-1">Poids actuel</p>
         <div class="flex items-baseline gap-2">
-          <span class="font-display-v2 font-bold" style="font-size: 48px; color: var(--k-tx); line-height: 1;" x-text="(latest?.weight ?? 0).toFixed(1)"></span>
-          <span style="font-size: 18px; color: var(--k-tx3);">kg</span>
+          <span class="font-display font-black text-5xl text-white leading-none" x-text="(latest?.weight ?? 0).toFixed(1)"></span>
+          <span class="text-lg text-gray-500 font-medium">kg</span>
         </div>
-        <p x-show="latest?.bodyFatPct" style="font-size: 12px; color: var(--k-tx3); margin-top: 2px;"
+        <p x-show="latest?.bodyFatPct" class="text-xs text-gray-500 mt-1"
            x-text="latest?.bodyFatPct?.toFixed(1) + '% masse grasse'"></p>
       </div>
       <div class="text-right">
-        <p class="font-display-v2 font-bold mb-1" style="font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--k-tx3);">Évolution</p>
-        <p class="font-display-v2 font-bold" style="font-size: 24px; line-height: 1;"
-           :style="delta > 0 ? 'color: var(--k-e);' : delta < 0 ? 'color: var(--k-p);' : 'color: var(--k-tx3);'"
+        <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-1">Évolution</p>
+        <p class="font-display font-black text-2xl leading-none"
+           :class="delta > 0 ? 'text-kinetic-electric' : delta < 0 ? 'text-kinetic-neon' : 'text-gray-400'"
            x-text="delta !== null ? (delta > 0 ? '+' : '') + delta.toFixed(1) + ' kg' : '—'"></p>
-        <p style="font-size: 11px; color: var(--k-tx3); margin-top: 2px;" x-text="'depuis ' + (earliest?.date ? formatDate(earliest.date) : '—')"></p>
+        <p class="text-[10px] text-gray-500 mt-0.5" x-text="'depuis ' + (earliest?.date ? formatDate(earliest.date) : '—')"></p>
       </div>
     </div>
 
-    <!-- Barre objectif -->
+    <!-- Barre de progression vers objectif -->
     <template x-if="goalWeight > 0">
-      <div class="mt-4 pt-4" style="border-top: 1px solid var(--k-line);">
-        <div class="flex justify-between mb-1.5" style="font-size: 11px;">
-          <span class="font-display-v2 font-bold" style="color: var(--k-tx3); text-transform: uppercase; letter-spacing: .06em;">Objectif</span>
-          <span class="font-mono" style="color: var(--k-tx3);" x-text="goalWeight + ' kg'"></span>
+      <div class="mt-4 pt-4 border-t border-white/8">
+        <div class="flex justify-between mb-1.5">
+          <span class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Objectif</span>
+          <span class="text-[10px] text-gray-400 font-mono" x-text="goalWeight + ' kg'"></span>
         </div>
-        <div class="bar-track">
-          <div class="bar-fill transition-all duration-700"
-               :style="`width: ${Math.min(100, goalProgress)}%; background: ${goalProgress >= 100 ? 'var(--k-p)' : 'var(--k-e)'};`"></div>
+        <div class="h-1.5 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
+          <div class="h-full rounded-full transition-all duration-700"
+               :class="goalProgress >= 100 ? 'bg-kinetic-neon shadow-[0_0_10px_rgba(168,255,0,0.6)]' : 'bg-kinetic-electric/70'"
+               :style="`width: ${Math.min(100, goalProgress)}%`"></div>
         </div>
-        <p style="font-size: 11px; color: var(--k-tx3); margin-top: 4px;"
-           x-text="goalProgress >= 100 ? '🎯 Objectif atteint !' : Math.round(goalProgress) + '% accompli'"></p>
+        <p class="text-[10px] text-gray-500 mt-1" x-text="goalProgress >= 100 ? '🎯 Objectif atteint !' : Math.round(goalProgress) + '% accompli'"></p>
       </div>
     </template>
   </div>
 
   <!-- Mini stats -->
   <div x-show="entries.length > 0" class="grid grid-cols-3 gap-2 mb-4">
-    <div class="k-card text-center" style="padding: 12px;">
-      <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Min</p>
-      <p class="font-display-v2 font-bold mt-0.5" style="font-size: 20px; color: var(--k-p);" x-text="minWeight !== null ? minWeight.toFixed(1) : '—'"></p>
+    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Min</p>
+      <p class="font-display font-black text-lg text-kinetic-neon mt-0.5" x-text="minWeight !== null ? minWeight.toFixed(1) : '—'"></p>
     </div>
-    <div class="k-card text-center" style="padding: 12px;">
-      <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Moy</p>
-      <p class="font-display-v2 font-bold mt-0.5" style="font-size: 20px; color: var(--k-tx);" x-text="avgWeight !== null ? avgWeight.toFixed(1) : '—'"></p>
+    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Moy</p>
+      <p class="font-display font-black text-lg text-white mt-0.5" x-text="avgWeight !== null ? avgWeight.toFixed(1) : '—'"></p>
     </div>
-    <div class="k-card text-center" style="padding: 12px;">
-      <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Max</p>
-      <p class="font-display-v2 font-bold mt-0.5" style="font-size: 20px; color: var(--k-e);" x-text="maxWeight !== null ? maxWeight.toFixed(1) : '—'"></p>
+    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Max</p>
+      <p class="font-display font-black text-lg text-kinetic-electric mt-0.5" x-text="maxWeight !== null ? maxWeight.toFixed(1) : '—'"></p>
     </div>
   </div>
 
   <!-- Graphique -->
-  <div x-show="entries.length >= 2" class="k-card mb-4" style="padding: 16px;">
+  <div x-show="entries.length >= 2" class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <div class="flex items-center justify-between mb-3">
-      <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);">Courbe de poids</p>
+      <h2 class="font-display font-bold text-white tracking-tight text-sm">Courbe de poids</h2>
       <div class="flex gap-1">
         <template x-for="p in [{v:30,l:'30j'},{v:90,l:'90j'},{v:365,l:'1 an'},{v:9999,l:'Tout'}]" :key="p.v">
           <button type="button" @click="period = p.v"
-                  class="font-display-v2 font-bold transition-all"
-                  style="font-size: 10px; padding: 4px 8px; border-radius: 8px; border: none; cursor: pointer;"
-                  :style="period === p.v
-                    ? 'background: var(--k-e); color: white; box-shadow: 0 0 10px rgba(255,122,51,.3);'
-                    : 'background: transparent; color: var(--k-tx3);'">
+                  class="text-[10px] px-2 py-1 rounded-lg font-semibold transition-all"
+                  :class="period === p.v
+                    ? 'bg-kinetic-electric text-white shadow-[0_0_10px_rgba(255,106,0,0.4)]'
+                    : 'text-gray-500 hover:text-gray-300'">
             <span x-text="p.l"></span>
           </button>
         </template>
@@ -110,86 +100,84 @@
   </div>
 
   <!-- Formulaire ajout -->
-  <div class="k-card mb-4" style="padding: 16px;">
-    <p class="font-display-v2 font-bold mb-3" style="font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--k-tx3);">Enregistrer</p>
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+    <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-3">Enregistrer</p>
     <div class="flex gap-3 mb-3">
       <div class="flex-1">
-        <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Poids (kg)</label>
+        <label class="text-xs text-gray-500 mb-1 block">Poids (kg)</label>
         <input type="number" x-model.number="newWeight" min="30" max="300" step="0.1"
                placeholder="75.5"
-               class="k-input w-full" style="padding: 11px 13px; font-size: 15px;"/>
+               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-electric/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
       </div>
       <div class="flex-1">
-        <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">% MG <span style="color: var(--k-line);">(optionnel)</span></label>
+        <label class="text-xs text-gray-500 mb-1 block">% MG <span class="text-gray-700">(optionnel)</span></label>
         <input type="number" x-model.number="newBf" min="3" max="60" step="0.1"
                placeholder="15.0"
-               class="k-input w-full" style="padding: 11px 13px; font-size: 15px;"/>
+               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-electric/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
       </div>
     </div>
 
     <div class="mb-3">
-      <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Objectif poids (kg) <span style="color: var(--k-line);">(optionnel)</span></label>
+      <label class="text-xs text-gray-500 mb-1 block">Objectif poids (kg) <span class="text-gray-700">(optionnel)</span></label>
       <input type="number" x-model.number="goalWeight" min="30" max="300" step="0.5"
              placeholder="70.0"
-             class="k-input w-full" style="padding: 11px 13px; font-size: 15px;"/>
+             class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-neon/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
     </div>
 
     <input x-model="newNote" placeholder="Note (optionnel — ex: après entraînement)"
-           class="k-input w-full mb-3" style="padding: 11px 13px; font-size: 14px;"/>
+           class="w-full bg-kinetic-ink border border-white/10 focus:border-white/20 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors mb-3"/>
 
     <button type="button" @click="addEntry()"
             :disabled="!newWeight || newWeight < 30"
-            class="btn-p w-full disabled:opacity-40 disabled:cursor-not-allowed"
-            style="padding: 14px; font-size: 15px;">
+            class="w-full py-3 bg-kinetic-neon text-gray-950 font-bold rounded-xl text-sm
+                   shadow-[0_0_20px_rgba(168,255,0,0.3)] hover:shadow-[0_0_28px_rgba(168,255,0,0.5)]
+                   disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all">
       Enregistrer
     </button>
   </div>
 
   <!-- Historique -->
-  <div class="k-card overflow-hidden" style="padding: 0;">
-    <div class="flex items-center justify-between" style="padding: 16px; border-bottom: 1px solid var(--k-line);">
-      <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);">Historique</p>
-      <span class="font-display-v2 font-semibold" style="font-size: 11px; color: var(--k-tx3);"
+  <div class="bg-kinetic-surface rounded-2xl ring-1 ring-white/5 overflow-hidden">
+    <div class="flex items-center justify-between p-4 border-b border-white/5">
+      <h2 class="font-display font-bold text-white tracking-tight text-sm">Historique</h2>
+      <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
             x-text="filteredEntries.length + ' entrées'"></span>
     </div>
 
     <template x-if="entries.length === 0">
-      <div style="padding: 32px; text-align: center;">
-        <div style="font-size: 36px; margin-bottom: 8px;">⚖️</div>
-        <p style="font-size: 13px; color: var(--k-tx3);">Aucune pesée. Commence à te suivre !</p>
+      <div class="p-8 text-center">
+        <div class="text-4xl mb-2">⚖️</div>
+        <p class="text-sm text-gray-500">Aucune pesée. Commence à te suivre !</p>
       </div>
     </template>
 
-    <ul x-show="entries.length > 0" style="list-style: none; padding: 0; margin: 0;">
+    <ul x-show="entries.length > 0" class="divide-y divide-white/5">
       <template x-for="(entry, i) in filteredEntries.slice().reverse().slice(0, 30)" :key="entry.date + i">
-        <li class="flex items-center gap-3" style="padding: 12px 16px; border-bottom: 1px solid var(--k-line);">
-          <!-- Icône tendance -->
-          <div class="flex items-center justify-center font-display-v2 font-bold flex-shrink-0"
-               style="width: 28px; height: 28px; border-radius: 99px; font-size: 12px;"
-               :style="entryDelta(entry, i) > 0.05
-                 ? 'background: rgba(255,122,51,.12); color: var(--k-e);'
+        <li class="flex items-center gap-3 px-4 py-3">
+          <!-- Icône tendance vs entrée précédente -->
+          <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+               :class="entryDelta(entry, i) > 0.05
+                 ? 'bg-kinetic-electric/15 text-kinetic-electric'
                  : entryDelta(entry, i) < -0.05
-                   ? 'background: oklch(82% 0.28 145 / 0.12); color: var(--k-p);'
-                   : 'background: rgba(255,255,255,.05); color: var(--k-tx3);'">
+                   ? 'bg-kinetic-neon/15 text-kinetic-neon'
+                   : 'bg-white/5 text-gray-600'">
             <span x-text="entryDelta(entry, i) > 0.05 ? '↑' : entryDelta(entry, i) < -0.05 ? '↓' : '→'"></span>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="font-display-v2 font-semibold" style="font-size: 13px; color: var(--k-tx);" x-text="formatDate(entry.date)"></p>
-            <p class="truncate" style="font-size: 11px; color: var(--k-tx3);"
+            <p class="text-sm font-semibold text-white" x-text="formatDate(entry.date)"></p>
+            <p class="text-[11px] text-gray-500 truncate"
                x-text="entry.note ? entry.note : (entry.bodyFatPct ? entry.bodyFatPct.toFixed(1) + '% MG' : '')"></p>
           </div>
           <div class="text-right mr-2">
-            <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);" x-text="entry.weight.toFixed(1) + ' kg'"></p>
-            <p class="font-mono" style="font-size: 10px; color: var(--k-tx3);"
+            <p class="text-sm font-display font-black text-white" x-text="entry.weight.toFixed(1) + ' kg'"></p>
+            <p class="text-[10px] text-gray-600 font-mono"
                x-show="entryDelta(entry, i) !== 0"
                x-text="entryDelta(entry, i) > 0 ? '+' + entryDelta(entry, i).toFixed(1) : entryDelta(entry, i).toFixed(1)"></p>
           </div>
           <button type="button" @click="removeEntry(entry.date)"
-                  style="padding: 6px; color: var(--k-tx3); background: none; border: none; cursor: pointer; border-radius: 8px;"
+                  class="p-1.5 text-gray-600 hover:text-kinetic-electric rounded-lg hover:bg-kinetic-ink transition-colors"
                   aria-label="Supprimer">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </li>
       </template>

@@ -2,137 +2,137 @@
 
   <!-- En-tête -->
   <div class="flex items-center gap-3 mb-8">
-    <a href="/"
-       class="flex items-center justify-center w-9 h-9 rounded-xl transition-colors flex-shrink-0"
-       style="background: var(--k-surface); color: var(--k-tx3);"
-       onmouseover="this.style.color='var(--k-tx)'"
-       onmouseout="this.style.color='var(--k-tx3)'">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
-      </svg>
+    <a href="/" class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
     </a>
-    <h1 class="font-display-v2 font-bold text-k-tx" style="font-size: 20px; letter-spacing: -0.02em;">Mon profil</h1>
-    <span class="ml-auto font-display-v2 font-semibold" style="font-size: 12px; color: var(--k-p);"
-          x-show="savedAt" x-text="savedAt" x-transition></span>
+    <h1 class="font-display font-black text-2xl tracking-tight text-white">Mon profil</h1>
+    <span class="ml-auto text-xs text-kinetic-neon" x-show="savedAt" x-text="savedAt"
+          x-transition></span>
   </div>
 
   <!-- Avatar + identité -->
-  <div class="flex items-center gap-4 mb-6">
+  <div class="flex items-center gap-4 mb-8">
     <div class="relative">
+      <!-- Aura dorée pour les Légendes -->
       <div class="absolute inset-0 rounded-full blur-xl scale-110 -z-10"
-           :style="$store.rewards.hasLegendBadge ? 'background: rgba(250,204,21,.4);' : 'background: rgba(255,122,51,.3);'"></div>
-      <div class="flex items-center justify-center font-display-v2 font-bold select-none"
-           style="width: 64px; height: 64px; border-radius: 99px; font-size: 22px; color: white;"
-           :style="$store.rewards.hasLegendBadge
-             ? 'background: linear-gradient(135deg, #FACC15 0%, #D97706 100%); box-shadow: 0 0 22px rgba(250,204,21,.5); border: 2px solid rgba(250,204,21,.4);'
-             : 'background: linear-gradient(135deg, var(--k-e) 0%, #C2500A 100%); box-shadow: 0 0 22px rgba(255,122,51,.4); border: 2px solid rgba(255,255,255,.1);'"
+           :class="$store.rewards.hasLegendBadge
+             ? 'bg-yellow-400/40'
+             : 'bg-kinetic-electric/30'"></div>
+      <div class="w-16 h-16 rounded-full flex items-center justify-center text-white
+                  font-display font-black text-xl select-none ring-2 transition-all"
+           :class="$store.rewards.hasLegendBadge
+             ? 'bg-gradient-to-br from-yellow-400 to-amber-600 shadow-[0_0_22px_rgba(250,204,21,0.5)] ring-yellow-400/40'
+             : 'bg-gradient-to-br from-kinetic-electric to-orange-600 shadow-[0_0_22px_rgba(255,106,0,0.4)] ring-white/10'"
            x-text="$store.auth.initials"></div>
-      <div class="absolute -bottom-1 -right-1 flex items-center justify-center"
-           style="width: 24px; height: 24px; border-radius: 99px; border: 2px solid var(--k-void);"
-           :style="$store.rewards.hasLegendBadge
-             ? 'background: #FACC15; box-shadow: 0 0 8px rgba(250,204,21,.7);'
-             : 'background: var(--k-e); box-shadow: 0 0 8px rgba(255,122,51,.6);'">
+      <!-- Badge niveau ou couronne Légende -->
+      <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center
+                  justify-center shadow-md ring-1 ring-black/40 transition-all"
+           :class="$store.rewards.hasLegendBadge
+             ? 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.7)]'
+             : 'bg-kinetic-electric shadow-[0_0_8px_rgba(255,106,0,0.6)]'">
         <template x-if="$store.rewards.hasLegendBadge">
-          <span style="font-size: 11px;">👑</span>
+          <span class="text-[11px]">👑</span>
         </template>
         <template x-if="!$store.rewards.hasLegendBadge">
-          <svg viewBox="0 0 24 24" fill="currentColor" style="width: 12px; height: 12px; color: white;" aria-hidden="true">
-            <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z"/>
-          </svg>
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3 text-white" aria-hidden="true"><path d="M13 2L4 14H10L11 22L20 10H14L13 2Z"/></svg>
         </template>
       </div>
     </div>
     <div>
-      <p class="font-display-v2 font-bold flex items-center gap-2" style="font-size: 18px;"
-         :style="$store.rewards.hasLegendBadge ? 'color: #FACC15;' : 'color: var(--k-tx);'"
+      <p class="font-display font-bold text-lg flex items-center gap-2"
+         :class="$store.rewards.hasLegendBadge ? 'text-yellow-400' : 'text-white'"
          x-text="displayName || 'Anonyme'"></p>
-      <p style="font-size: 13px; color: var(--k-tx3);" x-text="$store.auth.user?.email ?? 'Mode invité'"></p>
-      <p class="font-display-v2 font-semibold mt-0.5" style="font-size: 12px;"
-         :style="$store.rewards.hasLegendBadge ? 'color: #FACC15;' : 'color: var(--k-p);'"
+      <p class="text-sm text-gray-400" x-text="$store.auth.user?.email ?? 'Mode invité'"></p>
+      <p class="text-xs mt-0.5 font-medium"
+         :class="$store.rewards.hasLegendBadge ? 'text-yellow-400' : 'text-kinetic-neon'"
          x-text="$store.xp.title"></p>
     </div>
   </div>
 
   <!-- Stats -->
-  <div class="grid grid-cols-3 gap-3 mb-4">
-    <div class="k-card text-center" style="padding: 12px;">
-      <p class="font-display-v2 font-bold" style="font-size: 24px; color: var(--k-p);" x-text="$store.xp.xp"></p>
-      <p class="font-display-v2 font-semibold mt-0.5" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">XP total</p>
+  <div class="grid grid-cols-3 gap-3 mb-6">
+    <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
+      <p class="font-display font-black text-2xl text-kinetic-neon" x-text="$store.xp.xp"></p>
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 mt-0.5">XP total</p>
     </div>
-    <div class="k-card text-center" style="padding: 12px;">
-      <p class="font-display-v2 font-bold" style="font-size: 24px; color: var(--k-e);" x-text="streak + ' 🔥'"></p>
-      <p class="font-display-v2 font-semibold mt-0.5" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Streak</p>
+    <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
+      <p class="font-display font-black text-2xl text-kinetic-electric" x-text="streak + ' 🔥'"></p>
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 mt-0.5">Streak</p>
     </div>
-    <div class="k-card text-center" style="padding: 12px;">
-      <p class="font-display-v2 font-bold" style="font-size: 24px; color: var(--k-p);" x-text="tasksCompleted"></p>
-      <p class="font-display-v2 font-semibold mt-0.5" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Tâches</p>
+    <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
+      <p class="font-display font-black text-2xl text-kinetic-neon" x-text="tasksCompleted"></p>
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 mt-0.5">Tâches</p>
     </div>
   </div>
 
   <!-- XP Progress -->
-  <div class="k-card mb-4" style="padding: 16px;">
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2">
-        <span class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Niveau</span>
-        <span class="font-display-v2 font-bold" style="font-size: 22px; color: var(--k-p); line-height: 1;"
+        <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Niveau</span>
+        <span class="font-display font-black text-kinetic-neon text-xl leading-none"
               x-text="$store.xp.currentLevel"></span>
-        <span style="font-size: 13px; color: var(--k-tx3);" x-text="$store.xp.title"></span>
+        <span class="text-xs text-gray-400 font-medium" x-text="$store.xp.title"></span>
       </div>
-      <span class="font-mono font-bold" style="font-size: 14px; color: var(--k-tx);" x-text="$store.xp.xp + ' XP'"></span>
+      <span class="text-sm font-mono font-bold text-white" x-text="$store.xp.xp + ' XP'"></span>
     </div>
-    <div class="bar-track">
-      <div class="bar-fill transition-all duration-700"
+    <div class="h-2 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
+      <div class="h-full bg-gradient-to-r from-kinetic-neon to-lime-300 rounded-full
+                  transition-all duration-700 ease-out shadow-[0_0_14px_rgba(168,255,0,0.7)]"
            :style="`width: ${$store.xp.progressPercent}%`"></div>
     </div>
     <div class="flex justify-between mt-2">
-      <p class="font-display-v2 font-semibold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--k-tx3);"
+      <p class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold"
          x-text="`LV.${$store.xp.currentLevel}`"></p>
-      <p style="font-size: 12px; color: var(--k-tx3);" x-show="!$store.xp.isMaxLevel"
+      <p class="text-xs text-gray-500" x-show="!$store.xp.isMaxLevel"
          x-text="`${$store.xp.remaining} XP → LV.${$store.xp.currentLevel + 1}`"></p>
-      <p class="font-display-v2 font-bold" style="font-size: 12px; color: var(--k-e);" x-show="$store.xp.isMaxLevel">🏆 MAX</p>
+      <p class="text-xs text-kinetic-electric font-medium" x-show="$store.xp.isMaxLevel">🏆 MAX</p>
     </div>
   </div>
 
   <!-- Récompenses par niveau -->
-  <div class="k-card mb-4" style="padding: 16px;">
-    <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx); margin-bottom: 2px;">Récompenses</p>
-    <p class="font-display-v2 font-semibold mb-4" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Progression par niveau</p>
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Récompenses</h2>
+    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-4">Progression par niveau</p>
 
     <div class="space-y-2">
       <template x-for="reward in $store.rewards.allRewards" :key="reward.level">
         <div class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
-             :style="$store.rewards.isUnlocked(reward.level)
-               ? 'background: var(--k-elevated); border: 1px solid var(--k-line-hi);'
-               : 'opacity: 0.4; background: transparent; border: 1px solid transparent;'">
+             :class="$store.rewards.isUnlocked(reward.level)
+               ? 'bg-kinetic-elevated ring-1 ring-white/10'
+               : 'opacity-40'">
 
-          <div class="relative flex-shrink-0">
-            <div class="flex items-center justify-center" style="width: 40px; height: 40px; border-radius: 12px; font-size: 20px;"
-                 :style="$store.rewards.isUnlocked(reward.level)
-                   ? 'background: oklch(82% 0.28 145 / 0.12); border: 1px solid oklch(82% 0.28 145 / 0.25);'
-                   : 'background: rgba(255,255,255,.05); border: 1px solid var(--k-line);'"
+          <!-- Icône + état -->
+          <div class="relative shrink-0">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl font-bold"
+                 :class="$store.rewards.isUnlocked(reward.level)
+                   ? 'bg-kinetic-neon/15 ring-1 ring-kinetic-neon/30'
+                   : 'bg-white/5 ring-1 ring-white/10'"
                  x-text="reward.emoji"></div>
-            <div class="absolute -top-1 -right-1 flex items-center justify-center font-display-v2 font-bold"
-                 style="width: 16px; height: 16px; border-radius: 99px; font-size: 9px;"
-                 :style="$store.rewards.isUnlocked(reward.level)
-                   ? 'background: var(--k-p); color: #07070B;'
-                   : 'background: var(--k-elevated); color: var(--k-tx3);'"
+            <!-- badge niveau -->
+            <div class="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black"
+                 :class="$store.rewards.isUnlocked(reward.level)
+                   ? 'bg-kinetic-neon text-gray-950'
+                   : 'bg-gray-700 text-gray-400'"
                  x-text="reward.level"></div>
           </div>
 
+          <!-- Texte -->
           <div class="flex-1 min-w-0">
-            <p class="font-display-v2 font-semibold" style="font-size: 13px; line-height: 1.2;"
-               :style="$store.rewards.isUnlocked(reward.level) ? 'color: var(--k-tx);' : 'color: var(--k-tx3);'"
+            <p class="text-sm font-semibold leading-tight"
+               :class="$store.rewards.isUnlocked(reward.level) ? 'text-white' : 'text-gray-500'"
                x-text="reward.title"></p>
-            <p class="line-clamp-1" style="font-size: 11px; color: var(--k-tx3); margin-top: 2px;"
+            <p class="text-[11px] text-gray-500 leading-tight mt-0.5 line-clamp-1"
                x-text="reward.description"></p>
           </div>
 
-          <div class="flex-shrink-0">
+          <!-- Statut -->
+          <div class="shrink-0">
             <template x-if="$store.rewards.isUnlocked(reward.level)">
-              <span class="font-display-v2 font-bold" style="font-size: 11px; color: var(--k-p);">✓</span>
+              <span class="text-[10px] font-bold text-kinetic-neon uppercase tracking-wide">✓</span>
             </template>
             <template x-if="!$store.rewards.isUnlocked(reward.level)">
-              <span class="font-mono" style="font-size: 11px; color: var(--k-tx3);"
+              <span class="text-[10px] text-gray-600 font-mono"
                     x-text="`LV.${reward.level}`"></span>
             </template>
           </div>
@@ -140,25 +140,26 @@
       </template>
     </div>
 
-    <!-- Gel de streak -->
+    <!-- Gel de streak (si débloqué) -->
     <template x-if="$store.rewards.hasStreakFreeze">
-      <div class="mt-4" style="background: var(--k-elevated); border-radius: 14px; padding: 12px; border: 1px solid oklch(82% 0.28 145 / 0.2);">
+      <div class="mt-4 bg-kinetic-elevated rounded-xl p-3 ring-1 ring-kinetic-neon/20">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <p class="font-display-v2 font-bold flex items-center gap-1.5" style="font-size: 13px; color: var(--k-tx);">
+            <p class="text-xs font-bold text-white flex items-center gap-1.5">
               🧊 Gel de Streak
-              <span style="color: var(--k-p);" x-text="$store.rewards.freezeTokens"></span>
+              <span class="text-kinetic-neon font-black text-sm" x-text="$store.rewards.freezeTokens"></span>
               jeton<span x-text="$store.rewards.freezeTokens !== 1 ? 's' : ''"></span>
             </p>
-            <p style="font-size: 11px; color: var(--k-tx3); margin-top: 3px;">
+            <p class="text-[10px] text-gray-500 mt-0.5">
               Protège ton streak sans compléter de tâche aujourd'hui.
               Renouvellement hebdomadaire.
             </p>
           </div>
           <button @click="$store.rewards.useStreakFreeze()"
                   :disabled="$store.rewards.freezeTokens <= 0 || $store.rewards.freezeLoading"
-                  class="flex-shrink-0 font-display-v2 font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
-                  style="font-size: 12px; padding: 8px 14px; border-radius: 11px; background: oklch(82% 0.28 145 / 0.1); border: 1px solid oklch(82% 0.28 145 / 0.25); color: var(--k-p); cursor: pointer;">
+                  class="shrink-0 bg-kinetic-neon/10 ring-1 ring-kinetic-neon/30 text-kinetic-neon
+                         rounded-xl px-3 py-2 text-xs font-bold hover:bg-kinetic-neon/20
+                         transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
             <span x-show="!$store.rewards.freezeLoading">Utiliser</span>
             <span x-show="$store.rewards.freezeLoading">…</span>
           </button>
@@ -169,138 +170,139 @@
 
   <!-- Thème de couleur (niveau 7+) -->
   <template x-if="$store.rewards.hasColorThemes">
-    <div class="k-card mb-4" style="padding: 16px;">
-      <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx); margin-bottom: 2px;">Thème de couleur</p>
-      <p class="font-display-v2 font-semibold mb-4" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Récompense Niveau 7</p>
+    <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+      <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Thème de couleur</h2>
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-4">Récompense Niveau 7</p>
 
       <div class="grid grid-cols-5 gap-2">
         <template x-for="theme in $store.rewards.allThemes" :key="theme.id">
           <button @click="$store.rewards.applyTheme(theme.id)"
                   :title="theme.label"
-                  class="flex flex-col items-center gap-1.5 transition-all"
-                  style="border-radius: 12px; padding: 10px 6px;"
-                  :style="$store.rewards.currentTheme === theme.id
-                    ? 'background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.25); transform: scale(1.05);'
-                    : 'background: var(--k-elevated); border: 1px solid var(--k-line);'">
-            <div class="rounded-full overflow-hidden flex" style="width: 32px; height: 32px;">
+                  class="flex flex-col items-center gap-1.5 rounded-xl p-2.5 transition-all ring-1"
+                  :class="$store.rewards.currentTheme === theme.id
+                    ? 'bg-white/10 ring-white/30 scale-105'
+                    : 'bg-kinetic-elevated ring-white/5 hover:ring-white/15'">
+            <!-- Aperçu double-couleur -->
+            <div class="w-8 h-8 rounded-full overflow-hidden flex">
               <div class="w-1/2 h-full" :style="`background: ${theme.neon}`"></div>
               <div class="w-1/2 h-full" :style="`background: ${theme.accent}`"></div>
             </div>
-            <span style="font-size: 9px; color: var(--k-tx3); text-align: center; line-height: 1.2;"
-                  :style="$store.rewards.currentTheme === theme.id ? 'color: var(--k-tx);' : ''"
+            <span class="text-[9px] text-gray-400 font-medium text-center leading-tight"
+                  :class="$store.rewards.currentTheme === theme.id ? 'text-white' : ''"
                   x-text="theme.emoji"></span>
           </button>
         </template>
       </div>
 
-      <p class="text-center mt-3" style="font-size: 11px; color: var(--k-tx3);"
+      <p class="text-[10px] text-gray-600 mt-3 text-center"
          x-text="'Thème actif : ' + ($store.rewards.allThemes.find(t => t.id === $store.rewards.currentTheme)?.label ?? '—')"></p>
     </div>
   </template>
 
-  <!-- Best Streak -->
-  <div class="k-card mb-4" style="padding: 16px; background: linear-gradient(135deg, rgba(255,122,51,.15) 0%, rgba(255,122,51,.06) 100%); border: 1px solid rgba(255,122,51,.2);">
-    <p class="font-display-v2 font-bold mb-3" style="font-size: 15px; color: var(--k-tx);">Best Streak</p>
+  <!-- Meilleur streak -->
+  <div class="bg-gradient-to-r from-kinetic-electric/20 to-kinetic-electric/10
+              ring-1 ring-kinetic-electric/20 rounded-2xl p-4 mb-6">
+    <h2 class="font-display font-bold text-white tracking-tight mb-3">Best Streak</h2>
     <div class="flex items-center justify-between">
       <div>
-        <p style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);" class="font-display-v2 font-bold">Meilleur</p>
-        <p class="font-display-v2 font-bold" style="font-size: 26px; color: var(--k-tx);" x-text="bestStreak + ' 🔥'"></p>
+        <p class="text-[10px] uppercase tracking-widest text-gray-500">Meilleur</p>
+        <p class="font-display font-black text-2xl text-white" x-text="bestStreak + ' 🔥'"></p>
       </div>
       <div class="text-right">
-        <p style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);" class="font-display-v2 font-bold">Actuel</p>
-        <p class="font-display-v2 font-bold" style="font-size: 26px; color: var(--k-e);" x-text="streak"></p>
+        <p class="text-[10px] uppercase tracking-widest text-gray-500">Actuel</p>
+        <p class="font-display font-black text-2xl text-kinetic-electric" x-text="streak"></p>
       </div>
     </div>
   </div>
 
   <!-- Nom affiché -->
-  <div class="k-card mb-4" style="padding: 16px;">
-    <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx); margin-bottom: 2px;">Nom affiché</p>
-    <p class="font-display-v2 font-semibold mb-3" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Personnalisation</p>
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Nom affiché</h2>
+    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Personnalisation</p>
     <input type="text"
            x-model="displayNameInput"
            @input.debounce.800ms="saveName()"
            placeholder="Ton prénom ou pseudo"
            maxlength="40"
-           class="k-input w-full" style="padding: 12px 14px; font-size: 15px;"/>
+           class="w-full bg-kinetic-elevated rounded-xl px-3 py-2.5 text-sm text-white
+                  focus:outline-none focus:ring-2 focus:ring-kinetic-neon
+                  placeholder-gray-600 ring-1 ring-white/5"/>
   </div>
 
   <!-- Sync / Compte -->
-  <div class="k-card mb-4" style="padding: 16px;">
-    <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx); margin-bottom: 2px;">Sync</p>
-    <p class="font-display-v2 font-semibold mb-3" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Compte</p>
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Sync</h2>
+    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Compte</p>
 
     <div x-show="$store.auth.isAuthenticated">
-      <p style="font-size: 13px; color: var(--k-tx2); margin-bottom: 12px;">
+      <p class="text-sm text-gray-300 mb-3">
         Connecté ·
-        <span class="font-display-v2 font-semibold" style="color: var(--k-tx);" x-text="$store.auth.user?.email"></span>
+        <span class="font-medium text-white" x-text="$store.auth.user?.email"></span>
       </p>
       <button @click="$store.auth.logout()"
-              class="btn-ghost w-full"
-              style="padding: 12px; font-size: 14px;">
+              class="w-full py-2.5 bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl text-sm font-semibold hover:ring-kinetic-electric/40 transition-all">
         Se déconnecter
       </button>
     </div>
 
     <div x-show="!$store.auth.isAuthenticated">
-      <p style="font-size: 13px; color: var(--k-tx2); margin-bottom: 4px;">
-        Mode <span class="font-display-v2 font-bold" style="color: var(--k-e);">invité</span>
+      <p class="text-sm text-gray-300 mb-1">
+        Mode <span class="text-kinetic-electric font-semibold">invité</span>
       </p>
-      <p style="font-size: 12px; color: var(--k-tx3); margin-bottom: 12px;">
+      <p class="text-xs text-gray-500 mb-3">
         Connecte-toi pour sauvegarder dans le cloud.
       </p>
-      <a href="/login" class="btn-p w-full text-center" style="padding: 12px; font-size: 14px; display: block; text-decoration: none;">
+      <a href="/login"
+         class="block w-full py-2.5 bg-kinetic-neon text-gray-950 rounded-xl text-sm
+                font-semibold text-center hover:brightness-105 transition-all">
         Se connecter
       </a>
     </div>
   </div>
 
   <!-- Export des données -->
-  <div class="k-card mb-4" style="padding: 16px;">
-    <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx); margin-bottom: 2px;">Export</p>
-    <p class="font-display-v2 font-semibold mb-3" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Mes données</p>
-    <p style="font-size: 12px; color: var(--k-tx3); margin-bottom: 12px;">Télécharge tout ton historique d'entraînement — aucun lock-in.</p>
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Export</h2>
+    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Mes données</p>
+    <p class="text-xs text-gray-500 mb-3">Télécharge tout ton historique d'entraînement — aucun lock-in.</p>
     <div class="flex gap-2 mb-2">
       <button @click="exportJson()"
               :disabled="exportLoading"
-              class="btn-ghost flex-1 disabled:opacity-40"
-              style="padding: 10px; font-size: 13px;">
+              class="flex-1 bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:ring-kinetic-neon/30 transition-all disabled:opacity-40">
         <span x-show="!exportLoading">↓ JSON</span>
         <span x-show="exportLoading">…</span>
       </button>
       <button @click="exportCsv()"
               :disabled="exportLoading"
-              class="btn-ghost flex-1 disabled:opacity-40"
-              style="padding: 10px; font-size: 13px;">
+              class="flex-1 bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:ring-kinetic-neon/30 transition-all disabled:opacity-40">
         <span x-show="!exportLoading">↓ CSV</span>
         <span x-show="exportLoading">…</span>
       </button>
     </div>
-    <p style="font-size: 11px; color: var(--k-tx3);">JSON = sauvegarde complète · CSV = tableur (1 ligne/série)</p>
+    <p class="text-xs text-gray-500">JSON = sauvegarde complète · CSV = tableur (1 ligne/série)</p>
   </div>
 
   <!-- Stockage local -->
-  <div class="k-card mb-4" style="padding: 16px;">
-    <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx); margin-bottom: 2px;">Stockage</p>
-    <p class="font-display-v2 font-semibold mb-3" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Espace local</p>
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Stockage</h2>
+    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Espace local</p>
     <div class="mb-3">
-      <div class="flex justify-between mb-1" style="font-size: 12px;">
-        <span style="color: var(--k-tx3);">Utilisé</span>
-        <span class="font-display-v2 font-semibold" style="color: var(--k-tx);" x-text="storageLabel"></span>
+      <div class="flex justify-between text-xs mb-1">
+        <span class="text-gray-400">Utilisé</span>
+        <span class="text-white font-medium" x-text="storageLabel"></span>
       </div>
-      <div class="bar-track">
-        <div class="bar-fill transition-all duration-500"
-             :style="`width: ${storagePercent ?? 0}%; background: ${storagePercent !== null && storagePercent > 80 ? 'var(--k-e)' : 'var(--k-p)'};`"></div>
+      <div class="h-2 bg-kinetic-elevated rounded-full overflow-hidden">
+        <div class="h-full rounded-full transition-all duration-500"
+             :style="`width: ${storagePercent ?? 0}%; background: ${storagePercent !== null && storagePercent > 80 ? '#FF6A00' : '#A8FF00'}`"></div>
       </div>
     </div>
     <div class="flex items-center justify-between gap-3">
-      <p style="font-size: 12px; color: var(--k-tx3); flex: 1;">
+      <p class="text-xs text-gray-500 flex-1">
         Compacte les données journalières de plus de 90 jours.
       </p>
       <button @click="compactNow()"
               :disabled="compacting"
-              class="btn-ghost flex-shrink-0 disabled:opacity-40 whitespace-nowrap"
-              style="padding: 9px 14px; font-size: 13px;">
+              class="bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:ring-kinetic-neon/30 transition-all disabled:opacity-40 whitespace-nowrap">
         <span x-show="!compacting">⚡ Compacter</span>
         <span x-show="compacting">…</span>
       </button>
@@ -309,17 +311,16 @@
 
   <!-- Sync cloud -->
   <div x-show="$store.auth.isAuthenticated && $store.auth.user?.id !== 'guest'"
-       class="k-card mb-4" style="padding: 16px;">
-    <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx); margin-bottom: 2px;">Cloud</p>
-    <p class="font-display-v2 font-semibold mb-3" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Synchronisation</p>
+       class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Cloud</h2>
+    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Synchronisation</p>
     <div class="flex items-center justify-between gap-3">
-      <p style="font-size: 12px; color: var(--k-tx3); flex: 1;">
+      <p class="text-xs text-gray-500 flex-1">
         Récupère tes données depuis le cloud (utile sur un nouvel appareil).
       </p>
       <button @click="restoreFromCloud()"
               :disabled="restoring"
-              class="btn-ghost flex-shrink-0 disabled:opacity-40 whitespace-nowrap"
-              style="padding: 9px 14px; font-size: 13px;">
+              class="bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:ring-kinetic-neon/30 transition-all disabled:opacity-40 whitespace-nowrap">
         <span x-show="!restoring">↓ Restaurer</span>
         <span x-show="restoring">…</span>
       </button>
@@ -327,20 +328,19 @@
   </div>
 
   <!-- Reset -->
-  <div class="k-card mb-6" style="padding: 16px;">
-    <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx); margin-bottom: 2px;">Reset</p>
-    <p class="font-display-v2 font-semibold mb-3" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Réinitialisation</p>
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-6 ring-1 ring-white/5">
+    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Reset</h2>
+    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Réinitialisation</p>
     <div class="flex items-center justify-between">
-      <p style="font-size: 12px; color: var(--k-tx3);">Supprime toute la progression locale</p>
+      <p class="text-xs text-gray-500">Supprime toute la progression locale</p>
       <button @click="showResetModal = true"
-              class="font-display-v2 font-bold transition-all"
-              style="font-size: 13px; padding: 9px 16px; border-radius: 12px; background: rgba(255,122,51,.1); border: 1px solid rgba(255,122,51,.25); color: var(--k-e); cursor: pointer;">
+              class="bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30 text-kinetic-electric rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-kinetic-electric/20 transition-all">
         Reset
       </button>
     </div>
   </div>
 
-  <p class="text-center" style="font-size: 12px; color: var(--k-tx3);">Kinetic v1.0.0 — Built with 🔥</p>
+  <p class="text-center text-xs text-gray-700">Kinetic v1.0.0 — Built with 🔥</p>
 
   <!-- Modale confirmation reset -->
   <div x-show="showResetModal"
@@ -349,22 +349,20 @@
        x-transition:enter-end="opacity-100"
        @click.self="showResetModal = false"
        class="fixed inset-0 z-50 flex items-end justify-center px-4 pb-4">
-    <div class="absolute inset-0" style="background: rgba(0,0,0,.7);"></div>
-    <div class="relative k-card w-full shadow-2xl" style="max-width: 380px; padding: 24px;">
-      <p style="font-size: 28px; margin-bottom: 10px;">⚠️</p>
-      <p class="font-display-v2 font-bold mb-2" style="font-size: 18px; color: var(--k-tx);">Réinitialiser ?</p>
-      <p style="font-size: 13px; color: var(--k-tx3); margin-bottom: 20px; line-height: 1.5;">
+    <div class="absolute inset-0 bg-black/70"></div>
+    <div class="relative bg-kinetic-surface ring-1 ring-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+      <p class="text-xl mb-2">⚠️</p>
+      <h3 class="font-display font-bold text-lg text-white mb-2">Réinitialiser ?</h3>
+      <p class="text-sm text-gray-400 mb-5">
         Cette action supprimera toute ta progression locale. Irréversible.
       </p>
       <div class="flex gap-3">
         <button @click="showResetModal = false"
-                class="btn-ghost flex-1"
-                style="padding: 11px; font-size: 14px;">
+                class="flex-1 py-2.5 bg-kinetic-surface ring-1 ring-white/10 text-gray-300 rounded-xl text-sm font-semibold hover:ring-white/20 transition-all">
           Annuler
         </button>
         <button @click="doReset()"
-                class="flex-1 font-display-v2 font-bold transition-all"
-                style="font-size: 14px; padding: 11px; border-radius: 13px; background: rgba(255,122,51,.1); border: 1px solid rgba(255,122,51,.3); color: var(--k-e); cursor: pointer;">
+                class="flex-1 py-2.5 bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30 text-kinetic-electric rounded-xl text-sm font-semibold hover:bg-kinetic-electric/20 transition-all">
           Supprimer
         </button>
       </div>

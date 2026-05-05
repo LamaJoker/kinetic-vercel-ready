@@ -1,125 +1,119 @@
-<div x-data="onboarding" x-init="init()" class="min-h-screen px-4 pt-8 pb-10"
-     style="background: radial-gradient(ellipse 80% 50% at 50% 0%, var(--k-p-glow) 0%, transparent 55%), var(--k-void);">
+<div x-data="onboarding" x-init="init()" class="min-h-screen bg-kinetic-ink px-4 pt-8 pb-10">
   <div class="max-w-md mx-auto">
 
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-3">
-        <div class="flex-shrink-0" style="color: var(--k-p); filter: drop-shadow(0 0 12px var(--k-p-glow));">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <div class="w-7 h-7 text-kinetic-neon flex-shrink-0">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z"/>
           </svg>
         </div>
-        <span class="font-display-v2 font-bold" style="font-size: 22px; color: var(--k-tx); letter-spacing: -0.02em;">Démarrage</span>
+        <span class="text-2xl font-display font-black tracking-tight text-white">Démarrage</span>
       </div>
-      <a href="/" style="font-size: 12px; color: var(--k-tx3); text-decoration: underline; text-underline-offset: 2px;">Plus tard</a>
+      <a href="/" class="text-xs text-gray-500 hover:text-gray-300 transition-colors underline underline-offset-2">Plus tard</a>
     </div>
 
     <!-- Progress dots -->
     <div class="flex justify-center gap-2 mb-6">
-      <div style="height: 4px; width: 32px; background: var(--k-p); border-radius: 99px;"></div>
-      <div style="height: 4px; width: 32px; background: var(--k-p); border-radius: 99px;"></div>
-      <div style="height: 4px; width: 32px; background: oklch(82% 0.28 145 / 0.25); border-radius: 99px;"></div>
+      <div class="h-1 w-8 bg-kinetic-neon rounded-full"></div>
+      <div class="h-1 w-8 bg-kinetic-neon rounded-full"></div>
+      <div class="h-1 w-8 bg-kinetic-neon/30 rounded-full"></div>
     </div>
 
     <!-- Objectif -->
-    <div class="k-card mb-4" style="padding: 20px;">
-      <p class="font-display-v2 font-bold mb-3" style="font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--k-tx3);">Objectif</p>
+    <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-4">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-3">Objectif</p>
       <div class="grid grid-cols-2 gap-2">
 
         <button @click="goal = 'lose_fat'"
-                class="text-left transition-all active:scale-[0.97]"
-                style="border-radius: 14px; padding: 12px;"
-                :style="goal === 'lose_fat'
-                  ? 'border: 2px solid var(--k-p); background: oklch(82% 0.28 145 / 0.1); color: var(--k-tx);'
-                  : 'border: 1px solid var(--k-line); background: var(--k-elevated); color: var(--k-tx2);'">
-          <p style="font-size: 20px; margin-bottom: 4px;">🔥</p>
-          <p class="font-display-v2 font-bold" style="font-size: 13px; line-height: 1.2;">Perte de gras</p>
-          <p style="font-size: 11px; color: var(--k-tx3); margin-top: 2px;">Déficit contrôlé</p>
+                class="rounded-xl p-3 text-left transition-all"
+                :class="goal === 'lose_fat'
+                  ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
+                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'">
+          <p class="text-lg mb-1">🔥</p>
+          <p class="font-semibold text-sm leading-tight">Perte de gras</p>
+          <p class="text-xs text-gray-500 mt-0.5">Déficit contrôlé</p>
         </button>
 
         <button @click="goal = 'gain_muscle'"
-                class="text-left transition-all active:scale-[0.97]"
-                style="border-radius: 14px; padding: 12px;"
-                :style="goal === 'gain_muscle'
-                  ? 'border: 2px solid var(--k-p); background: oklch(82% 0.28 145 / 0.1); color: var(--k-tx);'
-                  : 'border: 1px solid var(--k-line); background: var(--k-elevated); color: var(--k-tx2);'">
-          <p style="font-size: 20px; margin-bottom: 4px;">💪</p>
-          <p class="font-display-v2 font-bold" style="font-size: 13px; line-height: 1.2;">Prise de masse</p>
-          <p style="font-size: 11px; color: var(--k-tx3); margin-top: 2px;">Surplus modéré</p>
+                class="rounded-xl p-3 text-left transition-all"
+                :class="goal === 'gain_muscle'
+                  ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
+                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'">
+          <p class="text-lg mb-1">💪</p>
+          <p class="font-semibold text-sm leading-tight">Prise de masse</p>
+          <p class="text-xs text-gray-500 mt-0.5">Surplus modéré</p>
         </button>
 
         <button @click="goal = 'recomp'"
-                class="text-left transition-all active:scale-[0.97]"
-                style="border-radius: 14px; padding: 12px;"
-                :style="goal === 'recomp'
-                  ? 'border: 2px solid var(--k-p); background: oklch(82% 0.28 145 / 0.1); color: var(--k-tx);'
-                  : 'border: 1px solid var(--k-line); background: var(--k-elevated); color: var(--k-tx2);'">
-          <p style="font-size: 20px; margin-bottom: 4px;">⚡</p>
-          <p class="font-display-v2 font-bold" style="font-size: 13px; line-height: 1.2;">Recomposition</p>
-          <p style="font-size: 11px; color: var(--k-tx3); margin-top: 2px;">Déficit léger</p>
+                class="rounded-xl p-3 text-left transition-all"
+                :class="goal === 'recomp'
+                  ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
+                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'">
+          <p class="text-lg mb-1">⚡</p>
+          <p class="font-semibold text-sm leading-tight">Recomposition</p>
+          <p class="text-xs text-gray-500 mt-0.5">Déficit léger</p>
         </button>
 
         <button @click="goal = 'performance'"
-                class="text-left transition-all active:scale-[0.97]"
-                style="border-radius: 14px; padding: 12px;"
-                :style="goal === 'performance'
-                  ? 'border: 2px solid var(--k-p); background: oklch(82% 0.28 145 / 0.1); color: var(--k-tx);'
-                  : 'border: 1px solid var(--k-line); background: var(--k-elevated); color: var(--k-tx2);'">
-          <p style="font-size: 20px; margin-bottom: 4px;">🏆</p>
-          <p class="font-display-v2 font-bold" style="font-size: 13px; line-height: 1.2;">Performance</p>
-          <p style="font-size: 11px; color: var(--k-tx3); margin-top: 2px;">Maintien énergie</p>
+                class="rounded-xl p-3 text-left transition-all"
+                :class="goal === 'performance'
+                  ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
+                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'">
+          <p class="text-lg mb-1">🏆</p>
+          <p class="font-semibold text-sm leading-tight">Performance</p>
+          <p class="text-xs text-gray-500 mt-0.5">Maintien énergie</p>
         </button>
 
       </div>
     </div>
 
     <!-- Profil -->
-    <div class="k-card mb-4" style="padding: 20px;">
-      <p class="font-display-v2 font-bold mb-3" style="font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--k-tx3);">Profil</p>
+    <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-4">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-3">Profil</p>
 
       <div class="grid grid-cols-2 gap-2 mb-4">
         <button @click="sex = 'male'"
-                class="font-display-v2 font-bold transition-all"
-                style="border-radius: 12px; padding: 11px; font-size: 14px; cursor: pointer;"
-                :style="sex === 'male'
-                  ? 'border: 2px solid var(--k-e); background: rgba(255,122,51,.1); color: var(--k-tx);'
-                  : 'border: 1px solid var(--k-line); background: var(--k-elevated); color: var(--k-tx3);'">
+                class="rounded-xl px-3 py-2.5 text-sm font-semibold transition-all"
+                :class="sex === 'male'
+                  ? 'ring-2 ring-kinetic-electric bg-kinetic-electric/10 text-white'
+                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-electric/40 hover:bg-kinetic-elevated'">
           Homme
         </button>
         <button @click="sex = 'female'"
-                class="font-display-v2 font-bold transition-all"
-                style="border-radius: 12px; padding: 11px; font-size: 14px; cursor: pointer;"
-                :style="sex === 'female'
-                  ? 'border: 2px solid var(--k-e); background: rgba(255,122,51,.1); color: var(--k-tx);'
-                  : 'border: 1px solid var(--k-line); background: var(--k-elevated); color: var(--k-tx3);'">
+                class="rounded-xl px-3 py-2.5 text-sm font-semibold transition-all"
+                :class="sex === 'female'
+                  ? 'ring-2 ring-kinetic-electric bg-kinetic-electric/10 text-white'
+                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-electric/40 hover:bg-kinetic-elevated'">
           Femme
         </button>
       </div>
 
       <div class="grid grid-cols-3 gap-3">
         <div>
-          <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Âge</label>
+          <label class="text-xs text-gray-500 mb-1 block">Âge</label>
           <input x-model.number="ageYears" type="number" min="12" max="90"
-                 class="k-input w-full" style="padding: 10px 12px; font-size: 15px; text-align: center;"/>
+                 class="w-full bg-kinetic-ink ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon"/>
         </div>
         <div>
-          <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Taille</label>
+          <label class="text-xs text-gray-500 mb-1 block">Taille</label>
           <input x-model.number="heightCm" type="number" min="120" max="230"
-                 class="k-input w-full" style="padding: 10px 12px; font-size: 15px; text-align: center;"/>
+                 class="w-full bg-kinetic-ink ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon"/>
         </div>
         <div>
-          <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Poids</label>
+          <label class="text-xs text-gray-500 mb-1 block">Poids</label>
           <input x-model.number="weightKg" type="number" min="30" max="250" step="0.1"
-                 class="k-input w-full" style="padding: 10px 12px; font-size: 15px; text-align: center;"/>
+                 class="w-full bg-kinetic-ink ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon"/>
         </div>
       </div>
     </div>
 
     <!-- Activité -->
-    <div class="k-card mb-4" style="padding: 20px;">
-      <p class="font-display-v2 font-bold mb-3" style="font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--k-tx3);">Activité</p>
-      <select x-model="activity" class="k-input w-full" style="padding: 12px 14px; font-size: 14px;">
+    <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-4">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-3">Activité</p>
+      <select x-model="activity"
+              class="w-full bg-kinetic-ink ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon">
         <option value="sedentary">Sédentaire</option>
         <option value="light">Léger (1-2x/sem)</option>
         <option value="moderate">Modéré (3-4x/sem)</option>
@@ -129,46 +123,42 @@
     </div>
 
     <!-- Calories preview -->
-    <div class="k-card mb-6" style="padding: 20px;">
+    <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-6">
       <div class="flex items-end justify-between mb-3">
         <div>
-          <p class="font-display-v2 font-bold mb-1" style="font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--k-tx3);">Calories cible</p>
-          <p class="font-display-v2 font-bold" style="font-size: 40px; color: var(--k-p); line-height: 1; filter: drop-shadow(0 0 8px var(--k-p-glow));"
+          <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-1">Calories cible</p>
+          <p class="text-4xl font-display font-black text-kinetic-neon leading-none"
              x-text="targetCalories ? targetCalories + ' kcal' : '--'"></p>
         </div>
         <div class="text-right">
-          <p class="font-display-v2 font-bold mb-1" style="font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--k-tx3);">TDEE</p>
-          <p class="font-display-v2 font-bold" style="font-size: 22px; color: var(--k-tx2); line-height: 1;"
+          <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-1">TDEE</p>
+          <p class="text-xl font-display font-bold text-gray-300 leading-none"
              x-text="tdee ? tdee + ' kcal' : '--'"></p>
         </div>
       </div>
-      <p style="font-size: 12px; color: var(--k-tx3); line-height: 1.5;">
+      <p class="text-xs text-gray-600 leading-relaxed">
         Estimation personnalisée. Ajustable à tout moment depuis les réglages.
       </p>
     </div>
 
     <!-- Notifications -->
-    <div class="k-card mb-4" style="padding: 16px;">
+    <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-4">
       <div class="flex items-start gap-3">
-        <div class="flex items-center justify-center flex-shrink-0"
-             style="width: 36px; height: 36px; border-radius: 12px; background: rgba(255,122,51,.12); border: 1px solid rgba(255,122,51,.25);">
-          <svg style="width: 16px; height: 16px; color: var(--k-e);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-          </svg>
+        <div class="w-9 h-9 rounded-xl bg-kinetic-electric/15 ring-1 ring-kinetic-electric/30 flex items-center justify-center flex-shrink-0">
+          <svg class="w-4 h-4 text-kinetic-electric" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
         </div>
         <div class="flex-1 min-w-0">
-          <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);">Notifications</p>
-          <p style="font-size: 11px; color: var(--k-tx3); margin-top: 2px;">Rappel streak à 20h + fin du timer de repos.</p>
+          <p class="text-sm font-semibold text-white">Notifications</p>
+          <p class="text-[11px] text-gray-500 mt-0.5">Rappel streak à 20h + fin du timer de repos.</p>
         </div>
         <button type="button" @click="enableNotifications()"
                 :disabled="notifPerm !== 'default'"
-                class="font-display-v2 font-bold flex-shrink-0 transition-all"
-                style="font-size: 10px; text-transform: uppercase; letter-spacing: .06em; padding: 6px 12px; border-radius: 9px; cursor: pointer;"
-                :style="notifPerm === 'granted'
-                  ? 'background: oklch(82% 0.28 145 / 0.12); color: var(--k-p); border: 1px solid oklch(82% 0.28 145 / 0.25);'
+                class="text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg ring-1 transition-all flex-shrink-0"
+                :class="notifPerm === 'granted'
+                  ? 'bg-kinetic-neon/15 text-kinetic-neon ring-kinetic-neon/30'
                   : notifPerm === 'denied'
-                    ? 'background: rgba(255,255,255,.05); color: var(--k-tx3); border: 1px solid var(--k-line);'
-                    : 'background: rgba(255,122,51,.12); color: var(--k-e); border: 1px solid rgba(255,122,51,.25);'">
+                    ? 'bg-white/5 text-gray-500 ring-white/10'
+                    : 'bg-kinetic-electric/15 text-kinetic-electric ring-kinetic-electric/30 hover:bg-kinetic-electric/25'">
           <span x-show="notifPerm === 'granted'">✓ Activé</span>
           <span x-show="notifPerm === 'denied'">Bloqué</span>
           <span x-show="notifPerm === 'default'">Activer</span>
@@ -179,11 +169,7 @@
     <!-- Submit -->
     <button @click="save()"
             :disabled="saving"
-            class="w-full font-display-v2 font-bold active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            style="padding: 16px; border-radius: 18px; font-size: 16px; border: none; cursor: pointer;
-                   background: linear-gradient(135deg, var(--k-p) 0%, oklch(88% 0.26 145) 100%);
-                   color: #07070B;
-                   box-shadow: 0 0 24px var(--k-p-glow);">
+            class="w-full py-4 rounded-2xl bg-gradient-to-r from-kinetic-neon to-lime-300 text-gray-950 font-display font-black text-base tracking-tight hover:brightness-110 transition-all shadow-[0_0_24px_rgba(168,255,0,0.45)] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none">
       <span x-show="!saving">Continuer →</span>
       <span x-show="saving">Sauvegarde…</span>
     </button>

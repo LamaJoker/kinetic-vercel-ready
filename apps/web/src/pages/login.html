@@ -1,47 +1,45 @@
-<div class="min-h-screen flex items-center justify-center px-6"
-     style="background: radial-gradient(ellipse 80% 50% at 50% 0%, var(--k-p-glow) 0%, transparent 55%), var(--k-void);"
+<div class="min-h-screen flex items-center justify-center px-4 bg-kinetic-ink"
      x-data="{ emailMode: false }">
-  <div class="w-full" style="max-width: 320px;">
+  <div class="w-full max-w-sm">
 
-    <!-- Logo animé -->
+    <!-- Logo area -->
     <div class="text-center mb-10">
-      <div class="flex justify-center mb-4 animate-float"
-           style="color: var(--k-p); filter: drop-shadow(0 0 24px var(--k-p-glow));">
-        <svg width="52" height="52" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-          <path d="M22 4L8 22H18L16 36L32 18H22L22 4Z" fill="currentColor"/>
-        </svg>
+      <div class="w-20 h-20 mx-auto relative mb-6">
+        <div class="absolute inset-0 rounded-3xl bg-kinetic-neon/20 blur-2xl"></div>
+        <div class="relative w-20 h-20 bg-gradient-to-br from-kinetic-neon to-lime-400 rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(168,255,0,0.5)] ring-1 ring-white/10">
+          <svg class="w-10 h-10 text-gray-950" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z"/>
+          </svg>
+        </div>
       </div>
-      <h1 class="font-display-v2 font-bold text-k-tx" style="font-size: 26px; letter-spacing: -0.02em; margin-bottom: 8px;">Kinetic</h1>
-      <p style="font-size: 13px; color: var(--k-tx2);">
-        Connecte-toi pour sauvegarder ta progression dans le cloud.
-      </p>
+      <p class="text-[10px] uppercase tracking-[0.35em] text-kinetic-neon font-bold mt-3">Performance OS</p>
+      <h1 class="text-4xl font-display font-black tracking-tight text-white mt-1">Kinetic</h1>
+      <p class="text-gray-500 text-sm mt-2">Transforme tes habitudes en résultats.</p>
     </div>
 
-    <!-- Erreur globale -->
+    <!-- Erreur -->
     <div x-show="$store.auth.error"
          x-transition
-         class="mb-4 p-3 rounded-xl text-sm"
-         style="background: rgba(255,122,51,0.1); border: 1px solid rgba(255,122,51,0.3); color: var(--k-e);"
+         class="mb-4 bg-kinetic-electric/10 border border-kinetic-electric/30 rounded-xl p-3 text-kinetic-electric text-sm"
          x-text="$store.auth.error">
     </div>
 
-    <!-- Confirmation magic link -->
+    <!-- Magic link envoyé -->
     <div x-show="$store.auth.magicLinkSent"
          x-transition
-         class="k-card p-6 text-center mb-4">
-      <div style="font-size: 48px; margin-bottom: 16px;">✉️</div>
-      <p class="font-display-v2 font-bold" style="font-size: 18px; margin-bottom: 8px; color: var(--k-tx);">Lien envoyé !</p>
-      <p style="font-size: 13px; color: var(--k-tx2);">Vérifie ta boîte mail et clique sur le lien pour te connecter.</p>
+         class="mb-4 bg-kinetic-neon/10 border border-kinetic-neon/20 rounded-2xl p-6 text-center">
+      <p class="text-4xl mb-3">📬</p>
+      <p class="text-kinetic-neon font-display font-black text-lg">Lien envoyé !</p>
+      <p class="text-gray-500 text-sm mt-2">Vérifie ta boîte mail pour te connecter.</p>
     </div>
 
-    <!-- Auth buttons -->
+    <!-- Boutons OAuth + Email -->
     <div x-show="!$store.auth.magicLinkSent" class="space-y-3">
 
       <!-- GitHub -->
       <button @click="$store.auth.loginWithGitHub()"
-              class="btn-ghost w-full flex items-center justify-center gap-3"
-              style="padding: 14px 18px; font-size: 14px; border-radius: 14px;">
-        <svg class="flex-shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              class="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-kinetic-surface ring-1 ring-white/10 text-white rounded-2xl hover:bg-kinetic-elevated transition-all text-sm font-semibold">
+        <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
         </svg>
         Continuer avec GitHub
@@ -49,11 +47,8 @@
 
       <!-- Google -->
       <button @click="$store.auth.loginWithGoogle()"
-              class="w-full flex items-center justify-center gap-3"
-              style="padding: 14px 18px; background: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 14px; color: #1a1a1a; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s;"
-              onmouseover="this.style.background='#f5f5f5'"
-              onmouseout="this.style.background='white'">
-        <svg class="flex-shrink-0" width="20" height="20" viewBox="0 0 24 24">
+              class="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-white ring-1 ring-white/20 text-gray-800 rounded-2xl hover:bg-gray-50 transition-all text-sm font-semibold">
+        <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -63,70 +58,60 @@
       </button>
 
       <!-- Séparateur -->
-      <div class="relative flex items-center gap-3 py-1">
-        <div class="flex-1 border-t" style="border-color: var(--k-line);"></div>
-        <span style="font-size: 11px; color: var(--k-tx3);">ou</span>
-        <div class="flex-1 border-t" style="border-color: var(--k-line);"></div>
+      <div class="relative">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-white/5"></div>
+        </div>
+        <div class="relative flex justify-center text-xs text-gray-600">
+          <span class="bg-kinetic-ink px-4">ou</span>
+        </div>
       </div>
 
-      <!-- Email (toggle) -->
+      <!-- Email magic link -->
       <div x-show="!emailMode">
         <button @click="emailMode = true"
-                class="btn-ghost w-full"
-                style="padding: 13px; font-size: 14px; border-radius: 14px;">
+                class="w-full px-5 py-3.5 text-gray-400 ring-1 ring-white/10 rounded-2xl hover:bg-kinetic-surface transition-all text-sm font-medium">
           Continuer avec email
         </button>
       </div>
 
       <div x-show="emailMode" class="space-y-2">
-        <div>
-          <label class="font-display-v2 font-semibold block mb-1.5"
-                 style="font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--k-tx3);">
-            Email
-          </label>
-          <input type="email"
-                 x-model="$store.auth.emailInput"
-                 placeholder="ton@email.com"
-                 @keydown.enter="$store.auth.loginWithEmail()"
-                 class="k-input w-full"
-                 style="padding: 14px 16px; font-size: 15px; font-family: 'DM Sans', sans-serif; font-weight: 400;"/>
-        </div>
+        <input type="email"
+               x-model="$store.auth.emailInput"
+               placeholder="ton@email.com"
+               @keydown.enter="$store.auth.loginWithEmail()"
+               class="w-full px-4 py-3.5 ring-1 ring-white/10 rounded-2xl bg-kinetic-elevated text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon placeholder-gray-600 text-sm"/>
         <button @click="$store.auth.loginWithEmail()"
-                class="btn-p w-full"
-                style="padding: 15px; font-size: 15px;">
-          Envoyer le lien magique ✉️
-        </button>
-        <button @click="emailMode = false"
-                style="width: 100%; padding: 10px; background: none; border: none; color: var(--k-tx3); font-size: 13px; cursor: pointer;">
-          ← Retour
+                class="w-full px-5 py-3.5 bg-gradient-to-r from-kinetic-neon to-lime-300 text-gray-950 rounded-2xl hover:brightness-110 transition-all font-display font-bold shadow-[0_0_24px_rgba(168,255,0,0.4)] active:scale-[0.98]">
+          Envoyer le lien magique
         </button>
       </div>
 
     </div>
 
-    <!-- Footer légal -->
-    <p class="text-center mt-8" style="font-size: 11px; color: var(--k-tx3);">
+    <!-- Footer -->
+    <p class="text-center text-xs text-gray-600 mt-8">
       En continuant, tu acceptes les
-      <a href="#" style="text-decoration: underline; color: var(--k-tx2);">CGU</a> et la
-      <a href="#" style="text-decoration: underline; color: var(--k-tx2);">politique de confidentialité</a>.
+      <a href="#" class="underline hover:text-gray-400 transition-colors">CGU</a> et la
+      <a href="#" class="underline hover:text-gray-400 transition-colors">politique de confidentialité</a>.
     </p>
 
-    <!-- Debug auth -->
+    <!-- Debug auth (visible uniquement si log présent) -->
     <div x-data="{ log: localStorage.getItem('kinetic:auth-debug') || '', show: false }"
          x-show="log"
-         class="mt-6 p-3 rounded-xl font-mono"
-         style="font-size: 10px; color: var(--k-tx3); background: rgba(0,0,0,.4); border: 1px solid var(--k-line);">
+         class="mt-6 p-3 bg-black/40 border border-white/10 rounded-xl text-[10px] font-mono text-gray-400">
       <div class="flex gap-3">
-        <button @click="show = !show" style="color: var(--k-p); text-decoration: underline;">
+        <button @click="show = !show" class="text-kinetic-neon underline">
           <span x-text="show ? 'Masquer' : 'Voir log auth'"></span>
         </button>
-        <button @click="localStorage.removeItem('kinetic:auth-debug'); log = ''"
-                style="color: var(--k-e); text-decoration: underline;">Effacer</button>
+        <button @click="localStorage.removeItem('kinetic:auth-debug'); log = ''" class="text-red-400 underline">
+          Effacer
+        </button>
       </div>
       <pre x-show="show" x-text="log" class="whitespace-pre-wrap mt-2 break-all"></pre>
     </div>
 
-    <!-- Diagnostic config auth -->
+    <!-- Diagnostic config auth (toujours visible) -->
     <div x-data="{
            show: false,
            origin: window.location.origin,
@@ -138,18 +123,18 @@
            callbackUrl = $store.auth?._diagCallbackUrl?.() || '(non disponible)';
            supabaseUrl = ($store.auth?._diagSupabaseUrl?.()) || '(non configuré)';
          "
-         class="mt-4 p-3 rounded-xl font-mono"
-         style="font-size: 10px; color: var(--k-tx3); background: rgba(14,14,19,.6); border: 1px solid var(--k-line);">
-      <button @click="show = !show" style="color: var(--k-tx2); text-decoration: underline;">
+         class="mt-4 p-3 bg-kinetic-surface/50 border border-white/5 rounded-xl text-[10px] font-mono text-gray-500">
+      <button @click="show = !show" class="text-gray-400 hover:text-white underline">
         <span x-text="show ? 'Masquer diagnostic' : '🔍 Diagnostic config'"></span>
       </button>
       <div x-show="show" class="mt-2 space-y-1 break-all">
-        <p><span style="color: var(--k-tx3);">URL courante:</span> <span style="color: var(--k-tx2);" x-text="href"></span></p>
-        <p><span style="color: var(--k-tx3);">Origin:</span> <span style="color: var(--k-tx2);" x-text="origin"></span></p>
-        <p><span style="color: var(--k-tx3);">Callback envoyé:</span> <span style="color: var(--k-p);" x-text="callbackUrl"></span></p>
-        <p><span style="color: var(--k-tx3);">Supabase URL:</span> <span style="color: var(--k-tx2);" x-text="supabaseUrl"></span></p>
-        <p style="font-size: 9px; color: var(--k-tx3); margin-top: 8px;">
-          ⚠️ La "Callback envoyé" doit matcher exactement une entrée dans Supabase → Authentication → Redirect URLs.
+        <p><span class="text-gray-600">URL courante:</span> <span class="text-gray-300" x-text="href"></span></p>
+        <p><span class="text-gray-600">Origin:</span> <span class="text-gray-300" x-text="origin"></span></p>
+        <p><span class="text-gray-600">Callback envoyé:</span> <span class="text-kinetic-neon" x-text="callbackUrl"></span></p>
+        <p><span class="text-gray-600">Supabase URL:</span> <span class="text-gray-300" x-text="supabaseUrl"></span></p>
+        <p class="text-gray-600 text-[9px] mt-2">
+          ⚠️ La "Callback envoyé" doit matcher exactement une entrée
+          dans Supabase → Authentication → Redirect URLs.
         </p>
       </div>
     </div>

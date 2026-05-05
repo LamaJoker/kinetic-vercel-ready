@@ -2,26 +2,18 @@
 
   <!-- Header -->
   <div class="flex items-center gap-3 mb-6">
-    <a href="/"
-       class="flex items-center justify-center w-9 h-9 rounded-xl transition-colors flex-shrink-0"
-       style="background: var(--k-surface); color: var(--k-tx3);"
-       onmouseover="this.style.color='var(--k-tx)'"
-       onmouseout="this.style.color='var(--k-tx3)'">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
-      </svg>
+    <a href="/" class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
     </a>
-    <div class="flex-1">
-      <h1 class="font-display-v2 font-bold text-k-tx" style="font-size: 20px; letter-spacing: -0.02em;">Nutrition</h1>
-    </div>
+    <h1 class="text-2xl font-display font-black tracking-tight text-white">Nutrition</h1>
   </div>
 
   <!-- Aucun plan -->
-  <div x-show="!$store.nutrition.plan" class="k-card text-center mb-4" style="padding: 24px;">
-    <p style="font-size: 36px; margin-bottom: 10px;">🥗</p>
-    <p class="font-display-v2 font-bold mb-1" style="font-size: 16px; color: var(--k-tx);">Aucun plan nutritionnel</p>
-    <p style="font-size: 13px; color: var(--k-tx3); margin-bottom: 16px;">Complète ton profil pour obtenir tes objectifs macro.</p>
-    <a href="/onboarding" class="btn-p" style="display: inline-block; padding: 10px 22px; font-size: 14px; text-decoration: none;">
+  <div x-show="!$store.nutrition.plan" class="bg-kinetic-surface rounded-2xl p-5 mb-4 ring-1 ring-white/5 text-center">
+    <p class="text-3xl mb-2">🥗</p>
+    <p class="text-white font-semibold mb-1">Aucun plan nutritionnel</p>
+    <p class="text-gray-500 text-sm mb-3">Complète ton profil pour obtenir tes objectifs macro.</p>
+    <a href="/onboarding" class="inline-block px-5 py-2.5 bg-kinetic-neon text-gray-950 rounded-xl text-sm font-semibold">
       Configurer mon profil
     </a>
   </div>
@@ -30,59 +22,59 @@
   <div x-show="$store.nutrition.plan" class="space-y-4">
 
     <!-- Anneau kcal + barres macros -->
-    <div class="k-card" style="padding: 16px;">
+    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
       <div class="flex items-center gap-4 mb-4">
         <!-- Anneau SVG kcal -->
-        <div class="relative flex-shrink-0" style="width: 80px; height: 80px;">
-          <svg viewBox="0 0 80 80" class="w-full h-full" style="transform: rotate(-90deg);">
-            <circle cx="40" cy="40" r="30" fill="none" stroke="var(--k-elevated)" stroke-width="8"/>
-            <circle cx="40" cy="40" r="30" fill="none" stroke="var(--k-p)" stroke-width="8"
+        <div class="relative w-20 h-20 flex-shrink-0">
+          <svg viewBox="0 0 80 80" class="w-full h-full -rotate-90">
+            <circle cx="40" cy="40" r="30" fill="none" stroke="#1A1A1D" stroke-width="8"/>
+            <circle cx="40" cy="40" r="30" fill="none" stroke="#A8FF00" stroke-width="8"
                     :stroke-dasharray="`${Math.min(188, ($store.nutrition.progress?.kcalPct ?? 0) * 1.88)} 188`"
-                    stroke-linecap="round"
-                    style="transition: stroke-dasharray .5s ease; filter: drop-shadow(0 0 5px var(--k-p-glow));"/>
+                    stroke-linecap="round" style="transition: stroke-dasharray .5s ease"/>
           </svg>
           <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <span class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx); line-height: 1;"
+            <span class="text-white font-display font-black text-sm leading-tight"
                   x-text="$store.nutrition.consumed.kcal"></span>
-            <span style="font-size: 10px; color: var(--k-tx3);">kcal</span>
+            <span class="text-gray-400 text-[10px] font-semibold">kcal</span>
           </div>
         </div>
 
-        <div class="flex-1 min-w-0 space-y-1.5">
-          <div class="flex justify-between" style="font-size: 12px;">
-            <span style="color: var(--k-tx3);">Objectif</span>
-            <span class="font-display-v2 font-semibold" style="color: var(--k-tx2);" x-text="($store.nutrition.plan?.macros.kcal ?? 0) + ' kcal'"></span>
+        <div class="flex-1 min-w-0">
+          <div class="flex justify-between gap-2 text-xs text-gray-500 mb-1">
+            <span class="flex-shrink-0">Objectif</span>
+            <span class="font-semibold text-gray-400" x-text="($store.nutrition.plan?.macros.kcal ?? 0) + ' kcal'"></span>
           </div>
-          <div class="flex justify-between" style="font-size: 12px;">
-            <span style="color: var(--k-tx3);">Consommé</span>
-            <span class="font-display-v2 font-bold" style="color: var(--k-tx);" x-text="$store.nutrition.consumed.kcal + ' kcal'"></span>
+          <div class="flex justify-between gap-2 text-xs mb-2">
+            <span class="text-gray-400 flex-shrink-0">Consommé</span>
+            <span class="text-white font-bold" x-text="$store.nutrition.consumed.kcal + ' kcal'"></span>
           </div>
-          <div class="flex justify-between" style="font-size: 12px;">
-            <span style="color: var(--k-tx3);">Restant</span>
-            <span class="font-display-v2 font-bold" style="color: var(--k-p);" x-text="($store.nutrition.remaining?.kcal ?? 0) + ' kcal'"></span>
+          <div class="flex justify-between gap-2 text-xs">
+            <span class="text-gray-500 flex-shrink-0">Restant</span>
+            <span class="text-kinetic-neon font-semibold" x-text="($store.nutrition.remaining?.kcal ?? 0) + ' kcal'"></span>
           </div>
         </div>
       </div>
 
       <!-- Barres macros -->
-      <div class="space-y-2.5">
+      <div class="space-y-2">
         <template x-for="macro in [
-          { label: 'Protéines', key: 'proteinG', pctKey: 'proteinPct', color: 'var(--k-p)', unit: 'g' },
-          { label: 'Glucides',  key: 'carbsG',   pctKey: 'carbsPct',   color: 'var(--k-e)', unit: 'g' },
-          { label: 'Lipides',   key: 'fatG',     pctKey: 'fatPct',     color: 'var(--k-tx2)', unit: 'g' }
+          { label: 'Protéines', key: 'proteinG', pctKey: 'proteinPct', color: '#A8FF00', unit: 'g' },
+          { label: 'Glucides',  key: 'carbsG',   pctKey: 'carbsPct',   color: '#FF6A00', unit: 'g' },
+          { label: 'Lipides',   key: 'fatG',     pctKey: 'fatPct',     color: '#FFFFFF', unit: 'g' }
         ]">
           <div>
-            <div class="flex justify-between mb-1" style="font-size: 12px;">
-              <span style="color: var(--k-tx2);" x-text="macro.label"></span>
-              <span style="color: var(--k-tx);">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-gray-400" x-text="macro.label"></span>
+              <span class="text-white">
                 <span x-text="$store.nutrition.consumed[macro.key]"></span>
-                <span style="color: var(--k-tx3);"> / </span>
+                <span class="text-gray-500"> / </span>
                 <span x-text="$store.nutrition.plan?.macros[macro.key]"></span>
-                <span style="color: var(--k-tx3);" x-text="' ' + macro.unit"></span>
+                <span class="text-gray-500" x-text="' ' + macro.unit"></span>
               </span>
             </div>
-            <div class="bar-track">
-              <div class="bar-fill" :style="`width: ${Math.min(100, ($store.nutrition.progress?.[macro.pctKey] ?? 0))}%; background: ${macro.color}; box-shadow: 0 0 6px ${macro.color}40;`"></div>
+            <div class="h-2 bg-kinetic-elevated rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-500"
+                   :style="`width: ${Math.min(100, ($store.nutrition.progress?.[macro.pctKey] ?? 0))}%; background: ${macro.color}`"></div>
             </div>
           </div>
         </template>
@@ -90,21 +82,21 @@
     </div>
 
     <!-- Journal des repas -->
-    <div class="k-card" style="padding: 16px;">
+    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
       <div class="flex items-center justify-between mb-3">
-        <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx);">Journal du jour</p>
+        <h2 class="font-semibold text-white">Journal du jour</h2>
         <button @click="showAddForm = !showAddForm"
-                class="btn-p" style="font-size: 12px; padding: 6px 14px;">
+                class="text-xs bg-kinetic-neon/20 text-kinetic-neon px-3 py-1.5 rounded-xl">
           + Ajouter
         </button>
       </div>
 
-      <!-- Formulaire ajout -->
-      <div x-show="showAddForm" x-transition
-           style="background: var(--k-elevated); border: 1px solid var(--k-line); border-radius: 14px; padding: 14px; margin-bottom: 14px;">
+      <!-- Formulaire ajout avec recherche intelligente -->
+      <div x-show="showAddForm" x-transition class="bg-kinetic-elevated/60 rounded-xl p-3 mb-3">
 
+        <!-- Repas -->
         <select x-model="newMeal.mealName"
-                class="k-input w-full mb-3" style="padding: 10px 12px; font-size: 14px;">
+                class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm mb-3 text-white">
           <option value="Matin">🌅 Matin</option>
           <option value="Déjeuner">☀️ Déjeuner</option>
           <option value="Collation">🍎 Collation</option>
@@ -119,121 +111,119 @@
                      @input.debounce.200ms="searchFood()"
                      @focus="searchFood()"
                      placeholder="🔍 Rechercher un aliment…"
-                     class="k-input w-full" style="padding: 10px 12px; font-size: 14px; padding-right: 32px;"/>
+                     class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 pr-8"/>
               <button x-show="foodQuery" @click="clearFoodSelection()"
-                      style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--k-tx3); background: none; border: none; cursor: pointer;">✕</button>
+                      class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs">✕</button>
             </div>
           </div>
 
+          <!-- Badge aliment sélectionné depuis la DB -->
           <template x-if="selectedFood">
-            <div class="mt-1.5 flex items-center gap-2"
-                 style="background: oklch(82% 0.28 145 / 0.1); border: 1px solid oklch(82% 0.28 145 / 0.3); border-radius: 10px; padding: 8px 12px;">
-              <span style="color: var(--k-p); font-size: 12px;">✓</span>
-              <span class="font-display-v2 font-semibold" style="font-size: 12px; color: var(--k-tx);" x-text="selectedFood.name"></span>
-              <span class="ml-auto" style="font-size: 10px; color: var(--k-tx3);"
+            <div class="mt-1.5 flex items-center gap-2 bg-kinetic-neon/10 ring-1 ring-kinetic-neon/30 rounded-lg px-2.5 py-1.5">
+              <span class="text-kinetic-neon text-xs">✓</span>
+              <span class="text-xs text-white font-medium" x-text="selectedFood.name"></span>
+              <span class="ml-auto text-[10px] text-gray-500"
                     x-text="`${selectedFood.kcal} kcal · P${selectedFood.protein}g · G${selectedFood.carbs}g · L${selectedFood.fat}g /100g`"></span>
             </div>
           </template>
 
+          <!-- Liste résultats -->
           <div x-show="foodResults.length > 0"
-               class="absolute z-20 left-0 right-0 top-full mt-1 overflow-hidden"
-               style="background: var(--k-surface); border: 1px solid var(--k-line); border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.4);">
+               class="absolute z-20 left-0 right-0 top-full mt-1 bg-kinetic-surface border border-white/10 rounded-xl shadow-2xl overflow-hidden">
             <template x-for="food in foodResults" :key="food.id">
               <button @click="selectFood(food)"
-                      class="w-full text-left transition-colors"
-                      style="padding: 10px 14px; border-bottom: 1px solid var(--k-line);"
-                      onmouseover="this.style.background='var(--k-elevated)'"
-                      onmouseout="this.style.background='transparent'">
+                      class="w-full text-left px-3 py-2.5 hover:bg-kinetic-elevated border-b border-white/5 last:border-0 transition-colors">
                 <div class="flex items-center justify-between gap-2">
-                  <span style="font-size: 13px; color: var(--k-tx);" x-text="food.name"></span>
-                  <span style="font-size: 10px; color: var(--k-tx3); flex-shrink: 0;"
+                  <span class="text-sm text-white" x-text="food.name"></span>
+                  <span class="text-[10px] text-gray-500 shrink-0"
                         x-text="`${food.kcal}kcal · P${food.protein}g`"></span>
                 </div>
               </button>
             </template>
             <button @click="foodResults = []"
-                    class="w-full text-center" style="padding: 8px; font-size: 12px; color: var(--k-tx3); background: none; border: none; cursor: pointer; border-top: 1px solid var(--k-line);">
+                    class="w-full text-center py-2 text-xs text-gray-600 hover:text-gray-400 border-t border-white/5">
               Saisie manuelle →
             </button>
           </div>
         </div>
 
-        <!-- Saisie manuelle -->
+        <!-- Saisie manuelle si pas de sélection depuis DB -->
         <template x-if="!selectedFood">
           <div class="mb-3">
             <input x-model="newMeal.name" placeholder="Nom de l'aliment (saisie manuelle)"
-                   class="k-input w-full mb-2" style="padding: 10px 12px; font-size: 14px;"/>
+                   class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm mb-2 text-white"/>
             <div class="grid grid-cols-2 gap-2 mb-2">
               <div>
-                <label class="font-display-v2 font-semibold block mb-1" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Kcal/100g</label>
+                <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1">Kcal/100g</label>
                 <input x-model.number="newMeal.kcal" type="number" min="0"
-                       class="k-input w-full" style="padding: 9px 11px; font-size: 13px;"/>
+                       class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"/>
               </div>
               <div>
-                <label class="font-display-v2 font-semibold block mb-1" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Protéines/100g</label>
+                <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1">Protéines/100g</label>
                 <input x-model.number="newMeal.protein" type="number" min="0" step="0.1"
-                       class="k-input w-full" style="padding: 9px 11px; font-size: 13px;"/>
+                       class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"/>
               </div>
               <div>
-                <label class="font-display-v2 font-semibold block mb-1" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Glucides/100g</label>
+                <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1">Glucides/100g</label>
                 <input x-model.number="newMeal.carbs" type="number" min="0" step="0.1"
-                       class="k-input w-full" style="padding: 9px 11px; font-size: 13px;"/>
+                       class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"/>
               </div>
               <div>
-                <label class="font-display-v2 font-semibold block mb-1" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Lipides/100g</label>
+                <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1">Lipides/100g</label>
                 <input x-model.number="newMeal.fat" type="number" min="0" step="0.1"
-                       class="k-input w-full" style="padding: 9px 11px; font-size: 13px;"/>
+                       class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"/>
               </div>
             </div>
           </div>
         </template>
 
-        <!-- Quantité + aperçu -->
+        <!-- Quantité -->
         <div class="flex items-center gap-3 mb-3">
           <div class="flex-1">
-            <label class="font-display-v2 font-semibold block mb-1" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Quantité (g)</label>
+            <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1">Quantité (g)</label>
             <input x-model.number="newMeal.grams" type="number" min="1" step="5"
-                   class="k-input w-full font-mono font-bold text-center" style="padding: 10px 12px; font-size: 18px;"/>
+                   class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white font-mono text-center text-lg font-bold"/>
           </div>
-          <div class="flex-1 text-center" style="background: var(--k-void); border-radius: 12px; padding: 10px;">
-            <p class="font-display-v2 font-bold" style="font-size: 22px; color: var(--k-p); line-height: 1;"
+          <!-- Aperçu macros dynamique -->
+          <div class="flex-1 bg-kinetic-ink rounded-xl p-2.5 text-center">
+            <p class="text-kinetic-neon font-black text-lg leading-none"
                x-text="Math.round(newMeal.kcal * newMeal.grams / 100)"></p>
-            <p style="font-size: 10px; color: var(--k-tx3); margin-top: 2px;">kcal</p>
-            <p style="font-size: 11px; color: var(--k-tx3); margin-top: 4px;"
+            <p class="text-[10px] text-gray-500 mt-0.5">kcal</p>
+            <p class="text-[10px] text-gray-400 mt-1"
                x-text="`P${(newMeal.protein*newMeal.grams/100).toFixed(0)} G${(newMeal.carbs*newMeal.grams/100).toFixed(0)} L${(newMeal.fat*newMeal.grams/100).toFixed(0)}`"></p>
           </div>
         </div>
 
         <button @click="logFood()"
                 :disabled="!newMeal.name || newMeal.grams <= 0"
-                class="btn-p w-full disabled:opacity-40"
-                style="padding: 12px; font-size: 14px;">
+                class="w-full py-2.5 bg-kinetic-neon text-gray-950 font-bold rounded-xl text-sm
+                       disabled:opacity-40 hover:brightness-105 transition-all">
           ✓ Ajouter au journal
         </button>
       </div>
 
       <!-- Liste repas -->
       <template x-if="$store.nutrition.todayLog.length === 0">
-        <p class="text-center py-4" style="font-size: 13px; color: var(--k-tx3);">Aucun repas enregistré aujourd'hui.</p>
+        <p class="text-sm text-gray-500 text-center py-4">Aucun repas enregistré aujourd'hui.</p>
       </template>
 
       <template x-for="meal in $store.nutrition.todayLog" :key="meal.id">
         <div class="mb-3">
-          <p class="font-display-v2 font-bold mb-1.5" style="font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--k-tx3);"
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5"
              x-text="meal.mealName"></p>
           <template x-for="(item, idx) in meal.items" :key="idx">
-            <div class="flex items-center justify-between py-2" style="border-bottom: 1px solid var(--k-line);">
+            <div class="flex items-center justify-between py-2 border-b border-white/10/50">
               <div>
-                <p style="font-size: 13px; color: var(--k-tx);" x-text="item.food.name"></p>
-                <p style="font-size: 11px; color: var(--k-tx3);"
+                <p class="text-sm text-white" x-text="item.food.name"></p>
+                <p class="text-xs text-gray-500"
                    x-text="`${item.grams}g · P${(item.food.proteinPer100*item.grams/100).toFixed(0)}g · G${(item.food.carbsPer100*item.grams/100).toFixed(0)}g · L${(item.food.fatPer100*item.grams/100).toFixed(0)}g`">
                 </p>
               </div>
               <div class="flex items-center gap-2">
-                <span class="font-display-v2 font-bold" style="font-size: 12px; color: var(--k-tx);"
+                <span class="text-xs font-semibold text-white"
                       x-text="Math.round(item.food.kcalPer100 * item.grams / 100) + ' kcal'"></span>
                 <button @click="$store.nutrition.removeMealItem(meal.mealName, idx)"
-                        style="font-size: 12px; color: var(--k-tx3); background: none; border: none; cursor: pointer;">✕</button>
+                        class="text-gray-400 hover:text-kinetic-electric text-xs">✕</button>
               </div>
             </div>
           </template>
@@ -242,64 +232,65 @@
     </div>
 
     <!-- Plan calorique détail -->
-    <div class="k-card" style="padding: 16px;">
-      <p class="font-display-v2 font-bold mb-3" style="font-size: 15px; color: var(--k-tx);">Objectifs scientifiques</p>
+    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
+      <h2 class="font-semibold text-white mb-3">Objectifs scientifiques</h2>
       <div class="grid grid-cols-2 gap-2 mb-3">
-        <div style="background: var(--k-elevated); border-radius: 14px; padding: 12px;">
-          <p style="font-size: 11px; color: var(--k-tx3);">BMR</p>
-          <p class="font-display-v2 font-bold" style="font-size: 20px; color: var(--k-tx);" x-text="$store.nutrition.plan?.bmrKcal + ' kcal'"></p>
+        <div class="bg-kinetic-elevated/60 rounded-xl p-3">
+          <p class="text-xs text-gray-500">BMR</p>
+          <p class="text-lg font-black text-white" x-text="$store.nutrition.plan?.bmrKcal + ' kcal'"></p>
         </div>
-        <div style="background: var(--k-elevated); border-radius: 14px; padding: 12px;">
-          <p style="font-size: 11px; color: var(--k-tx3);">TDEE</p>
-          <p class="font-display-v2 font-bold" style="font-size: 20px; color: var(--k-p);" x-text="$store.nutrition.plan?.tdeeKcal + ' kcal'"></p>
+        <div class="bg-kinetic-elevated/60 rounded-xl p-3">
+          <p class="text-xs text-gray-500">TDEE</p>
+          <p class="text-lg font-black text-kinetic-neon" x-text="$store.nutrition.plan?.tdeeKcal + ' kcal'"></p>
         </div>
-        <div style="background: var(--k-elevated); border-radius: 14px; padding: 12px;">
-          <p style="font-size: 11px; color: var(--k-tx3);">Eau / jour</p>
-          <p class="font-display-v2 font-bold" style="font-size: 20px; color: #60A5FA;"
+        <div class="bg-kinetic-elevated/60 rounded-xl p-3">
+          <p class="text-xs text-gray-500">Eau / jour</p>
+          <p class="text-lg font-black text-blue-400"
              x-text="((($store.nutrition.plan?.macros.waterMl ?? 0) / 1000).toFixed(1)) + ' L'"></p>
         </div>
-        <div style="background: var(--k-elevated); border-radius: 14px; padding: 12px;">
-          <p style="font-size: 11px; color: var(--k-tx3);">Fibres cible</p>
-          <p class="font-display-v2 font-bold" style="font-size: 20px; color: #4ADE80;"
+        <div class="bg-kinetic-elevated/60 rounded-xl p-3">
+          <p class="text-xs text-gray-500">Fibres cible</p>
+          <p class="text-lg font-black text-green-400"
              x-text="($store.nutrition.plan?.macros.fiberG ?? 0) + ' g'"></p>
         </div>
       </div>
       <template x-if="$store.nutrition.plan?.weeklyFatLossG">
-        <div class="mb-3" style="background: oklch(82% 0.28 145 / 0.08); border: 1px solid oklch(82% 0.28 145 / 0.2); border-radius: 12px; padding: 12px;">
-          <p class="font-display-v2 font-bold" style="font-size: 12px; color: var(--k-p);">Perte de masse grasse théorique</p>
-          <p style="font-size: 13px; color: var(--k-tx); margin-top: 2px;"
+        <div class="bg-kinetic-neon/10 border border-kinetic-neon/20 rounded-xl p-3 mb-3">
+          <p class="text-xs text-kinetic-neon font-semibold">Perte de masse grasse théorique</p>
+          <p class="text-sm text-white mt-0.5"
              x-text="`~${($store.nutrition.plan?.weeklyFatLossG / 1000).toFixed(2)} kg / semaine`"></p>
         </div>
       </template>
       <template x-for="note in ($store.nutrition.plan?.notes ?? [])">
-        <p style="font-size: 12px; color: var(--k-tx3); margin-bottom: 4px;" class="before:content-['→_']" x-text="note"></p>
+        <p class="text-xs text-gray-500 mb-1 before:content-['→_']" x-text="note"></p>
       </template>
     </div>
 
     <!-- Répartition repas -->
-    <div class="k-card" style="padding: 16px;">
+    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
       <div class="flex items-center justify-between mb-3">
-        <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx);">Répartition recommandée</p>
-        <label class="flex items-center gap-1.5" style="font-size: 12px; color: var(--k-tx3);">
+        <h2 class="font-semibold text-white">Répartition recommandée</h2>
+        <label class="flex items-center gap-1.5 text-xs text-gray-400">
           <input type="checkbox" x-model="trainingToday" class="rounded"/>
           Jour d'entraînement
         </label>
       </div>
       <template x-for="meal in mealTimings">
-        <div class="mb-2" style="background: var(--k-elevated); border-radius: 12px; padding: 12px;">
+        <div class="bg-kinetic-elevated/50 rounded-xl p-3 mb-2">
           <div class="flex items-center justify-between mb-1">
-            <p class="font-display-v2 font-semibold" style="font-size: 13px; color: var(--k-tx);" x-text="meal.mealName"></p>
-            <span style="font-size: 12px; color: var(--k-tx3);" x-text="meal.kcal + ' kcal'"></span>
+            <p class="text-sm font-semibold text-white" x-text="meal.mealName"></p>
+            <span class="text-xs text-gray-400" x-text="meal.kcal + ' kcal'"></span>
           </div>
-          <div class="flex gap-3 mb-1" style="font-size: 12px;">
-            <span style="color: var(--k-p);" x-text="`P: ${meal.proteinG}g`"></span>
-            <span style="color: var(--k-p);" x-text="`G: ${meal.carbsG}g`"></span>
-            <span style="color: var(--k-e);" x-text="`L: ${meal.fatG}g`"></span>
+          <div class="flex gap-3 text-xs text-gray-500 mb-1">
+            <span x-text="`P: ${meal.proteinG}g`" class="text-kinetic-neon"></span>
+            <span x-text="`G: ${meal.carbsG}g`" class="text-kinetic-neon"></span>
+            <span x-text="`L: ${meal.fatG}g`" class="text-kinetic-electric"></span>
           </div>
-          <p style="font-size: 12px; color: var(--k-tx3);" x-text="meal.notes"></p>
+          <p class="text-xs text-gray-500" x-text="meal.notes"></p>
         </div>
       </template>
     </div>
 
   </div>
 </div>
+

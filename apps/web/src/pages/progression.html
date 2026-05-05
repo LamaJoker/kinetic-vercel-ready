@@ -2,26 +2,20 @@
 
   <!-- En-tête -->
   <div class="flex items-center gap-3 mb-6">
-    <a href="/"
-       class="flex items-center justify-center w-9 h-9 rounded-xl transition-colors flex-shrink-0"
-       style="background: var(--k-surface); color: var(--k-tx3);"
-       onmouseover="this.style.color='var(--k-tx)'"
-       onmouseout="this.style.color='var(--k-tx3)'"
-       aria-label="Retour">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
-      </svg>
+    <a href="/" class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface" aria-label="Retour">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
     </a>
-    <h1 class="font-display-v2 font-bold text-k-tx" style="font-size: 20px; letter-spacing: -0.02em;">Progression</h1>
+    <h1 class="text-2xl font-display font-black tracking-tight text-white">Progression</h1>
   </div>
 
   <!-- État vide -->
   <template x-if="!loading && totalSessions === 0">
-    <div class="k-card text-center" style="padding: 32px 24px;">
-      <div style="font-size: 48px; margin-bottom: 12px;">📈</div>
-      <p class="font-display-v2 font-bold mb-1" style="font-size: 16px; color: var(--k-tx);">Pas encore de données</p>
-      <p style="font-size: 13px; color: var(--k-tx3); margin-bottom: 20px;">Termine une première séance pour voir ta progression apparaître ici.</p>
-      <a href="/seances" class="btn-p" style="display: inline-block; padding: 10px 22px; font-size: 14px; text-decoration: none;">
+    <div class="bg-kinetic-surface rounded-2xl p-8 text-center ring-1 ring-white/5">
+      <div class="text-5xl mb-3">📈</div>
+      <p class="text-white font-semibold mb-1">Pas encore de données</p>
+      <p class="text-sm text-gray-500 mb-5">Termine une première séance pour voir ta progression apparaître ici.</p>
+      <a href="/seances"
+         class="inline-block bg-kinetic-electric hover:bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm">
         Démarrer une séance
       </a>
     </div>
@@ -29,142 +23,155 @@
 
   <!-- Stats globales -->
   <div x-show="totalSessions > 0" class="grid grid-cols-3 gap-2 mb-4">
-    <div class="k-card text-center" style="padding: 12px;">
-      <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Séances</p>
-      <p class="font-display-v2 font-bold mt-1" style="font-size: 22px; color: var(--k-tx);" x-text="totalSessions"></p>
+    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Séances</p>
+      <p class="font-display font-black text-xl text-white mt-1" x-text="totalSessions"></p>
     </div>
-    <div class="k-card text-center" style="padding: 12px;">
-      <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Tonnage</p>
-      <p class="font-display-v2 font-bold mt-1" style="font-size: 22px; color: var(--k-tx);">
-        <span x-text="formatNumber(totalTonnage)"></span><span style="font-size: 11px; color: var(--k-tx3); margin-left: 2px;">kg</span>
+    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Tonnage</p>
+      <p class="font-display font-black text-xl text-white mt-1">
+        <span x-text="formatNumber(totalTonnage)"></span><span class="text-xs text-gray-500 font-medium ml-0.5">kg</span>
       </p>
     </div>
-    <div class="k-card text-center" style="padding: 12px;">
-      <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Régularité</p>
-      <p class="font-display-v2 font-bold mt-1" style="font-size: 22px; color: var(--k-p);">
-        <span x-text="consistency"></span><span style="font-size: 11px; color: var(--k-tx3); margin-left: 2px;">%</span>
+    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Régularité</p>
+      <p class="font-display font-black text-xl text-kinetic-neon mt-1">
+        <span x-text="consistency"></span><span class="text-xs text-gray-500 font-medium ml-0.5">%</span>
       </p>
     </div>
   </div>
 
   <!-- Stats avancées -->
   <div x-show="totalSessions > 0" class="grid grid-cols-3 gap-2 mb-4">
-    <div class="k-card text-center" style="padding: 12px;">
-      <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Série max</p>
-      <p class="font-display-v2 font-bold mt-1" style="font-size: 22px; color: var(--k-e);">
-        <span x-text="longestStreak"></span><span style="font-size: 11px; color: var(--k-tx3); margin-left: 2px;">j</span>
+    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Série max</p>
+      <p class="font-display font-black text-xl text-kinetic-electric mt-1">
+        <span x-text="longestStreak"></span><span class="text-xs text-gray-500 font-medium ml-0.5">j</span>
       </p>
     </div>
-    <div class="k-card text-center" style="padding: 12px;">
-      <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Moy/sem</p>
-      <p class="font-display-v2 font-bold mt-1" style="font-size: 22px; color: var(--k-tx);" x-text="avgSessionsPerWeek"></p>
+    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Moy/sem</p>
+      <p class="font-display font-black text-xl text-white mt-1" x-text="avgSessionsPerWeek"></p>
     </div>
-    <div class="k-card text-center" style="padding: 12px;">
-      <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Durée moy</p>
-      <p class="font-display-v2 font-bold mt-1" style="font-size: 22px; color: var(--k-tx);">
-        <span x-text="avgDurationMin"></span><span style="font-size: 11px; color: var(--k-tx3); margin-left: 2px;">min</span>
+    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Durée moy</p>
+      <p class="font-display font-black text-xl text-white mt-1">
+        <span x-text="avgDurationMin"></span><span class="text-xs text-gray-500 font-medium ml-0.5">min</span>
       </p>
     </div>
   </div>
 
   <!-- Onglets -->
-  <div x-show="totalSessions > 0" class="tabs mb-4">
-    <button type="button" @click="setTab('force')" class="tab" :class="activeTab === 'force' ? 'active' : ''">Force</button>
-    <button type="button" @click="setTab('volume')" class="tab" :class="activeTab === 'volume' ? 'active' : ''">Volume</button>
-    <button type="button" @click="setTab('muscles')" class="tab" :class="activeTab === 'muscles' ? 'active' : ''">Muscles</button>
-    <button type="button" @click="setTab('records')" class="tab" :class="activeTab === 'records' ? 'active' : ''">Records</button>
-    <button type="button" @click="setTab('heatmap')" class="tab" :class="activeTab === 'heatmap' ? 'active' : ''">Activité</button>
+  <div x-show="totalSessions > 0" class="grid grid-cols-5 gap-1 bg-kinetic-surface p-1 rounded-2xl ring-1 ring-white/5 mb-4">
+    <button type="button" @click="setTab('force')"
+            :class="activeTab === 'force' ? 'bg-kinetic-electric text-white shadow-[0_0_14px_rgba(255,106,0,0.45)]' : 'text-gray-400 hover:text-white'"
+            class="text-xs font-semibold py-2 rounded-xl transition-all">Force</button>
+    <button type="button" @click="setTab('volume')"
+            :class="activeTab === 'volume' ? 'bg-kinetic-electric text-white shadow-[0_0_14px_rgba(255,106,0,0.45)]' : 'text-gray-400 hover:text-white'"
+            class="text-xs font-semibold py-2 rounded-xl transition-all">Volume</button>
+    <button type="button" @click="setTab('muscles')"
+            :class="activeTab === 'muscles' ? 'bg-kinetic-electric text-white shadow-[0_0_14px_rgba(255,106,0,0.45)]' : 'text-gray-400 hover:text-white'"
+            class="text-xs font-semibold py-2 rounded-xl transition-all">Muscles</button>
+    <button type="button" @click="setTab('records')"
+            :class="activeTab === 'records' ? 'bg-kinetic-electric text-white shadow-[0_0_14px_rgba(255,106,0,0.45)]' : 'text-gray-400 hover:text-white'"
+            class="text-xs font-semibold py-2 rounded-xl transition-all">Records</button>
+    <button type="button" @click="setTab('heatmap')"
+            :class="activeTab === 'heatmap' ? 'bg-kinetic-electric text-white shadow-[0_0_14px_rgba(255,106,0,0.45)]' : 'text-gray-400 hover:text-white'"
+            class="text-xs font-semibold py-2 rounded-xl transition-all">Activité</button>
   </div>
 
-  <!-- ─── Onglet FORCE ──────────────────────────────────────────────────── -->
+  <!-- ─── Onglet FORCE ──────────────────────────────────────── -->
   <div x-show="totalSessions > 0 && activeTab === 'force'" x-transition>
-    <div class="k-card mb-3" style="padding: 14px;">
-      <label class="font-display-v2 font-bold block mb-2" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Exercice</label>
-      <select x-model="selectedExerciseId" class="k-input w-full" style="padding: 10px 12px; font-size: 14px;">
+    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5 mb-3">
+      <label class="block text-xs uppercase tracking-widest text-gray-500 font-semibold mb-2">Exercice</label>
+      <select x-model="selectedExerciseId"
+              class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm">
         <template x-for="ex in exerciseStats" :key="ex.exerciseId">
           <option :value="ex.exerciseId" x-text="exerciseName(ex.exerciseId)"></option>
         </template>
       </select>
     </div>
 
-    <div class="k-card" style="padding: 16px;">
+    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
       <div class="flex items-center justify-between mb-3">
-        <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);">Courbe e1RM</p>
-        <span class="font-display-v2 font-semibold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">kg estimés</span>
+        <h2 class="font-display font-bold text-white tracking-tight text-sm">Courbe e1RM</h2>
+        <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">kg estimés</span>
       </div>
       <template x-if="forceHasData()">
         <div x-html="forceSvg()" class="w-full"></div>
       </template>
       <template x-if="!forceHasData()">
-        <p class="text-center py-6" style="font-size: 13px; color: var(--k-tx3);">Pas assez de données — il faut au moins 2 séances avec cet exercice.</p>
+        <p class="text-sm text-gray-500 text-center py-6">Pas assez de données pour tracer une courbe — il faut au moins 2 séances avec cet exercice.</p>
       </template>
     </div>
   </div>
 
-  <!-- ─── Onglet VOLUME ─────────────────────────────────────────────────── -->
+  <!-- ─── Onglet VOLUME ─────────────────────────────────────── -->
   <div x-show="totalSessions > 0 && activeTab === 'volume'" x-transition>
-    <div class="k-card" style="padding: 16px;">
+    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
       <div class="flex items-center justify-between mb-4">
-        <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);">Tonnage hebdomadaire</p>
-        <span class="font-display-v2 font-semibold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">12 dernières S</span>
+        <h2 class="font-display font-bold text-white tracking-tight text-sm">Tonnage hebdomadaire</h2>
+        <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">12 dernières S</span>
       </div>
 
       <template x-if="weeklyBuckets.length === 0">
-        <p class="text-center py-6" style="font-size: 13px; color: var(--k-tx3);">Aucune donnée hebdomadaire.</p>
+        <p class="text-sm text-gray-500 text-center py-6">Aucune donnée hebdomadaire.</p>
       </template>
 
-      <div x-show="weeklyBuckets.length > 0" class="flex items-end justify-between gap-1.5 mb-2" style="height: 160px;">
+      <div x-show="weeklyBuckets.length > 0" class="flex items-end justify-between gap-1.5 h-40 mb-2">
         <template x-for="b in weeklyBuckets" :key="b.isoWeek">
           <div class="flex-1 flex flex-col items-center gap-1 group">
-            <div class="w-full rounded-t-md transition-all"
-                 style="background: linear-gradient(to top, var(--k-e), #FF9560); box-shadow: 0 0 8px rgba(255,122,51,.3); min-height: 2px;"
-                 :style="`height: ${barHeightPct(b.tonnageKg)}%`"
+            <div class="w-full bg-gradient-to-t from-kinetic-electric to-orange-500 rounded-t-md transition-all
+                        shadow-[0_0_8px_rgba(255,106,0,0.35)]"
+                 :style="`height: ${barHeightPct(b.tonnageKg)}%; min-height: 2px`"
                  :title="`${formatWeek(b.isoWeek)} — ${formatNumber(b.tonnageKg)} kg`"></div>
-            <span class="font-mono" style="font-size: 9px; color: var(--k-tx3);" x-text="formatWeek(b.isoWeek)"></span>
+            <span class="text-[9px] text-gray-500 font-mono" x-text="formatWeek(b.isoWeek)"></span>
           </div>
         </template>
       </div>
 
       <template x-if="weeklyBuckets.length > 0">
-        <div class="grid grid-cols-3 gap-2 pt-3 text-center" style="border-top: 1px solid var(--k-line);">
+        <div class="grid grid-cols-3 gap-2 pt-3 border-t border-white/5 text-center">
           <div>
-            <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Semaine</p>
-            <p class="font-display-v2 font-semibold" style="font-size: 13px; color: var(--k-tx);" x-text="formatWeek(weeklyBuckets.at(-1).isoWeek)"></p>
+            <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Semaine</p>
+            <p class="text-sm font-bold text-white" x-text="formatWeek(weeklyBuckets.at(-1).isoWeek)"></p>
           </div>
           <div>
-            <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Tonnage</p>
-            <p class="font-display-v2 font-semibold" style="font-size: 13px; color: var(--k-tx);">
+            <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Tonnage</p>
+            <p class="text-sm font-bold text-white">
               <span x-text="formatNumber(weeklyBuckets.at(-1).tonnageKg)"></span>
-              <span style="font-size: 10px; color: var(--k-tx3);">kg</span>
+              <span class="text-[10px] text-gray-500">kg</span>
             </p>
           </div>
           <div>
-            <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Sets</p>
-            <p class="font-display-v2 font-semibold" style="font-size: 13px; color: var(--k-tx);" x-text="weeklyBuckets.at(-1).totalSets"></p>
+            <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Sets</p>
+            <p class="text-sm font-bold text-white" x-text="weeklyBuckets.at(-1).totalSets"></p>
           </div>
         </div>
       </template>
     </div>
   </div>
 
-  <!-- ─── Onglet MUSCLES ────────────────────────────────────────────────── -->
+  <!-- ─── Onglet MUSCLES ────────────────────────────────────── -->
   <div x-show="totalSessions > 0 && activeTab === 'muscles'" x-transition>
-    <div class="k-card" style="padding: 16px;">
-      <p class="font-display-v2 font-bold mb-4" style="font-size: 14px; color: var(--k-tx);">Répartition par groupe musculaire</p>
+    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
+      <h2 class="font-display font-bold text-white tracking-tight text-sm mb-4">Répartition par groupe musculaire</h2>
 
       <template x-if="muscles.length === 0">
-        <p class="text-center py-6" style="font-size: 13px; color: var(--k-tx3);">Aucune donnée — vérifie que les exercices ont des muscles renseignés.</p>
+        <p class="text-sm text-gray-500 text-center py-6">Aucune donnée — vérifie que les exercices ont des muscles renseignés.</p>
       </template>
 
       <div x-show="muscles.length > 0" class="space-y-3">
         <template x-for="m in muscles" :key="m.muscle">
           <div>
             <div class="flex items-center justify-between mb-1">
-              <span class="font-display-v2 font-semibold" style="font-size: 13px; color: var(--k-tx);" x-text="muscleLabel(m.muscle)"></span>
-              <span class="font-mono" style="font-size: 12px; color: var(--k-tx3);" x-text="`${Math.round(m.share * 100)}%`"></span>
+              <span class="text-sm font-medium text-white" x-text="muscleLabel(m.muscle)"></span>
+              <span class="text-xs text-gray-500 font-mono" x-text="`${Math.round(m.share * 100)}%`"></span>
             </div>
-            <div class="bar-track">
-              <div class="bar-fill transition-all duration-500" :style="`width: ${Math.round(m.share * 100)}%`"></div>
+            <div class="h-2 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
+              <div class="h-full bg-gradient-to-r from-kinetic-neon to-lime-300 rounded-full transition-all duration-500
+                          shadow-[0_0_8px_rgba(168,255,0,0.4)]"
+                   :style="`width: ${Math.round(m.share * 100)}%`"></div>
             </div>
           </div>
         </template>
@@ -172,24 +179,26 @@
     </div>
   </div>
 
-  <!-- ─── Onglet HEATMAP ───────────────────────────────────────────────── -->
+  <!-- ─── Onglet HEATMAP ──────────────────────────────────────── -->
   <div x-show="totalSessions > 0 && activeTab === 'heatmap'" x-transition>
-    <div class="k-card" style="padding: 16px;">
+    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
       <div class="flex items-center justify-between mb-3">
-        <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);">Activité — 20 semaines</p>
-        <div class="flex items-center gap-1" style="font-size: 9px; color: var(--k-tx3);">
-          <span class="w-3 h-3 rounded-sm inline-block" style="background: var(--k-void); border: 1px solid var(--k-line);"></span>0
-          <span class="w-3 h-3 rounded-sm inline-block ml-1" style="background: oklch(82% 0.28 145 / 0.3);"></span>1
-          <span class="w-3 h-3 rounded-sm inline-block ml-1" style="background: var(--k-p);"></span>2+
+        <h2 class="font-display font-bold text-white tracking-tight text-sm">Activité — 20 semaines</h2>
+        <div class="flex items-center gap-1 text-[9px] text-gray-500">
+          <span class="w-3 h-3 rounded-sm bg-kinetic-ink ring-1 ring-white/10 inline-block"></span>0
+          <span class="w-3 h-3 rounded-sm bg-kinetic-neon/30 inline-block ml-1"></span>1
+          <span class="w-3 h-3 rounded-sm bg-kinetic-neon inline-block ml-1"></span>2+
         </div>
       </div>
 
-      <div class="flex gap-1 mb-1">
+      <!-- Labels jours -->
+      <div class="flex gap-1 mb-1 pl-0">
         <div class="grid grid-rows-7 gap-0.5 mr-1">
           <template x-for="d in ['D','L','M','M','J','V','S']">
-            <span class="flex items-center justify-center" style="width: 12px; height: 12px; font-size: 8px; color: var(--k-tx3);" x-text="d"></span>
+            <span class="text-[8px] text-gray-600 w-3 flex items-center justify-center h-3" x-text="d"></span>
           </template>
         </div>
+        <!-- Grille -->
         <div class="flex gap-0.5 flex-1 overflow-x-auto">
           <template x-for="(week, wi) in heatmapGrid" :key="wi">
             <div class="flex flex-col gap-0.5">
@@ -203,54 +212,54 @@
         </div>
       </div>
 
-      <p class="text-center mt-2" style="font-size: 9px; color: var(--k-tx3);">← passé · futur →</p>
+      <!-- Légende mois -->
+      <p class="text-[9px] text-gray-600 mt-2 text-center">← passé · futur →</p>
 
-      <div class="grid grid-cols-3 gap-2 mt-4 pt-3 text-center" style="border-top: 1px solid var(--k-line);">
+      <!-- Résumé période -->
+      <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-white/5 text-center">
         <div>
-          <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">20 sem.</p>
-          <p class="font-display-v2 font-semibold" style="font-size: 13px; color: var(--k-tx);" x-text="sessions.filter(s => Date.parse(s.startedAt) >= Date.now() - 20*7*86400000).length + ' séances'"></p>
+          <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">20 sem.</p>
+          <p class="text-sm font-bold text-white" x-text="sessions.filter(s => Date.parse(s.startedAt) >= Date.now() - 20*7*86400000).length + ' séances'"></p>
         </div>
         <div>
-          <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Total</p>
-          <p class="font-display-v2 font-semibold" style="font-size: 13px; color: var(--k-tx);" x-text="totalSessions + ' séances'"></p>
+          <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Total</p>
+          <p class="text-sm font-bold text-white" x-text="totalSessions + ' séances'"></p>
         </div>
         <div>
-          <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Régularité</p>
-          <p class="font-display-v2 font-bold" style="font-size: 13px; color: var(--k-p);" x-text="consistency + '%'"></p>
+          <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Régularité</p>
+          <p class="text-sm font-bold text-kinetic-neon" x-text="consistency + '%'"></p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ─── Onglet RECORDS ───────────────────────────────────────────────── -->
+  <!-- ─── Onglet RECORDS ────────────────────────────────────── -->
   <div x-show="totalSessions > 0 && activeTab === 'records'" x-transition>
-    <div class="k-card" style="padding: 16px;">
+    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
       <div class="flex items-center justify-between mb-4">
-        <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);">Records personnels</p>
-        <span class="font-display-v2 font-semibold" style="font-size: 11px; color: var(--k-tx3);" x-text="`${records.length} PR`"></span>
+        <h2 class="font-display font-bold text-white tracking-tight text-sm">Records personnels</h2>
+        <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
+              x-text="`${records.length} PR`"></span>
       </div>
 
       <template x-if="records.length === 0">
-        <p class="text-center py-6" style="font-size: 13px; color: var(--k-tx3);">Pas encore de PR détecté.</p>
+        <p class="text-sm text-gray-500 text-center py-6">Pas encore de PR détecté.</p>
       </template>
 
-      <ul x-show="records.length > 0" style="list-style: none; padding: 0; margin: 0;">
+      <ul x-show="records.length > 0" class="divide-y divide-white/5">
         <template x-for="(pr, i) in records" :key="`${pr.exerciseId}-${pr.achievedAt}`">
-          <li class="flex items-center gap-3 py-3" style="border-bottom: 1px solid var(--k-line);">
-            <div class="flex items-center justify-center flex-shrink-0"
-                 style="width: 32px; height: 32px; border-radius: 99px;"
-                 :style="i === 0
-                   ? 'background: var(--k-p); color: #07070B; box-shadow: 0 0 12px var(--k-p-glow);'
-                   : 'background: var(--k-elevated); border: 1px solid var(--k-line); color: var(--k-tx3);'">
+          <li class="py-3 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                 :class="i === 0 ? 'bg-kinetic-neon text-gray-950 shadow-[0_0_12px_rgba(168,255,0,0.5)]' : 'bg-kinetic-ink ring-1 ring-white/10 text-gray-400'">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L4 14H10L11 22L20 10H14L13 2Z"/></svg>
             </div>
             <div class="flex-1 min-w-0">
-              <p class="font-display-v2 font-semibold truncate" style="font-size: 13px; color: var(--k-tx);" x-text="exerciseName(pr.exerciseId)"></p>
-              <p style="font-size: 11px; color: var(--k-tx3);" x-text="`${pr.weightKg} kg × ${pr.reps} • ${formatDate(pr.achievedAt)}`"></p>
+              <p class="text-sm font-semibold text-white truncate" x-text="exerciseName(pr.exerciseId)"></p>
+              <p class="text-[11px] text-gray-500" x-text="`${pr.weightKg} kg × ${pr.reps} • ${formatDate(pr.achievedAt)}`"></p>
             </div>
             <div class="text-right">
-              <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-e);" x-text="`${formatNumber(pr.e1rmKg, 1)}`"></p>
-              <p class="font-mono" style="font-size: 10px; color: var(--k-tx3);">e1RM kg</p>
+              <p class="text-sm font-display font-black text-kinetic-electric" x-text="`${formatNumber(pr.e1rmKg, 1)}`"></p>
+              <p class="text-[10px] text-gray-500 font-mono">e1RM kg</p>
             </div>
           </li>
         </template>

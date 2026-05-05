@@ -1,25 +1,17 @@
 <div x-data="program" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
 
-  <!-- Header -->
   <div class="flex items-center gap-3 mb-6">
-    <a href="/"
-       class="flex items-center justify-center w-9 h-9 rounded-xl transition-colors flex-shrink-0"
-       style="background: var(--k-surface); color: var(--k-tx3);"
-       onmouseover="this.style.color='var(--k-tx)'"
-       onmouseout="this.style.color='var(--k-tx3)'">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
-      </svg>
+    <a href="/" class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
     </a>
-    <h1 class="font-display-v2 font-bold text-k-tx" style="font-size: 20px; letter-spacing: -0.02em;">Programme</h1>
+    <h1 class="text-2xl font-display font-black tracking-tight text-white">Programme</h1>
   </div>
 
   <!-- Programme actif — semaine -->
-  <div x-show="activeProgram" class="k-card mb-4" style="padding: 16px;">
+  <div x-show="activeProgram" class="bg-kinetic-surface rounded-2xl p-4 mb-4">
     <div class="flex items-center justify-between mb-3">
-      <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx);" x-text="activeProgram?.name"></p>
-      <span class="font-display-v2 font-bold"
-            style="font-size: 10px; padding: 4px 10px; border-radius: 99px; background: oklch(82% 0.28 145 / 0.12); color: var(--k-p); border: 1px solid oklch(82% 0.28 145 / 0.25);"
+      <h2 class="font-semibold text-white" x-text="activeProgram?.name"></h2>
+      <span class="text-xs bg-kinetic-neon/20 text-kinetic-neon px-2 py-1 rounded-full"
             x-text="activeProgram?.splitType?.toUpperCase()?.replace('_',' ')"></span>
     </div>
 
@@ -27,20 +19,14 @@
     <div class="grid grid-cols-7 gap-1 mb-3">
       <template x-for="day in weekDays">
         <div class="flex flex-col items-center">
-          <span class="font-display-v2 font-bold mb-1" style="font-size: 10px; color: var(--k-tx3);" x-text="day.short"></span>
-          <div class="w-full aspect-square rounded-lg flex items-center justify-center font-display-v2 font-bold transition-all"
-               style="font-size: 11px;"
-               :style="{
-                 'bg-true': day.isToday && !day.rest
+          <span class="text-xs text-gray-500 mb-1" x-text="day.short"></span>
+          <div class="w-full aspect-square rounded-lg flex items-center justify-center text-xs font-semibold"
+               :class="{
+                 'bg-kinetic-neon text-gray-950': day.isToday && !day.rest,
+                 'bg-kinetic-elevated text-gray-400': !day.isToday && !day.rest && !day.done,
+                 'bg-kinetic-neon/20 text-kinetic-neon': day.done,
+                 'bg-kinetic-surface text-gray-700': day.rest,
                }"
-               :class="{}"
-               :style="day.isToday && !day.rest
-                 ? 'background: var(--k-p); color: #07070B; box-shadow: 0 0 8px var(--k-p-glow);'
-                 : day.done
-                   ? 'background: oklch(82% 0.28 145 / 0.18); color: var(--k-p);'
-                   : day.rest
-                     ? 'background: var(--k-surface); color: var(--k-tx3);'
-                     : 'background: var(--k-elevated); color: var(--k-tx3);'"
                x-text="day.rest ? '—' : day.focus.charAt(0)">
           </div>
         </div>
@@ -48,41 +34,39 @@
     </div>
 
     <!-- Focus du jour -->
-    <div x-show="todayFocus" style="background: var(--k-elevated); border-radius: 12px; padding: 12px;">
-      <p style="font-size: 11px; color: var(--k-tx3); margin-bottom: 3px;">Aujourd'hui</p>
-      <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);" x-text="todayFocus?.focus"></p>
-      <div class="flex flex-wrap gap-1 mt-2">
+    <div x-show="todayFocus" class="bg-kinetic-elevated/60 rounded-xl p-3">
+      <p class="text-xs text-gray-500 mb-0.5">Aujourd'hui</p>
+      <p class="text-white font-semibold" x-text="todayFocus?.focus"></p>
+      <div class="flex flex-wrap gap-1 mt-1.5">
         <template x-for="muscle in (todayFocus?.muscleGroups ?? [])">
-          <span style="font-size: 11px; background: var(--k-surface); color: var(--k-tx3); padding: 3px 9px; border-radius: 99px; border: 1px solid var(--k-line);"
-                x-text="muscle"></span>
+          <span class="text-xs bg-kinetic-surface text-gray-400 px-2 py-0.5 rounded-full" x-text="muscle"></span>
         </template>
       </div>
     </div>
   </div>
 
   <!-- Choisir un split -->
-  <div class="k-card mb-4" style="padding: 16px;">
-    <p class="font-display-v2 font-bold mb-3" style="font-size: 15px; color: var(--k-tx);">
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4">
+    <h2 class="font-semibold text-white mb-3">
       <span x-show="!activeProgram">Choisir un programme</span>
       <span x-show="activeProgram">Changer de programme</span>
-    </p>
+    </h2>
 
     <div class="space-y-2">
       <template x-for="split in availableSplits">
         <button @click="selectSplit(split.type)"
-                class="w-full text-left transition-all active:scale-[0.98]"
-                style="border-radius: 14px; padding: 12px 14px;"
-                :style="activeProgram?.splitType === split.type
-                  ? 'background: oklch(82% 0.28 145 / 0.1); border: 1px solid var(--k-p);'
-                  : 'background: var(--k-elevated); border: 1px solid var(--k-line);'">
+                class="w-full bg-kinetic-elevated/60 border rounded-xl p-3 text-left transition-colors"
+                :class="activeProgram?.splitType === split.type
+                  ? 'border-kinetic-neon bg-kinetic-neon/10'
+                  : 'border-white/10 hover:border-white/10'">
           <div class="flex items-center justify-between gap-3">
             <div class="min-w-0">
-              <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);" x-text="split.name"></p>
-              <p class="truncate mt-0.5" style="font-size: 12px; color: var(--k-tx3);" x-text="split.description"></p>
+              <p class="text-white font-medium text-sm" x-text="split.name"></p>
+              <p class="text-gray-400 text-xs mt-0.5 truncate" x-text="split.description"></p>
             </div>
             <div class="text-right flex-shrink-0">
-              <p class="font-display-v2 font-bold" style="font-size: 12px; color: var(--k-tx3);" x-text="split.daysPerWeek + 'j/sem'"></p>
-              <p class="font-display-v2 font-bold" style="font-size: 10px; color: var(--k-p);" x-text="split.goal"></p>
+              <p class="text-xs text-gray-400 font-semibold" x-text="split.daysPerWeek + 'j/sem'"></p>
+              <p class="text-[10px] text-kinetic-neon font-semibold" x-text="split.goal"></p>
             </div>
           </div>
         </button>
@@ -91,75 +75,69 @@
   </div>
 
   <!-- Todo list muscu — exercices du jour -->
-  <div x-show="todayExercises.length > 0" class="k-card mb-4" style="padding: 16px;">
-    <p class="font-display-v2 font-bold mb-3" style="font-size: 15px; color: var(--k-tx);">Todo du jour</p>
+  <div x-show="todayExercises.length > 0" class="bg-kinetic-surface rounded-2xl p-4 mb-4">
+    <h2 class="font-semibold text-white mb-3">Todo du jour</h2>
     <div class="space-y-2">
       <template x-for="ex in todayExercises" :key="ex.id">
-        <div class="flex items-center gap-3 transition-opacity"
-             style="padding: 12px 14px; background: var(--k-elevated); border-radius: 13px;"
-             :style="ex.done ? 'opacity: 0.6;' : ''">
+        <div class="flex items-center gap-3 p-3 bg-kinetic-elevated/60 rounded-xl"
+             :class="ex.done ? 'opacity-60' : ''">
           <button @click="toggleExercise(ex.id)"
-                  class="flex-shrink-0 flex items-center justify-center transition-all"
-                  style="width: 24px; height: 24px; border-radius: 99px; border: 2px solid; cursor: pointer;"
-                  :style="ex.done
-                    ? 'border-color: var(--k-p); background: var(--k-p); color: #07070B;'
-                    : 'border-color: var(--k-line); background: transparent;'">
-            <span x-show="ex.done" class="font-display-v2 font-bold" style="font-size: 11px;">✓</span>
+                  class="w-6 h-6 rounded-full border-2 flex-shrink-0 transition-colors flex items-center justify-center"
+                  :class="ex.done
+                    ? 'border-kinetic-neon bg-kinetic-neon text-gray-950'
+                    : 'border-white/10'">
+            <span x-show="ex.done" class="text-xs font-black">✓</span>
           </button>
           <div class="flex-1">
-            <p class="font-display-v2 font-semibold" style="font-size: 14px; color: var(--k-tx);"
-               :style="ex.done ? 'text-decoration: line-through;' : ''"
-               x-text="ex.name"></p>
-            <p style="font-size: 11px; color: var(--k-tx3);" x-text="`${ex.sets}×${ex.targetReps} reps · RPE ${ex.targetRpe}`"></p>
+            <p class="text-white text-sm font-medium" :class="ex.done ? 'line-through' : ''" x-text="ex.name"></p>
+            <p class="text-xs text-gray-500" x-text="`${ex.sets}×${ex.targetReps} reps · RPE ${ex.targetRpe}`"></p>
           </div>
-          <button @click="startExercise(ex)"
-                  class="font-display-v2 font-bold"
-                  style="font-size: 12px; color: var(--k-p); background: none; border: none; cursor: pointer;">
+          <button @click="startExercise(ex)" class="text-xs text-kinetic-neon hover:text-lime-400">
             Démarrer →
           </button>
         </div>
       </template>
     </div>
 
+    <!-- Bouton séance rapide -->
     <button @click="startTodaySession()"
-            class="btn-p w-full mt-3"
-            style="padding: 13px; font-size: 14px;">
+            class="w-full mt-3 py-2.5 bg-kinetic-neon text-gray-950 font-semibold rounded-xl text-sm">
       Démarrer la séance du jour →
     </button>
   </div>
 
   <!-- Génération auto de templates -->
-  <div x-show="activeProgram" class="k-card mb-4" style="padding: 16px;">
+  <div x-show="activeProgram" class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <div class="flex items-start justify-between gap-3 mb-3">
       <div>
-        <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);">Templates auto</p>
-        <p style="font-size: 12px; color: var(--k-tx3); margin-top: 2px;">Génère un template Séances pour chaque jour d'entraînement.</p>
+        <h2 class="font-semibold text-white text-sm">Templates auto</h2>
+        <p class="text-[11px] text-gray-500 mt-0.5">Génère un template Séances pour chaque jour d'entraînement.</p>
       </div>
       <span x-show="generatedCount > 0"
-            class="font-display-v2 font-bold flex-shrink-0"
-            style="font-size: 10px; padding: 3px 9px; border-radius: 99px; background: oklch(82% 0.28 145 / 0.12); color: var(--k-p); border: 1px solid oklch(82% 0.28 145 / 0.25);"
+            class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-kinetic-neon/15 text-kinetic-neon ring-1 ring-kinetic-neon/30 flex-shrink-0"
             x-text="generatedCount + ' générés'"></span>
     </div>
     <button type="button" @click="generateTemplates()"
             :disabled="generating"
-            class="w-full font-display-v2 font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            style="padding: 12px; font-size: 13px; border-radius: 13px; background: rgba(255,122,51,.15); border: 1px solid rgba(255,122,51,.3); color: var(--k-e); cursor: pointer;">
+            class="w-full py-2.5 bg-kinetic-electric/20 hover:bg-kinetic-electric/30 text-kinetic-electric
+                   font-semibold rounded-xl text-sm ring-1 ring-kinetic-electric/30 transition-all
+                   disabled:opacity-50 disabled:cursor-not-allowed">
       <span x-show="!generating">⚡ Générer les templates de séance</span>
       <span x-show="generating">Génération en cours…</span>
     </button>
   </div>
 
   <!-- Progression hebdomadaire -->
-  <div x-show="activeProgram" class="k-card" style="padding: 16px;">
+  <div x-show="activeProgram" class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
     <div class="flex items-center justify-between mb-2">
-      <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx);">Semaine en cours</p>
-      <span class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-p);" x-text="weekProgressPct + '%'"></span>
+      <h2 class="font-semibold text-white">Semaine en cours</h2>
+      <span class="text-sm font-bold text-kinetic-neon" x-text="weekProgressPct + '%'"></span>
     </div>
-    <div class="bar-track mb-2">
-      <div class="bar-fill transition-all duration-500" :style="`width: ${weekProgressPct}%`"></div>
+    <div class="h-2.5 bg-kinetic-elevated rounded-full overflow-hidden">
+      <div class="h-full bg-kinetic-neon rounded-full transition-all duration-500"
+           :style="`width: ${weekProgressPct}%`"></div>
     </div>
-    <p style="font-size: 12px; color: var(--k-tx3);"
+    <p class="text-xs text-gray-500 mt-1.5"
        x-text="`${completedTrainingDays} / ${totalTrainingDays} séances cette semaine`"></p>
   </div>
-
 </div>
