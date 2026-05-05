@@ -109,6 +109,52 @@ h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.02
 
 [x-cloak] { display: none !important; }
 
+/* ─── AUTO-APPLY hairline gradient + tweaks aux patterns existants ───
+   Aucun changement de markup nécessaire. Toutes les cartes
+   (bg-kinetic-surface + rounded-*) reçoivent le traitement k-card.
+─────────────────────────────────────────────────────────────────────── */
+.bg-kinetic-surface.rounded-2xl,
+.bg-kinetic-surface.rounded-3xl,
+.bg-kinetic-surface.rounded-xl,
+.bg-kinetic-surface.rounded-k {
+  position: relative;
+  overflow: hidden;
+}
+.bg-kinetic-surface.rounded-2xl::before,
+.bg-kinetic-surface.rounded-3xl::before,
+.bg-kinetic-surface.rounded-xl::before,
+.bg-kinetic-surface.rounded-k::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.10) 0%, transparent 45%, rgba(255,255,255,0.04) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Numérals stylisés en Space Grotesk pour les valeurs clés */
+.font-display, h1, h2, h3, h4, h5 { font-family: 'Space Grotesk', sans-serif; }
+
+/* Glow accru sur les couleurs néon utilisées en text-* */
+.text-kinetic-neon {
+  text-shadow: 0 0 18px rgb(var(--kinetic-neon) / 0.35);
+}
+.text-kinetic-electric {
+  text-shadow: 0 0 18px rgb(var(--kinetic-electric) / 0.35);
+}
+
+/* Pills/chips existantes (bg-kinetic-neon/10 + ring) → renforcement subtil */
+[class*="bg-kinetic-neon/1"][class*="rounded-full"],
+[class*="bg-kinetic-neon/2"][class*="rounded-full"] {
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: 0.04em;
+}
+
 /* ─── ANIMATIONS ─── */
 @keyframes k-slide-up    { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 @keyframes k-fade-in     { from{opacity:0} to{opacity:1} }
