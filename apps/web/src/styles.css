@@ -1,6 +1,18 @@
+/* ─── Polices ────────────────────────────────────────────────
+   Outfit conservé pour rétrocompat (`font-display` legacy).
+   Space Grotesk + DM Sans = nouveau design v2.
+─────────────────────────────────────────────────────────────── */
 @import '@fontsource/outfit/400.css';
 @import '@fontsource/outfit/700.css';
 @import '@fontsource/outfit/900.css';
+@import '@fontsource/space-grotesk/400.css';
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+@import '@fontsource/dm-sans/400.css';
+@import '@fontsource/dm-sans/500.css';
+@import '@fontsource/dm-sans/600.css';
+@import '@fontsource/dm-sans/700.css';
 
 @tailwind base;
 @tailwind components;
@@ -37,6 +49,48 @@
   --kinetic-electric: 140 140 160;  /* gris argenté */
 }
 
+/* ─── DESIGN V2 — Tokens OKLCH (avec fallbacks hex) ──────────
+   Palette additive : ne remplace PAS les tokens kinetic-* ci-dessus.
+   Permet une migration progressive page par page.
+─────────────────────────────────────────────────────────────── */
+:root {
+  /* Accents primaires : néon vert (plasma) — fallback hex */
+  --k-p:        #A8FF1A;
+  --k-p-dim:    #6BAA00;
+  --k-p-glow:   rgba(168, 255, 26, 0.38);
+  /* Accent secondaire : orange chaud */
+  --k-e:        #FF7A33;
+  --k-e-glow:   rgba(255, 122, 51, 0.42);
+  /* Accent violet (highlights, célébrations) */
+  --k-v:        #9B6BFF;
+  --k-v-glow:   rgba(155, 107, 255, 0.35);
+  /* Surfaces sombres */
+  --k-void:     #07070B;
+  --k-surface:  #0E0E13;
+  --k-elevated: #151519;
+  --k-raised:   #1B1B21;
+  /* Lignes / borders */
+  --k-line:     rgba(255, 255, 255, 0.07);
+  --k-line-hi:  rgba(255, 255, 255, 0.14);
+  /* Texte */
+  --k-tx:  #EEEEF6;
+  --k-tx2: rgba(238, 238, 246, 0.52);
+  --k-tx3: rgba(238, 238, 246, 0.26);
+}
+
+/* OKLCH si supporté — couleurs plus riches sur navigateurs modernes */
+@supports (color: oklch(82% 0.28 145)) {
+  :root {
+    --k-p:        oklch(82% 0.28 145);
+    --k-p-dim:    oklch(58% 0.22 145);
+    --k-p-glow:   oklch(82% 0.28 145 / 0.38);
+    --k-e:        oklch(72% 0.22 35);
+    --k-e-glow:   oklch(72% 0.22 35 / 0.42);
+    --k-v:        oklch(66% 0.26 285);
+    --k-v-glow:   oklch(66% 0.26 285 / 0.35);
+  }
+}
+
 /* ─── Layout iOS-friendly ─────────────────────────────────── */
 html {
   height: -webkit-fill-available;
@@ -45,12 +99,13 @@ body {
   min-height: -webkit-fill-available;
   padding-top:    env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
-  /* Ambient glow : double radial très subtil pour casser le noir uniforme.
-     Néon en haut-gauche, orange en bas-droite — donne de la profondeur
-     sans saturer le contenu. */
+  /* Ambient glow v2 : trois radials OKLCH (avec fallback rgb) pour
+     une profondeur visuelle riche sans saturer le contenu. */
+  background-color: var(--k-void);
   background-image:
-    radial-gradient(circle at 12% 0%,  rgb(var(--kinetic-neon)     / 0.06) 0%, transparent 45%),
-    radial-gradient(circle at 88% 100%, rgb(var(--kinetic-electric) / 0.05) 0%, transparent 45%);
+    radial-gradient(ellipse 70% 50% at 20%   0%, var(--k-p-glow) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 40% at 80%  95%, var(--k-e-glow) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 35% at 55%  50%, var(--k-v-glow) 0%, transparent 65%);
   background-attachment: fixed;
 }
 
@@ -62,7 +117,261 @@ body {
 /* Scrollbar sombre */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2A2A2E; border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--k-elevated); border-radius: 2px; }
 
 /* Cacher les éléments avec x-cloak avant Alpine */
 [x-cloak] { display: none !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   DESIGN V2 — KEYFRAMES
+   Animations partagées par les composants .k-* et utilisables
+   directement via les classes Tailwind animate-{nom}.
+═══════════════════════════════════════════════════════════ */
+@keyframes slide-up    { from { opacity: 0; transform: translateY(16px) }
+                         to   { opacity: 1; transform: translateY(0) } }
+@keyframes slide-right { from { opacity: 0; transform: translateX(-20px) }
+                         to   { opacity: 1; transform: translateX(0) } }
+@keyframes slide-left  { from { opacity: 0; transform: translateX(20px) }
+                         to   { opacity: 1; transform: translateX(0) } }
+@keyframes fade-in     { from { opacity: 0 } to { opacity: 1 } }
+@keyframes scale-in    { from { opacity: 0; transform: scale(.88) }
+                         to   { opacity: 1; transform: scale(1) } }
+@keyframes bar-fill    { from { width: 0% } }
+@keyframes float       { 0%, 100% { transform: translateY(0) }
+                         50%      { transform: translateY(-5px) } }
+@keyframes fire-pulse  { 0%, 100% { filter: drop-shadow(0 0 10px var(--k-e-glow)) }
+                         50%      { filter: drop-shadow(0 0 24px var(--k-e)) } }
+@keyframes ring-pulse  { 0%, 100% { opacity: .5; transform: scale(1) }
+                         50%      { opacity: .9; transform: scale(1.06) } }
+@keyframes neon-pulse  { 0%, 100% { filter: drop-shadow(0 0 10px var(--k-p-glow)) }
+                         50%      { filter: drop-shadow(0 0 22px var(--k-p)) } }
+@keyframes confetti-fall { 0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1 }
+                           100% { transform: translateY(200px)  rotate(720deg); opacity: 0 } }
+@keyframes shine       { 0%   { left: -100% }
+                         100% { left:  200% } }
+@keyframes pr-bounce   { 0%   { transform: scale(0)    rotate(-12deg) }
+                         60%  { transform: scale(1.12) rotate(3deg)   }
+                         100% { transform: scale(1)    rotate(0deg)   } }
+
+/* Respect prefers-reduced-motion : on désactive les animations décoratives */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DESIGN V2 — COUCHE COMPOSANTS
+   Classes utilitaires composites adoptables incrémentalement
+   par les pages (.k-card, .pill, .btn-p, etc.).
+═══════════════════════════════════════════════════════════ */
+@layer components {
+  /* ─── Card avec halo subtil (gradient mask sur le bord) ───── */
+  .k-card {
+    background: var(--k-surface);
+    border: 1px solid var(--k-line);
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .k-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    padding: 1px;
+    background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.09) 0%,
+      transparent 45%,
+      rgba(255, 255, 255, 0.04) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* ─── Pill / badge (tag de statut court) ───────────────── */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 99px;
+    font-family: 'Space Grotesk', ui-sans-serif, sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    padding: 3px 9px;
+    letter-spacing: .04em;
+  }
+  .pill-p { background: rgba(168, 255, 26, 0.13); color: var(--k-p);
+            border: 1px solid rgba(168, 255, 26, 0.28); }
+  .pill-e { background: rgba(255, 122, 51, 0.13); color: var(--k-e);
+            border: 1px solid rgba(255, 122, 51, 0.28); }
+  .pill-v { background: rgba(155, 107, 255, 0.13); color: var(--k-v);
+            border: 1px solid rgba(155, 107, 255, 0.28); }
+
+  @supports (color: oklch(82% 0.28 145)) {
+    .pill-p { background: oklch(82% 0.28 145 / 0.13); border-color: oklch(82% 0.28 145 / 0.28); }
+    .pill-e { background: oklch(72% 0.22  35 / 0.13); border-color: oklch(72% 0.22  35 / 0.28); }
+    .pill-v { background: oklch(66% 0.26 285 / 0.13); border-color: oklch(66% 0.26 285 / 0.28); }
+  }
+
+  /* ─── Barre de progression ─────────────────────────────── */
+  .bar-track {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--k-p-dim), var(--k-p));
+    box-shadow: 0 0 10px var(--k-p-glow);
+    animation: bar-fill .9s cubic-bezier(.34, 1.2, .64, 1) both;
+    transition: width .8s cubic-bezier(.34, 1.2, .64, 1);
+  }
+  .bar-fill-e {
+    background: linear-gradient(90deg, #C44A00, var(--k-e));
+    box-shadow: 0 0 10px var(--k-e-glow);
+  }
+  @supports (color: oklch(82% 0.28 145)) {
+    .bar-fill-e { background: linear-gradient(90deg, oklch(55% 0.18 35), var(--k-e)); }
+  }
+
+  /* ─── Boutons primaires / secondaires ──────────────────── */
+  .btn-p {
+    background: var(--k-p);
+    color: #07070B;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Space Grotesk', ui-sans-serif, sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .15s, filter .15s, box-shadow .15s;
+  }
+  .btn-p:active { transform: scale(.96); }
+  .btn-p:hover  { filter: brightness(1.06); box-shadow: 0 0 20px var(--k-p-glow); }
+  .btn-p:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: var(--k-elevated);
+    color: var(--k-tx2);
+    border: 1px solid var(--k-line);
+    border-radius: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color .2s, color .2s;
+  }
+  .btn-ghost:hover { border-color: var(--k-line-hi); color: var(--k-tx); }
+
+  /* ─── Input ─────────────────────────────────────────────── */
+  .k-input {
+    background: var(--k-elevated);
+    border: 1px solid var(--k-line);
+    border-radius: 12px;
+    color: var(--k-tx);
+    font-family: 'Space Grotesk', ui-sans-serif, sans-serif;
+    font-weight: 600;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .k-input:focus {
+    border-color: var(--k-p-dim);
+    box-shadow: 0 0 0 3px var(--k-p-glow);
+  }
+
+  /* ─── Stat chip ────────────────────────────────────────── */
+  .stat {
+    background: var(--k-elevated);
+    border: 1px solid var(--k-line);
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-label {
+    font-size: 9px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--k-tx3);
+    font-family: 'Space Grotesk', ui-sans-serif, sans-serif;
+  }
+  .stat-val {
+    font-family: 'Space Grotesk', ui-sans-serif, sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  /* ─── Tabs (segmented control) ─────────────────────────── */
+  .tabs {
+    display: flex;
+    gap: 3px;
+    padding: 4px;
+    background: var(--k-elevated);
+    border-radius: 14px;
+    border: 1px solid var(--k-line);
+  }
+  .tab {
+    flex: 1;
+    padding: 7px 4px;
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: center;
+    color: var(--k-tx3);
+    background: none;
+    border: none;
+    font-family: 'DM Sans', ui-sans-serif, sans-serif;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .tab.on {
+    background: var(--k-surface);
+    color: var(--k-tx);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, .5);
+  }
+
+  /* ─── Diagonales décoratives (motif léger sur cards) ──── */
+  .diag {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    border-radius: inherit;
+    opacity: .05;
+  }
+  .diag::before, .diag::after {
+    content: '';
+    position: absolute;
+    width: 1.5px;
+    height: 200%;
+    background: var(--k-p);
+    top: -50%;
+    transform: rotate(18deg);
+  }
+  .diag::before { left: 28%; }
+  .diag::after  { left: 62%; }
+
+  /* ─── Overlay (modals / fullscreen) ────────────────────── */
+  .k-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(7, 7, 11, .92);
+    backdrop-filter: blur(12px);
+  }
+
+  /* ─── Bottom Nav v2 ────────────────────────────────────── */
+  .k-nav {
+    background: rgba(7, 7, 11, .88);
+    backdrop-filter: blur(28px);
+    border-top: 1px solid var(--k-line);
+  }
+}

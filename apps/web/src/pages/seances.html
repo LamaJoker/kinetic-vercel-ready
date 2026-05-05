@@ -1,6 +1,6 @@
 <div x-data="seances" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
 
-  <!-- ── Overlay Nouveau PR ──────────────────────────────────────────────── -->
+  <!-- ── Overlay Nouveau PR ──────────────────────────────────────────────────── -->
   <div x-show="prCelebration !== null"
        x-transition:enter="transition ease-out duration-300"
        x-transition:enter-start="opacity-0 scale-90"
@@ -9,86 +9,99 @@
        x-transition:leave-start="opacity-100 scale-100"
        x-transition:leave-end="opacity-0 scale-90"
        @click="dismissPrCelebration()"
-       class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm cursor-pointer">
-    <div class="relative w-full max-w-xs bg-gradient-to-br from-kinetic-ink via-gray-900 to-kinetic-ink
-                border-2 border-kinetic-electric rounded-3xl p-6 text-center overflow-hidden
-                shadow-[0_0_60px_rgba(255,106,0,0.4)]">
-      <!-- Particules decoratives -->
-      <div class="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
-        <div class="absolute -top-8 -left-8 w-32 h-32 bg-kinetic-electric/20 rounded-full blur-3xl animate-pulse"></div>
-        <div class="absolute -bottom-8 -right-8 w-32 h-32 bg-kinetic-neon/20 rounded-full blur-3xl animate-pulse"></div>
+       class="k-overlay">
+    <div class="relative w-full text-center overflow-hidden"
+         style="max-width: 300px; background: var(--k-surface); border: 2px solid var(--k-e); border-radius: 28px; padding: 28px 24px; box-shadow: 0 0 60px rgba(255,122,51,.4);">
+      <!-- Particules -->
+      <div class="absolute inset-0 pointer-events-none overflow-hidden" style="border-radius: 28px;">
+        <div class="absolute -top-8 -left-8 w-32 h-32 rounded-full blur-3xl animate-pulse"
+             style="background: rgba(255,122,51,.2);"></div>
+        <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full blur-3xl animate-pulse"
+             style="background: oklch(82% 0.28 145 / 0.2);"></div>
       </div>
-      <!-- Contenu -->
       <div class="relative z-10">
-        <div class="text-5xl mb-2 animate-bounce">🏆</div>
-        <p class="text-xs uppercase tracking-[0.25em] font-bold text-kinetic-electric mb-1">Nouveau Record</p>
-        <p class="text-white font-black text-xl mb-3 leading-tight" x-text="prCelebration?.exerciseName"></p>
-        <div class="flex items-center justify-center gap-3 mb-4">
+        <div style="font-size: 52px; margin-bottom: 10px; animation: pr-bounce .5s both;">🏆</div>
+        <p class="font-display-v2 font-bold" style="font-size: 10px; letter-spacing: .25em; text-transform: uppercase; color: var(--k-e); margin-bottom: 4px;">Nouveau Record</p>
+        <p class="font-display-v2 font-bold" style="font-size: 20px; color: var(--k-tx); margin-bottom: 14px; line-height: 1.2;" x-text="prCelebration?.exerciseName"></p>
+        <div class="flex items-center justify-center gap-4 mb-4">
           <div class="text-center">
-            <p class="text-[10px] text-gray-400 uppercase tracking-wider">Charge</p>
-            <p class="text-3xl font-black text-white" x-text="prCelebration?.weightKg + ' kg'"></p>
+            <p style="font-size: 10px; color: var(--k-tx3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px;">Charge</p>
+            <p class="font-display-v2 font-bold" style="font-size: 30px; color: var(--k-tx);" x-text="prCelebration?.weightKg + ' kg'"></p>
           </div>
-          <div class="text-gray-500 text-xl">×</div>
+          <div style="color: var(--k-tx3); font-size: 20px;">×</div>
           <div class="text-center">
-            <p class="text-[10px] text-gray-400 uppercase tracking-wider">Reps</p>
-            <p class="text-3xl font-black text-white" x-text="prCelebration?.reps"></p>
+            <p style="font-size: 10px; color: var(--k-tx3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px;">Reps</p>
+            <p class="font-display-v2 font-bold" style="font-size: 30px; color: var(--k-tx);" x-text="prCelebration?.reps"></p>
           </div>
         </div>
-        <div class="bg-kinetic-electric/15 ring-1 ring-kinetic-electric/40 rounded-2xl px-4 py-2.5 mb-4">
-          <p class="text-[10px] text-gray-400 uppercase tracking-wider">e1RM estimé</p>
-          <p class="text-2xl font-black text-kinetic-electric" x-text="prCelebration?.e1rmKg + ' kg'"></p>
+        <div style="background: rgba(255,122,51,.12); border: 1px solid rgba(255,122,51,.35); border-radius: 16px; padding: 10px 18px; margin-bottom: 16px;">
+          <p style="font-size: 10px; color: var(--k-tx3); text-transform: uppercase; letter-spacing: .08em;">e1RM estimé</p>
+          <p class="font-display-v2 font-bold" style="font-size: 26px; color: var(--k-e);" x-text="prCelebration?.e1rmKg + ' kg'"></p>
         </div>
-        <p class="text-xs text-gray-500">Appuie n'importe où pour fermer</p>
+        <p style="font-size: 12px; color: var(--k-tx3);">Appuie n'importe où pour fermer</p>
       </div>
     </div>
   </div>
 
+  <!-- Header -->
   <div class="flex items-center gap-3 mb-6">
-    <a href="/" class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    <a href="/"
+       class="flex items-center justify-center w-9 h-9 rounded-xl transition-colors flex-shrink-0"
+       style="background: var(--k-surface); color: var(--k-tx3);"
+       onmouseover="this.style.color='var(--k-tx)'"
+       onmouseout="this.style.color='var(--k-tx3)'">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+      </svg>
     </a>
-    <h1 class="text-2xl font-display font-black tracking-tight text-white">Séances</h1>
-    <span class="ml-auto text-xs text-gray-500" x-text="new Date().toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})"></span>
+    <div class="flex-1">
+      <h1 class="font-display-v2 font-bold text-k-tx" style="font-size: 20px; letter-spacing: -0.02em;">Séances</h1>
+      <p class="font-display-v2" style="font-size: 11px; color: var(--k-tx3);"
+         x-text="new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })"></p>
+    </div>
   </div>
 
   <!-- Quick actions -->
   <div class="grid grid-cols-2 gap-3 mb-4">
     <button @click="startFreeSession()"
-            class="bg-kinetic-surface rounded-2xl p-4 text-left hover:bg-kinetic-elevated transition-colors active:scale-95">
-      <p class="text-xs text-gray-500 mb-1">Séance</p>
-      <p class="text-white font-semibold">Libre</p>
-      <p class="text-xs text-gray-500 mt-1">Commencer maintenant</p>
+            class="k-card text-left active:scale-[0.97] transition-transform"
+            style="padding: 16px;">
+      <p style="font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--k-tx3); margin-bottom: 4px;" class="font-display-v2 font-semibold">Séance</p>
+      <p class="font-display-v2 font-bold" style="font-size: 16px; color: var(--k-tx);">Libre</p>
+      <p style="font-size: 12px; color: var(--k-p); margin-top: 2px;">Commencer maintenant</p>
     </button>
 
     <button @click="showTemplates = !showTemplates"
-            class="bg-kinetic-surface rounded-2xl p-4 text-left hover:bg-kinetic-elevated transition-colors active:scale-95">
-      <p class="text-xs text-gray-500 mb-1">Séances</p>
-      <p class="text-white font-semibold">Prédéfinies</p>
-      <p class="text-xs text-gray-500 mt-1" x-text="templates.length + ' modèle(s)'"></p>
+            class="k-card text-left active:scale-[0.97] transition-transform"
+            style="padding: 16px;">
+      <p style="font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--k-tx3); margin-bottom: 4px;" class="font-display-v2 font-semibold">Séances</p>
+      <p class="font-display-v2 font-bold" style="font-size: 16px; color: var(--k-tx);">Prédéfinies</p>
+      <p style="font-size: 12px; color: var(--k-tx3); margin-top: 2px;" x-text="templates.length + ' modèle(s)'"></p>
     </button>
   </div>
 
   <!-- Templates -->
-  <div x-show="showTemplates" x-transition class="bg-kinetic-surface rounded-2xl p-4 mb-4">
+  <div x-show="showTemplates" x-transition class="k-card mb-4" style="padding: 16px;">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="font-semibold text-white">Modèles</h2>
-      <button class="text-xs text-gray-400 hover:text-white" @click="showTemplates = false">Fermer</button>
+      <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);">Modèles</p>
+      <button style="font-size: 12px; color: var(--k-tx3); background: none; border: none; cursor: pointer;" @click="showTemplates = false">Fermer</button>
     </div>
     <template x-if="templates.length === 0">
-      <p class="text-sm text-gray-500">Aucun modèle. Crée une séance puis "Enregistrer comme modèle".</p>
+      <p style="font-size: 13px; color: var(--k-tx3);">Aucun modèle. Crée une séance puis "Enregistrer comme modèle".</p>
     </template>
     <div class="space-y-2" x-show="templates.length > 0">
       <template x-for="t in templates" :key="t.id">
         <div class="flex items-center gap-2">
           <button @click="startFromTemplate(t.id)"
-                  class="flex-1 bg-kinetic-elevated/60 border border-white/10 rounded-xl p-3 text-left hover:bg-kinetic-surface transition-colors">
+                  class="flex-1 text-left transition-colors"
+                  style="background: var(--k-elevated); border: 1px solid var(--k-line); border-radius: 12px; padding: 10px 14px;">
             <div class="flex items-center justify-between">
-              <p class="text-white font-medium" x-text="t.name"></p>
-              <span class="text-xs text-gray-500" x-text="t.exercises.length + ' ex'"></span>
+              <p class="font-display-v2 font-semibold" style="font-size: 14px; color: var(--k-tx);" x-text="t.name"></p>
+              <span style="font-size: 12px; color: var(--k-tx3);" x-text="t.exercises.length + ' ex'"></span>
             </div>
           </button>
           <button @click="deleteTemplate(t.id)"
-                  class="text-gray-400 hover:text-kinetic-electric p-2 text-xs">✕</button>
+                  style="font-size: 13px; color: var(--k-tx3); background: none; border: none; cursor: pointer; padding: 8px;">✕</button>
         </div>
       </template>
     </div>
@@ -96,85 +109,90 @@
 
   <!-- ── Objectif Coach IA ──────────────────────────────────────────────────── -->
   <div class="mb-4">
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-2">Objectif d'entraînement</p>
+    <p class="font-display-v2 font-bold mb-2" style="font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--k-tx3);">Objectif d'entraînement</p>
     <div class="grid grid-cols-3 gap-2">
       <template x-for="(preset, key) in coachGoals" :key="key">
         <button @click="setCoachGoal(key)"
-                class="flex flex-col items-center gap-1 p-3 rounded-xl ring-1 transition-all text-center"
-                :class="coachGoal === key
-                  ? 'bg-kinetic-neon/15 ring-kinetic-neon text-white scale-[1.03] shadow-[0_0_12px_rgba(168,255,0,0.3)]'
-                  : 'bg-kinetic-surface ring-white/10 text-gray-400 hover:ring-white/20 hover:text-gray-200'">
-          <span class="text-2xl" x-text="preset.emoji"></span>
-          <span class="text-xs font-bold leading-tight" x-text="preset.label"></span>
-          <span class="text-[10px] text-gray-500 leading-tight" x-text="preset.rpeZone"></span>
+                class="flex flex-col items-center gap-1 text-center transition-all active:scale-95"
+                style="padding: 12px 8px; border-radius: 14px;"
+                :style="coachGoal === key
+                  ? 'background: oklch(82% 0.28 145 / 0.12); border: 1px solid var(--k-p); color: var(--k-tx); box-shadow: 0 0 12px oklch(82% 0.28 145 / 0.2); transform: scale(1.03);'
+                  : 'background: var(--k-surface); border: 1px solid var(--k-line); color: var(--k-tx3);'">
+          <span style="font-size: 22px;" x-text="preset.emoji"></span>
+          <span class="font-display-v2 font-bold" style="font-size: 11px; line-height: 1.2;" x-text="preset.label"></span>
+          <span style="font-size: 10px; color: var(--k-tx3); line-height: 1.2;" x-text="preset.rpeZone"></span>
         </button>
       </template>
     </div>
-    <!-- Source scientifique de l'objectif actif -->
-    <p class="text-[10px] text-gray-600 mt-1.5 text-center italic"
+    <p class="text-center mt-1.5" style="font-size: 10px; color: var(--k-tx3); font-style: italic;"
        x-text="'Source : ' + coachGoals[coachGoal].science"></p>
   </div>
 
-  <!-- Session en cours -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4">
+  <!-- ── Session en cours ──────────────────────────────────────────────────── -->
+  <div class="k-card mb-4" style="padding: 16px;">
     <div class="flex items-center justify-between mb-3">
       <div>
-        <h2 class="font-semibold text-white">Séance en cours</h2>
-        <p class="text-xs text-gray-500" x-show="!currentSession">Aucune</p>
+        <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx);">Séance en cours</p>
+        <p style="font-size: 12px; color: var(--k-tx3);" x-show="!currentSession">Aucune</p>
         <div x-show="currentSession" class="flex items-center gap-2 mt-0.5">
-          <span class="text-xs font-mono text-white" x-text="elapsedLabel()"></span>
-          <span class="text-gray-400 text-xs">·</span>
-          <span class="text-xs text-gray-400" x-show="estimateCurrentCalories() !== null"
+          <span class="font-mono font-bold" style="font-size: 12px; color: var(--k-tx);" x-text="elapsedLabel()"></span>
+          <span style="color: var(--k-tx3);">·</span>
+          <span style="font-size: 12px; color: var(--k-tx3);" x-show="estimateCurrentCalories() !== null"
                 x-text="'~' + estimateCurrentCalories() + ' kcal'"></span>
         </div>
       </div>
 
-      <!-- Chrono de repos -->
+      <!-- Chrono de repos + boutons -->
       <div x-show="currentSession" class="flex items-center gap-2">
         <!-- Presets repos -->
         <div class="relative">
           <button @click="showRestPresets = !showRestPresets"
-                  class="text-xs px-2 py-1.5 rounded-lg bg-kinetic-elevated text-gray-400 hover:text-white"
+                  class="font-display-v2 font-semibold"
+                  style="font-size: 12px; padding: 6px 10px; border-radius: 9px; background: var(--k-elevated); color: var(--k-tx3); border: 1px solid var(--k-line); cursor: pointer;"
                   x-text="restPresetSec + 's'"></button>
           <div x-show="showRestPresets" @click.outside="showRestPresets = false"
-               class="absolute right-0 top-8 bg-kinetic-surface border border-white/10 rounded-xl p-2 z-10 flex flex-col gap-1 min-w-20">
+               class="absolute right-0 top-9 z-10 flex flex-col gap-1"
+               style="background: var(--k-surface); border: 1px solid var(--k-line); border-radius: 14px; padding: 8px; min-width: 80px;">
             <template x-for="p in restPresets">
               <button @click="restPresetSec = p.sec; showRestPresets = false"
-                      class="text-xs text-gray-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-kinetic-surface text-left"
+                      class="text-left transition-colors"
+                      style="font-size: 12px; color: var(--k-tx2); padding: 6px 10px; border-radius: 9px; background: none; border: none; cursor: pointer;"
                       x-text="p.label"></button>
             </template>
           </div>
         </div>
 
-        <!-- Bouton chrono repos -->
+        <!-- Bouton repos -->
         <button @click="restRemainingSec() > 0 ? stopRest() : startRest()"
-                class="text-xs px-3 py-2 rounded-xl font-bold transition-colors"
-                :class="restRemainingSec() > 0
-                  ? 'bg-kinetic-neon text-gray-950 animate-pulse'
-                  : 'bg-kinetic-elevated text-white hover:bg-white/10'">
+                class="font-display-v2 font-bold transition-all"
+                style="font-size: 12px; padding: 7px 12px; border-radius: 11px; border: none; cursor: pointer;"
+                :style="restRemainingSec() > 0
+                  ? 'background: var(--k-p); color: #07070B; animation: ring-pulse 1.2s ease-in-out infinite;'
+                  : 'background: var(--k-elevated); color: var(--k-tx);'">
           <span x-show="restRemainingSec() === 0">⏱ Repos</span>
           <span x-show="restRemainingSec() > 0" x-text="restLabel()"></span>
         </button>
 
         <button @click="saveCurrentSession()"
                 :disabled="!currentSession || currentEntries.length === 0"
-                class="text-xs px-3 py-2 rounded-xl bg-kinetic-neon text-gray-950 font-semibold
-                       disabled:opacity-40 disabled:cursor-not-allowed">
+                class="btn-p"
+                style="font-size: 12px; padding: 7px 14px;">
           Sauver
         </button>
       </div>
     </div>
 
     <template x-if="!currentSession">
-      <p class="text-sm text-gray-500">Démarre une séance libre ou un modèle.</p>
+      <p style="font-size: 13px; color: var(--k-tx3);">Démarre une séance libre ou un modèle.</p>
     </template>
 
     <div x-show="currentSession" class="space-y-4">
+
       <!-- Ajouter un exercice -->
-      <div class="bg-kinetic-elevated/50 border border-white/10 rounded-xl p-3">
-        <p class="text-xs text-gray-500 mb-2">Ajouter un exercice</p>
+      <div style="background: var(--k-elevated); border: 1px solid var(--k-line); border-radius: 14px; padding: 12px;">
+        <p style="font-size: 11px; color: var(--k-tx3); margin-bottom: 8px;" class="font-display-v2 font-semibold">Ajouter un exercice</p>
         <div class="flex gap-2">
-          <select x-model="selectedExerciseId" class="flex-1 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white">
+          <select x-model="selectedExerciseId" class="k-input flex-1" style="font-size: 14px; padding: 10px 12px;">
             <option value="">Choisir un exercice...</option>
             <template x-for="group in exercisesByGroup" :key="group.category">
               <optgroup :label="group.category">
@@ -186,98 +204,93 @@
           </select>
           <button @click="addExerciseToSession()"
                   :disabled="!selectedExerciseId"
-                  class="px-3 py-2 rounded-xl bg-kinetic-elevated text-white text-sm font-semibold hover:bg-white/10 disabled:opacity-40">
-            +
-          </button>
+                  class="btn-ghost disabled:opacity-40"
+                  style="padding: 10px 16px; font-size: 18px; font-weight: 700;">+</button>
         </div>
       </div>
 
       <!-- Exercices de la séance -->
       <template x-for="entry in currentEntries" :key="entry.exerciseId">
-        <div class="bg-kinetic-elevated/60 border border-white/10 rounded-2xl p-4">
+        <div style="background: var(--k-elevated); border: 1px solid var(--k-line); border-radius: 18px; padding: 16px;">
           <div class="flex items-center justify-between mb-3">
             <div>
-              <p class="text-white font-semibold" x-text="exerciseName(entry.exerciseId)"></p>
-              <p class="text-xs text-gray-500">
+              <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx);" x-text="exerciseName(entry.exerciseId)"></p>
+              <p style="font-size: 12px; color: var(--k-tx3);">
                 <span x-text="entry.sets.length"></span> série(s)
                 <template x-if="pr(entry.exerciseId)">
-                  <span class="ml-2 text-kinetic-electric">PR : <span x-text="pr(entry.exerciseId)?.toFixed(1)"></span> kg e1RM</span>
+                  <span style="color: var(--k-e); margin-left: 6px;">PR : <span x-text="pr(entry.exerciseId)?.toFixed(1)"></span> kg e1RM</span>
                 </template>
               </p>
             </div>
-            <button class="text-xs text-gray-400 hover:text-white" @click="removeExercise(entry.exerciseId)">Retirer</button>
+            <button style="font-size: 12px; color: var(--k-tx3); background: none; border: none; cursor: pointer;"
+                    @click="removeExercise(entry.exerciseId)">Retirer</button>
           </div>
 
           <!-- Inputs nouvelle série -->
-          <div class="grid grid-cols-3 gap-2 mb-2">
+          <div class="grid grid-cols-3 gap-2 mb-3">
             <div>
-              <label class="text-xs text-gray-400 font-medium">Reps</label>
+              <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Reps</label>
               <input type="number" min="1" x-model.number="draft.reps"
-                     class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-white text-sm"/>
+                     class="k-input w-full" style="padding: 10px 12px; font-size: 14px; text-align: center;"/>
             </div>
             <div>
-              <label class="text-xs text-gray-400 font-medium">Kg</label>
+              <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Kg</label>
               <input type="number" min="0" step="0.5" x-model.number="draft.weightKg"
-                     class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-white text-sm"/>
+                     class="k-input w-full" style="padding: 10px 12px; font-size: 14px; text-align: center;"/>
             </div>
             <div>
-              <label class="text-xs text-gray-400 font-medium">RPE (6–10)</label>
+              <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">RPE (6–10)</label>
               <input type="number" min="6" max="10" step="0.5" x-model.number="draft.rpe"
-                     class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-white text-sm"/>
+                     class="k-input w-full" style="padding: 10px 12px; font-size: 14px; text-align: center;"/>
             </div>
           </div>
 
-          <!-- ── Coach IA ────────────────────────────────────────────────── -->
+          <!-- ── Coach IA ────────────────────────────────────────────────────── -->
           <template x-if="coachAdvice(entry.exerciseId)">
-            <div class="mb-3 rounded-xl overflow-hidden ring-1 ring-white/10">
-              <!-- En-tête coach -->
-              <div class="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-900/60 to-kinetic-ink">
-                <span class="text-base">🤖</span>
-                <span class="text-xs font-bold text-white uppercase tracking-wider">Coach IA</span>
-                <span class="ml-auto text-[10px] text-gray-400"
+            <div class="mb-3 overflow-hidden" style="border-radius: 14px; border: 1px solid var(--k-line);">
+              <div class="flex items-center gap-2" style="padding: 8px 12px; background: linear-gradient(90deg, rgba(127,119,221,.25) 0%, var(--k-elevated) 100%);">
+                <span style="font-size: 14px;">🤖</span>
+                <span class="font-display-v2 font-bold" style="font-size: 11px; color: var(--k-tx); text-transform: uppercase; letter-spacing: .08em;">Coach IA</span>
+                <span class="ml-auto" style="font-size: 10px; color: var(--k-tx3);"
                       x-text="coachGoals[coachGoal].emoji + ' ' + coachGoals[coachGoal].label"></span>
               </div>
-              <!-- Conseil principal -->
-              <div class="px-3 py-2 bg-kinetic-elevated/40">
-                <!-- Cible recommandée -->
+              <div style="padding: 10px 12px; background: rgba(255,255,255,.03);">
                 <template x-if="coachAdvice(entry.exerciseId)?.weightKg > 0">
                   <div class="flex items-center gap-3 mb-2">
                     <div class="text-center">
-                      <p class="text-[10px] uppercase tracking-widest text-gray-500">Poids cible</p>
-                      <p class="text-2xl font-black text-white leading-none"
+                      <p style="font-size: 10px; color: var(--k-tx3); text-transform: uppercase; letter-spacing: .06em;">Poids cible</p>
+                      <p class="font-display-v2 font-bold" style="font-size: 24px; color: var(--k-tx); line-height: 1;"
                          x-text="coachAdvice(entry.exerciseId)?.weightKg + ' kg'"></p>
                     </div>
-                    <div class="text-gray-500">×</div>
+                    <div style="color: var(--k-tx3);">×</div>
                     <div class="text-center">
-                      <p class="text-[10px] uppercase tracking-widest text-gray-500">Reps</p>
-                      <p class="text-2xl font-black text-white leading-none"
+                      <p style="font-size: 10px; color: var(--k-tx3); text-transform: uppercase; letter-spacing: .06em;">Reps</p>
+                      <p class="font-display-v2 font-bold" style="font-size: 24px; color: var(--k-tx); line-height: 1;"
                          x-text="coachAdvice(entry.exerciseId)?.reps"></p>
                     </div>
-                    <div class="text-gray-500">@</div>
+                    <div style="color: var(--k-tx3);">@</div>
                     <div class="text-center">
-                      <p class="text-[10px] uppercase tracking-widest text-gray-500">RPE</p>
-                      <p class="text-2xl font-black text-kinetic-electric leading-none"
+                      <p style="font-size: 10px; color: var(--k-tx3); text-transform: uppercase; letter-spacing: .06em;">RPE</p>
+                      <p class="font-display-v2 font-bold" style="font-size: 24px; color: var(--k-e); line-height: 1;"
                          x-text="coachAdvice(entry.exerciseId)?.rpe"></p>
                     </div>
-                    <!-- Bouton appliquer -->
                     <button @click="draft.weightKg = coachAdvice(entry.exerciseId)?.weightKg; draft.reps = coachAdvice(entry.exerciseId)?.reps; draft.rpe = coachAdvice(entry.exerciseId)?.rpe"
-                            class="ml-auto text-xs px-2.5 py-1.5 rounded-lg bg-kinetic-neon text-gray-950 font-bold hover:brightness-110 active:scale-95 flex-shrink-0">
+                            class="btn-p ml-auto flex-shrink-0"
+                            style="font-size: 12px; padding: 7px 12px;">
                       Appliquer
                     </button>
                   </div>
                 </template>
-                <!-- Message conseil -->
-                <p class="text-xs text-gray-300 leading-relaxed"
+                <p style="font-size: 12px; color: var(--k-tx2); line-height: 1.5;"
                    x-text="coachAdvice(entry.exerciseId)?.message"></p>
-                <!-- Source scientifique -->
-                <p class="text-[10px] text-gray-600 italic mt-1"
+                <p style="font-size: 10px; color: var(--k-tx3); font-style: italic; margin-top: 4px;"
                    x-text="'Source : ' + (coachAdvice(entry.exerciseId)?.science ?? '')"></p>
 
-                <!-- Note de périodisation (Coach Avancé — niveau 3+) -->
                 <template x-if="$store.rewards.hasAdvancedCoach && coachAdvice(entry.exerciseId)?.periodizationNote">
-                  <div class="mt-2 flex items-start gap-1.5 bg-purple-900/30 ring-1 ring-purple-500/20 rounded-lg px-2.5 py-2">
-                    <span class="text-xs text-purple-300 font-semibold uppercase tracking-wide mr-1">Périodisation</span>
-                    <p class="text-xs text-purple-200 leading-relaxed"
+                  <div class="flex items-start gap-1.5 mt-2"
+                       style="background: rgba(127,119,221,.18); border: 1px solid rgba(127,119,221,.25); border-radius: 10px; padding: 8px 10px;">
+                    <span class="font-display-v2 font-bold" style="font-size: 10px; color: #A09FDD; text-transform: uppercase; letter-spacing: .06em; flex-shrink: 0; margin-right: 2px;">Périodisation</span>
+                    <p style="font-size: 11px; color: #C2C1EE; line-height: 1.4;"
                        x-text="coachAdvice(entry.exerciseId)?.periodizationNote"></p>
                   </div>
                 </template>
@@ -287,48 +300,53 @@
 
           <!-- Alerte deload -->
           <div x-show="exerciseNeedsDeload(entry.exerciseId)"
-               class="mb-2 flex items-center gap-2 bg-kinetic-electric/10 border border-kinetic-electric/30 rounded-xl px-3 py-2">
-            <span class="text-kinetic-electric text-base">🔴</span>
-            <p class="text-xs text-kinetic-electric font-semibold">Deload recommandé — RPE très élevé sur plusieurs séances sans progression d'e1RM.</p>
+               class="flex items-center gap-2 mb-2"
+               style="background: rgba(255,122,51,.1); border: 1px solid rgba(255,122,51,.3); border-radius: 12px; padding: 9px 12px;">
+            <span style="color: var(--k-e); font-size: 14px;">🔴</span>
+            <p class="font-display-v2 font-semibold" style="font-size: 12px; color: var(--k-e);">Deload recommandé — RPE très élevé sur plusieurs séances sans progression d'e1RM.</p>
           </div>
 
           <div class="flex items-center gap-3 mb-2">
             <button @click="addSet(entry.exerciseId)"
-                    class="flex-shrink-0 px-4 py-2 rounded-xl bg-kinetic-neon text-gray-950 text-sm font-black hover:brightness-110 active:scale-95">
+                    class="btn-p flex-shrink-0"
+                    style="padding: 8px 18px; font-size: 14px;">
               + Série
             </button>
-            <!-- PR potentiel -->
-            <p class="text-xs text-kinetic-electric font-semibold" x-show="isNewPr(entry.exerciseId, draft.weightKg, draft.reps)">
+            <p class="font-display-v2 font-bold" style="font-size: 12px; color: var(--k-e);"
+               x-show="isNewPr(entry.exerciseId, draft.weightKg, draft.reps)">
               ⭐ Nouveau PR !
             </p>
           </div>
-          <!-- Suggestion auto-progression (bloc indépendant, full width) -->
+
+          <!-- Suggestion auto-progression -->
           <template x-if="progressionSuggestion(entry.exerciseId)?.strategy !== 'first_time' && progressionSuggestion(entry.exerciseId) !== null">
-            <div class="bg-kinetic-elevated/60 rounded-xl px-3 py-2 mb-2">
-              <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-0.5">Cible</p>
-              <p class="text-sm text-white font-bold leading-tight">
+            <div style="background: rgba(255,255,255,.04); border-radius: 11px; padding: 10px 12px; margin-bottom: 8px;">
+              <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3); margin-bottom: 3px;">Cible</p>
+              <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx); line-height: 1.3;">
                 <span x-text="(progressionSuggestion(entry.exerciseId)?.suggestedWeight ?? 0) + ' kg × ' + (progressionSuggestion(entry.exerciseId)?.suggestedReps ?? 0)"></span>
-                <span class="text-gray-400 font-normal text-xs ml-1"
+                <span style="color: var(--k-tx3); font-weight: 400; font-size: 12px; margin-left: 4px;"
                       x-text="'@ RPE ' + (progressionSuggestion(entry.exerciseId)?.suggestedRpe ?? 0)"></span>
               </p>
-              <p class="text-xs text-gray-400 mt-0.5 leading-snug"
+              <p style="font-size: 11px; color: var(--k-tx3); margin-top: 3px; line-height: 1.4;"
                  x-text="progressionSuggestion(entry.exerciseId)?.rationale ?? ''"></p>
             </div>
           </template>
 
           <!-- Tableau des séries -->
-          <div x-show="entry.sets.length > 0" class="mt-3 overflow-hidden rounded-xl border border-white/10">
-            <div class="grid grid-cols-5 bg-kinetic-ink text-xs text-gray-500 px-3 py-2">
+          <div x-show="entry.sets.length > 0" class="mt-3 overflow-hidden" style="border-radius: 12px; border: 1px solid var(--k-line);">
+            <div class="grid grid-cols-5 font-display-v2 font-bold"
+                 style="background: var(--k-void); font-size: 11px; color: var(--k-tx3); padding: 7px 12px; letter-spacing: .06em; text-transform: uppercase;">
               <div>#</div><div>Reps</div><div>Kg</div><div>RPE</div><div>e1RM</div>
             </div>
             <template x-for="s in entry.sets" :key="s.setIndex">
-              <div class="grid grid-cols-5 px-3 py-2 text-sm border-t border-white/10"
-                   :class="isSetPr(entry.exerciseId, s.weightKg, s.reps) ? 'bg-kinetic-electric/10' : ''">
-                <div class="text-gray-400" x-text="s.setIndex + 1"></div>
-                <div class="text-white" x-text="s.reps"></div>
-                <div class="text-white" x-text="s.weightKg"></div>
-                <div class="text-white" x-text="s.rpe"></div>
-                <div class="text-kinetic-electric font-medium" x-text="e1rm(s.weightKg, s.reps).toFixed(0)"></div>
+              <div class="grid grid-cols-5"
+                   style="padding: 8px 12px; font-size: 13px; border-top: 1px solid var(--k-line);"
+                   :style="isSetPr(entry.exerciseId, s.weightKg, s.reps) ? 'background: rgba(255,122,51,.07);' : ''">
+                <div style="color: var(--k-tx3);" x-text="s.setIndex + 1"></div>
+                <div style="color: var(--k-tx);" x-text="s.reps"></div>
+                <div style="color: var(--k-tx);" x-text="s.weightKg"></div>
+                <div style="color: var(--k-tx);" x-text="s.rpe"></div>
+                <div class="font-display-v2 font-semibold" style="color: var(--k-e);" x-text="e1rm(s.weightKg, s.reps).toFixed(0)"></div>
               </div>
             </template>
           </div>
@@ -336,15 +354,16 @@
       </template>
 
       <!-- Enregistrer comme modèle -->
-      <div class="bg-kinetic-elevated/50 border border-white/10 rounded-xl p-3">
-        <p class="text-xs text-gray-500 mb-2">Enregistrer comme modèle</p>
+      <div style="background: var(--k-elevated); border: 1px solid var(--k-line); border-radius: 14px; padding: 12px;">
+        <p class="font-display-v2 font-semibold mb-2" style="font-size: 11px; color: var(--k-tx3);">Enregistrer comme modèle</p>
         <div class="flex gap-2">
           <input x-model="templateName"
                  placeholder="Nom du modèle (ex: Push A)"
-                 class="flex-1 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"/>
+                 class="k-input flex-1" style="padding: 10px 12px; font-size: 14px;"/>
           <button @click="saveTemplateFromCurrent()"
                   :disabled="!templateName.trim()"
-                  class="px-3 py-2 rounded-xl bg-kinetic-elevated text-white text-sm font-semibold hover:bg-white/10 disabled:opacity-40">
+                  class="btn-ghost disabled:opacity-40"
+                  style="padding: 10px 14px; font-size: 13px;">
             Enregistrer
           </button>
         </div>
@@ -352,38 +371,41 @@
     </div>
   </div>
 
-  <!-- Historique -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4">
+  <!-- ── Historique ──────────────────────────────────────────────────────────── -->
+  <div class="k-card mb-4" style="padding: 16px;">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="font-semibold text-white">Historique</h2>
-      <span class="text-xs text-gray-500" x-text="sessions.length + ' séance(s)'"></span>
+      <p class="font-display-v2 font-bold" style="font-size: 15px; color: var(--k-tx);">Historique</p>
+      <span class="font-display-v2 font-semibold" style="font-size: 12px; color: var(--k-tx3);" x-text="sessions.length + ' séance(s)'"></span>
     </div>
 
     <template x-if="sessions.length === 0">
-      <p class="text-sm text-gray-500">Aucune séance enregistrée.</p>
+      <p style="font-size: 13px; color: var(--k-tx3);">Aucune séance enregistrée.</p>
     </template>
 
     <div class="space-y-2" x-show="sessions.length > 0">
       <template x-for="s in sessions.slice().reverse().slice(0, 20)" :key="s.id">
-        <div class="bg-kinetic-elevated/60 border border-white/10 rounded-xl overflow-hidden">
+        <div class="overflow-hidden" style="background: var(--k-elevated); border: 1px solid var(--k-line); border-radius: 14px;">
 
-          <!-- Ligne résumé (cliquable pour étendre) -->
+          <!-- Ligne résumé -->
           <button @click="toggleSessionDetail(s.id)"
-                  class="w-full text-left p-3 hover:bg-white/5 active:bg-white/10 transition-colors">
+                  class="w-full text-left transition-colors"
+                  style="padding: 12px 14px;"
+                  onmouseover="this.style.background='rgba(255,255,255,.04)'"
+                  onmouseout="this.style.background='transparent'">
             <div class="flex items-center justify-between gap-2">
-              <p class="text-white font-medium min-w-0 truncate" x-text="s.name"></p>
-              <span class="text-xs text-gray-500 flex-shrink-0" x-text="formatDate(s.startedAt)"></span>
+              <p class="font-display-v2 font-semibold min-w-0 truncate" style="font-size: 14px; color: var(--k-tx);" x-text="s.name"></p>
+              <span class="flex-shrink-0" style="font-size: 11px; color: var(--k-tx3);" x-text="formatDate(s.startedAt)"></span>
             </div>
             <div class="flex items-center justify-between gap-2 mt-1">
-              <p class="text-xs text-gray-500">
+              <p style="font-size: 11px; color: var(--k-tx3);">
                 <span x-text="s.entries.length"></span> exercice(s)
                 <span x-show="s.durationMin" class="mx-1">·</span>
                 <span x-show="s.durationMin" x-text="s.durationMin + ' min'"></span>
                 <span x-show="s.caloriesKcal" class="mx-1">·</span>
                 <span x-show="s.caloriesKcal" x-text="'~' + s.caloriesKcal + ' kcal'"></span>
               </p>
-              <span class="text-xs text-gray-500 transition-transform"
-                    :class="expandedSessionId === s.id ? 'rotate-180' : ''">▾</span>
+              <span style="font-size: 11px; color: var(--k-tx3); transition: transform .2s;"
+                    :style="expandedSessionId === s.id ? 'transform: rotate(180deg)' : ''">▾</span>
             </div>
           </button>
 
@@ -392,36 +414,29 @@
                x-transition:enter="transition ease-out duration-200"
                x-transition:enter-start="opacity-0 -translate-y-1"
                x-transition:enter-end="opacity-100 translate-y-0"
-               class="border-t border-white/10 px-3 pt-3 pb-3 bg-kinetic-ink/40">
+               style="border-top: 1px solid var(--k-line); padding: 12px 14px; background: rgba(255,255,255,.02);">
 
-            <!-- Méta -->
-            <div class="flex items-center justify-between text-[11px] text-gray-500 mb-3">
+            <div class="flex items-center justify-between mb-3" style="font-size: 11px; color: var(--k-tx3);">
               <span x-text="formatDateLong(s.startedAt)"></span>
               <span class="font-mono"
                     x-text="formatTime(s.startedAt) + (s.endedAt ? ' → ' + formatTime(s.endedAt) : '')"></span>
             </div>
 
-            <!-- Liste exercices + sets -->
             <div class="space-y-2 mb-3">
               <template x-for="entry in s.entries" :key="entry.exerciseId">
-                <div class="bg-kinetic-surface/60 rounded-lg p-2.5">
-                  <p class="text-sm font-semibold text-white mb-1.5"
+                <div style="background: rgba(255,255,255,.04); border-radius: 10px; padding: 10px 12px;">
+                  <p class="font-display-v2 font-bold mb-1.5" style="font-size: 13px; color: var(--k-tx);"
                      x-text="exerciseNameOf(entry.exerciseId)"></p>
                   <div class="space-y-1">
                     <template x-for="set in entry.sets" :key="set.setIndex">
-                      <div class="flex items-center justify-between text-xs gap-2">
-                        <span class="text-gray-500 w-6 shrink-0"
-                              x-text="'#' + (set.setIndex + 1)"></span>
-                        <span class="text-white flex-1">
-                          <span class="font-mono font-bold" x-text="set.weightKg + ' kg'"></span>
-                          <span class="text-gray-500 mx-1">×</span>
-                          <span class="font-mono" x-text="set.reps + ' reps'"></span>
-                        </span>
-                        <span class="text-kinetic-electric text-[10px] font-bold w-12 text-right"
+                      <div class="flex items-center justify-between gap-2" style="font-size: 12px;">
+                        <span style="color: var(--k-tx3); width: 20px; flex-shrink: 0;" x-text="'#' + (set.setIndex + 1)"></span>
+                        <span class="flex-1 font-mono font-bold" style="color: var(--k-tx);"
+                              x-text="set.weightKg + ' kg × ' + set.reps + ' reps'"></span>
+                        <span class="font-display-v2 font-bold" style="color: var(--k-e); font-size: 11px; width: 44px; text-align: right;"
                               x-text="'RPE ' + set.rpe"></span>
-                        <span class="text-gray-600 text-[10px] font-mono w-14 text-right"
-                              x-text="setE1rm(set.weightKg, set.reps) + ' kg'"
-                              :title="'e1RM estimé'"></span>
+                        <span class="font-mono" style="color: var(--k-tx3); font-size: 10px; width: 52px; text-align: right;"
+                              x-text="setE1rm(set.weightKg, set.reps) + ' kg'"></span>
                       </div>
                     </template>
                   </div>
@@ -433,7 +448,8 @@
             <div class="flex gap-2">
               <template x-if="confirmDeleteId !== s.id">
                 <button @click="askDeleteSession(s.id)"
-                        class="flex-1 text-xs px-3 py-2 rounded-lg bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30 text-kinetic-electric font-semibold hover:bg-kinetic-electric/20 transition-colors">
+                        class="flex-1 font-display-v2 font-semibold transition-colors"
+                        style="font-size: 12px; padding: 8px 12px; border-radius: 10px; background: rgba(255,122,51,.1); border: 1px solid rgba(255,122,51,.3); color: var(--k-e); cursor: pointer;">
                   🗑 Supprimer
                 </button>
               </template>
@@ -441,12 +457,14 @@
                 <div class="flex-1 flex gap-2">
                   <button @click="cancelDelete()"
                           :disabled="deletingSession"
-                          class="flex-1 text-xs px-3 py-2 rounded-lg bg-kinetic-surface ring-1 ring-white/10 text-gray-300 font-semibold hover:ring-white/20 transition-colors">
+                          class="flex-1 btn-ghost"
+                          style="font-size: 12px; padding: 8px;">
                     Annuler
                   </button>
                   <button @click="deleteSession(s.id)"
                           :disabled="deletingSession"
-                          class="flex-1 text-xs px-3 py-2 rounded-lg bg-kinetic-electric text-white font-bold hover:brightness-110 disabled:opacity-50 transition-all">
+                          class="flex-1 font-display-v2 font-bold transition-all disabled:opacity-50"
+                          style="font-size: 12px; padding: 8px 12px; border-radius: 10px; background: var(--k-e); color: white; border: none; cursor: pointer;">
                     <span x-show="!deletingSession">Confirmer</span>
                     <span x-show="deletingSession">…</span>
                   </button>
@@ -457,19 +475,18 @@
         </div>
       </template>
 
-      <p class="text-[10px] text-gray-600 text-center pt-1"
+      <p class="text-center pt-1" style="font-size: 10px; color: var(--k-tx3);"
          x-show="sessions.length > 20"
          x-text="`+${sessions.length - 20} séance(s) plus anciennes — exporte en JSON pour tout consulter.`"></p>
     </div>
   </div>
 
-  <!-- Progression / Records -->
-  <div class="bg-kinetic-surface rounded-2xl p-4">
-    <h2 class="font-semibold text-white mb-3">Progression & Records</h2>
+  <!-- ── Progression / Records ───────────────────────────────────────────────── -->
+  <div class="k-card" style="padding: 16px;">
+    <p class="font-display-v2 font-bold mb-3" style="font-size: 15px; color: var(--k-tx);">Progression &amp; Records</p>
 
     <div class="flex gap-2 mb-3">
-      <select x-model="progressExerciseId"
-              class="flex-1 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white">
+      <select x-model="progressExerciseId" class="k-input flex-1" style="padding: 10px 12px; font-size: 14px;">
         <option value="">Choisir un exercice...</option>
         <template x-for="group in exercisesByGroup" :key="group.category">
           <optgroup :label="group.category">
@@ -479,8 +496,7 @@
           </optgroup>
         </template>
       </select>
-      <select x-model="progressMetric"
-              class="bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white">
+      <select x-model="progressMetric" class="k-input" style="padding: 10px 12px; font-size: 14px;">
         <option value="e1rm">e1RM</option>
         <option value="weight">Charge max</option>
         <option value="volume">Volume</option>
@@ -488,35 +504,37 @@
     </div>
 
     <template x-if="!progressExerciseId">
-      <p class="text-sm text-gray-500">Sélectionne un exercice pour voir la courbe.</p>
+      <p style="font-size: 13px; color: var(--k-tx3);">Sélectionne un exercice pour voir la courbe.</p>
     </template>
 
     <template x-if="progressExerciseId && progressPoints().length === 0">
-      <p class="text-sm text-gray-500">Pas encore de données pour cet exercice.</p>
+      <p style="font-size: 13px; color: var(--k-tx3);">Pas encore de données pour cet exercice.</p>
     </template>
 
     <div x-show="progressExerciseId && progressPoints().length > 0">
       <!-- Record -->
-      <div class="flex items-center justify-between mb-3 bg-kinetic-electric/10 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-3"
+           style="background: rgba(255,122,51,.1); border: 1px solid rgba(255,122,51,.25); border-radius: 14px; padding: 12px 14px;">
         <div>
-          <p class="text-xs text-gray-500">Record (e1RM)</p>
-          <p class="text-2xl font-black text-kinetic-electric" x-text="progressMax().toFixed(1) + ' kg'"></p>
+          <p style="font-size: 11px; color: var(--k-tx3);">Record (e1RM)</p>
+          <p class="font-display-v2 font-bold" style="font-size: 26px; color: var(--k-e);" x-text="progressMax().toFixed(1) + ' kg'"></p>
         </div>
         <div class="text-right">
-          <p class="text-xs text-gray-500">Dernier</p>
-          <p class="text-lg font-bold text-white" x-text="progressPoints().at(-1)?.y?.toFixed(1) + ' kg'"></p>
+          <p style="font-size: 11px; color: var(--k-tx3);">Dernier</p>
+          <p class="font-display-v2 font-bold" style="font-size: 18px; color: var(--k-tx);" x-text="progressPoints().at(-1)?.y?.toFixed(1) + ' kg'"></p>
         </div>
       </div>
 
-      <div class="bg-kinetic-elevated/60 border border-white/10 rounded-2xl p-3">
+      <div style="background: var(--k-elevated); border: 1px solid var(--k-line); border-radius: 16px; padding: 12px;">
         <div x-html="progressSvg()" class="overflow-hidden"></div>
       </div>
 
-      <div class="mt-2 flex items-center justify-between text-xs text-gray-500">
+      <div class="flex items-center justify-between mt-2" style="font-size: 11px; color: var(--k-tx3);">
         <span x-text="'Min: ' + progressMin().toFixed(1) + ' kg'"></span>
         <span x-text="progressPoints().length + ' sessions'"></span>
         <span x-text="'Max: ' + progressMax().toFixed(1) + ' kg'"></span>
       </div>
     </div>
   </div>
+
 </div>

@@ -2,16 +2,23 @@
 
   <!-- En-tête -->
   <div class="flex items-center gap-3 mb-6">
-    <a href="/" class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface" aria-label="Retour">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    <a href="/"
+       class="flex items-center justify-center w-9 h-9 rounded-xl transition-colors flex-shrink-0"
+       style="background: var(--k-surface); color: var(--k-tx3);"
+       onmouseover="this.style.color='var(--k-tx)'"
+       onmouseout="this.style.color='var(--k-tx3)'"
+       aria-label="Retour">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+      </svg>
     </a>
     <div class="flex-1">
-      <h1 class="text-2xl font-display font-black tracking-tight text-white">Mensurations</h1>
-      <p class="text-xs text-gray-500 mt-0.5">Tour de corps &amp; évolution (cm)</p>
+      <h1 class="font-display-v2 font-bold text-k-tx" style="font-size: 20px; letter-spacing: -0.02em;">Mensurations</h1>
+      <p style="font-size: 11px; color: var(--k-tx3); margin-top: 1px;">Tour de corps &amp; évolution (cm)</p>
     </div>
     <div class="text-right">
-      <p class="text-[10px] uppercase tracking-widest text-gray-600 font-semibold">Entrées</p>
-      <p class="font-display font-black text-lg text-white leading-none" x-text="entries.length"></p>
+      <p class="font-display-v2 font-bold" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Entrées</p>
+      <p class="font-display-v2 font-bold" style="font-size: 20px; color: var(--k-tx); line-height: 1;" x-text="entries.length"></p>
     </div>
   </div>
 
@@ -19,39 +26,35 @@
   <div class="grid grid-cols-3 gap-2 mb-4">
     <template x-for="m in metrics" :key="m.key">
       <button type="button" @click="activeMetric = m.key"
-              class="rounded-2xl p-3 ring-1 transition-all text-left cursor-pointer"
-              :class="activeMetric === m.key
-                ? 'bg-kinetic-elevated ring-white/20'
-                : 'bg-kinetic-surface ring-white/5 hover:ring-white/10'">
-        <p class="text-[9px] uppercase tracking-widest font-bold mb-1 truncate transition-colors"
-           :style="`color: ${hasData(m.key) ? m.color : '#4B5563'}`"
+              class="text-left transition-all"
+              style="border-radius: 14px; padding: 12px;"
+              :style="activeMetric === m.key
+                ? 'background: var(--k-elevated); border: 1px solid rgba(255,255,255,.15);'
+                : 'background: var(--k-surface); border: 1px solid var(--k-line);'">
+        <p class="font-display-v2 font-bold mb-1 truncate"
+           style="font-size: 9px; text-transform: uppercase; letter-spacing: .08em;"
+           :style="`color: ${hasData(m.key) ? m.color : 'var(--k-tx3)'}`"
            x-text="m.label"></p>
-        <p class="font-display font-black text-base text-white leading-none"
+        <p class="font-display-v2 font-bold" style="font-size: 16px; color: var(--k-tx); line-height: 1;"
            x-text="currentValue(m.key) !== null ? currentValue(m.key) : '—'"></p>
-        <p x-show="currentValue(m.key) !== null" class="text-[9px] mt-0.5 font-mono"
-           :class="metricDelta(m.key) > 0 ? 'text-kinetic-electric'
-             : metricDelta(m.key) < 0 ? 'text-kinetic-neon'
-             : 'text-gray-600'"
+        <p x-show="currentValue(m.key) !== null" class="font-mono" style="font-size: 9px; margin-top: 2px;"
+           :style="metricDelta(m.key) > 0 ? 'color: var(--k-e);' : metricDelta(m.key) < 0 ? 'color: var(--k-p);' : 'color: var(--k-tx3);'"
            x-text="metricDelta(m.key) !== null
              ? (metricDelta(m.key) > 0 ? '+' : '') + metricDelta(m.key).toFixed(1)
              : ''"></p>
-        <p x-show="currentValue(m.key) === null" class="text-[9px] mt-0.5 text-gray-700">non mesuré</p>
+        <p x-show="currentValue(m.key) === null" style="font-size: 9px; margin-top: 2px; color: var(--k-tx3);">non mesuré</p>
       </button>
     </template>
   </div>
 
   <!-- Section graphique -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-
-    <!-- Titre + sélecteur période -->
+  <div class="k-card mb-4" style="padding: 16px;">
     <div class="flex items-start justify-between mb-3">
       <div>
-        <h2 class="font-display font-bold text-white tracking-tight text-sm"
-            x-text="activeMetricDef.label"></h2>
-        <p class="text-xs mt-0.5"
-           :class="metricDelta(activeMetric) > 0 ? 'text-kinetic-electric'
-             : metricDelta(activeMetric) < 0 ? 'text-kinetic-neon'
-             : 'text-gray-600'"
+        <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);"
+           x-text="activeMetricDef.label"></p>
+        <p style="font-size: 12px; margin-top: 2px;"
+           :style="metricDelta(activeMetric) > 0 ? 'color: var(--k-e);' : metricDelta(activeMetric) < 0 ? 'color: var(--k-p);' : 'color: var(--k-tx3);'"
            x-show="metricDelta(activeMetric) !== null"
            x-text="metricDelta(activeMetric) !== null
              ? (metricDelta(activeMetric) > 0 ? '↑ +' : '↓ ')
@@ -61,50 +64,49 @@
       <div class="flex gap-1 flex-shrink-0 ml-2">
         <template x-for="p in [{v:30,l:'30j'},{v:90,l:'90j'},{v:365,l:'1an'},{v:9999,l:'Tout'}]" :key="p.v">
           <button type="button" @click="period = p.v"
-                  class="text-[10px] px-2 py-1 rounded-lg font-semibold transition-all"
-                  :class="period === p.v
-                    ? 'bg-kinetic-electric text-white shadow-[0_0_10px_rgba(255,106,0,0.4)]'
-                    : 'text-gray-500 hover:text-gray-300'">
+                  class="font-display-v2 font-bold transition-all"
+                  style="font-size: 10px; padding: 4px 8px; border-radius: 8px; border: none; cursor: pointer;"
+                  :style="period === p.v
+                    ? 'background: var(--k-e); color: white; box-shadow: 0 0 10px rgba(255,122,51,.3);'
+                    : 'background: transparent; color: var(--k-tx3);'">
             <span x-text="p.l"></span>
           </button>
         </template>
       </div>
     </div>
 
-    <!-- Graphique ou état vide -->
     <template x-if="chartPoints().length >= 2">
       <div x-html="chartSvg()" class="w-full"></div>
     </template>
     <template x-if="chartPoints().length < 2">
       <div class="flex flex-col items-center justify-center py-8 text-center">
-        <svg class="w-10 h-10 text-gray-700 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-10 h-10 mb-3" style="color: var(--k-line);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                 d="M3 6h18M3 6l2 14h14L21 6M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M10 11v5M14 11v5"/>
         </svg>
-        <p class="text-sm text-gray-500">
-          Pas assez de données pour <span class="text-white font-medium" x-text="activeMetricDef.label"></span>
+        <p style="font-size: 13px; color: var(--k-tx3);">
+          Pas assez de données pour <span style="color: var(--k-tx); font-weight: 600;" x-text="activeMetricDef.label"></span>
         </p>
-        <p class="text-xs text-gray-600 mt-1">Enregistre au moins 2 mesures</p>
+        <p style="font-size: 12px; color: var(--k-tx3); margin-top: 4px;">Enregistre au moins 2 mesures</p>
       </div>
     </template>
 
-    <!-- Mini-stats si données -->
     <template x-if="chartPoints().length >= 2">
-      <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/5">
+      <div class="grid grid-cols-3 gap-2 mt-3 pt-3" style="border-top: 1px solid var(--k-line);">
         <div class="text-center">
-          <p class="text-[9px] uppercase tracking-widest text-gray-600 font-semibold">Départ</p>
-          <p class="font-display font-black text-sm text-white mt-0.5"
+          <p class="font-display-v2 font-bold" style="font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Départ</p>
+          <p class="font-display-v2 font-bold mt-0.5" style="font-size: 14px; color: var(--k-tx);"
              x-text="chartPoints()[0] ? chartPoints()[0].y.toFixed(1) + ' cm' : '—'"></p>
         </div>
         <div class="text-center">
-          <p class="text-[9px] uppercase tracking-widest text-gray-600 font-semibold">Actuel</p>
-          <p class="font-display font-black text-sm mt-0.5"
+          <p class="font-display-v2 font-bold" style="font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Actuel</p>
+          <p class="font-display-v2 font-bold mt-0.5" style="font-size: 14px;"
              :style="`color: ${activeMetricDef.color}`"
              x-text="currentValue(activeMetric) !== null ? currentValue(activeMetric).toFixed(1) + ' cm' : '—'"></p>
         </div>
         <div class="text-center">
-          <p class="text-[9px] uppercase tracking-widest text-gray-600 font-semibold">Mesures</p>
-          <p class="font-display font-black text-sm text-white mt-0.5"
+          <p class="font-display-v2 font-bold" style="font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">Mesures</p>
+          <p class="font-display-v2 font-bold mt-0.5" style="font-size: 14px; color: var(--k-tx);"
              x-text="chartPoints().length"></p>
         </div>
       </div>
@@ -112,203 +114,177 @@
   </div>
 
   <!-- Formulaire d'enregistrement -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-4">Enregistrer</p>
+  <div class="k-card mb-4" style="padding: 16px;">
+    <p class="font-display-v2 font-bold mb-4" style="font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--k-tx3);">Enregistrer</p>
 
     <!-- Haut du corps -->
-    <p class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5">
-      <span class="w-1 h-1 rounded-full bg-kinetic-teal inline-block"></span> Haut du corps
+    <p class="font-display-v2 font-bold mb-2 flex items-center gap-1.5" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">
+      <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: #00C2A0;"></span> Haut du corps
     </p>
     <div class="grid grid-cols-2 gap-3 mb-4">
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">Cou (cm)</label>
+        <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Cou (cm)</label>
         <input type="number" x-model.number="fNeck" min="20" max="70" step="0.5"
-               placeholder="38"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+               placeholder="38" class="k-input w-full" style="padding: 10px 12px; font-size: 14px;"/>
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">Épaules (cm)</label>
+        <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Épaules (cm)</label>
         <input type="number" x-model.number="fShoulders" min="70" max="170" step="0.5"
-               placeholder="115"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+               placeholder="115" class="k-input w-full" style="padding: 10px 12px; font-size: 14px;"/>
       </div>
       <div class="col-span-2">
-        <label class="text-xs text-gray-500 mb-1 block">Poitrine (cm)</label>
+        <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Poitrine (cm)</label>
         <input type="number" x-model.number="fChest" min="50" max="160" step="0.5"
-               placeholder="92"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-neon/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+               placeholder="92" class="k-input w-full" style="padding: 10px 12px; font-size: 14px;"/>
       </div>
     </div>
 
     <!-- Bras -->
-    <p class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5">
-      <span class="w-1 h-1 rounded-full bg-kinetic-gold inline-block"></span> Bras
+    <p class="font-display-v2 font-bold mb-2 flex items-center gap-1.5" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">
+      <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: #FFD166;"></span> Bras
     </p>
     <div class="grid grid-cols-2 gap-3 mb-4">
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">Bras gauche (cm)</label>
+        <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Bras gauche (cm)</label>
         <input type="number" x-model.number="fLeftBicep" min="15" max="65" step="0.5"
-               placeholder="36"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-gold/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+               placeholder="36" class="k-input w-full" style="padding: 10px 12px; font-size: 14px;"/>
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">Bras droit (cm)</label>
+        <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Bras droit (cm)</label>
         <input type="number" x-model.number="fRightBicep" min="15" max="65" step="0.5"
-               placeholder="36"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-gold/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+               placeholder="36" class="k-input w-full" style="padding: 10px 12px; font-size: 14px;"/>
       </div>
     </div>
 
     <!-- Milieu -->
-    <p class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5">
-      <span class="w-1 h-1 rounded-full bg-kinetic-electric inline-block"></span> Milieu
+    <p class="font-display-v2 font-bold mb-2 flex items-center gap-1.5" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">
+      <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: var(--k-e);"></span> Milieu
     </p>
     <div class="grid grid-cols-2 gap-3 mb-4">
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">Taille (cm)</label>
+        <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Taille (cm)</label>
         <input type="number" x-model.number="fWaist" min="40" max="160" step="0.5"
-               placeholder="80"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-electric/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+               placeholder="80" class="k-input w-full" style="padding: 10px 12px; font-size: 14px;"/>
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">Hanches (cm)</label>
+        <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Hanches (cm)</label>
         <input type="number" x-model.number="fHips" min="50" max="170" step="0.5"
-               placeholder="96"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-purple/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+               placeholder="96" class="k-input w-full" style="padding: 10px 12px; font-size: 14px;"/>
       </div>
     </div>
 
     <!-- Jambes -->
-    <p class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5">
-      <span class="w-1 h-1 rounded-full bg-kinetic-coral inline-block"></span> Jambes
+    <p class="font-display-v2 font-bold mb-2 flex items-center gap-1.5" style="font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--k-tx3);">
+      <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: #FF6B6B;"></span> Jambes
     </p>
     <div class="grid grid-cols-2 gap-3 mb-4">
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">Cuisse gauche (cm)</label>
+        <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Cuisse gauche (cm)</label>
         <input type="number" x-model.number="fLeftThigh" min="25" max="100" step="0.5"
-               placeholder="58"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-coral/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+               placeholder="58" class="k-input w-full" style="padding: 10px 12px; font-size: 14px;"/>
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">Cuisse droite (cm)</label>
+        <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Cuisse droite (cm)</label>
         <input type="number" x-model.number="fRightThigh" min="25" max="100" step="0.5"
-               placeholder="58"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-coral/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+               placeholder="58" class="k-input w-full" style="padding: 10px 12px; font-size: 14px;"/>
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">Mollet gauche (cm)</label>
+        <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Mollet gauche (cm)</label>
         <input type="number" x-model.number="fLeftCalf" min="15" max="65" step="0.5"
-               placeholder="34"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+               placeholder="34" class="k-input w-full" style="padding: 10px 12px; font-size: 14px;"/>
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">Mollet droit (cm)</label>
+        <label class="font-display-v2 font-semibold block mb-1" style="font-size: 11px; color: var(--k-tx3);">Mollet droit (cm)</label>
         <input type="number" x-model.number="fRightCalf" min="15" max="65" step="0.5"
-               placeholder="34"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+               placeholder="34" class="k-input w-full" style="padding: 10px 12px; font-size: 14px;"/>
       </div>
     </div>
 
-    <!-- Note -->
     <input x-model="fNote"
            placeholder="Note (optionnel — ex: matin à jeun)"
-           class="w-full bg-kinetic-ink border border-white/10 focus:border-white/20
-                  rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors mb-4"/>
+           class="k-input w-full mb-4" style="padding: 11px 13px; font-size: 14px;"/>
 
     <button type="button" @click="addEntry()"
             :disabled="!hasFormData"
-            class="w-full py-3 bg-kinetic-neon text-gray-950 font-bold rounded-xl text-sm
-                   shadow-[0_0_20px_rgba(168,255,0,0.3)] hover:shadow-[0_0_28px_rgba(168,255,0,0.5)]
-                   disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all">
+            class="btn-p w-full disabled:opacity-40 disabled:cursor-not-allowed"
+            style="padding: 14px; font-size: 15px;">
       Enregistrer les mensurations
     </button>
   </div>
 
   <!-- Historique -->
-  <div class="bg-kinetic-surface rounded-2xl ring-1 ring-white/5 overflow-hidden">
-    <div class="flex items-center justify-between p-4 border-b border-white/5">
-      <h2 class="font-display font-bold text-white tracking-tight text-sm">Historique</h2>
-      <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
+  <div class="k-card overflow-hidden mb-4" style="padding: 0;">
+    <div class="flex items-center justify-between" style="padding: 16px; border-bottom: 1px solid var(--k-line);">
+      <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);">Historique</p>
+      <span class="font-display-v2 font-semibold" style="font-size: 11px; color: var(--k-tx3);"
             x-text="entries.length + ' entrée' + (entries.length > 1 ? 's' : '')"></span>
     </div>
 
     <template x-if="entries.length === 0">
-      <div class="p-10 text-center">
-        <svg class="w-12 h-12 text-gray-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div style="padding: 40px; text-align: center;">
+        <svg class="w-12 h-12 mx-auto mb-3" style="color: var(--k-line);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                 d="M3 6h18M3 6l2 14h14L21 6M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M10 11v5M14 11v5"/>
         </svg>
-        <p class="text-sm text-gray-500 font-medium">Aucune mensuration</p>
-        <p class="text-xs text-gray-600 mt-1">Commence à te suivre pour voir tes progrès</p>
+        <p class="font-display-v2 font-semibold" style="font-size: 13px; color: var(--k-tx3);">Aucune mensuration</p>
+        <p style="font-size: 12px; color: var(--k-tx3); margin-top: 4px;">Commence à te suivre pour voir tes progrès</p>
       </div>
     </template>
 
-    <ul x-show="entries.length > 0" class="divide-y divide-white/5">
+    <ul x-show="entries.length > 0" style="list-style: none; padding: 0; margin: 0;">
       <template x-for="entry in entries.slice().reverse().slice(0, 30)" :key="entry.id">
-        <li class="px-4 py-3.5">
-          <div class="flex items-center justify-between mb-1.5">
-            <p class="text-sm font-semibold text-white" x-text="formatDate(entry.date)"></p>
+        <li style="padding: 12px 16px; border-bottom: 1px solid var(--k-line);">
+          <div class="flex items-center justify-between mb-1">
+            <p class="font-display-v2 font-semibold" style="font-size: 13px; color: var(--k-tx);" x-text="formatDate(entry.date)"></p>
             <button type="button" @click="removeEntry(entry.id)"
-                    class="p-1.5 text-gray-600 hover:text-kinetic-electric rounded-lg hover:bg-kinetic-ink transition-colors"
+                    style="padding: 6px; color: var(--k-tx3); background: none; border: none; cursor: pointer; border-radius: 8px;"
                     aria-label="Supprimer">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </button>
           </div>
-          <p class="text-[11px] text-gray-500 leading-relaxed" x-text="entrySummary(entry)"></p>
-          <p x-show="entry.note" class="text-[11px] text-gray-600 italic mt-0.5" x-text="entry.note"></p>
+          <p style="font-size: 11px; color: var(--k-tx3); line-height: 1.5;" x-text="entrySummary(entry)"></p>
+          <p x-show="entry.note" style="font-size: 11px; color: var(--k-tx3); font-style: italic; margin-top: 2px;" x-text="entry.note"></p>
         </li>
       </template>
     </ul>
   </div>
 
-  <!-- ── Photos de progression ────────────────────────────────────────────── -->
-  <div class="mt-4 bg-kinetic-surface rounded-2xl ring-1 ring-white/5 overflow-hidden">
+  <!-- Photos de progression -->
+  <div class="k-card overflow-hidden" style="padding: 0;">
     <button type="button" @click="showPhotos = !showPhotos"
-            class="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
+            class="w-full flex items-center justify-between transition-colors"
+            style="padding: 16px; background: none; border: none; cursor: pointer;"
+            onmouseover="this.style.background='rgba(255,255,255,.03)'"
+            onmouseout="this.style.background='transparent'">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-xl bg-kinetic-neon/10 flex items-center justify-center text-base">📸</div>
+        <div class="flex items-center justify-center" style="width: 34px; height: 34px; border-radius: 10px; background: oklch(82% 0.28 145 / 0.1); font-size: 16px;">📸</div>
         <div class="text-left">
-          <p class="text-sm font-bold text-white">Photos de progression</p>
-          <p class="text-[10px] text-gray-500 mt-0.5" x-text="photos.length + ' photo' + (photos.length > 1 ? 's' : '')"></p>
+          <p class="font-display-v2 font-bold" style="font-size: 14px; color: var(--k-tx);">Photos de progression</p>
+          <p style="font-size: 11px; color: var(--k-tx3); margin-top: 1px;" x-text="photos.length + ' photo' + (photos.length > 1 ? 's' : '')"></p>
         </div>
       </div>
-      <span class="text-gray-500 text-sm transition-transform duration-200"
-            :class="showPhotos ? 'rotate-180' : ''">▾</span>
+      <span style="color: var(--k-tx3); font-size: 13px; transition: transform .2s;"
+            :style="showPhotos ? 'transform: rotate(180deg)' : ''">▾</span>
     </button>
 
     <div x-show="showPhotos"
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 -translate-y-2"
          x-transition:enter-end="opacity-100 translate-y-0"
-         class="border-t border-white/5 p-4">
+         style="border-top: 1px solid var(--k-line); padding: 16px;">
 
-      <!-- Bouton photo -->
       <button type="button" @click="takePhoto()"
               :disabled="takingPhoto"
-              class="w-full flex items-center justify-center gap-2 py-3 rounded-xl
-                     bg-kinetic-neon/10 ring-1 ring-kinetic-neon/30 text-kinetic-neon
-                     font-semibold text-sm hover:bg-kinetic-neon/20 transition-all
-                     disabled:opacity-50 disabled:cursor-not-allowed mb-4">
+              class="w-full flex items-center justify-center gap-2 font-display-v2 font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+              style="padding: 12px; border-radius: 14px; font-size: 13px; background: oklch(82% 0.28 145 / 0.1); border: 1px solid oklch(82% 0.28 145 / 0.25); color: var(--k-p); cursor: pointer;">
         <span x-show="!takingPhoto">📷 Prendre une photo</span>
         <span x-show="takingPhoto">⏳ Chargement…</span>
       </button>
 
-      <!-- Galerie -->
       <template x-if="photos.length === 0">
-        <p class="text-sm text-gray-500 text-center py-4">
+        <p class="text-center py-4" style="font-size: 13px; color: var(--k-tx3);">
           Prends des photos pour suivre visuellement ta progression dans le temps.
         </p>
       </template>
@@ -316,30 +292,30 @@
       <div x-show="photos.length > 0" class="grid grid-cols-3 gap-2">
         <template x-for="photo in photosDesc.slice(0, 12)" :key="photo.id">
           <button type="button" @click="selectedPhotoId = selectedPhotoId === photo.id ? null : photo.id"
-                  class="relative aspect-square rounded-xl overflow-hidden ring-1 ring-white/10
-                         hover:ring-kinetic-neon/50 transition-all group">
+                  class="relative aspect-square overflow-hidden transition-all group"
+                  style="border-radius: 12px; border: 1px solid var(--k-line);">
             <img :src="photo.base64" :alt="formatPhotoDate(photo.takenAt)"
                  class="w-full h-full object-cover"/>
             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end">
-              <p class="text-[9px] text-white/70 p-1.5 leading-none opacity-0 group-hover:opacity-100 transition-opacity"
+              <p class="text-white/70 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                 style="font-size: 9px; line-height: 1;"
                  x-text="formatPhotoDate(photo.takenAt)"></p>
             </div>
           </button>
         </template>
       </div>
 
-      <!-- Photo sélectionnée en grand -->
-      <div x-show="selectedPhotoId !== null"
-           x-transition
-           class="mt-3 rounded-2xl overflow-hidden ring-1 ring-white/10">
+      <div x-show="selectedPhotoId !== null" x-transition
+           class="mt-3 overflow-hidden" style="border-radius: 16px; border: 1px solid var(--k-line);">
         <template x-for="photo in photos.filter(p => p.id === selectedPhotoId)" :key="photo.id">
           <div>
             <img :src="photo.base64" :alt="formatPhotoDate(photo.takenAt)"
                  class="w-full object-contain max-h-72 bg-black"/>
-            <div class="p-3 flex items-center justify-between">
-              <p class="text-xs text-gray-400" x-text="formatPhotoDate(photo.takenAt)"></p>
+            <div class="flex items-center justify-between" style="padding: 12px;">
+              <p style="font-size: 12px; color: var(--k-tx3);" x-text="formatPhotoDate(photo.takenAt)"></p>
               <button type="button" @click="deletePhoto(photo.id)"
-                      class="text-xs text-kinetic-electric font-semibold hover:text-red-400 transition-colors px-3 py-1.5 rounded-lg bg-kinetic-electric/10 ring-1 ring-kinetic-electric/20">
+                      class="font-display-v2 font-semibold transition-colors"
+                      style="font-size: 12px; padding: 6px 12px; border-radius: 9px; background: rgba(255,122,51,.1); border: 1px solid rgba(255,122,51,.25); color: var(--k-e); cursor: pointer;">
                 🗑 Supprimer
               </button>
             </div>
@@ -347,7 +323,7 @@
         </template>
       </div>
 
-      <p x-show="photos.length > 12" class="text-[10px] text-gray-600 text-center mt-2"
+      <p x-show="photos.length > 12" class="text-center mt-2" style="font-size: 11px; color: var(--k-tx3);"
          x-text="`+${photos.length - 12} plus ancien(s)`"></p>
     </div>
   </div>
