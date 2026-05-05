@@ -1,6 +1,11 @@
+/* ─── Polices ────────────────────────────────────────────────
+   Outfit conservé pour rétrocompat (`font-display`).
+   Space Grotesk + DM Sans = layer v2 (chargé via Google Fonts).
+─────────────────────────────────────────────────────────────── */
 @import '@fontsource/outfit/400.css';
 @import '@fontsource/outfit/700.css';
 @import '@fontsource/outfit/900.css';
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -9,32 +14,46 @@
 /* ─── Thèmes de couleur (récompense niveau 7) ─────────────────
    Format : R G B (entiers séparés par espaces) pour compatibilité
    avec les modificateurs d'opacité Tailwind (bg-kinetic-neon/20…).
-   Le thème par défaut (⚡ Électrique) est défini sur :root.
 ─────────────────────────────────────────────────────────────── */
 :root,
 [data-theme="electrique"] {
-  --kinetic-neon:     168 255 0;    /* lime vert */
-  --kinetic-electric: 255 106 0;    /* orange */
+  --kinetic-neon:     168 255 26;   /* lime vert v2 — plus saturé */
+  --kinetic-electric: 255 122 51;   /* orange chaud v2 */
 }
 
 [data-theme="cyber"] {
-  --kinetic-neon:     0 224 255;    /* cyan */
-  --kinetic-electric: 0 112 255;    /* bleu électrique */
+  --kinetic-neon:     0 224 255;
+  --kinetic-electric: 0 112 255;
 }
 
 [data-theme="violet"] {
-  --kinetic-neon:     192 96 255;   /* violet */
-  --kinetic-electric: 255 64 160;   /* rose magenta */
+  --kinetic-neon:     192 96 255;
+  --kinetic-electric: 255 64 160;
 }
 
 [data-theme="phoenix"] {
-  --kinetic-neon:     255 210 0;    /* or */
-  --kinetic-electric: 255 60 50;    /* rouge vif */
+  --kinetic-neon:     255 210 0;
+  --kinetic-electric: 255 60 50;
 }
 
 [data-theme="fantome"] {
-  --kinetic-neon:     220 220 230;  /* blanc cassé */
-  --kinetic-electric: 140 140 160;  /* gris argenté */
+  --kinetic-neon:     220 220 230;
+  --kinetic-electric: 140 140 160;
+}
+
+/* ─── Tokens design v2 — surfaces/lignes/texte ──────────────── */
+:root {
+  --k-void:     #07070B;
+  --k-surface:  #0E0E13;
+  --k-elevated: #151519;
+  --k-raised:   #1B1B21;
+  --k-line:     rgba(255, 255, 255, 0.07);
+  --k-line-hi:  rgba(255, 255, 255, 0.14);
+  --k-tx:       #EEEEF6;
+  --k-tx2:      rgba(238, 238, 246, 0.62);
+  --k-tx3:      rgba(238, 238, 246, 0.32);
+  --k-p-glow:   rgb(var(--kinetic-neon) / 0.42);
+  --k-e-glow:   rgb(var(--kinetic-electric) / 0.42);
 }
 
 /* ─── Layout iOS-friendly ─────────────────────────────────── */
@@ -45,13 +64,14 @@ body {
   min-height: -webkit-fill-available;
   padding-top:    env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
-  /* Ambient glow : double radial très subtil pour casser le noir uniforme.
-     Néon en haut-gauche, orange en bas-droite — donne de la profondeur
-     sans saturer le contenu. */
+  background-color: var(--k-void);
+  /* Ambient glow v2 : radial plus prononcé en haut, accent orange discret en bas. */
   background-image:
-    radial-gradient(circle at 12% 0%,  rgb(var(--kinetic-neon)     / 0.06) 0%, transparent 45%),
-    radial-gradient(circle at 88% 100%, rgb(var(--kinetic-electric) / 0.05) 0%, transparent 45%);
+    radial-gradient(ellipse 90% 55% at 50% -10%, rgb(var(--kinetic-neon) / 0.10) 0%, transparent 60%),
+    radial-gradient(circle at 88% 100%, rgb(var(--kinetic-electric) / 0.06) 0%, transparent 50%);
   background-attachment: fixed;
+  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  color: var(--k-tx);
 }
 
 /* Désactiver tap highlight iOS */
@@ -66,3 +86,145 @@ body {
 
 /* Cacher les éléments avec x-cloak avant Alpine */
 [x-cloak] { display: none !important; }
+
+/* ─── Layer components — overrides v2 sur classes legacy ─────
+   Améliore l'apparence de toutes les pages SANS modifier le HTML.
+─────────────────────────────────────────────────────────────── */
+@layer components {
+
+  /* font-display = Space Grotesk en v2 (était Outfit) */
+  .font-display {
+    font-family: 'Space Grotesk', 'Outfit', ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.015em;
+  }
+
+  /* Surfaces — gradient subtil + bordure + soft shadow */
+  .bg-kinetic-ink {
+    background: var(--k-void) !important;
+  }
+  .bg-kinetic-surface {
+    background: linear-gradient(180deg, var(--k-surface) 0%, #0B0B10 100%) !important;
+    border: 1px solid var(--k-line);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.04) inset,
+      0 8px 24px rgba(0,0,0,0.45);
+  }
+  .bg-kinetic-elevated {
+    background: var(--k-elevated) !important;
+    border: 1px solid var(--k-line);
+  }
+
+  /* Couleurs accent — plus vives via filter glow */
+  .text-kinetic-neon {
+    color: rgb(var(--kinetic-neon)) !important;
+    filter: drop-shadow(0 0 10px var(--k-p-glow));
+  }
+  .text-kinetic-electric {
+    color: rgb(var(--kinetic-electric)) !important;
+    filter: drop-shadow(0 0 8px var(--k-e-glow));
+  }
+  .text-kinetic-purple {
+    color: #B6AEFF !important;
+  }
+  .text-kinetic-teal {
+    color: #2EE5C2 !important;
+  }
+  .text-kinetic-coral {
+    color: #FF8585 !important;
+  }
+  .text-kinetic-gold {
+    color: #FFDB7E !important;
+  }
+
+  /* Boutons gradient néon (bg-kinetic-neon utilisé sur les CTA principaux) */
+  .bg-kinetic-neon:not(.text-kinetic-neon) {
+    background: linear-gradient(135deg,
+      rgb(var(--kinetic-neon)) 0%,
+      rgb(var(--kinetic-neon) / 0.85) 100%) !important;
+    box-shadow:
+      0 0 20px var(--k-p-glow),
+      0 0 1px rgba(255,255,255,0.4) inset;
+    color: #07070B !important;
+  }
+  .bg-kinetic-electric:not(.text-kinetic-electric) {
+    background: linear-gradient(135deg,
+      rgb(var(--kinetic-electric)) 0%,
+      rgb(var(--kinetic-electric) / 0.85) 100%) !important;
+    box-shadow: 0 0 18px var(--k-e-glow);
+    color: #07070B !important;
+  }
+
+  /* Bordures — pickup le néon */
+  .border-kinetic-neon {
+    border-color: rgb(var(--kinetic-neon)) !important;
+    box-shadow: 0 0 12px var(--k-p-glow);
+  }
+  .border-kinetic-electric {
+    border-color: rgb(var(--kinetic-electric)) !important;
+  }
+
+  /* Inputs : fond sombre uniforme + focus néon */
+  input, select, textarea {
+    background-color: var(--k-elevated);
+    color: var(--k-tx);
+    border: 1px solid var(--k-line);
+    border-radius: 12px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: rgb(var(--kinetic-neon) / 0.6);
+    box-shadow: 0 0 0 3px rgb(var(--kinetic-neon) / 0.15);
+  }
+
+  /* Cards arrondies déjà présentes (rounded-2xl, rounded-3xl) — on
+     les rend cohérentes avec un soft glow au hover sur desktop. */
+  @media (hover: hover) {
+    .rounded-2xl.bg-kinetic-surface:hover,
+    .rounded-3xl.bg-kinetic-surface:hover {
+      border-color: var(--k-line-hi);
+      transition: border-color .25s ease;
+    }
+  }
+
+  /* Nav du bas : effet glass + glow sur l'item actif (text-kinetic-neon) */
+  nav.fixed.bottom-0,
+  nav[class*="bottom-0"] {
+    background: rgba(7,7,11,0.78);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border-top: 1px solid var(--k-line);
+  }
+}
+
+/* ─── Animations v2 ─────────────────────────────────────────── */
+@keyframes k-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+@keyframes k-pulse-glow {
+  0%, 100% { filter: drop-shadow(0 0 10px var(--k-p-glow)); }
+  50%      { filter: drop-shadow(0 0 22px var(--k-p-glow)); }
+}
+@keyframes k-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes k-slide-done {
+  0%   { transform: translateX(0);  opacity: 1;   }
+  60%  { transform: translateX(6px); opacity: 0.8; }
+  100% { transform: translateX(0);  opacity: 0.6; }
+}
+
+.animate-float       { animation: k-float 3.2s ease-in-out infinite; }
+.animate-pulse-glow  { animation: k-pulse-glow 2.4s ease-in-out infinite; }
+.animate-fade-in     { animation: k-fade-in .35s ease both; }
+.animate-slide-up    { animation: k-fade-in .42s cubic-bezier(.2,.8,.2,1) both; }
+.animate-slide-done  { animation: k-slide-done .35s cubic-bezier(0.4, 0, 1, 1) forwards; }
+
+/* Le néon des éléments majeurs respire en permanence */
+.text-kinetic-neon.font-display,
+h1 .text-kinetic-neon,
+h2 .text-kinetic-neon {
+  animation: k-pulse-glow 3s ease-in-out infinite;
+}

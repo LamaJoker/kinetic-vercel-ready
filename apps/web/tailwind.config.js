@@ -22,7 +22,12 @@ export default {
         'kinetic-elevated': '#1A1A1D',   // panneaux internes (formulaires)
       },
       fontFamily: {
-        display: ['Outfit', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Space Grotesk"', 'Outfit', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans:    ['"DM Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
+      boxShadow: {
+        'glow-neon':     '0 0 20px rgb(var(--kinetic-neon) / 0.42)',
+        'glow-electric': '0 0 18px rgb(var(--kinetic-electric) / 0.42)',
       },
       scale: { '98': '0.98' },
       keyframes: {
