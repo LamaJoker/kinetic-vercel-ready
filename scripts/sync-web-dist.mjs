@@ -28,18 +28,30 @@ async function ensureSpaEntrypoints(dir) {
   const indexPath = resolve(dir, 'index.html');
   if (!(await exists(indexPath))) return;
 
+  // Routes SPA — DOIT matcher exactement les clés de ROUTES dans router.ts.
+  // Sans copie d'index.html à ces chemins, Vercel renvoie 404 (la rewrite
+  // SPA du vercel.json n'est pas prioritaire face à cleanUrls + routes
+  // statiques manquantes).
   const pages = [
     'onboarding',
     'seances',
     'vitalite',
     'profile',
     'login',
+    'auth-callback',
+    'bodyweight',
+    'mensurations',
+    'nutrition',
+    'program',
+    'progression',
   ];
 
   for (const p of pages) {
     await cp(indexPath, resolve(dir, `${p}.html`));
   }
 
+  // Compat ancien chemin /auth/callback (au cas où d'anciens magic links
+  // ou config Supabase pointent encore dessus).
   const authDir = resolve(dir, 'auth');
   await mkdir(authDir, { recursive: true });
   await cp(indexPath, resolve(authDir, 'callback.html'));
