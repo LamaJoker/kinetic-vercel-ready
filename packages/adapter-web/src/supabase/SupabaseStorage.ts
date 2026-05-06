@@ -39,19 +39,28 @@ export class SupabaseStorage implements StoragePort {
   }
 
   async remove(key: StorageKey): Promise<void> {
-    await this.client
+    const { error } = await this.client
       .from('user_storage')
       .delete()
       .eq('user_id', this.userId)
       .eq('key', key);
+
+    if (error) {
+      console.error('[SupabaseStorage] remove failed:', error.message);
+      throw new Error(error.message);
+    }
   }
 
   async keys(): Promise<readonly StorageKey[]> {
-    const { data } = await this.client
+    const { data, error } = await this.client
       .from('user_storage')
       .select('key')
       .eq('user_id', this.userId);
 
+    if (error) {
+      console.error('[SupabaseStorage] keys failed:', error.message);
+      throw new Error(error.message);
+    }
     return (data ?? []).map((row) => row.key);
   }
 
@@ -63,19 +72,28 @@ export class SupabaseStorage implements StoragePort {
    * sync (N+1 problem). Falls back to full keys() scan on first sync (no lastSyncAt).
    */
   async keysSince(since: string): Promise<readonly StorageKey[]> {
-    const { data } = await this.client
+    const { data, error } = await this.client
       .from('user_storage')
       .select('key')
       .eq('user_id', this.userId)
       .gte('updated_at', since);
 
+    if (error) {
+      console.error('[SupabaseStorage] keysSince failed:', error.message);
+      throw new Error(error.message);
+    }
     return (data ?? []).map((row) => row.key);
   }
 
   async clear(): Promise<void> {
-    await this.client
+    const { error } = await this.client
       .from('user_storage')
       .delete()
       .eq('user_id', this.userId);
+
+    if (error) {
+      console.error('[SupabaseStorage] clear failed:', error.message);
+      throw new Error(error.message);
+    }
   }
 }

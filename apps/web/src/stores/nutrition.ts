@@ -100,29 +100,47 @@ export function nutritionStore() {
     },
 
     async addMealItem(mealName: string, food: FoodEntry, grams: number): Promise<void> {
-      const deps  = await getDeps();
-      const today = todayIso();
-      const existing = this.todayLog.find((m) => m.mealName === mealName);
-      if (existing) {
-        existing.items.push({ food, grams });
-        this.todayLog = [...this.todayLog];
-      } else {
-        this.todayLog = [...this.todayLog, {
-          id: crypto.randomUUID(), mealName,
-          items: [{ food, grams }], loggedAt: new Date().toISOString(),
-        }];
+      try {
+        const deps  = await getDeps();
+        const today = todayIso();
+        // Mutation via spread, sans push() sur le proxy Alpine — évite que
+        // IDB voie un Proxy non-clonable (DataCloneError sur Safari/Firefox).
+        const existing = this.todayLog.find((m) => m.mealName === mealName);
+        if (existing) {
+          this.todayLog = this.todayLog.map((m) =>
+            m.mealName !== mealName ? m :
+            { ...m, items: [...m.items, { food, grams }] },
+          );
+        } else {
+          this.todayLog = [...this.todayLog, {
+            id: crypto.randomUUID(), mealName,
+            items: [{ food, grams }], loggedAt: new Date().toISOString(),
+          }];
+        }
+        await deps.storage.set(KEY_LOG(today), this.todayLog);
+      } catch (err) {
+        console.error('[nutrition] addMealItem failed:', err);
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'error', message: 'Impossible d\'ajouter cet aliment. Réessaie.' },
+        }));
       }
-      await deps.storage.set(KEY_LOG(today), this.todayLog);
     },
 
     async removeMealItem(mealName: string, idx: number): Promise<void> {
-      const deps  = await getDeps();
-      const today = todayIso();
-      this.todayLog = this.todayLog.map((m) =>
-        m.mealName !== mealName ? m :
-        { ...m, items: m.items.filter((_, i) => i !== idx) },
-      );
-      await deps.storage.set(KEY_LOG(today), this.todayLog);
+      try {
+        const deps  = await getDeps();
+        const today = todayIso();
+        this.todayLog = this.todayLog.map((m) =>
+          m.mealName !== mealName ? m :
+          { ...m, items: m.items.filter((_, i) => i !== idx) },
+        );
+        await deps.storage.set(KEY_LOG(today), this.todayLog);
+      } catch (err) {
+        console.error('[nutrition] removeMealItem failed:', err);
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'error', message: 'Impossible de retirer cet aliment. Réessaie.' },
+        }));
+      }
     },
   };
 }
