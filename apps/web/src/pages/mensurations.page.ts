@@ -147,20 +147,26 @@ export function mensurations() {
     // ── Persistence ───────────────────────────────────────────
 
     async init(): Promise<void> {
-      const deps = await getDeps();
-      const stored = await deps.storage.get(STORAGE_KEY);
-      this.entries = Array.isArray(stored) ? (stored as MeasurementEntry[]) : [];
+      try {
+        const deps = await getDeps();
+        const [stored, storedMeta] = await Promise.all([
+          deps.storage.get(STORAGE_KEY),
+          deps.storage.get<unknown[]>(PHOTOS_KEY),
+        ]);
+        this.entries = Array.isArray(stored) ? (stored as MeasurementEntry[]) : [];
 
-      // FIX C3: photos stockées par clé séparée (évite le dépassement du seuil 1 MB par entrée)
-      const storedMeta = await deps.storage.get<unknown[]>(PHOTOS_KEY);
-      if (Array.isArray(storedMeta) && storedMeta.length > 0) {
-        const first = storedMeta[0] as Record<string, unknown>;
-        if ('base64' in first) {
-          // Migration : ancien format (base64 inline) → nouveau format (clés séparées)
-          await this._migratePhotos(storedMeta as ProgressPhoto[], deps);
-        } else {
-          this.photos = await this._loadPhotos(storedMeta as PhotoMeta[], deps);
+        // Photos stockées par clé séparée (évite le dépassement du seuil 1 MB par entrée)
+        if (Array.isArray(storedMeta) && storedMeta.length > 0) {
+          const first = storedMeta[0] as Record<string, unknown>;
+          if ('base64' in first) {
+            // Migration : ancien format (base64 inline) → nouveau format (clés séparées)
+            await this._migratePhotos(storedMeta as ProgressPhoto[], deps);
+          } else {
+            this.photos = await this._loadPhotos(storedMeta as PhotoMeta[], deps);
+          }
         }
+      } catch (err) {
+        console.error('[mensurations] init failed:', err);
       }
     },
 
@@ -202,14 +208,24 @@ export function mensurations() {
       return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
-          const scale = Math.min(1, maxPx / Math.max(img.width || 1, img.height || 1));
-          const w = Math.round(img.width * scale);
-          const h = Math.round(img.height * scale);
-          const canvas = document.createElement('canvas');
-          canvas.width  = w;
-          canvas.height = h;
-          canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', quality));
+          try {
+            const scale = Math.min(1, maxPx / Math.max(img.width || 1, img.height || 1));
+            const w = Math.round(img.width * scale);
+            const h = Math.round(img.height * scale);
+            const canvas = document.createElement('canvas');
+            canvas.width  = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              // Canvas 2D context blocked (rare : configurations no-canvas) → fallback original
+              resolve(dataUrl);
+              return;
+            }
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          } catch (err) {
+            reject(err);
+          }
         };
         img.onerror = () => reject(new Error('Impossible de charger l\'image'));
         img.src = dataUrl;
@@ -310,7 +326,7 @@ export function mensurations() {
       const next = this.photos.filter(p => p.id !== id);
       try {
         const deps = await getDeps();
-        // FIX C3: supprimer aussi la clé de données séparée
+        // Supprimer aussi la clé de données séparée
         await deps.storage.remove(photoDataKey(id));
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const meta: PhotoMeta[] = next.map(({ base64: _b, ...m }) => m);
@@ -319,6 +335,9 @@ export function mensurations() {
         if (this.selectedPhotoId === id) this.selectedPhotoId = null;
       } catch (err) {
         console.error('[mensurations] deletePhoto failed:', err);
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'error', message: 'Échec suppression de la photo. Réessaie.' },
+        }));
       }
     },
 
@@ -377,6 +396,9 @@ export function mensurations() {
         this.entries = next;
       } catch (err) {
         console.error('[mensurations] removeEntry failed:', err);
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'error', message: 'Échec suppression. Réessaie.' },
+        }));
       }
     },
 

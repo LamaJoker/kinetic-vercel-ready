@@ -85,12 +85,19 @@ export function goalsStore() {
     },
 
     async save(): Promise<void> {
-      const deps = await getDeps();
-      await deps.storage.set(KEY_GOALS, {
-        targetSessions:  this.targetSessions,
-        targetTonnageKg: this.targetTonnageKg,
-        xpAwardedWeek:   this.xpAwardedWeek,
-      });
+      try {
+        const deps = await getDeps();
+        await deps.storage.set(KEY_GOALS, {
+          targetSessions:  this.targetSessions,
+          targetTonnageKg: this.targetTonnageKg,
+          xpAwardedWeek:   this.xpAwardedWeek,
+        });
+      } catch (err) {
+        console.error('[goals] save failed:', err);
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'error', message: 'Échec sauvegarde des objectifs. Réessaie.' },
+        }));
+      }
     },
 
     async _awardBonus(deps: Awaited<ReturnType<typeof getDeps>>): Promise<void> {

@@ -36,26 +36,32 @@ export function profile() {
     storageLabel:     '—',
 
     async init(): Promise<void> {
-      const deps = await getDeps();
+      try {
+        const deps = await getDeps();
 
-      const profileData = await deps.storage.get<ProfileShape>('kinetic:profile');
-      if (profileData && typeof profileData === 'object') {
-        this.displayName      = profileData.displayName ?? '';
-        this.displayNameInput = this.displayName;
+        // Lectures parallèles : 3 round-trips IDB → 1 batch
+        const [profileData, streakData, stats] = await Promise.all([
+          deps.storage.get<ProfileShape>('kinetic:profile'),
+          deps.storage.get<StreakShape>('kinetic:streak'),
+          deps.storage.get<StatsShape>('kinetic:stats'),
+        ]);
+
+        if (profileData && typeof profileData === 'object') {
+          this.displayName      = profileData.displayName ?? '';
+          this.displayNameInput = this.displayName;
+        }
+        if (streakData && typeof streakData === 'object') {
+          this.streak     = streakData.count ?? 0;
+          this.bestStreak = streakData.best  ?? 0;
+        }
+        if (stats && typeof stats === 'object') {
+          this.tasksCompleted = stats.tasksCompleted ?? 0;
+        }
+
+        await this._refreshStorageUsage();
+      } catch (err) {
+        console.error('[profile] init failed:', err);
       }
-
-      const streakData = await deps.storage.get<StreakShape>('kinetic:streak');
-      if (streakData && typeof streakData === 'object') {
-        this.streak     = streakData.count ?? 0;
-        this.bestStreak = streakData.best  ?? 0;
-      }
-
-      const stats = await deps.storage.get<StatsShape>('kinetic:stats');
-      if (stats && typeof stats === 'object') {
-        this.tasksCompleted = stats.tasksCompleted ?? 0;
-      }
-
-      await this._refreshStorageUsage();
     },
 
     async _refreshStorageUsage(): Promise<void> {
@@ -93,13 +99,20 @@ export function profile() {
 
     async saveName(): Promise<void> {
       const name = this.displayNameInput.trim().slice(0, 40);
-      this.displayName = name;
-      const deps = await getDeps();
-      const profileData = (await deps.storage.get<ProfileShape>('kinetic:profile')) ?? {};
-      await deps.storage.set('kinetic:profile', { ...profileData, displayName: name });
-      const now = new Date();
-      this.savedAt = `Sauvegardé à ${now.getHours()}h${String(now.getMinutes()).padStart(2,'0')}`;
-      setTimeout(() => { this.savedAt = ''; }, 3000);
+      try {
+        const deps = await getDeps();
+        const profileData = (await deps.storage.get<ProfileShape>('kinetic:profile')) ?? {};
+        await deps.storage.set('kinetic:profile', { ...profileData, displayName: name });
+        this.displayName = name;
+        const now = new Date();
+        this.savedAt = `Sauvegardé à ${now.getHours()}h${String(now.getMinutes()).padStart(2,'0')}`;
+        setTimeout(() => { this.savedAt = ''; }, 3000);
+      } catch (err) {
+        console.error('[profile] saveName failed:', err);
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'error', message: 'Échec sauvegarde du nom. Réessaie.' },
+        }));
+      }
     },
 
     async exportJson(): Promise<void> {
@@ -184,14 +197,21 @@ export function profile() {
 
     async doReset(): Promise<void> {
       this.showResetModal = false;
-      const deps = await getDeps();
-      // Clear all storage — les stores Alpine se rechargent proprement au reload
-      await deps.storage.clear();
-      window.dispatchEvent(new CustomEvent('kinetic:notify', {
-        detail: { kind: 'success', message: 'Données réinitialisées ✓' },
-      }));
-      // Reload complet pour repartir de zéro (tous les stores Alpine sont réinitialisés)
-      setTimeout(() => { window.location.reload(); }, 1200);
+      try {
+        const deps = await getDeps();
+        // Clear all storage — les stores Alpine se rechargent proprement au reload
+        await deps.storage.clear();
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'success', message: 'Données réinitialisées ✓' },
+        }));
+        // Reload complet pour repartir de zéro
+        setTimeout(() => { window.location.reload(); }, 1200);
+      } catch (err) {
+        console.error('[profile] doReset failed:', err);
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'error', message: 'Échec de la réinitialisation. Recharge la page et réessaie.' },
+        }));
+      }
     },
   };
 }
