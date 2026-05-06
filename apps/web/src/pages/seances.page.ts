@@ -194,9 +194,14 @@ export function seances() {
         }
 
         // ── Auto-démarrer depuis le programme du jour ─────────────────────
-        const autoTemplateId = sessionStorage.getItem('kinetic:program:auto-template');
+        // sessionStorage peut throw en mode privé / WebView restreint
+        let autoTemplateId: string | null = null;
+        try {
+          autoTemplateId = sessionStorage.getItem('kinetic:program:auto-template');
+          if (autoTemplateId) sessionStorage.removeItem('kinetic:program:auto-template');
+        } catch { /* sessionStorage indisponible — on saute silencieusement */ }
+
         if (autoTemplateId) {
-          sessionStorage.removeItem('kinetic:program:auto-template');
           const t = this.templates.find(x => x.id === autoTemplateId);
           if (t) {
             this.startFromTemplate(t.id);

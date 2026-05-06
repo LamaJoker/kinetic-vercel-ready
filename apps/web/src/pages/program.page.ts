@@ -213,15 +213,22 @@ export function program() {
     },
 
     async init(): Promise<void> {
-      const deps = await getDeps();
-      const stored = await deps.storage.get<ActiveProgram>('kinetic:program:active');
-      if (stored) this.activeProgram = stored;
-      const completed = await deps.storage.get<number[]>('kinetic:program:completedDays:' + this.weekKey());
-      if (completed) this.completedDayIds = completed;
-      const todo = await deps.storage.get<Record<string, boolean>>('kinetic:program:todoStatus:' + this.todayKey());
-      if (todo) this.todoStatus = todo;
-      const genCount = await deps.storage.get<number>('kinetic:program:generatedCount');
-      if (typeof genCount === 'number') this.generatedCount = genCount;
+      try {
+        const deps = await getDeps();
+        // Lectures parallèles : 4 round-trips IDB → 1 batch
+        const [stored, completed, todo, genCount] = await Promise.all([
+          deps.storage.get<ActiveProgram>('kinetic:program:active'),
+          deps.storage.get<number[]>('kinetic:program:completedDays:' + this.weekKey()),
+          deps.storage.get<Record<string, boolean>>('kinetic:program:todoStatus:' + this.todayKey()),
+          deps.storage.get<number>('kinetic:program:generatedCount'),
+        ]);
+        if (stored) this.activeProgram = stored;
+        if (completed) this.completedDayIds = completed;
+        if (todo) this.todoStatus = todo;
+        if (typeof genCount === 'number') this.generatedCount = genCount;
+      } catch (err) {
+        console.error('[program] init failed:', err);
+      }
     },
 
     async generateTemplates(): Promise<void> {
@@ -312,7 +319,6 @@ export function program() {
     },
 
     async selectSplit(type: ActiveProgram['splitType']): Promise<void> {
-      const deps = await getDeps();
       const def = SPLIT_DEFINITIONS[type];
       const prog: ActiveProgram = {
         id: crypto.randomUUID(),
@@ -320,28 +326,40 @@ export function program() {
         createdAt: new Date().toISOString(),
         active: true,
       };
-      this.activeProgram = prog;
-      await deps.storage.set('kinetic:program:active', prog);
-      window.dispatchEvent(new CustomEvent('kinetic:notify', {
-        detail: { kind: 'success', message: 'Programme activé ✓' },
-      }));
+      try {
+        const deps = await getDeps();
+        await deps.storage.set('kinetic:program:active', prog);
+        this.activeProgram = prog;
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'success', message: 'Programme activé ✓' },
+        }));
+      } catch (err) {
+        console.error('[program] selectSplit failed:', err);
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'error', message: 'Échec activation du programme. Réessaie.' },
+        }));
+      }
     },
 
     async toggleExercise(exId: string): Promise<void> {
-      const deps = await getDeps();
-      this.todoStatus = { ...this.todoStatus, [exId]: !(this.todoStatus[exId] ?? false) };
-      await deps.storage.set('kinetic:program:todoStatus:' + this.todayKey(), this.todoStatus);
+      try {
+        const deps = await getDeps();
+        this.todoStatus = { ...this.todoStatus, [exId]: !(this.todoStatus[exId] ?? false) };
+        await deps.storage.set('kinetic:program:todoStatus:' + this.todayKey(), this.todoStatus);
 
-      const exs = this.todayExercises;
-      if (exs.length > 0 && exs.every(e => this.todoStatus[e.id])) {
-        const today = new Date().getDay();
-        if (!this.completedDayIds.includes(today)) {
-          this.completedDayIds = [...this.completedDayIds, today];
-          await deps.storage.set('kinetic:program:completedDays:' + this.weekKey(), this.completedDayIds);
-          window.dispatchEvent(new CustomEvent('kinetic:notify', {
-            detail: { kind: 'success', message: 'Séance complète ! 🏆 +50 XP' },
-          }));
+        const exs = this.todayExercises;
+        if (exs.length > 0 && exs.every(e => this.todoStatus[e.id])) {
+          const today = new Date().getDay();
+          if (!this.completedDayIds.includes(today)) {
+            this.completedDayIds = [...this.completedDayIds, today];
+            await deps.storage.set('kinetic:program:completedDays:' + this.weekKey(), this.completedDayIds);
+            window.dispatchEvent(new CustomEvent('kinetic:notify', {
+              detail: { kind: 'success', message: 'Séance complète ! 🏆 +50 XP' },
+            }));
+          }
         }
+      } catch (err) {
+        console.error('[program] toggleExercise failed:', err);
       }
     },
 
@@ -369,8 +387,10 @@ export function program() {
           focus.focus.toLowerCase().includes(t.name.toLowerCase())
         );
         if (match) {
-          // Passe le template ID via sessionStorage — seances.page.ts le récupère dans init()
-          sessionStorage.setItem('kinetic:program:auto-template', match.id);
+          // Passe le template ID via sessionStorage — seances.page.ts le récupère dans init().
+          // sessionStorage peut throw en mode privé iOS / quota plein → safe wrap.
+          try { sessionStorage.setItem('kinetic:program:auto-template', match.id); }
+          catch { /* on perd le hand-off mais l'utilisateur peut choisir manuellement */ }
         }
       } catch {}
       navigate('/seances');

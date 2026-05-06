@@ -49,23 +49,33 @@ export function dashboard() {
     },
 
     async _buildActivityDays(): Promise<ActivityDay[]> {
-      const deps  = await getDeps();
-      const days: ActivityDay[] = [];
-      const jours = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
-      const today = new Date();
+      try {
+        const deps  = await getDeps();
+        const jours = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+        const today = new Date();
 
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(d.getDate() - i);
-        const iso  = d.toISOString().slice(0, 10);
-        const done = await deps.storage.get<string[]>(`kinetic:vitalite:done:${iso}`);
-        days.push({
-          label:  iso,
-          short:  jours[d.getDay()] ?? '',
-          active: Array.isArray(done) && done.length > 0,
+        // Lectures parallèles : 7 round-trips IDB → 1 batch
+        const indices = Array.from({ length: 7 }, (_, k) => 6 - k);
+        const dates = indices.map(i => {
+          const d = new Date(today);
+          d.setDate(d.getDate() - i);
+          return d;
         });
+        const dones = await Promise.all(
+          dates.map(d => {
+            const iso = d.toISOString().slice(0, 10);
+            return deps.storage.get<string[]>(`kinetic:vitalite:done:${iso}`);
+          }),
+        );
+        return dates.map((d, k) => ({
+          label:  d.toISOString().slice(0, 10),
+          short:  jours[d.getDay()] ?? '',
+          active: Array.isArray(dones[k]) && (dones[k] as string[]).length > 0,
+        }));
+      } catch (err) {
+        console.warn('[dashboard] _buildActivityDays failed:', err);
+        return [];
       }
-      return days;
     },
   };
 }

@@ -66,11 +66,17 @@ export function bodyweight() {
     },
 
     async init(): Promise<void> {
-      const deps = await getDeps();
-      const stored = await deps.storage.get(STORAGE_KEY_ENTRIES);
-      this.entries = Array.isArray(stored) ? (stored as BodyweightEntry[]) : [];
-      const goal = await deps.storage.get(STORAGE_KEY_GOAL);
-      if (typeof goal === 'number') this.goalWeight = goal;
+      try {
+        const deps = await getDeps();
+        const [stored, goal] = await Promise.all([
+          deps.storage.get(STORAGE_KEY_ENTRIES),
+          deps.storage.get(STORAGE_KEY_GOAL),
+        ]);
+        this.entries = Array.isArray(stored) ? (stored as BodyweightEntry[]) : [];
+        if (typeof goal === 'number') this.goalWeight = goal;
+      } catch (err) {
+        console.error('[bodyweight] init failed:', err);
+      }
     },
 
     async addEntry(): Promise<void> {
