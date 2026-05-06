@@ -117,7 +117,15 @@ export function seances() {
     userProfile: null as UserProfile | null,
     latestBodyweight: null as number | null,
 
-    coachGoal: (localStorage.getItem('kinetic:coach-goal') ?? 'hypertrophie') as CoachGoal,
+    coachGoal: ((): CoachGoal => {
+      // localStorage peut throw en mode privé iOS / quota dépassé / WebView
+      // Capacitor avec restrictions → fallback sûr pour ne pas crasher la page
+      try {
+        return (localStorage.getItem('kinetic:coach-goal') ?? 'hypertrophie') as CoachGoal;
+      } catch {
+        return 'hypertrophie';
+      }
+    })(),
     coachGoals: COACH_GOALS,
 
     showTemplates: false,
@@ -587,7 +595,13 @@ export function seances() {
 
     setCoachGoal(goal: CoachGoal): void {
       this.coachGoal = goal;
-      localStorage.setItem('kinetic:coach-goal', goal);
+      try {
+        localStorage.setItem('kinetic:coach-goal', goal);
+      } catch (err) {
+        // Quota dépassé / mode privé : on garde le choix en mémoire pour la
+        // session, sans bloquer l'UI. Au pire, le goal repasse au défaut au reload.
+        console.warn('[seances] setCoachGoal: localStorage unavailable', err);
+      }
     },
 
     /**

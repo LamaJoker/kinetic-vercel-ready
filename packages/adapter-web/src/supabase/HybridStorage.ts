@@ -76,7 +76,12 @@ export class HybridStorage implements StoragePort {
 
   async remove(key: StorageKey): Promise<void> {
     await this.local.remove(key);
-    this.remote.remove(key).catch(() => undefined);
+    // Best-effort remote remove — log on failure so it's not a silent leak.
+    // We don't queue these (no tombstone protocol yet) but at least we surface
+    // the failure for diagnostics rather than swallowing it whole.
+    this.remote.remove(key).catch((err: unknown) => {
+      console.warn('[HybridStorage] remote remove failed for', key, err);
+    });
   }
 
   async keys(): Promise<readonly StorageKey[]> {
@@ -85,13 +90,19 @@ export class HybridStorage implements StoragePort {
 
   async clear(): Promise<void> {
     await this.local.clear();
-    this.remote.clear().catch(() => undefined);
+    this.remote.clear().catch((err: unknown) => {
+      console.warn('[HybridStorage] remote clear failed:', err);
+    });
     this.pendingWrites.clear();
   }
 
   /**
    * syncFromRemote — pull changes from remote into local.
    * See class-level JSDoc for the three modes (initial / delta / force).
+   *
+   * If the remote query itself fails (network down, RLS denied, etc.) we abort
+   * BEFORE writing the SYNC_LAST_AT marker — otherwise the next delta would
+   * skip over the keys we just failed to fetch.
    */
   async syncFromRemote(opts: { force?: boolean } = {}): Promise<void> {
     if (!this.isOnline()) return;
@@ -99,12 +110,17 @@ export class HybridStorage implements StoragePort {
     const force      = opts.force === true;
     const lastSyncAt = await this.local.get<string>(SYNC_LAST_AT_KEY);
 
-    if (!force && lastSyncAt) {
-      // ── DELTA SYNC: apply other-device changes, guard our pending writes ─
-      await this._deltaSyncFromRemote(lastSyncAt);
-    } else {
-      // ── INITIAL SYNC (no lastSyncAt) or FORCE ────────────────────────────
-      await this._fullSyncFromRemote(force);
+    try {
+      if (!force && lastSyncAt) {
+        // ── DELTA SYNC: apply other-device changes, guard our pending writes ─
+        await this._deltaSyncFromRemote(lastSyncAt);
+      } else {
+        // ── INITIAL SYNC (no lastSyncAt) or FORCE ────────────────────────────
+        await this._fullSyncFromRemote(force);
+      }
+    } catch (err) {
+      console.warn('[HybridStorage] syncFromRemote aborted:', err);
+      return;
     }
 
     // Record sync timestamp for next delta

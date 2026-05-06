@@ -100,10 +100,18 @@ export async function handleOAuthCallback(
     // Query params : ?code=XXX (PKCE flow)
     const code = parsed.searchParams.get('code');
 
-    // Erreurs Supabase éventuelles
+    // Erreurs Supabase éventuelles : on les notifie à l'utilisateur via le
+    // store toast, sinon le retour de Chrome Custom Tabs ferme et on reste
+    // sur le dashboard sans aucun feedback (utilisateur pense que ça marche).
     const errorDesc = hashParams.get('error_description') ?? parsed.searchParams.get('error_description');
     if (errorDesc) {
-      debugLog(`OAuth error from provider: ${errorDesc}`);
+      const decoded = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
+      debugLog(`OAuth error from provider: ${decoded}`);
+      try {
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'error', message: `Connexion refusée : ${decoded}` },
+        }));
+      } catch { /* ignore */ }
     }
 
     if (accessToken && refreshToken) {
@@ -141,10 +149,18 @@ export async function handleOAuthCallback(
 
 /** Récupère et efface le log de debug (à appeler depuis le profil) */
 export function readAuthDebugLog(): string {
-  const log = localStorage.getItem(DEBUG_KEY) ?? '';
-  return log.trim();
+  try {
+    const log = localStorage.getItem(DEBUG_KEY) ?? '';
+    return log.trim();
+  } catch {
+    return '';
+  }
 }
 
 export function clearAuthDebugLog(): void {
-  localStorage.removeItem(DEBUG_KEY);
+  try {
+    localStorage.removeItem(DEBUG_KEY);
+  } catch {
+    /* ignore — localStorage indisponible */
+  }
 }

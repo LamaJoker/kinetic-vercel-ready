@@ -79,10 +79,14 @@ export function authCallback() {
               `&token_type=bearer`;
             window.location.href = deepLink;
             // Fallback web au cas où le deep link ne s'ouvre pas (émulateur
-            // sans APK installé, ou navigateur desktop pendant les tests)
+            // sans APK installé, ou navigateur desktop pendant les tests).
+            // Le callback async DOIT être catch — sinon throw = unhandled rejection
+            // qui ne remonte rien à l'utilisateur.
             this._timeoutId = setTimeout(() => {
               this._timeoutId = null;
-              this._setSessionAndNavigate(accessToken, refreshToken);
+              this._setSessionAndNavigate(accessToken, refreshToken).catch((err) => {
+                this.error = err instanceof Error ? err.message : 'Erreur de session';
+              });
             }, 1500);
             return;
           }

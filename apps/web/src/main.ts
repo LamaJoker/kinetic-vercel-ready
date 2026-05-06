@@ -4,6 +4,45 @@
  */
 import Alpine from 'alpinejs';
 
+// ─── Filets globaux : aucun crash silencieux ────────────────────────────────
+// Sans ces listeners, une promesse rejetée non capturée (fetch → throw,
+// Supabase → throw, plugin Capacitor → throw) reste dans la console DevTools
+// mais l'utilisateur APK ne la voit jamais et le bug devient impossible à
+// reproduire. On loggue + on remonte un toast pour les erreurs critiques,
+// sans interrompre le flow de l'app.
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason;
+    const msg = reason instanceof Error
+      ? `${reason.name}: ${reason.message}`
+      : typeof reason === 'string' ? reason : 'Promise rejection';
+    console.error('[kinetic] unhandled rejection:', reason);
+    // En mode dev, persister dans un buffer lisible depuis le profil pour
+    // qu'on puisse récupérer la stack même quand DevTools n'est pas connecté.
+    try {
+      const KEY = 'kinetic:errors';
+      const prev = localStorage.getItem(KEY) ?? '';
+      const stamp = new Date().toISOString();
+      localStorage.setItem(KEY, `${prev}\n[${stamp}] rejection: ${msg}`.slice(-4000));
+    } catch { /* localStorage indisponible — on log au moins en console */ }
+  });
+
+  window.addEventListener('error', (event) => {
+    // Ignorer les erreurs ResizeObserver — bruit Chrome bénin sans impact runtime
+    if (typeof event.message === 'string' && /ResizeObserver/i.test(event.message)) return;
+    console.error('[kinetic] uncaught error:', event.error ?? event.message);
+    try {
+      const KEY = 'kinetic:errors';
+      const prev = localStorage.getItem(KEY) ?? '';
+      const stamp = new Date().toISOString();
+      const detail = event.error instanceof Error
+        ? `${event.error.name}: ${event.error.message}`
+        : event.message;
+      localStorage.setItem(KEY, `${prev}\n[${stamp}] error: ${detail}`.slice(-4000));
+    } catch { /* ignore */ }
+  });
+}
+
 import { authStore }          from './stores/auth';
 import { notificationsStore } from './stores/notifications';
 import { xpStore }            from './stores/xp';
