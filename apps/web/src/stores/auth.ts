@@ -187,9 +187,15 @@ export function authStore() {
       this._authSubscription = null;
     },
 
-    /** Diagnostic : URL de callback qui sera envoyée à Supabase */
+    /** Diagnostic : URL de callback qui sera envoyée à Supabase (avec ?from=apk si APK) */
     _diagCallbackUrl(): string {
-      try { return callbackUrl(); } catch { return '(erreur)'; }
+      try {
+        const isCap = typeof window !== 'undefined'
+          && !!(window as unknown as Record<string, unknown>)['Capacitor'];
+        return callbackUrl({ capacitor: isCap });
+      } catch {
+        return '(erreur)';
+      }
     },
 
     /** Diagnostic : URL Supabase configurée */

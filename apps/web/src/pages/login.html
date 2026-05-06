@@ -135,8 +135,9 @@
         <p><span class="text-gray-600">Callback envoyé:</span> <span class="text-kinetic-neon" x-text="callbackUrl"></span></p>
         <p><span class="text-gray-600">Supabase URL:</span> <span class="text-gray-300" x-text="supabaseUrl"></span></p>
         <p class="text-gray-600 text-[9px] mt-2">
-          ⚠️ La "Callback envoyé" doit matcher exactement une entrée
-          dans Supabase → Authentication → Redirect URLs.
+          ⚠️ Sur Supabase → Authentication → URL Configuration → Redirect URLs,
+          ajoute <span class="text-kinetic-neon">https://kinetic-vercel-ready.vercel.app/auth-callback**</span>
+          (les ** autorisent le suffixe ?from=apk requis pour APK).
         </p>
       </div>
     </div>
