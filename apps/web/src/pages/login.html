@@ -113,5 +113,34 @@
       <pre x-show="show" x-text="log" class="whitespace-pre-wrap mt-2 break-all"></pre>
     </div>
 
+    <!-- Diagnostic config auth (toujours visible) -->
+    <div x-data="{
+           show: false,
+           origin: window.location.origin,
+           href: window.location.href,
+           callbackUrl: '',
+           supabaseUrl: '',
+         }"
+         x-init="
+           callbackUrl = $store.auth?._diagCallbackUrl?.() || '(non disponible)';
+           supabaseUrl = ($store.auth?._diagSupabaseUrl?.()) || '(non configuré)';
+         "
+         class="mt-4 p-3 bg-kinetic-surface/50 border border-white/5 rounded-xl text-[10px] font-mono text-gray-500">
+      <button @click="show = !show" class="text-gray-400 hover:text-white underline">
+        <span x-text="show ? 'Masquer diagnostic' : '🔍 Diagnostic config'"></span>
+      </button>
+      <div x-show="show" class="mt-2 space-y-1 break-all">
+        <p><span class="text-gray-600">URL courante:</span> <span class="text-gray-300" x-text="href"></span></p>
+        <p><span class="text-gray-600">Origin:</span> <span class="text-gray-300" x-text="origin"></span></p>
+        <p><span class="text-gray-600">Callback envoyé:</span> <span class="text-kinetic-neon" x-text="callbackUrl"></span></p>
+        <p><span class="text-gray-600">Supabase URL:</span> <span class="text-gray-300" x-text="supabaseUrl"></span></p>
+        <p class="text-gray-600 text-[9px] mt-2">
+          ⚠️ Sur Supabase → Authentication → URL Configuration → Redirect URLs,
+          ajoute <span class="text-kinetic-neon">https://kinetic-vercel-ready.vercel.app/auth-callback**</span>
+          (les ** autorisent le suffixe ?from=apk requis pour APK).
+        </p>
+      </div>
+    </div>
+
   </div>
 </div>
