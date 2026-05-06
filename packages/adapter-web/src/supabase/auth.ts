@@ -35,11 +35,38 @@ if (
 const isCapacitor = typeof window !== 'undefined'
   && !!(window as unknown as Record<string, unknown>)['Capacitor'];
 
-/** URL de callback selon l'environnement */
-function callbackUrl(): string {
-  // Sur mobile Capacitor : deep link via le scheme de l'app
-  if (isCapacitor) return 'com.lamajoker.kinetic://auth-callback';
-  return `${window.location.origin}/auth-callback`;
+/**
+ * URL publique canonique de l'app (configurée via env var).
+ * Évite que `window.location.origin` capture une URL Vercel preview/branch
+ * (ex: kinetic-vercel-ready-eckiemzif-…vercel.app) au lieu de l'alias prod.
+ * Si non définie → fallback sur l'origin courante (dev/local).
+ */
+const PUBLIC_SITE_URL = (import.meta.env['VITE_PUBLIC_SITE_URL'] as string | undefined)?.replace(/\/+$/, '');
+
+/**
+ * URL de callback selon l'environnement (exportée pour diagnostic).
+ *
+ * Sur Capacitor (Android/iOS) : on utilise l'URL HTTPS /auth-callback,
+ * PAS le deep link custom scheme directement. Pourquoi :
+ *   Chrome Custom Tabs (utilisé par signInWithOAuth) ne peut pas naviguer
+ *   vers un custom scheme (com.lamajoker.kinetic://…) après le redirect OAuth
+ *   → Google/Supabase redirige dessus → Chrome affiche about:blank.
+ *
+ * Solution : Supabase redirige vers /auth-callback (HTTPS, ouvrable dans
+ * Chrome Custom Tabs). Cette page extrait les tokens et fait ensuite
+ *   window.location.href = 'com.lamajoker.kinetic://auth-callback#tokens…'
+ * pour hand-off vers l'APK via l'Intent filter Android.
+ *
+ * BUG FIX (mai 2026) : on AJOUTE `?from=apk` quand on lance le flow depuis
+ * l'APK. La page /auth-callback (qui tourne sur Vercel dans Chrome Custom Tabs)
+ * ne peut PAS détecter via `window.Capacitor` qu'elle a été ouverte depuis
+ * l'APK — elle est dans le navigateur Chrome standalone. Le marqueur dans
+ * l'URL est le seul moyen fiable de savoir qu'il faut faire le hand-off.
+ */
+export function callbackUrl(opts: { capacitor?: boolean } = {}): string {
+  const base = PUBLIC_SITE_URL ?? window.location.origin;
+  const url = `${base}/auth-callback`;
+  return opts.capacitor ? `${url}?from=apk` : url;
 }
 
 /**
@@ -90,7 +117,7 @@ export async function signInWithEmail(email: string): Promise<void> {
   if (!supabase) throw new Error('Supabase non configuré');
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: callbackUrl() },
+    options: { emailRedirectTo: callbackUrl({ capacitor: isCapacitor }) },
   });
   if (error) throw new Error(error.message);
 }
@@ -106,7 +133,7 @@ async function signInWithOAuth(provider: 'google' | 'github'): Promise<void> {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo:  callbackUrl(),
+      redirectTo:  callbackUrl({ capacitor: isCapacitor }),
       skipBrowserRedirect: isCapacitor, // on gère la redirection nous-mêmes sur mobile
     },
   });
