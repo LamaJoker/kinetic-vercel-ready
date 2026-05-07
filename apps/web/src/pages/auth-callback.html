@@ -20,6 +20,20 @@
       <div class="w-1.5 h-1.5 rounded-full bg-kinetic-neon animate-bounce" style="animation-delay: 150ms"></div>
       <div class="w-1.5 h-1.5 rounded-full bg-kinetic-neon animate-bounce" style="animation-delay: 300ms"></div>
     </div>
+
+    <!-- Bouton de fallback APK : Chrome Custom Tabs bloque parfois la
+         redirection automatique vers les schemes custom sans user gesture.
+         Le bouton apparaît après 1s pour donner à l'auto-redirect sa chance,
+         et permet à l'utilisateur de revenir manuellement dans l'APK. -->
+    <a x-show="apkDeepLink"
+       x-transition.delay.1000ms
+       :href="apkDeepLink"
+       class="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-kinetic-neon to-lime-300 text-gray-950 rounded-2xl font-display font-bold shadow-[0_0_24px_rgba(168,255,0,0.4)] active:scale-[0.98] text-sm">
+      Ouvrir dans Kinetic →
+    </a>
+    <p x-show="apkDeepLink" x-transition.delay.1000ms class="text-gray-500 text-[11px] text-center max-w-xs">
+      Si l'application ne s'ouvre pas automatiquement, tape le bouton ci-dessus.
+    </p>
   </div>
 
   <!-- Erreur -->
