@@ -49,6 +49,8 @@ function _shouldHandoffToApk(): boolean {
 export function authCallback() {
   return {
     error: null as string | null,
+    /** Deep link à afficher au cas où le redirect automatique est bloqué */
+    apkDeepLink: '' as string,
     _timeoutId: null as ReturnType<typeof setTimeout> | null,
     _subscription: null as { unsubscribe: () => void } | null,
 
@@ -98,16 +100,22 @@ export function authCallback() {
               `#access_token=${encodeURIComponent(accessToken)}` +
               `&refresh_token=${encodeURIComponent(refreshToken)}` +
               `&token_type=bearer`;
-            window.location.href = deepLink;
-            // Fallback web au cas où le deep link ne s'ouvre pas (APK pas
-            // installé, ouverture sur PC depuis un mail). Le callback async
-            // DOIT être catch — sinon throw = unhandled rejection.
+            // Expose le lien pour le bouton "Ouvrir dans Kinetic" — Chrome
+            // Custom Tabs bloque `window.location.href` vers un scheme custom
+            // sans user gesture. Le bouton garantit que l'utilisateur peut
+            // toujours basculer manuellement si l'auto-redirect est bloqué.
+            this.apkDeepLink = deepLink;
+            this._tryAutoOpenApk(deepLink);
+            // Fallback web 3s plus tard : si le deep link n'a pas lancé l'APK
+            // (APK pas installé, redirect bloqué), on établit la session côté
+            // web pour que la page Vercel soit utilisable. Le user peut quand
+            // même cliquer le bouton manuel à tout moment avant 3s.
             this._timeoutId = setTimeout(() => {
               this._timeoutId = null;
               this._setSessionAndNavigate(accessToken, refreshToken).catch((err) => {
                 this.error = err instanceof Error ? err.message : 'Erreur de session';
               });
-            }, 1500);
+            }, 3000);
             return;
           }
           await this._setSessionAndNavigate(accessToken, refreshToken);
@@ -116,10 +124,10 @@ export function authCallback() {
 
         // PKCE flow : ?code= → échange contre une session
         if (code) {
-          // Hand-off APK aussi pour PKCE (Google web flow rare mais possible)
           if (_shouldHandoffToApk()) {
             const deepLink = `com.lamajoker.kinetic://auth-callback?code=${encodeURIComponent(code)}`;
-            window.location.href = deepLink;
+            this.apkDeepLink = deepLink;
+            this._tryAutoOpenApk(deepLink);
             this._timeoutId = setTimeout(() => {
               this._timeoutId = null;
               (async () => {
@@ -130,7 +138,7 @@ export function authCallback() {
               })().catch((err) => {
                 this.error = err instanceof Error ? err.message : 'Erreur de session';
               });
-            }, 1500);
+            }, 3000);
             return;
           }
           const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -169,6 +177,52 @@ export function authCallback() {
         this._cleanup();
         this.error = e instanceof Error ? e.message : 'Erreur de connexion';
       }
+    },
+
+    /**
+     * Tente d'ouvrir l'APK via plusieurs stratégies. Chrome Custom Tabs bloque
+     * `window.location.href` vers un scheme custom sans user gesture. On
+     * combine donc trois approches en cascade :
+     *   1. <a> programmatique cliqué (gesture simulé — souvent autorisé)
+     *   2. Android intent URL (`intent://...;scheme=...;package=...;end`) qui
+     *      est nativement supporté par Chrome et bypasse les heuristiques
+     *      anti-redirect
+     *   3. window.location.href en dernier recours (souvent silencieux mais
+     *      coûte rien à essayer)
+     *
+     * Si aucune des trois ne marche, le bouton "Ouvrir dans Kinetic" affiché
+     * dans le template prend le relais (clic utilisateur direct = autorisé).
+     */
+    _tryAutoOpenApk(deepLink: string): void {
+      // Strat 1 : <a> programmatique
+      try {
+        const a = document.createElement('a');
+        a.href = deepLink;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch { /* ignore */ }
+
+      // Strat 2 : Android intent URL — décode le deep link et reformule
+      // au format intent: que Chrome traite spécialement (ouverture native
+      // garantie si le package est trouvé, sinon fallback URL preserve le state).
+      try {
+        // deepLink = "com.lamajoker.kinetic://auth-callback#access_token=..."
+        const match = deepLink.match(/^com\.lamajoker\.kinetic:\/\/(.+)$/);
+        if (match) {
+          const pathAndHash = match[1] ?? '';
+          const intentUrl =
+            `intent://${pathAndHash}` +
+            `#Intent;scheme=com.lamajoker.kinetic;` +
+            `package=com.lamajoker.kinetic;` +
+            `end`;
+          // Petit délai pour laisser strat 1 sa chance avant d'essayer la 2
+          setTimeout(() => {
+            try { window.location.href = intentUrl; } catch { /* ignore */ }
+          }, 250);
+        }
+      } catch { /* ignore */ }
     },
 
     async _setSessionAndNavigate(accessToken: string, refreshToken: string): Promise<void> {
