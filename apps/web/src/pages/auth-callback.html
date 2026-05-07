@@ -1,8 +1,8 @@
 <div class="min-h-screen bg-kinetic-ink flex flex-col items-center justify-center px-4"
      x-data="authCallback" x-init="init()">
 
-  <!-- Chargement -->
-  <div x-show="!error" x-transition class="flex flex-col items-center gap-6">
+  <!-- Mode 1 : sans deep link APK = flow web normal -->
+  <div x-show="!error && !apkDeepLink" x-transition class="flex flex-col items-center gap-6">
     <div class="relative">
       <div class="absolute inset-0 rounded-3xl bg-kinetic-neon/20 blur-2xl"></div>
       <div class="relative w-16 h-16 bg-gradient-to-br from-kinetic-neon to-lime-400 rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(168,255,0,0.5)] ring-1 ring-white/10 animate-pulse">
@@ -20,19 +20,44 @@
       <div class="w-1.5 h-1.5 rounded-full bg-kinetic-neon animate-bounce" style="animation-delay: 150ms"></div>
       <div class="w-1.5 h-1.5 rounded-full bg-kinetic-neon animate-bounce" style="animation-delay: 300ms"></div>
     </div>
+  </div>
 
-    <!-- Bouton de fallback APK : Chrome Custom Tabs bloque parfois la
-         redirection automatique vers les schemes custom sans user gesture.
-         Le bouton apparaît après 1s pour donner à l'auto-redirect sa chance,
-         et permet à l'utilisateur de revenir manuellement dans l'APK. -->
-    <a x-show="apkDeepLink"
-       x-transition.delay.1000ms
-       :href="apkDeepLink"
-       class="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-kinetic-neon to-lime-300 text-gray-950 rounded-2xl font-display font-bold shadow-[0_0_24px_rgba(168,255,0,0.4)] active:scale-[0.98] text-sm">
+  <!-- Mode 2 : flow APK = bouton primary CTA pour basculer dans l'app native.
+       L'auto-redirect (window.location.href + intent URL) est tenté en
+       arrière-plan mais Brave / certains navigateurs le bloquent. Le bouton
+       en clic direct = user gesture qui bypasse les blocages. -->
+  <div x-show="!error && apkDeepLink" x-transition class="flex flex-col items-center gap-5 max-w-sm w-full">
+    <div class="relative">
+      <div class="absolute inset-0 rounded-3xl bg-kinetic-neon/30 blur-2xl"></div>
+      <div class="relative w-16 h-16 bg-gradient-to-br from-kinetic-neon to-lime-400 rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(168,255,0,0.5)] ring-1 ring-white/10">
+        <svg class="w-8 h-8 text-gray-950" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="text-center space-y-2">
+      <p class="text-white font-display font-black text-2xl tracking-tight">Connexion réussie ✓</p>
+      <p class="text-gray-400 text-sm leading-relaxed px-4">
+        Tape le bouton ci-dessous pour ouvrir l'application Kinetic et finaliser ta connexion.
+      </p>
+    </div>
+
+    <!-- Bouton primary : <a href> avec deep link → user gesture garanti -->
+    <a :href="apkDeepLink"
+       class="w-full px-6 py-4 bg-gradient-to-r from-kinetic-neon to-lime-300 text-gray-950 rounded-2xl font-display font-black shadow-[0_0_32px_rgba(168,255,0,0.5)] active:scale-[0.98] text-base text-center transition-transform">
       Ouvrir dans Kinetic →
     </a>
-    <p x-show="apkDeepLink" x-transition.delay.1000ms class="text-gray-500 text-[11px] text-center max-w-xs">
-      Si l'application ne s'ouvre pas automatiquement, tape le bouton ci-dessus.
+
+    <!-- Escape hatch : pour PC ou si APK bloqué -->
+    <button @click="continueOnWeb()"
+            class="text-gray-500 hover:text-gray-300 text-xs underline decoration-dotted underline-offset-4 transition-colors">
+      Continuer sur le web à la place
+    </button>
+
+    <p class="text-gray-600 text-[10px] text-center px-4 leading-relaxed">
+      Si Android te demande "Ouvrir avec Kinetic ?", choisis l'application.
+      Tu peux ensuite revenir ici et fermer cet onglet.
     </p>
   </div>
 

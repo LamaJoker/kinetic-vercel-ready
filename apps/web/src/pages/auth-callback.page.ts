@@ -51,6 +51,10 @@ export function authCallback() {
     error: null as string | null,
     /** Deep link à afficher au cas où le redirect automatique est bloqué */
     apkDeepLink: '' as string,
+    /** Tokens implicit flow gardés pour le fallback "Continuer sur le web" */
+    _pendingTokens: null as { accessToken: string; refreshToken: string } | null,
+    /** Code PKCE gardé pour le fallback "Continuer sur le web" */
+    _pendingCode: '' as string,
     _timeoutId: null as ReturnType<typeof setTimeout> | null,
     _subscription: null as { unsubscribe: () => void } | null,
 
@@ -89,33 +93,25 @@ export function authCallback() {
 
         // Implicit flow : tokens directs dans le hash
         if (accessToken && refreshToken) {
-          // FIX APK : si la requête vient de l'APK (?from=apk OU _isCapacitor),
-          // on hand-off les tokens vers l'APK via le deep link → l'Intent filter
-          // Android ouvre l'APK. Le marqueur ?from=apk est crucial : la page
-          // tourne dans Chrome Custom Tabs lancé par Browser.open() — donc
-          // window.Capacitor n'est PAS disponible ici.
+          // Si la requête vient de l'APK, on NE fait PAS de fallback web :
+          // sinon le user se retrouve connecté dans Chrome/Brave au lieu de
+          // l'APK (Brave bloque les redirects vers com.lamajoker.kinetic://
+          // sans user gesture). Le bouton manuel est l'unique chemin fiable.
+          // Le user peut toujours cliquer "Continuer sur le web" pour forcer
+          // le fallback s'il est sur PC sans APK.
           if (_shouldHandoffToApk()) {
             const deepLink =
               `com.lamajoker.kinetic://auth-callback` +
               `#access_token=${encodeURIComponent(accessToken)}` +
               `&refresh_token=${encodeURIComponent(refreshToken)}` +
               `&token_type=bearer`;
-            // Expose le lien pour le bouton "Ouvrir dans Kinetic" — Chrome
-            // Custom Tabs bloque `window.location.href` vers un scheme custom
-            // sans user gesture. Le bouton garantit que l'utilisateur peut
-            // toujours basculer manuellement si l'auto-redirect est bloqué.
             this.apkDeepLink = deepLink;
+            // Stocker tokens pour le fallback web (escape hatch UI)
+            this._pendingTokens = { accessToken, refreshToken };
             this._tryAutoOpenApk(deepLink);
-            // Fallback web 3s plus tard : si le deep link n'a pas lancé l'APK
-            // (APK pas installé, redirect bloqué), on établit la session côté
-            // web pour que la page Vercel soit utilisable. Le user peut quand
-            // même cliquer le bouton manuel à tout moment avant 3s.
-            this._timeoutId = setTimeout(() => {
-              this._timeoutId = null;
-              this._setSessionAndNavigate(accessToken, refreshToken).catch((err) => {
-                this.error = err instanceof Error ? err.message : 'Erreur de session';
-              });
-            }, 3000);
+            // Pas de timeout fallback — l'utilisateur DOIT taper le bouton
+            // pour ouvrir l'APK, ou cliquer "Continuer sur le web" s'il est
+            // bloqué (APK pas installé, navigateur PC, etc.).
             return;
           }
           await this._setSessionAndNavigate(accessToken, refreshToken);
@@ -127,18 +123,8 @@ export function authCallback() {
           if (_shouldHandoffToApk()) {
             const deepLink = `com.lamajoker.kinetic://auth-callback?code=${encodeURIComponent(code)}`;
             this.apkDeepLink = deepLink;
+            this._pendingCode = code;
             this._tryAutoOpenApk(deepLink);
-            this._timeoutId = setTimeout(() => {
-              this._timeoutId = null;
-              (async () => {
-                if (!supabase) { this._navigateHome(); return; }
-                const { error } = await supabase.auth.exchangeCodeForSession(code);
-                if (error) throw error;
-                this._navigateHome();
-              })().catch((err) => {
-                this.error = err instanceof Error ? err.message : 'Erreur de session';
-              });
-            }, 3000);
             return;
           }
           const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -223,6 +209,30 @@ export function authCallback() {
           }, 250);
         }
       } catch { /* ignore */ }
+    },
+
+    /**
+     * Escape hatch : appelé quand l'utilisateur clique "Continuer sur le web
+     * à la place" (cas PC sans APK, ou utilisateur qui veut juste tester).
+     * Établit la session sur le client web et navigue vers /.
+     */
+    async continueOnWeb(): Promise<void> {
+      try {
+        if (this._pendingTokens) {
+          await this._setSessionAndNavigate(
+            this._pendingTokens.accessToken,
+            this._pendingTokens.refreshToken,
+          );
+        } else if (this._pendingCode && supabase) {
+          const { error } = await supabase.auth.exchangeCodeForSession(this._pendingCode);
+          if (error) throw error;
+          this._navigateHome();
+        } else {
+          this._navigateHome();
+        }
+      } catch (err) {
+        this.error = err instanceof Error ? err.message : 'Erreur de session';
+      }
     },
 
     async _setSessionAndNavigate(accessToken: string, refreshToken: string): Promise<void> {
