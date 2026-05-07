@@ -162,7 +162,10 @@ export function initRouter(): void {
 
   window.addEventListener('popstate', () => void render(window.location.pathname || '/'));
 
+  let _authReadyReceived = false;
+
   window.addEventListener('kinetic:auth-ready', () => {
+    _authReadyReceived = true;
     void render(window.location.pathname || '/');
   }, { once: true });
 
@@ -171,7 +174,22 @@ export function initRouter(): void {
     void render(window.location.pathname || '/');
   });
 
-  // M9 FIX: timer fallback 1.5s supprimé — dispatchAuthReady() est garanti
-  // via le finally() de authStore.init(), ce double render était inutile
-  // et pouvait déclencher une race condition avec le render de kinetic:auth-ready.
+  // FIX race GUEST_MODE : dispatchAuthReady() est appelé SYNCHRONEMENT pendant
+  // Alpine.start() (pas d'await dans la branche GUEST_MODE de authStore.init()).
+  // initRouter() est appelé via requestAnimationFrame POST-Alpine.start(), donc
+  // l'event kinetic:auth-ready peut être dispatché AVANT que le listener { once }
+  // ci-dessus soit enregistré → le listener est manqué → la page ne se rend jamais.
+  //
+  // Solution : setTimeout(0) = macrotask qui s'exécute APRÈS le rAF courant.
+  // Si le listener n'a pas été déclenché ET que l'auth est terminée, on
+  // rend directement sans attendre un autre event.
+  setTimeout(() => {
+    if (_authReadyReceived) return; // listener déjà consommé, render en cours
+    const appOutlet = document.getElementById('app-outlet');
+    if (appOutlet && appOutlet.hasChildNodes()) return; // déjà rendu
+    const auth = (window as any).Alpine?.store?.('auth') as { loading?: boolean } | undefined;
+    if (!auth || auth.loading === false) {
+      void render(window.location.pathname || '/');
+    }
+  }, 0);
 }
