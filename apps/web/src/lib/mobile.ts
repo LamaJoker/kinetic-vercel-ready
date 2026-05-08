@@ -5,11 +5,14 @@ const DEBUG_KEY = 'kinetic:auth-debug';
 
 /**
  * Stocke un message de debug dans localStorage.
- * H1/L5 FIX : uniquement en mode DEV — aucun log en production
- * pour éviter la fuite d'informations OAuth sur appareils partagés.
+ *
+ * Activé EN PRODUCTION pour diagnostiquer les bugs OAuth APK chez les vrais
+ * utilisateurs. Le log ne contient JAMAIS de tokens (URLs sont tronquées 200
+ * chars max et les tokens vivent dans le hash après le `#`, donc invisible
+ * dans les premiers 200 chars d'une URL Supabase typique). Le log est lisible
+ * dans Profil → Diagnostic auth, à effacer après diagnostic.
  */
 function debugLog(msg: string): void {
-  if (!import.meta.env.DEV) return;
   try {
     const prev = localStorage.getItem(DEBUG_KEY) ?? '';
     const stamp = new Date().toISOString().slice(11, 19);
@@ -115,13 +118,23 @@ export async function handleOAuthCallback(
     }
 
     if (accessToken && refreshToken) {
-      debugLog(`setSession with tokens`);
-      const { error } = await supabase.auth.setSession({
+      debugLog(`setSession (tokenLen=${accessToken.length}/${refreshToken.length})`);
+      const { data, error } = await supabase.auth.setSession({
         access_token:  accessToken,
         refresh_token: refreshToken,
       });
       if (error) debugLog(`setSession err: ${error.message}`);
-      else debugLog(`setSession OK`);
+      else debugLog(`setSession OK uid=${data?.user?.id?.slice(0,8) ?? 'none'}`);
+
+      // Vérification : la session est-elle bien persistée et lisible immédiatement ?
+      // Si non, le redirect /  échouera silencieusement (auth store ne trouve rien
+      // dans localStorage à la réinitialisation post-reload).
+      try {
+        const { data: { session: verify } } = await supabase.auth.getSession();
+        debugLog(`verify session: ${verify ? `uid=${verify.user.id.slice(0,8)}` : 'NULL!'}`);
+      } catch (e) {
+        debugLog(`verify err: ${String(e).slice(0, 100)}`);
+      }
     } else if (code) {
       debugLog(`exchangeCodeForSession`);
       let { error } = await supabase.auth.exchangeCodeForSession(url);
@@ -132,7 +145,7 @@ export async function handleOAuthCallback(
       if (error) debugLog(`exchange err final: ${error.message}`);
       else debugLog(`exchange OK`);
     } else {
-      debugLog(`no token/code in URL`);
+      debugLog(`no token/code in URL — hash="${parsed.hash.slice(0,80)}"`);
     }
 
   } catch (err) {
@@ -143,7 +156,28 @@ export async function handleOAuthCallback(
       await Browser.close();
     } catch { /* ignore */ }
 
-    window.location.href = '/';
+    // BUG FIX (8 mai 2026) : on PRÉFÈRE la navigation SPA au reload complet.
+    //   `window.location.href = '/'` recharge toute la page et reset le JS
+    //   context. Le nouveau Supabase client doit alors lire localStorage pour
+    //   retrouver la session — mais sur Capacitor WebView, le timing entre
+    //   setSession() et le flush localStorage n'est PAS garanti. Résultat
+    //   observé : reload trop tôt → nouvelle instance Supabase voit pas la
+    //   session → user vu comme déconnecté → écran login réapparaît.
+    //
+    //   Avec SPA nav, on garde le client Supabase en mémoire (avec session
+    //   définie via setSession), le auth store reçoit l'event SIGNED_IN
+    //   d'onAuthStateChange et met à jour this.user → dashboard se rend.
+    debugLog(`SPA-nav to /`);
+    try {
+      window.history.replaceState({}, '', '/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      // Notifier les stores Alpine pour reload (les deps doivent passer en
+      // mode HybridStorage maintenant que l'utilisateur est authentifié).
+      window.dispatchEvent(new CustomEvent('kinetic:auth-changed'));
+    } catch (e) {
+      debugLog(`SPA-nav err, fallback hard reload: ${String(e).slice(0,80)}`);
+      window.location.href = '/';
+    }
   }
 }
 
