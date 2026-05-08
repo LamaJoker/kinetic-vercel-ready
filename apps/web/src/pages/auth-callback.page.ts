@@ -68,12 +68,7 @@ export function authCallback() {
         }
 
         // ─── Parse manuel des tokens dans l'URL ────────────────────────────
-        // detectSessionInUrl ne se déclenche QUE lors d'un load complet du
-        // SDK. En navigation SPA (push/popState), les tokens dans
-        // window.location.hash ou .search ne sont jamais extraits → la page
-        // reste en attente jusqu'au timeout. On parse manuellement et on
-        // appelle setSession()/exchangeCodeForSession() pour fiabiliser.
-        const hashStr   = window.location.hash.replace(/^#/, '');
+        const hashStr     = window.location.hash.replace(/^#/, '');
         const hashParams  = new URLSearchParams(hashStr);
         const queryParams = new URLSearchParams(window.location.search);
 
@@ -87,31 +82,45 @@ export function authCallback() {
           return;
         }
 
-        const accessToken  = hashParams.get('access_token')  ?? queryParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token') ?? queryParams.get('refresh_token');
-        const code         = queryParams.get('code');
+        let accessToken  = hashParams.get('access_token')  ?? queryParams.get('access_token');
+        let refreshToken = hashParams.get('refresh_token') ?? queryParams.get('refresh_token');
+        const code       = queryParams.get('code');
+        const handoffApk = _shouldHandoffToApk();
 
-        // Implicit flow : tokens directs dans le hash
+        // ─── BUG FIX critique (8 mai 2026) ─────────────────────────────────
+        // Supabase est configuré avec `detectSessionInUrl: true`. Il consomme
+        // automatiquement les tokens du hash AU CHARGEMENT de la page, AVANT
+        // que ce code ne s'exécute → tokens null dans l'URL → on aurait raté
+        // le handoff APK et navigué directement vers / dans le navigateur.
+        //
+        // Solution : si on est sur /auth-callback?from=apk et que les tokens
+        // ne sont plus dans l'URL, on récupère la session que Supabase vient
+        // de poser et on extrait les tokens pour le deep link.
+        if (handoffApk && (!accessToken || !refreshToken) && !code) {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token && session?.refresh_token) {
+              accessToken  = session.access_token;
+              refreshToken = session.refresh_token;
+            }
+          } catch { /* on retombera dans le branch erreur plus bas */ }
+        }
+
+        // Implicit flow : tokens directs (URL ou session déjà posée)
         if (accessToken && refreshToken) {
           // Si la requête vient de l'APK, on NE fait PAS de fallback web :
           // sinon le user se retrouve connecté dans Chrome/Brave au lieu de
-          // l'APK (Brave bloque les redirects vers com.lamajoker.kinetic://
-          // sans user gesture). Le bouton manuel est l'unique chemin fiable.
-          // Le user peut toujours cliquer "Continuer sur le web" pour forcer
-          // le fallback s'il est sur PC sans APK.
-          if (_shouldHandoffToApk()) {
+          // l'APK. Le bouton manuel est l'unique chemin fiable. Escape hatch
+          // "Continuer sur le web" disponible pour les cas PC sans APK.
+          if (handoffApk) {
             const deepLink =
               `com.lamajoker.kinetic://auth-callback` +
               `#access_token=${encodeURIComponent(accessToken)}` +
               `&refresh_token=${encodeURIComponent(refreshToken)}` +
               `&token_type=bearer`;
             this.apkDeepLink = deepLink;
-            // Stocker tokens pour le fallback web (escape hatch UI)
             this._pendingTokens = { accessToken, refreshToken };
             this._tryAutoOpenApk(deepLink);
-            // Pas de timeout fallback — l'utilisateur DOIT taper le bouton
-            // pour ouvrir l'APK, ou cliquer "Continuer sur le web" s'il est
-            // bloqué (APK pas installé, navigateur PC, etc.).
             return;
           }
           await this._setSessionAndNavigate(accessToken, refreshToken);
@@ -120,7 +129,7 @@ export function authCallback() {
 
         // PKCE flow : ?code= → échange contre une session
         if (code) {
-          if (_shouldHandoffToApk()) {
+          if (handoffApk) {
             const deepLink = `com.lamajoker.kinetic://auth-callback?code=${encodeURIComponent(code)}`;
             this.apkDeepLink = deepLink;
             this._pendingCode = code;
@@ -133,13 +142,16 @@ export function authCallback() {
           return;
         }
 
-        // ─── Pas de tokens dans l'URL : peut-être déjà traités par le SDK ──
-        // Force un getSession() pour récupérer la session si detectSessionInUrl
-        // a fonctionné lors du load initial (cas plein refresh).
+        // ─── Pas de tokens NI de session : web flow normal sans tokens ─────
+        // Force un getSession() pour récupérer la session si elle existe (cas
+        // d'un re-load de la page après auth réussie).
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw error;
 
         if (session) {
+          // Si on arrive ici avec une session ET handoffApk, on a essayé plus
+          // haut et n'a pas pu extraire les tokens — on tombe en navigation
+          // web (pas idéal mais évite un blocage).
           this._navigateHome();
           return;
         }
@@ -148,12 +160,23 @@ export function authCallback() {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
           if (event === 'SIGNED_IN' && s) {
             this._cleanup();
-            this._navigateHome();
+            // Si APK demandé, retenter le handoff avec la session fraîche
+            if (handoffApk && s.access_token && s.refresh_token) {
+              const deepLink =
+                `com.lamajoker.kinetic://auth-callback` +
+                `#access_token=${encodeURIComponent(s.access_token)}` +
+                `&refresh_token=${encodeURIComponent(s.refresh_token)}` +
+                `&token_type=bearer`;
+              this.apkDeepLink = deepLink;
+              this._pendingTokens = { accessToken: s.access_token, refreshToken: s.refresh_token };
+              this._tryAutoOpenApk(deepLink);
+            } else {
+              this._navigateHome();
+            }
           }
         });
         this._subscription = subscription;
 
-        // FIX #7 : Stocker le timer pour le cleanup dans destroy()
         this._timeoutId = setTimeout(() => {
           this._cleanup();
           this.error = 'Délai dépassé — aucun token reçu. Vérifie la config Supabase (Redirect URLs) ou clique à nouveau sur le lien magique.';
