@@ -204,14 +204,15 @@ export function vitaliteStore() {
         const deps = await getDeps();
         const today = todayIso();
         const bonusXp = this._hasXpBonus() ? Math.round(task.xp * 0.2) : 0;
+        const undoInput = {
+          task,
+          idempotencyKey: `vitalite:${taskId}:${today}`,
+          bonusXp,
+          ...(bonusXp > 0 ? { bonusIdempotencyKey: `vitalite:bonus:${taskId}:${today}` } : {}),
+        };
         const result = await undoTask_usecase(
           { storage: deps.storage, clock: deps.clock, notifier: deps.notifier },
-          {
-            task,
-            idempotencyKey: `vitalite:${taskId}:${today}`,
-            bonusXp,
-            bonusIdempotencyKey: bonusXp > 0 ? `vitalite:bonus:${taskId}:${today}` : undefined,
-          },
+          undoInput,
         );
 
         if (!result.ok) {
