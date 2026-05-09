@@ -7,6 +7,11 @@ import type { Task }                 from '../domain/task.domain.js';
 import { addXp, computeXpState, didLevelUp } from '../domain/xp.domain.js';
 import { processActivity }           from '../domain/streak.domain.js';
 import type { StreakState }          from '../domain/streak.domain.js';
+import {
+  commitTaskMutationPlan,
+  recoverPendingTaskMutation,
+  type TaskMutationPlan,
+} from './task-mutation.shared.js';
 
 export interface CompleteTaskDeps {
   storage:  StoragePort;
@@ -62,6 +67,8 @@ export async function completeTask_usecase(
   const { storage, clock, notifier } = deps;
   const { task, idempotencyKey }     = input;
 
+  await recoverPendingTaskMutation(storage);
+
   if (!canComplete(task)) {
     return { ok: false, reason: 'already_done' };
   }
@@ -93,10 +100,17 @@ export async function completeTask_usecase(
   // Idempotency key written LAST: a crash between writes leaves the user
   // able to retry, but `completedKeys` already containing `idempotencyKey`
   // would silently skip XP. Persisting the key last keeps the user safe.
-  await storage.set(KEY_XP,      { xp: newXp });
-  await storage.set(KEY_STREAK,  newStreak);
-  await storage.set(dailyXpKey,  { xp: xpEarnedToday });
-  await storage.set(KEY_COMPLETED, [...completedKeys, idempotencyKey]);
+  const mutation: TaskMutationPlan = {
+    kind: 'complete_task',
+    idempotencyKey,
+    set: [
+      [KEY_XP, { xp: newXp }],
+      [KEY_STREAK, newStreak],
+      [dailyXpKey, { xp: xpEarnedToday }],
+      [KEY_COMPLETED, [...completedKeys, idempotencyKey]],
+    ],
+  };
+  await commitTaskMutationPlan(storage, mutation);
 
   notifier.notify({
     kind:    'success',

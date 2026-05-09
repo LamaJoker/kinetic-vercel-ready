@@ -107,7 +107,8 @@ function isCoachGoal(value: string | null): value is CoachGoal {
 }
 
 function sessionsCacheVersion(sessions: readonly WorkoutSession[]): string {
-  return sessions.map((session) => `${session.id}:${session.startedAt}:${session.endedAt ?? ''}`).join('|');
+  const last = sessions.at(-1);
+  return `${sessions.length}:${last?.id ?? ''}:${last?.startedAt ?? ''}:${last?.endedAt ?? ''}`;
 }
 
 function defaultSessionName(): string {
