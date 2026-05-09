@@ -175,7 +175,11 @@ export function vitaliteStore() {
           try {
             await awardXp(
               { storage: deps.storage, notifier: deps.notifier },
-              { amount: bonusXp, silent: true },
+              {
+                amount: bonusXp,
+                idempotencyKey: `vitalite:bonus:${taskId}:${today}`,
+                silent: true,
+              },
             );
             await this._refreshXpStore();
           } catch { /* silently ignore bonus errors */ }

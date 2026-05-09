@@ -32,18 +32,25 @@ export interface WeeklyGoalsState {
   allOk:           boolean;
 }
 
-/** Date du lundi 00:00:00 UTC de la semaine contenant `now`. */
+function localIsoDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/** Date du lundi 00:00:00 local de la semaine contenant `now`. */
 export function startOfWeek(now: Date = new Date()): Date {
   const d = new Date(now);
-  const day = (d.getUTCDay() + 6) % 7;       // lundi=0
-  d.setUTCDate(d.getUTCDate() - day);
-  d.setUTCHours(0, 0, 0, 0);
+  const day = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - day);
+  d.setHours(0, 0, 0, 0);
   return d;
 }
 
 /** Identifiant compact de la semaine (yyyy-mm-dd du lundi). */
 export function weekKey(now: Date = new Date()): string {
-  return startOfWeek(now).toISOString().slice(0, 10);
+  return localIsoDate(startOfWeek(now));
 }
 
 /** État courant des objectifs hebdo, dérivé des sessions terminées. */

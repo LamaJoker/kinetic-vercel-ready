@@ -3,11 +3,12 @@ import { resolve } from 'path';
 
 export default defineConfig({
   resolve: {
-    alias: {
-      '@kinetic/core':         resolve(__dirname, 'packages/core/src/index.ts'),
-      '@kinetic/adapters-web': resolve(__dirname, 'packages/adapter-web/src/index.ts'),
-      '@test-helpers':         resolve(__dirname, 'tests/helpers'),
-    },
+    alias: [
+      { find: '@kinetic/core', replacement: resolve(__dirname, 'packages/core/src/index.ts') },
+      { find: '@kinetic/adapters-web', replacement: resolve(__dirname, 'packages/adapter-web/src/index.ts') },
+      { find: /^@test-helpers\/(.*)$/, replacement: resolve(__dirname, 'tests/helpers') + '/$1' },
+      { find: '@test-helpers', replacement: resolve(__dirname, 'tests/helpers') },
+    ],
   },
   test: {
     environment: 'node',

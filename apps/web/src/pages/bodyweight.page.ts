@@ -60,7 +60,7 @@ export function bodyweight() {
 
     entryDelta(entry: BodyweightEntry, _posFromTop: number): number {
       const reversed = this.filteredEntries.slice().reverse();
-      const idx = reversed.indexOf(entry);
+      const idx = reversed.findIndex((candidate) => candidate.date === entry.date);
       if (idx < 0 || idx >= reversed.length - 1) return 0;
       return entry.weight - (reversed[idx + 1]?.weight ?? entry.weight);
     },

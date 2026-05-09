@@ -14,6 +14,31 @@ import type { StoragePort } from '@kinetic/core';
 const SCHEMA_VERSION = 1;
 const KEY = 'kinetic:schema-version';
 
+async function snapshotStorage(storage: StoragePort): Promise<Map<string, unknown>> {
+  const snapshot = new Map<string, unknown>();
+  const keys = await storage.keys();
+  await Promise.all(keys.map(async (key) => {
+    snapshot.set(key, await storage.get(key));
+  }));
+  return snapshot;
+}
+
+async function restoreSnapshot(storage: StoragePort, snapshot: Map<string, unknown>): Promise<void> {
+  const currentKeys = await storage.keys();
+  await Promise.all(currentKeys.map(async (key) => {
+    if (!snapshot.has(key)) {
+      await storage.remove(key);
+    }
+  }));
+  await Promise.all([...snapshot.entries()].map(async ([key, value]) => {
+    if (value === null) {
+      await storage.remove(key);
+      return;
+    }
+    await storage.set(key, value);
+  }));
+}
+
 export async function runMigrationsIfNeeded(storage: StoragePort): Promise<void> {
   let stored = await storage.get<number>(KEY);
   // Fresh install: no key → treat as version 0
@@ -21,8 +46,14 @@ export async function runMigrationsIfNeeded(storage: StoragePort): Promise<void>
   if (stored >= SCHEMA_VERSION) return;
 
   for (let v = stored + 1; v <= SCHEMA_VERSION; v++) {
-    await runMigration(v, storage);
-    await storage.set(KEY, v);
+    const snapshot = await snapshotStorage(storage);
+    try {
+      await runMigration(v, storage);
+      await storage.set(KEY, v);
+    } catch (err) {
+      await restoreSnapshot(storage, snapshot);
+      throw err;
+    }
   }
 }
 

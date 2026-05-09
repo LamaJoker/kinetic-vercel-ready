@@ -46,6 +46,7 @@ const METRICS: readonly MetricDef[] = [
 
 const STORAGE_KEY   = 'kinetic:measurements:entries';
 const PHOTOS_KEY    = 'kinetic:measurements:photos'; // array of PhotoMeta (sans base64)
+const MAX_PHOTO_BYTES = 1_500_000;
 
 /** Métadonnées d'une photo (persisté dans PHOTOS_KEY) */
 interface PhotoMeta {
@@ -63,6 +64,11 @@ export interface ProgressPhoto extends PhotoMeta {
 /** Clé IDB individuelle pour le base64 d'une photo */
 function photoDataKey(id: string): string {
   return `kinetic:measurements:photo:${id}`;
+}
+
+function estimateDataUrlBytes(dataUrl: string): number {
+  const [, payload = ''] = dataUrl.split(',', 2);
+  return Math.floor((payload.length * 3) / 4);
 }
 
 function val(entry: MeasurementEntry, key: MetricKey): number | undefined {
@@ -264,6 +270,9 @@ export function mensurations() {
         // FIX C3: compresser avant de stocker (max 1 200 px, JPEG 75%)
         let compressed = base64;
         try { compressed = await this._compressPhoto(base64); } catch { /* garder original */ }
+        if (estimateDataUrlBytes(compressed) > MAX_PHOTO_BYTES) {
+          throw new Error('Photo trop volumineuse apres compression');
+        }
 
         const today = new Date().toISOString().slice(0, 10);
         const entry: ProgressPhoto = {

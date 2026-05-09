@@ -46,6 +46,33 @@ function _shouldHandoffToApk(): boolean {
   }
 }
 
+async function waitForSessionTokens(attempts = 5, delayMs = 150): Promise<{
+  accessToken: string;
+  refreshToken: string;
+} | null> {
+  if (!supabase) return null;
+
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token && session?.refresh_token) {
+        return {
+          accessToken: session.access_token,
+          refreshToken: session.refresh_token,
+        };
+      }
+    } catch {
+      return null;
+    }
+
+    if (i < attempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  return null;
+}
+
 export function authCallback() {
   return {
     error: null as string | null,
@@ -97,13 +124,11 @@ export function authCallback() {
         // ne sont plus dans l'URL, on récupère la session que Supabase vient
         // de poser et on extrait les tokens pour le deep link.
         if (handoffApk && (!accessToken || !refreshToken) && !code) {
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.access_token && session?.refresh_token) {
-              accessToken  = session.access_token;
-              refreshToken = session.refresh_token;
-            }
-          } catch { /* on retombera dans le branch erreur plus bas */ }
+          const sessionTokens = await waitForSessionTokens();
+          if (sessionTokens) {
+            accessToken = sessionTokens.accessToken;
+            refreshToken = sessionTokens.refreshToken;
+          }
         }
 
         // Implicit flow : tokens directs (URL ou session déjà posée)

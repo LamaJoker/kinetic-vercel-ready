@@ -26,12 +26,33 @@ export type CompleteTaskResult =
 const KEY_XP           = 'kinetic:xp';
 const KEY_STREAK       = 'kinetic:streak';
 const KEY_COMPLETED    = 'kinetic:completed-keys';
+const COMPLETED_KEYS_TTL_DAYS = 90;
 
 /** Daily XP counter — separate from cumulative `kinetic:xp` so we can
  *  report accurate per-day XP in the daily log. Reset implicitly every day
  *  by namespacing the key with the ISO date. */
 function dailyXpKeyFor(date: string): string {
   return `kinetic:xp:earned:${date}`;
+}
+
+function parseTrailingIsoDate(value: string): Date | null {
+  const match = value.match(/(\d{4}-\d{2}-\d{2})$/);
+  if (!match) return null;
+  const parsed = Date.parse(`${match[1]}T00:00:00Z`);
+  return Number.isFinite(parsed) ? new Date(parsed) : null;
+}
+
+function pruneCompletedKeys(
+  completedKeys: readonly string[],
+  todayIso: string,
+): string[] {
+  const todayMs = Date.parse(`${todayIso}T00:00:00Z`);
+  const cutoffMs = todayMs - COMPLETED_KEYS_TTL_DAYS * 24 * 60 * 60 * 1_000;
+
+  return completedKeys.filter((key) => {
+    const dated = parseTrailingIsoDate(key);
+    return dated === null || dated.getTime() >= cutoffMs;
+  });
 }
 
 export async function completeTask_usecase(
@@ -45,12 +66,12 @@ export async function completeTask_usecase(
     return { ok: false, reason: 'already_done' };
   }
 
-  const completedKeys = await storage.get<string[]>(KEY_COMPLETED) ?? [];
+  const today = clock.todayIsoDate();
+  const rawCompletedKeys = await storage.get<string[]>(KEY_COMPLETED) ?? [];
+  const completedKeys = pruneCompletedKeys(rawCompletedKeys, today);
   if (completedKeys.includes(idempotencyKey)) {
     return { ok: false, reason: 'already_completed_today' };
   }
-
-  const today = clock.todayIsoDate();
 
   const xpData     = await storage.get<{ xp: number }>(KEY_XP);
   const streakData = await storage.get<StreakState>(KEY_STREAK);
