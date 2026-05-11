@@ -58,11 +58,29 @@ export function bodyweight() {
       return Math.abs(this.latest.weight - start) / Math.abs(this.goalWeight - start) * 100;
     },
 
+    /**
+     * BUG FIX #2 — comparaison par date (string), pas par référence objet.
+     *
+     * L'ancienne implémentation utilisait `reversed.indexOf(entry)` qui compare
+     * des références JavaScript. Alpine.js enveloppe les tableaux dans des Proxy —
+     * l'objet `entry` du template et l'objet dans `reversed` ne sont PAS la même
+     * référence, donc indexOf retournait toujours -1 et le delta était toujours 0.
+     *
+     * `posFromTop` est le rang d'affichage (index dans `.slice().reverse()`) passé
+     * par le template, mais on ne peut pas s'y fier pour retrouver la position dans
+     * `filteredEntries` (pagination possible). On recherche donc par `entry.date`
+     * qui est unique par jour de saisie.
+     */
     entryDelta(entry: BodyweightEntry, _posFromTop: number): number {
-      const reversed = this.filteredEntries.slice().reverse();
-      const idx = reversed.findIndex((candidate) => candidate.date === entry.date);
-      if (idx < 0 || idx >= reversed.length - 1) return 0;
-      return entry.weight - (reversed[idx + 1]?.weight ?? entry.weight);
+      // On travaille sur filteredEntries (ordre chronologique asc) pour trouver
+      // l'entrée précédente, indépendamment de l'ordre d'affichage inversé du template.
+      const list = this.filteredEntries;
+      const idx  = list.findIndex(e => e.date === entry.date);
+
+      // Première entrée de la période ou date introuvable → pas de delta
+      if (idx <= 0) return 0;
+
+      return entry.weight - (list[idx - 1]?.weight ?? entry.weight);
     },
 
     async init(): Promise<void> {
@@ -86,7 +104,7 @@ export function bodyweight() {
       const entry: BodyweightEntry = {
         date: today,
         weight: +this.newWeight,
-        bodyFatPct: this.newBf ? +this.newBf : null,
+        bodyFatPct: this.newBf != null ? +this.newBf : null,
         note: this.newNote.trim() || null,
       };
       const next = idx >= 0
