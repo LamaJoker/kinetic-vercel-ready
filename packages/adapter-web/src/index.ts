@@ -3,6 +3,7 @@ export { IdbStorage }      from './IdbStorage.js';
 export { SystemClock }     from './SystemClock.js';
 export { UuidGenerator }   from './UuidGenerator.js';
 export { ToastNotifier }   from './ToastNotifier.js';
+export { validateStorageKey, validateStorageValue } from './validation.js';
 
 // ─── Couche Supabase (optionnelle) ──────────────────────────
 export { HybridStorage }    from './supabase/HybridStorage.js';

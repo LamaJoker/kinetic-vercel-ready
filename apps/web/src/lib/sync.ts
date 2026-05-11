@@ -22,6 +22,7 @@ import type {
 } from '@kinetic/core';
 
 export { createClock, incrementClock, mergeClock, compareClocks, resolveConflict };
+export type { ClockComparison };
 export type { VectorClock, ClockComparison as CausalOrder };
 // Alias rétro-compat : CRDTValue était nommé SyncedValue ici
 export type { CRDTValue as SyncedValue };

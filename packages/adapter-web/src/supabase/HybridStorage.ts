@@ -42,6 +42,7 @@ interface DeltaCapableStorage {
 
 const SYNC_FLAG_KEY    = STORAGE_KEYS.SYNC_INITIAL_DONE;
 const SYNC_LAST_AT_KEY = STORAGE_KEYS.SYNC_LAST_AT;
+const MAX_PENDING_WRITES = 500;
 
 export class HybridStorage implements StoragePort {
   private pendingWrites = new Map<StorageKey, PendingWrite>();
@@ -62,16 +63,9 @@ export class HybridStorage implements StoragePort {
 
   async set<T>(key: StorageKey, value: T): Promise<void> {
     await this.local.set(key, value);
-
-    if (!this.isOnline()) {
-      this.queueWrite(key, value);
-      return;
-    }
-
-    this.remote.set(key, value).catch((err: unknown) => {
-      console.warn('[HybridStorage] remote sync failed for', key, err);
-      this.queueWrite(key, value);
-    });
+    this.queueWrite(key, value);
+    if (!this.isOnline()) return;
+    void this.flushPendingWrites();
   }
 
   async remove(key: StorageKey): Promise<void> {
@@ -211,6 +205,7 @@ export class HybridStorage implements StoragePort {
           this.pendingWrites.delete(key);
         } catch (err) {
           const nextAttempts = pending.attempts + 1;
+          console.warn('[HybridStorage] remote sync failed for', key, err);
           this.pendingWrites.set(key, { ...pending, attempts: nextAttempts });
           if (nextAttempts >= 3) {
             console.warn(`[HybridStorage] giving up after ${nextAttempts} attempts for key "${key}"`);
@@ -229,6 +224,13 @@ export class HybridStorage implements StoragePort {
 
   private queueWrite(key: StorageKey, value: unknown): void {
     const prev = this.pendingWrites.get(key);
+    if (!prev && this.pendingWrites.size >= MAX_PENDING_WRITES) {
+      const oldestKey = this.pendingWrites.keys().next().value as StorageKey | undefined;
+      if (oldestKey) {
+        console.warn(`[HybridStorage] pending write queue full, evicting oldest key "${oldestKey}"`);
+        this.pendingWrites.delete(oldestKey);
+      }
+    }
     this.pendingWrites.set(key, { key, value, attempts: prev?.attempts ?? 0 });
   }
 

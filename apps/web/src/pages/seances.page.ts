@@ -102,6 +102,30 @@ const COACH_GOALS: Record<CoachGoal, GoalPreset> = {
   },
 };
 
+function isCoachGoal(value: string | null): value is CoachGoal {
+  return value === 'force' || value === 'hypertrophie' || value === 'endurance';
+}
+
+/**
+ * Lit le coach goal persisté en validant la valeur. Utilisé à l'init du store
+ * et factorisable avec setCoachGoal pour garder une seule source de vérité.
+ * localStorage peut throw (mode privé iOS, WebView Capacitor restreinte) →
+ * try/catch obligatoire avec fallback sur la valeur par défaut.
+ */
+function _readCoachGoal(): CoachGoal {
+  try {
+    const stored = localStorage.getItem('kinetic:coach-goal');
+    return isCoachGoal(stored) ? stored : 'hypertrophie';
+  } catch {
+    return 'hypertrophie';
+  }
+}
+
+function sessionsCacheVersion(sessions: readonly WorkoutSession[]): string {
+  const last = sessions.at(-1);
+  return `${sessions.length}:${last?.id ?? ''}:${last?.startedAt ?? ''}:${last?.endedAt ?? ''}`;
+}
+
 function defaultSessionName(): string {
   const d = new Date();
   const label = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -117,15 +141,7 @@ export function seances() {
     userProfile: null as UserProfile | null,
     latestBodyweight: null as number | null,
 
-    coachGoal: ((): CoachGoal => {
-      // localStorage peut throw en mode privé iOS / quota dépassé / WebView
-      // Capacitor avec restrictions → fallback sûr pour ne pas crasher la page
-      try {
-        return (localStorage.getItem('kinetic:coach-goal') ?? 'hypertrophie') as CoachGoal;
-      } catch {
-        return 'hypertrophie';
-      }
-    })(),
+    coachGoal: _readCoachGoal(),
     coachGoals: COACH_GOALS,
 
     showTemplates: false,
@@ -152,7 +168,7 @@ export function seances() {
     // Cache for progressionSuggestion — keyed by exerciseId, invalidated when
     // sessions array changes (tracked via its length as a cheap version counter).
     _suggestionCache: null as Map<string, ProgressionSuggestion | null> | null,
-    _suggestionCacheSessionCount: -1,
+    _suggestionCacheVersion: '',
     restPresets: [
       { label: '1 min', sec: 60 },
       { label: '90 s',  sec: 90 },
@@ -468,9 +484,10 @@ export function seances() {
     progressionSuggestion(exerciseId: string): ProgressionSuggestion | null {
       if (!exerciseId) return null;
       // Invalidate cache when sessions array grows (new session saved).
-      if (this._suggestionCacheSessionCount !== this.sessions.length) {
+      const cacheVersion = sessionsCacheVersion(this.sessions);
+      if (this._suggestionCacheVersion !== cacheVersion) {
         this._suggestionCache = new Map();
-        this._suggestionCacheSessionCount = this.sessions.length;
+        this._suggestionCacheVersion = cacheVersion;
       }
       if (!this._suggestionCache) this._suggestionCache = new Map();
       if (this._suggestionCache.has(exerciseId)) {
@@ -599,6 +616,7 @@ export function seances() {
     // ─── Coach IA ────────────────────────────────────────────────────────────
 
     setCoachGoal(goal: CoachGoal): void {
+      if (!isCoachGoal(goal)) return;
       this.coachGoal = goal;
       try {
         localStorage.setItem('kinetic:coach-goal', goal);
@@ -789,7 +807,9 @@ export function seances() {
         window.dispatchEvent(new CustomEvent('kinetic:notify', {
           detail: { kind: 'success', message: `Séance sauvegardée — ${durationMin} min${caloriesKcal ? ` · ~${caloriesKcal} kcal` : ''}` },
         }));
-        window.dispatchEvent(new CustomEvent('kinetic:session-saved'));
+        window.dispatchEvent(new CustomEvent('kinetic:session-saved', {
+          detail: { session: finalized },
+        }));
       } catch (err) {
         console.error('[seances] save failed:', err);
         const name = err instanceof Error ? err.name : 'Error';

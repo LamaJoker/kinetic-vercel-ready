@@ -98,6 +98,13 @@ export type {
   ResetDailyTasksResult,
 }                                             from './usecases/reset-daily-tasks.usecase.js';
 
+export { undoTask_usecase }                   from './usecases/undo-task.usecase.js';
+export type {
+  UndoTaskDeps,
+  UndoTaskInput,
+  UndoTaskResult,
+}                                             from './usecases/undo-task.usecase.js';
+
 export { syncDailyLog }                       from './usecases/sync-daily-log.usecase.js';
 export type {
   SyncDailyLogDeps,

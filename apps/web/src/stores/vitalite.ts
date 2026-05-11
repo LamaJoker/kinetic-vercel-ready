@@ -1,51 +1,44 @@
-/**
- * Store Alpine `vitalite` — routine quotidienne.
- *
- * Nouveautés :
- *  - Tâches personnalisées (ajout / suppression)
- *  - Annuler une tâche cochée par erreur (undo)
- *  - Historique des 7 derniers jours
- */
-import { createTask, completeTask_usecase, syncDailyLog, REWARDS, awardXp } from '@kinetic/core';
+import {
+  REWARDS,
+  awardXp,
+  completeTask_usecase,
+  createTask,
+  syncDailyLog,
+  undoTask_usecase,
+} from '@kinetic/core';
 import type { Task } from '@kinetic/core';
 import { getDeps } from '../deps';
 
-// ─── Spec tâches par défaut ──────────────────────────────────────────────────
 const DEFAULT_TASKS_SPEC = [
-  { id: 'morning-stretch', title: 'Étirements matin',    icon: '🧘', xp: 50, priority: 'high' as const },
-  { id: 'cold-shower',     title: 'Douche froide',       icon: '🚿', xp: 50, priority: 'high' as const },
-  { id: 'breakfast',       title: 'Petit-déjeuner sain', icon: '🥗', xp: 50, priority: 'med'  as const },
-  { id: 'meditation',      title: 'Méditation 5 min',    icon: '🧠', xp: 50, priority: 'med'  as const },
-  { id: 'hydration',       title: "Boire 2L d'eau",      icon: '💧', xp: 50, priority: 'low'  as const },
-  { id: 'evening-walk',    title: 'Promenade du soir',   icon: '🚶', xp: 40, priority: 'low'  as const },
-  { id: 'reading',         title: 'Lecture 20 min',      icon: '📚', xp: 40, priority: 'low'  as const },
-  { id: 'journaling',      title: 'Journaling',          icon: '📝', xp: 40, priority: 'med'  as const },
-  { id: 'gratitude',       title: '3 gratitudes',        icon: '🙏', xp: 40, priority: 'med'  as const },
-  { id: 'sleep-routine',   title: 'Routine sommeil',     icon: '🌙', xp: 50, priority: 'high' as const },
+  { id: 'morning-stretch', title: 'Etirements matin', icon: '🧘', xp: 50, priority: 'high' as const },
+  { id: 'cold-shower', title: 'Douche froide', icon: '🚿', xp: 50, priority: 'high' as const },
+  { id: 'breakfast', title: 'Petit-dejeuner sain', icon: '🥗', xp: 50, priority: 'med' as const },
+  { id: 'meditation', title: 'Meditation 5 min', icon: '🧠', xp: 50, priority: 'med' as const },
+  { id: 'hydration', title: "Boire 2L d'eau", icon: '💧', xp: 50, priority: 'low' as const },
+  { id: 'evening-walk', title: 'Promenade du soir', icon: '🚶', xp: 40, priority: 'low' as const },
+  { id: 'reading', title: 'Lecture 20 min', icon: '📚', xp: 40, priority: 'low' as const },
+  { id: 'journaling', title: 'Journaling', icon: '📝', xp: 40, priority: 'med' as const },
+  { id: 'gratitude', title: '3 gratitudes', icon: '🙏', xp: 40, priority: 'med' as const },
+  { id: 'sleep-routine', title: 'Routine sommeil', icon: '🌙', xp: 50, priority: 'high' as const },
 ];
 
-// ─── Types ───────────────────────────────────────────────────────────────────
 export interface CustomTaskSpec {
-  id:       string;
-  title:    string;
-  icon:     string;
-  xp:       number;
+  id: string;
+  title: string;
+  icon: string;
+  xp: number;
   priority: 'high' | 'med' | 'low';
 }
 
 export interface HistoryDay {
-  date:    string;          // YYYY-MM-DD
-  label:   string;          // ex: "lun. 28 avr."
+  date: string;
+  label: string;
   doneIds: string[];
-  tasks:   { id: string; title: string; icon: string }[];
+  tasks: { id: string; title: string; icon: string }[];
 }
 
-// ─── Clés storage ────────────────────────────────────────────────────────────
 const KEY_CUSTOM_TASKS = 'kinetic:vitalite:custom-tasks';
-const KEY_XP           = 'kinetic:xp';
-const KEY_AWARDED_IDS  = 'kinetic:awarded-ids';
 
-// ─── Utils ───────────────────────────────────────────────────────────────────
 function todayIso(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -60,62 +53,62 @@ function dateIso(offset: number): string {
 function dateLabel(iso: string): string {
   try {
     return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-  } catch { return iso; }
+  } catch {
+    return iso;
+  }
 }
 
 function buildTasks(customSpecs: CustomTaskSpec[]): Task[] {
   const today = todayIso();
-  const allSpecs = [
-    ...DEFAULT_TASKS_SPEC,
-    ...customSpecs.map(s => ({ ...s, type: 'recurring' as const, createdAt: today })),
-  ];
-  return allSpecs.map(spec =>
-    createTask({ id: spec.id, title: spec.title, icon: spec.icon, xp: spec.xp, priority: spec.priority, type: 'recurring', createdAt: today })
+  return [...DEFAULT_TASKS_SPEC, ...customSpecs].map((spec) =>
+    createTask({
+      id: spec.id,
+      title: spec.title,
+      icon: spec.icon,
+      xp: spec.xp,
+      priority: spec.priority,
+      type: 'recurring',
+      createdAt: today,
+    })
   );
 }
 
-// ─── Store ───────────────────────────────────────────────────────────────────
+function notify(kind: 'success' | 'error' | 'warning' | 'info', message: string): void {
+  window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind, message } }));
+}
+
 export function vitaliteStore() {
   return {
-    tasks:        [] as Task[],
-    customSpecs:  [] as CustomTaskSpec[],
-    loading:      true,
+    tasks: [] as Task[],
+    customSpecs: [] as CustomTaskSpec[],
+    loading: true,
     completingId: null as string | null,
-    _pendingIds:  new Set<string>(),
+    _pendingIds: new Set<string>(),
 
-    // ── Formulaire nouvelle tâche ──
-    showAddForm:      false,
-    newTaskTitle:     '',
-    newTaskIcon:      '⭐',
-    newTaskXp:        40,
-    newTaskPriority:  'med' as 'high' | 'med' | 'low',
-    addFormError:     '',
+    showAddForm: false,
+    newTaskTitle: '',
+    newTaskIcon: '⭐',
+    newTaskXp: 40,
+    newTaskPriority: 'med' as 'high' | 'med' | 'low',
+    addFormError: '',
 
-    // ── Historique ──
     showHistory: false,
     historyDays: [] as HistoryDay[],
     historyLoading: false,
-
-    // ── Détail journée ──
     detailDay: null as HistoryDay | null,
 
-    // ─────────────────────────────────────────────────────────────────────────
+    emojiSuggestions: ['⭐', '🏋️', '🧘', '🚶', '🥗', '💧', '📚', '📝', '🎯', '🔥', '💪', '🏃', '🧠', '😴', '🚴', '🤸', '🥦', '🫁', '⚡', '🎸'],
+
     async init(): Promise<void> {
       try {
-        const deps  = await getDeps();
+        const deps = await getDeps();
         const today = todayIso();
-
-        // Charger tâches custom
         this.customSpecs = (await deps.storage.get<CustomTaskSpec[]>(KEY_CUSTOM_TASKS)) ?? [];
-
-        // Charger état du jour
-        const doneKey = `kinetic:vitalite:done:${today}`;
-        const doneIds = (await deps.storage.get<string[]>(doneKey)) ?? [];
-
-        this.tasks = buildTasks(this.customSpecs).map(t =>
-          doneIds.includes(t.id)
-            ? { ...t, done: true, completedAt: today, completionCount: 1 }
-            : t,
+        const doneIds = (await deps.storage.get<string[]>(`kinetic:vitalite:done:${today}`)) ?? [];
+        this.tasks = buildTasks(this.customSpecs).map((task) =>
+          doneIds.includes(task.id)
+            ? { ...task, done: true, completedAt: today, completionCount: 1 }
+            : task
         );
       } catch (err) {
         console.error('[vitalite] init failed:', err);
@@ -125,36 +118,37 @@ export function vitaliteStore() {
       }
     },
 
-    // ─── Compléter une tâche ─────────────────────────────────────────────────
     async complete(taskId: string): Promise<void> {
       if (this._pendingIds.has(taskId)) return;
-      const task = this.tasks.find(t => t.id === taskId);
+      const task = this.tasks.find((entry) => entry.id === taskId);
       if (!task || task.done) return;
 
       this._pendingIds.add(taskId);
       this.completingId = taskId;
 
       try {
-        const deps     = await getDeps();
-        const today    = todayIso();
-        const idempKey = `vitalite:${taskId}:${today}`;
-
+        const deps = await getDeps();
+        const today = todayIso();
         const result = await completeTask_usecase(
           { storage: deps.storage, clock: deps.clock, notifier: deps.notifier },
-          { task, idempotencyKey: idempKey },
+          { task, idempotencyKey: `vitalite:${taskId}:${today}` },
         );
 
         if (!result.ok) {
           if (result.reason === 'already_completed_today' || result.reason === 'already_done') {
-            this.tasks = this.tasks.map(t =>
-              t.id === taskId ? { ...t, done: true, completedAt: today, completionCount: t.completionCount + 1 } : t,
+            this.tasks = this.tasks.map((entry) =>
+              entry.id === taskId
+                ? { ...entry, done: true, completedAt: today, completionCount: entry.completionCount + 1 }
+                : entry
             );
           }
           return;
         }
 
-        this.tasks = this.tasks.map(t =>
-          t.id === taskId ? { ...t, done: true, completedAt: today, completionCount: t.completionCount + 1 } : t,
+        this.tasks = this.tasks.map((entry) =>
+          entry.id === taskId
+            ? { ...entry, done: true, completedAt: today, completionCount: entry.completionCount + 1 }
+            : entry
         );
 
         const doneKey = `kinetic:vitalite:done:${today}`;
@@ -163,96 +157,108 @@ export function vitaliteStore() {
           await deps.storage.set(doneKey, [...doneIds, taskId]);
         }
 
-        await this._refreshXpStore();
-
-        void syncDailyLog({ storage: deps.storage, clock: deps.clock, dailyLogSync: deps.dailyLogSync })
-          .catch(err => console.warn('[vitalite] sync failed:', err));
-
-        // Bonus XP +20 % débloqué au niveau 5
-        // H3 FIX: utiliser awardXp() au lieu de mutation directe
         if (this._hasXpBonus()) {
           const bonusXp = Math.round(task.xp * 0.2);
           try {
             await awardXp(
               { storage: deps.storage, notifier: deps.notifier },
-              { amount: bonusXp, silent: true },
+              {
+                amount: bonusXp,
+                idempotencyKey: `vitalite:bonus:${taskId}:${today}`,
+                silent: true,
+              },
             );
-            await this._refreshXpStore();
-          } catch { /* silently ignore bonus errors */ }
+          } catch {
+            // keep primary completion successful even if bonus write fails
+          }
         }
 
+        await this._refreshXpStore();
+        void syncDailyLog({ storage: deps.storage, clock: deps.clock, dailyLogSync: deps.dailyLogSync })
+          .catch((err) => console.warn('[vitalite] sync failed:', err));
+
         if (result.leveledUp && result.newLevel !== undefined) {
-          const reward = REWARDS.find((r) => r.level === result.newLevel);
+          const reward = REWARDS.find((entry) => entry.level === result.newLevel);
           window.dispatchEvent(new CustomEvent('kinetic:levelup', {
             detail: { level: result.newLevel, title: reward?.title ?? '' },
           }));
         }
       } catch (err) {
         console.error('[vitalite] complete failed:', err);
-        notify('error', 'Impossible de valider la tâche. Réessaie.');
+        notify('error', 'Impossible de valider la tache. Reessaie.');
       } finally {
         this._pendingIds.delete(taskId);
         this.completingId = null;
       }
     },
 
-    // ─── Annuler une tâche ───────────────────────────────────────────────────
     async undo(taskId: string): Promise<void> {
       if (this._pendingIds.has(taskId)) return;
-      const task = this.tasks.find(t => t.id === taskId);
+      const task = this.tasks.find((entry) => entry.id === taskId);
       if (!task || !task.done) return;
 
       this._pendingIds.add(taskId);
       this.completingId = taskId;
 
       try {
-        const deps    = await getDeps();
-        const today   = todayIso();
-        const idempKey = `vitalite:${taskId}:${today}`;
+        const deps = await getDeps();
+        const today = todayIso();
+        const bonusXp = this._hasXpBonus() ? Math.round(task.xp * 0.2) : 0;
+        const undoInput = {
+          task,
+          idempotencyKey: `vitalite:${taskId}:${today}`,
+          bonusXp,
+          ...(bonusXp > 0 ? { bonusIdempotencyKey: `vitalite:bonus:${taskId}:${today}` } : {}),
+        };
+        const result = await undoTask_usecase(
+          { storage: deps.storage, clock: deps.clock, notifier: deps.notifier },
+          undoInput,
+        );
 
-        // 1. Retirer de la liste des tâches du jour
-        const doneKey = `kinetic:vitalite:done:${today}`;
-        const doneIds = (await deps.storage.get<string[]>(doneKey)) ?? [];
-        await deps.storage.set(doneKey, doneIds.filter(id => id !== taskId));
+        if (!result.ok) {
+          notify('error', 'Impossible d\'annuler. Reessaie.');
+          return;
+        }
+        if (!result.undone) {
+          notify('info', 'Cette tache n\'etait plus completee.');
+          return;
+        }
 
-        // 2. Décrémenter XP
-        const xpData  = await deps.storage.get<{ xp: number }>(KEY_XP);
-        const newXp   = Math.max(0, (xpData?.xp ?? 0) - task.xp);
-        await deps.storage.set(KEY_XP, { xp: newXp });
-
-        // 3. Supprimer la clé d'idempotence pour permettre re-completion
-        const awardedIds = (await deps.storage.get<string[]>(KEY_AWARDED_IDS)) ?? [];
-        await deps.storage.set(KEY_AWARDED_IDS, awardedIds.filter(k => k !== idempKey));
-
-        // 4. Mettre à jour UI
-        this.tasks = this.tasks.map(t =>
-          t.id === taskId ? { ...t, done: false, completedAt: null, completionCount: Math.max(0, t.completionCount - 1) } : t,
+        this.tasks = this.tasks.map((entry) =>
+          entry.id === taskId
+            ? { ...entry, done: false, completedAt: null, completionCount: Math.max(0, entry.completionCount - 1) }
+            : entry
         );
 
         await this._refreshXpStore();
-        notify('info', `Tâche "${task.title}" annulée — XP retiré`);
+        void syncDailyLog({ storage: deps.storage, clock: deps.clock, dailyLogSync: deps.dailyLogSync })
+          .catch((err) => console.warn('[vitalite] sync failed after undo:', err));
       } catch (err) {
         console.error('[vitalite] undo failed:', err);
-        notify('error', 'Impossible d\'annuler. Réessaie.');
+        notify('error', 'Impossible d\'annuler. Reessaie.');
       } finally {
         this._pendingIds.delete(taskId);
         this.completingId = null;
       }
     },
 
-    // ─── Tâches personnalisées ───────────────────────────────────────────────
     async addCustomTask(): Promise<void> {
       this.addFormError = '';
       const title = this.newTaskTitle.trim();
-      if (!title) { this.addFormError = 'Le titre est requis.'; return; }
-      if (title.length > 60) { this.addFormError = 'Titre trop long (max 60 car.).'; return; }
+      if (!title) {
+        this.addFormError = 'Le titre est requis.';
+        return;
+      }
+      if (title.length > 60) {
+        this.addFormError = 'Titre trop long (max 60 car.).';
+        return;
+      }
 
-      const id = `custom-${Date.now()}`;
       const spec: CustomTaskSpec = {
-        id,
+        id: `custom-${Date.now()}`,
         title,
-        icon:     this.newTaskIcon || '⭐',
-        xp:       Math.max(10, Math.min(200, Number(this.newTaskXp) || 40)),
+        icon: this.newTaskIcon || '⭐',
+        xp: Math.max(10, Math.min(200, Number(this.newTaskXp) || 40)),
         priority: this.newTaskPriority,
       };
 
@@ -261,66 +267,69 @@ export function vitaliteStore() {
         this.customSpecs = [...this.customSpecs, spec];
         await deps.storage.set(KEY_CUSTOM_TASKS, this.customSpecs);
 
-        // Ajouter à la liste active (non cochée)
-        const today = todayIso();
-        const newTask = createTask({ id, title: spec.title, icon: spec.icon, xp: spec.xp, priority: spec.priority, type: 'recurring', createdAt: today });
+        const newTask = createTask({
+          id: spec.id,
+          title: spec.title,
+          icon: spec.icon,
+          xp: spec.xp,
+          priority: spec.priority,
+          type: 'recurring',
+          createdAt: todayIso(),
+        });
         this.tasks = [...this.tasks, newTask];
 
-        // Reset form
-        this.newTaskTitle    = '';
-        this.newTaskIcon     = '⭐';
-        this.newTaskXp       = 40;
+        this.newTaskTitle = '';
+        this.newTaskIcon = '⭐';
+        this.newTaskXp = 40;
         this.newTaskPriority = 'med';
-        this.showAddForm     = false;
-        notify('success', `Tâche "${spec.title}" ajoutée`);
+        this.showAddForm = false;
+        notify('success', `Tache "${spec.title}" ajoutee`);
       } catch (err) {
         console.error('[vitalite] addCustomTask failed:', err);
-        notify('error', 'Impossible d\'ajouter la tâche.');
+        notify('error', 'Impossible d\'ajouter la tache.');
       }
     },
 
     async deleteCustomTask(id: string): Promise<void> {
       try {
         const deps = await getDeps();
-        this.customSpecs = this.customSpecs.filter(s => s.id !== id);
+        this.customSpecs = this.customSpecs.filter((entry) => entry.id !== id);
         await deps.storage.set(KEY_CUSTOM_TASKS, this.customSpecs);
-        this.tasks = this.tasks.filter(t => t.id !== id);
-        notify('info', 'Tâche supprimée');
+        this.tasks = this.tasks.filter((entry) => entry.id !== id);
+        notify('info', 'Tache supprimee');
       } catch (err) {
         console.error('[vitalite] deleteCustomTask failed:', err);
-        notify('error', 'Impossible de supprimer la tâche.');
+        notify('error', 'Impossible de supprimer la tache.');
       }
     },
 
     isCustom(id: string): boolean {
-      return this.customSpecs.some(s => s.id === id);
+      return this.customSpecs.some((entry) => entry.id === id);
     },
 
-    // ─── Historique ──────────────────────────────────────────────────────────
     async loadHistory(): Promise<void> {
       if (this.historyLoading) return;
       this.historyLoading = true;
       try {
-        const deps   = await getDeps();
-        const allSpecs = [
-          ...DEFAULT_TASKS_SPEC,
-          ...this.customSpecs,
-        ];
-        const taskMap = new Map(allSpecs.map(s => [s.id, { id: s.id, title: s.title, icon: s.icon }]));
-
-        // M2 FIX: Promise.all au lieu de lectures IDB séquentielles (N round-trips → 1 batch)
-        const maxDays = this._rewardsHistoryDays();
-        const dates = Array.from({ length: maxDays }, (_, i) => dateIso(-(i + 1)));
-        const allDoneIds = await Promise.all(
-          dates.map(date => deps.storage.get<string[]>(`kinetic:vitalite:done:${date}`))
+        const deps = await getDeps();
+        const taskMap = new Map(
+          [...DEFAULT_TASKS_SPEC, ...this.customSpecs].map((entry) => [entry.id, {
+            id: entry.id,
+            title: entry.title,
+            icon: entry.icon,
+          }]),
         );
-        this.historyDays = dates.map((date, i) => {
-          const doneIds = allDoneIds[i] ?? [];
+        const dates = Array.from({ length: this._rewardsHistoryDays() }, (_, index) => dateIso(-(index + 1)));
+        const allDoneIds = await Promise.all(
+          dates.map((date) => deps.storage.get<string[]>(`kinetic:vitalite:done:${date}`)),
+        );
+        this.historyDays = dates.map((date, index) => {
+          const doneIds = allDoneIds[index] ?? [];
           return {
             date,
-            label:   dateLabel(date),
+            label: dateLabel(date),
             doneIds,
-            tasks:   doneIds.map(id => taskMap.get(id) ?? { id, title: id, icon: '✓' }),
+            tasks: doneIds.map((id) => taskMap.get(id) ?? { id, title: id, icon: '✓' }),
           };
         });
       } catch (err) {
@@ -337,43 +346,48 @@ export function vitaliteStore() {
       }
     },
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────
     async _refreshXpStore(): Promise<void> {
-      const Alpine = (window as unknown as { Alpine: { store: (n: string) => unknown } }).Alpine;
-      const xp = Alpine.store('xp') as { reload: () => Promise<void> } | undefined;
-      await xp?.reload();
+      const Alpine = (window as unknown as { Alpine: { store: (name: string) => unknown } }).Alpine;
+      const xp = Alpine.store('xp') as { reload?: () => Promise<void> } | undefined;
+      await xp?.reload?.();
     },
 
-    get doneCount():  number  { return this.tasks.filter(t => t.done).length; },
-    get totalCount(): number  { return this.tasks.length; },
-    get progress():   number  { return this.totalCount === 0 ? 0 : Math.round((this.doneCount / this.totalCount) * 100); },
-    get allDone():    boolean { return this.totalCount > 0 && this.doneCount === this.totalCount; },
+    get doneCount(): number {
+      return this.tasks.filter((entry) => entry.done).length;
+    },
+
+    get totalCount(): number {
+      return this.tasks.length;
+    },
+
+    get progress(): number {
+      return this.totalCount === 0 ? 0 : Math.round((this.doneCount / this.totalCount) * 100);
+    },
+
+    get allDone(): boolean {
+      return this.totalCount > 0 && this.doneCount === this.totalCount;
+    },
 
     isLocked(id: string): boolean {
       return this._pendingIds.has(id);
     },
 
-    // Emojis proposés pour les tâches custom
-    emojiSuggestions: ['⭐','🏋️','🧘','🚶','🥗','💧','📚','📝','🎯','🔥','💪','🏃','🧠','😴','🚴','🤸','🥦','🫁','⚡','🎸'],
-
-    // ─── Helpers récompenses ─────────────────────────────────────────────────
-
     _hasXpBonus(): boolean {
       try {
-        const Alpine = (window as unknown as { Alpine: { store: (n: string) => { currentLevel?: number } } }).Alpine;
+        const Alpine = (window as unknown as { Alpine: { store: (name: string) => { currentLevel?: number } } }).Alpine;
         return (Alpine?.store('xp')?.currentLevel ?? 1) >= 5;
-      } catch { return false; }
+      } catch {
+        return false;
+      }
     },
 
     _rewardsHistoryDays(): number {
       try {
-        const Alpine = (window as unknown as { Alpine: { store: (n: string) => { historyDays?: number } } }).Alpine;
+        const Alpine = (window as unknown as { Alpine: { store: (name: string) => { historyDays?: number } } }).Alpine;
         return (Alpine?.store('rewards') as { historyDays?: number })?.historyDays ?? 7;
-      } catch { return 7; }
+      } catch {
+        return 7;
+      }
     },
   };
-}
-
-function notify(kind: 'success' | 'error' | 'warning' | 'info', message: string): void {
-  window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind, message } }));
 }

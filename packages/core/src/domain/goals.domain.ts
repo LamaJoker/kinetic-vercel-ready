@@ -22,7 +22,7 @@ export interface SessionLike {
 }
 
 export interface WeeklyGoalsState {
-  weekKey:         string;       // ISO date du lundi de la semaine
+  weekKey:         string;       // ISO date du lundi de la semaine (fuseau local)
   doneSessions:    number;
   doneTonnageKg:   number;
   sessionsPercent: number;       // 0..100
@@ -32,18 +32,45 @@ export interface WeeklyGoalsState {
   allOk:           boolean;
 }
 
-/** Date du lundi 00:00:00 UTC de la semaine contenant `now`. */
+/**
+ * localIsoDate — formate une Date en "YYYY-MM-DD" dans le fuseau LOCAL.
+ *
+ * On n'utilise PAS toISOString() qui retourne UTC — en UTC+14 (Kiribati) ou
+ * UTC-12 (Baker Island), le lundi local peut être dimanche ou mardi UTC.
+ * ClockPort.todayIsoDate() retourne déjà la date locale ; startOfWeek() doit
+ * rester cohérent avec cette convention.
+ */
+function localIsoDate(date: Date): string {
+  const year  = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day   = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * startOfWeek — retourne le lundi 00:00:00 LOCAL de la semaine contenant `now`.
+ *
+ * BUG FIX #4 : l'ancienne implémentation utilisait `d.getUTCDay()` pour
+ * déterminer le jour de la semaine, mais travaillait ensuite avec `setDate()`
+ * (fuseau local). Ce mélange UTC/local produisait le mauvais lundi pour tous
+ * les fuseaux décalés de ±N jours entiers par rapport à UTC (ex: UTC+14,
+ * UTC-12). On utilise désormais `getDay()` (fuseau local) de façon cohérente.
+ *
+ * getDay() : 0 = dimanche, 1 = lundi, …, 6 = samedi (norme JS).
+ * Formule : (getDay() + 6) % 7 → 0 = lundi, …, 6 = dimanche (norme ISO 8601).
+ */
 export function startOfWeek(now: Date = new Date()): Date {
   const d = new Date(now);
-  const day = (d.getUTCDay() + 6) % 7;       // lundi=0
-  d.setUTCDate(d.getUTCDate() - day);
-  d.setUTCHours(0, 0, 0, 0);
+  // Nombre de jours à reculer pour atteindre le lundi (fuseau LOCAL)
+  const dayOffset = (d.getDay() + 6) % 7; // lundi = 0, dimanche = 6
+  d.setDate(d.getDate() - dayOffset);
+  d.setHours(0, 0, 0, 0);
   return d;
 }
 
-/** Identifiant compact de la semaine (yyyy-mm-dd du lundi). */
+/** Identifiant compact de la semaine (YYYY-MM-DD du lundi, fuseau local). */
 export function weekKey(now: Date = new Date()): string {
-  return startOfWeek(now).toISOString().slice(0, 10);
+  return localIsoDate(startOfWeek(now));
 }
 
 /** État courant des objectifs hebdo, dérivé des sessions terminées. */
@@ -52,6 +79,8 @@ export function evaluateWeeklyGoals(
   targets:  WeeklyGoalTargets,
   now:      Date = new Date(),
 ): WeeklyGoalsState {
+  // startOfWeek retourne un Date en fuseau local, .getTime() est donc correct
+  // pour comparer avec Date.parse(session.startedAt) qui est aussi en ms UTC.
   const weekStartMs = startOfWeek(now).getTime();
   const weekSessions = sessions.filter(s =>
     Boolean(s.endedAt) && Date.parse(s.startedAt) >= weekStartMs
@@ -71,10 +100,6 @@ export function evaluateWeeklyGoals(
     ? 100
     : Math.min(100, Math.round((doneTonnageKg / targets.targetTonnageKg) * 100));
 
-  // A disabled target (≤ 0) is vacuously satisfied — we don't penalise the
-  // user for not hitting a goal they never set.  But allOk additionally
-  // requires that at least ONE target is active, otherwise an empty config
-  // would mint a free weekly XP bonus.
   const sessionsOk = targets.targetSessions  <= 0 || doneSessions  >= targets.targetSessions;
   const tonnageOk  = targets.targetTonnageKg <= 0 || doneTonnageKg >= targets.targetTonnageKg;
 

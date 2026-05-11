@@ -20,7 +20,7 @@ import {
   authRateLimiter, callbackUrl,
 } from '@kinetic/adapters-web';
 import type { AuthUser } from '@kinetic/adapters-web';
-import { resetDeps } from '../deps';
+import { flushAndResetDeps, resetDeps } from '../deps';
 
 // FIX #4 : Log explicite plutôt que dégradation silencieuse
 const SUPABASE_URL      = import.meta.env['VITE_SUPABASE_URL'] as string | undefined;
@@ -97,7 +97,7 @@ export function authStore() {
             // Appeler resetDeps() sur INITIAL_SESSION force un double getDeps()
             // (8s Supabase timeout × 2) avant que la page se rende.
             this.user = null;
-            resetDeps();
+            await flushAndResetDeps();
           } else if (!session?.user) {
             // INITIAL_SESSION, TOKEN_REFRESHED, etc. sans session active :
             // mettre à jour l'état local sans invalider le cache deps.
@@ -178,6 +178,7 @@ export function authStore() {
     },
 
     async logout(): Promise<void> {
+      await flushAndResetDeps();
       await signOut();
       window.location.href = '/login';
     },

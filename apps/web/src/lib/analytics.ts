@@ -69,13 +69,11 @@ export function collectWebVitals(onMetric: ReportFn): void {
 
   // CLS
   let clsValue = 0;
-  let clsEntries: PerformanceEntry[] = [];
   observe('layout-shift', (entries) => {
     for (const entry of entries) {
       const ls = entry as PerformanceEntry & { hadRecentInput: boolean; value: number };
       if (!ls.hadRecentInput) {
         clsValue += ls.value;
-        clsEntries.push(entry);
       }
     }
     onMetric({

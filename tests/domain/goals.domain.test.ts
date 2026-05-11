@@ -24,14 +24,20 @@ function session(dayOffsetFromMonday: number, sets: Array<[number, number]>, end
 }
 
 describe('startOfWeek', () => {
-  it('renvoie le lundi 00h UTC pour un mercredi', () => {
+  it('renvoie le lundi 00h local pour un mercredi', () => {
     const monday = startOfWeek(NOW);
-    expect(monday.toISOString()).toBe('2025-01-13T00:00:00.000Z');
+    expect(monday.getFullYear()).toBe(2025);
+    expect(monday.getMonth()).toBe(0);
+    expect(monday.getDate()).toBe(13);
+    expect(monday.getHours()).toBe(0);
   });
 
   it('renvoie le lundi pour un dimanche (fin de semaine ISO)', () => {
-    const sunday = new Date('2025-01-19T23:59:00Z');
-    expect(startOfWeek(sunday).toISOString()).toBe('2025-01-13T00:00:00.000Z');
+    const sunday = new Date('2025-01-19T12:00:00Z');
+    const monday = startOfWeek(sunday);
+    expect(monday.getFullYear()).toBe(2025);
+    expect(monday.getMonth()).toBe(0);
+    expect(monday.getDate()).toBe(13);
   });
 });
 

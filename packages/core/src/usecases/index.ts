@@ -6,3 +6,6 @@ export type { AwardXpDeps, AwardXpInput, AwardXpResult } from './award-xp.usecas
 
 export { resetDailyTasks } from './reset-daily-tasks.usecase.js';
 export type { ResetDailyTasksDeps, ResetDailyTasksResult } from './reset-daily-tasks.usecase.js';
+
+export { undoTask_usecase } from './undo-task.usecase.js';
+export type { UndoTaskDeps, UndoTaskInput, UndoTaskResult } from './undo-task.usecase.js';

@@ -5,6 +5,7 @@ import { DEFAULT_EXERCISES, DEFAULT_TEMPLATES } from './seed';
 const KEY_EXERCISES = 'kinetic:training:exercises';
 const KEY_TEMPLATES = 'kinetic:training:templates';
 const KEY_SESSIONS = 'kinetic:training:sessions';
+const EXERCISES_FETCH_TIMEOUT_MS = 8000;
 
 export async function loadExercises(storage: StoragePort): Promise<Exercise[]> {
   const data = await storage.get<Exercise[]>(KEY_EXERCISES);
@@ -13,7 +14,13 @@ export async function loadExercises(storage: StoragePort): Promise<Exercise[]> {
   // Try to bootstrap from a static exercise catalog (can contain 1000+ exercises)
   // without bundling it into JS. Falls back to a small seed list if missing.
   try {
-    const res = await fetch('/exercises.v1.json', { cache: 'no-store' });
+    const ctrl = new AbortController();
+    const timeoutId = setTimeout(() => ctrl.abort(), EXERCISES_FETCH_TIMEOUT_MS);
+    const res = await fetch('/exercises.v1.json', {
+      cache: 'no-store',
+      signal: ctrl.signal,
+    });
+    clearTimeout(timeoutId);
     if (res.ok) {
       const json = await res.json();
       if (Array.isArray(json) && json.length > 0) {

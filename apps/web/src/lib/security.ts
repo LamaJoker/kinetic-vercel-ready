@@ -1,28 +1,24 @@
+export { validateStorageKey, validateStorageValue } from '@kinetic/adapters-web';
+
 /**
  * apps/web/src/lib/security.ts
  *
- * Module sécurité centralisé.
- * Gère : CSP, sanitization des entrées, rate limiting côté client.
+ * Module securite centralise.
+ * Gere : CSP, sanitization des entrees, rate limiting cote client.
  */
 
-// ─── Content Security Policy ──────────────────────────────────
-
 export const CSP_DIRECTIVES = {
-  'default-src':              ["'self'"],
-  // Alpine.js compile chaque expression `x-*` via `new AsyncFunction(...)` —
-  // CSP traite cela comme eval, donc 'unsafe-eval' est obligatoire.
-  // 'unsafe-inline' n'est plus nécessaire : tous les <script> inline ont été
-  // migrés vers des modules .page.ts (plus aucun script inline dans les pages).
-  'script-src':               ["'self'", "'unsafe-eval'"],
-  'style-src':                ["'self'", "'unsafe-inline'"], // Alpine inline attrs
-  'img-src':                  ["'self'", 'data:', 'https:'],
-  'font-src':                 ["'self'", 'data:'],
-  'connect-src':              ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'],
-  'frame-src':                ["'none'"],
-  'object-src':               ["'none'"],
-  'base-uri':                 ["'self'"],
-  'form-action':              ["'self'"],
-  'frame-ancestors':          ["'none'"],
+  'default-src': ["'self'"],
+  'script-src': ["'self'", "'unsafe-eval'"],
+  'style-src': ["'self'", "'unsafe-inline'"],
+  'img-src': ["'self'", 'data:', 'https:'],
+  'font-src': ["'self'", 'data:'],
+  'connect-src': ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'],
+  'frame-src': ["'none'"],
+  'object-src': ["'none'"],
+  'base-uri': ["'self'"],
+  'form-action': ["'self'"],
+  'frame-ancestors': ["'none'"],
   'upgrade-insecure-requests': [],
 } as const;
 
@@ -36,21 +32,15 @@ export function buildCSPString(): string {
     .join('; ');
 }
 
-// ─── Input Sanitization ───────────────────────────────────────
-
-/**
- * sanitizeUserInput — nettoie les entrées utilisateur avant stockage.
- * Élimine les vecteurs XSS courants.
- */
 export function sanitizeUserInput(input: unknown, maxLength = 500): string {
   if (input === null || input === undefined) return '';
   const str = String(input).trim();
 
   return str
-    .replace(/[<>]/g, '')           // Pas de balises HTML
-    .replace(/javascript:/gi, '')   // Pas de protocole JS
-    .replace(/on\w+\s*=/gi, '')     // Pas d'event handlers inline
-    .replace(/data:/gi, '')         // Pas de data URIs
+    .replace(/[<>]/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+    .replace(/data:/gi, '')
     .slice(0, maxLength);
 }
 
@@ -65,24 +55,19 @@ export function sanitizeNumber(value: unknown, min: number, max: number): number
   return Math.round(n * 100) / 100;
 }
 
-// ─── Rate Limiter client-side ─────────────────────────────────
-
 interface RateLimitEntry {
-  count:   number;
+  count: number;
   resetAt: number;
 }
 
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-/**
- * checkRateLimit — empêche le spam d'actions (magic link, form submit…).
- */
 export function checkRateLimit(
-  key:      string,
-  max:      number,
+  key: string,
+  max: number,
   windowMs: number,
 ): { allowed: boolean; remainingMs: number; remaining: number } {
-  const now   = Date.now();
+  const now = Date.now();
   const entry = rateLimitStore.get(key);
 
   if (!entry || now > entry.resetAt) {
@@ -96,39 +81,21 @@ export function checkRateLimit(
 
   entry.count++;
   return {
-    allowed:      true,
-    remainingMs:  entry.resetAt - now,
-    remaining:    max - entry.count,
+    allowed: true,
+    remainingMs: entry.resetAt - now,
+    remaining: max - entry.count,
   };
 }
 
-/** @internal Test helper — réinitialise le store rate-limit entre les tests. Ne pas utiliser en production. */
 export function _clearRateLimitStoreForTesting(): void {
   rateLimitStore.clear();
 }
 
-// ─── Storage validation ───────────────────────────────────────
-
-export function validateStorageKey(key: string): boolean {
-  return /^[a-zA-Z0-9:_-]{1,200}$/.test(key);
-}
-
-export function validateStorageValue(value: unknown): boolean {
-  try {
-    const serialized = JSON.stringify(value);
-    return serialized.length <= 1_024 * 1_024; // 1MB max
-  } catch {
-    return false;
-  }
-}
-
-// ─── Secure Headers (référence pour vercel.json) ─────────────
-
 export const SECURE_HEADERS = {
-  'X-Content-Type-Options':  'nosniff',
-  'X-Frame-Options':         'DENY',
-  'X-XSS-Protection':        '0',  // CSP est préféré
-  'Referrer-Policy':         'strict-origin-when-cross-origin',
-  'Permissions-Policy':      'camera=(), microphone=(), geolocation=(self), notifications=(self)',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '0',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self), notifications=(self)',
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
 } as const;

@@ -12,22 +12,25 @@ export default {
         'kinetic-teal':     '#00C2A0',
         'kinetic-coral':    '#FF6B6B',
         'kinetic-gold':     '#FFD166',
-        // Les deux couleurs thématiques sont pilotées par des variables CSS
-        // pour permettre le changement de thème au runtime (récompense Lv7).
-        // Format "R G B" (sans #) pour que les modificateurs d'opacité Tailwind fonctionnent.
+        // Couleurs thématiques pilotées par variables CSS (cf. styles.css)
         'kinetic-neon':     'rgb(var(--kinetic-neon) / <alpha-value>)',
         'kinetic-electric': 'rgb(var(--kinetic-electric) / <alpha-value>)',
-        'kinetic-ink':      '#070708',   // body — noir profond bleuté
-        'kinetic-surface':  '#121214',   // cards
-        'kinetic-elevated': '#1A1A1D',   // panneaux internes (formulaires)
+        // Palette de fond (Redesign v2)
+        'kinetic-ink':      '#050508',   // body — void
+        'kinetic-surface':  '#0E0E13',   // cards
+        'kinetic-elevated': '#151519',   // panneaux internes
+        'kinetic-raised':   '#1B1B21',   // niveaux supérieurs
       },
       fontFamily: {
-        display: ['"Space Grotesk"', 'Outfit', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        sans:    ['"DM Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans:    ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Space Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
+      borderRadius: {
+        'k': '20px',
       },
       boxShadow: {
-        'glow-neon':     '0 0 20px rgb(var(--kinetic-neon) / 0.42)',
-        'glow-electric': '0 0 18px rgb(var(--kinetic-electric) / 0.42)',
+        'glow-p': '0 0 20px rgb(var(--kinetic-neon) / 0.38)',
+        'glow-e': '0 0 20px rgb(var(--kinetic-electric) / 0.42)',
       },
       scale: { '98': '0.98' },
       keyframes: {
@@ -36,9 +39,19 @@ export default {
           '60%':  { transform: 'translateX(6px)', opacity: '0.8' },
           '100%': { transform: 'translateX(0)',  opacity: '0.6' },
         },
+        'slide-up': {
+          '0%':   { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)'    },
+        },
+        'scale-in': {
+          '0%':   { opacity: '0', transform: 'scale(0.88)' },
+          '100%': { opacity: '1', transform: 'scale(1)'    },
+        },
       },
       animation: {
         'slide-done': 'slide-done 0.35s cubic-bezier(0.4, 0, 1, 1) forwards',
+        'slide-up':   'slide-up 0.45s cubic-bezier(0.22, 0.68, 0, 1.2) both',
+        'scale-in':   'scale-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both',
       },
     },
   },

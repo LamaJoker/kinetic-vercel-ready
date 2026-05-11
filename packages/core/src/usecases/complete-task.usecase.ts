@@ -7,6 +7,11 @@ import type { Task }                 from '../domain/task.domain.js';
 import { addXp, computeXpState, didLevelUp } from '../domain/xp.domain.js';
 import { processActivity }           from '../domain/streak.domain.js';
 import type { StreakState }          from '../domain/streak.domain.js';
+import {
+  commitTaskMutationPlan,
+  recoverPendingTaskMutation,
+  type TaskMutationPlan,
+} from './task-mutation.shared.js';
 
 export interface CompleteTaskDeps {
   storage:  StoragePort;
@@ -26,12 +31,33 @@ export type CompleteTaskResult =
 const KEY_XP           = 'kinetic:xp';
 const KEY_STREAK       = 'kinetic:streak';
 const KEY_COMPLETED    = 'kinetic:completed-keys';
+const COMPLETED_KEYS_TTL_DAYS = 90;
 
 /** Daily XP counter — separate from cumulative `kinetic:xp` so we can
  *  report accurate per-day XP in the daily log. Reset implicitly every day
  *  by namespacing the key with the ISO date. */
 function dailyXpKeyFor(date: string): string {
   return `kinetic:xp:earned:${date}`;
+}
+
+function parseTrailingIsoDate(value: string): Date | null {
+  const match = value.match(/(\d{4}-\d{2}-\d{2})$/);
+  if (!match) return null;
+  const parsed = Date.parse(`${match[1]}T00:00:00Z`);
+  return Number.isFinite(parsed) ? new Date(parsed) : null;
+}
+
+function pruneCompletedKeys(
+  completedKeys: readonly string[],
+  todayIso: string,
+): string[] {
+  const todayMs = Date.parse(`${todayIso}T00:00:00Z`);
+  const cutoffMs = todayMs - COMPLETED_KEYS_TTL_DAYS * 24 * 60 * 60 * 1_000;
+
+  return completedKeys.filter((key) => {
+    const dated = parseTrailingIsoDate(key);
+    return dated === null || dated.getTime() >= cutoffMs;
+  });
 }
 
 export async function completeTask_usecase(
@@ -41,16 +67,18 @@ export async function completeTask_usecase(
   const { storage, clock, notifier } = deps;
   const { task, idempotencyKey }     = input;
 
+  await recoverPendingTaskMutation(storage);
+
   if (!canComplete(task)) {
     return { ok: false, reason: 'already_done' };
   }
 
-  const completedKeys = await storage.get<string[]>(KEY_COMPLETED) ?? [];
+  const today = clock.todayIsoDate();
+  const rawCompletedKeys = await storage.get<string[]>(KEY_COMPLETED) ?? [];
+  const completedKeys = pruneCompletedKeys(rawCompletedKeys, today);
   if (completedKeys.includes(idempotencyKey)) {
     return { ok: false, reason: 'already_completed_today' };
   }
-
-  const today = clock.todayIsoDate();
 
   const xpData     = await storage.get<{ xp: number }>(KEY_XP);
   const streakData = await storage.get<StreakState>(KEY_STREAK);
@@ -72,10 +100,17 @@ export async function completeTask_usecase(
   // Idempotency key written LAST: a crash between writes leaves the user
   // able to retry, but `completedKeys` already containing `idempotencyKey`
   // would silently skip XP. Persisting the key last keeps the user safe.
-  await storage.set(KEY_XP,      { xp: newXp });
-  await storage.set(KEY_STREAK,  newStreak);
-  await storage.set(dailyXpKey,  { xp: xpEarnedToday });
-  await storage.set(KEY_COMPLETED, [...completedKeys, idempotencyKey]);
+  const mutation: TaskMutationPlan = {
+    kind: 'complete_task',
+    idempotencyKey,
+    set: [
+      [KEY_XP, { xp: newXp }],
+      [KEY_STREAK, newStreak],
+      [dailyXpKey, { xp: xpEarnedToday }],
+      [KEY_COMPLETED, [...completedKeys, idempotencyKey]],
+    ],
+  };
+  await commitTaskMutationPlan(storage, mutation);
 
   notifier.notify({
     kind:    'success',

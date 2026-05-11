@@ -46,6 +46,9 @@ const METRICS: readonly MetricDef[] = [
 
 const STORAGE_KEY   = 'kinetic:measurements:entries';
 const PHOTOS_KEY    = 'kinetic:measurements:photos'; // array of PhotoMeta (sans base64)
+// Limite IDB côté validateStorageValue = 1 MB. On garde 48 KB de marge pour
+// l'overhead JSON ({"base64":""}) + l'enrobage de la valeur stockée.
+const MAX_PHOTO_BYTES = 1_000_000;
 
 /** Métadonnées d'une photo (persisté dans PHOTOS_KEY) */
 interface PhotoMeta {
@@ -63,6 +66,11 @@ export interface ProgressPhoto extends PhotoMeta {
 /** Clé IDB individuelle pour le base64 d'une photo */
 function photoDataKey(id: string): string {
   return `kinetic:measurements:photo:${id}`;
+}
+
+function estimateDataUrlBytes(dataUrl: string): number {
+  const [, payload = ''] = dataUrl.split(',', 2);
+  return Math.floor((payload.length * 3) / 4);
 }
 
 function val(entry: MeasurementEntry, key: MetricKey): number | undefined {
@@ -245,7 +253,6 @@ export function mensurations() {
         let base64 = '';
 
         if (Capacitor.isNativePlatform()) {
-          // Caméra native via Capacitor
           const photo = await Camera.getPhoto({
             quality:      85,
             allowEditing: false,
@@ -255,15 +262,48 @@ export function mensurations() {
           });
           base64 = `data:image/jpeg;base64,${photo.base64String ?? ''}`;
         } else {
-          // Fallback web — input[type=file]
           base64 = await this._pickPhotoWeb();
         }
 
         if (!base64 || base64 === 'data:image/jpeg;base64,') return;
 
-        // FIX C3: compresser avant de stocker (max 1 200 px, JPEG 75%)
+        // ── Compression en cascade ──────────────────────────────────────────
+        // Tentative 1 : standard (1 200 px, JPEG 75 %).
         let compressed = base64;
-        try { compressed = await this._compressPhoto(base64); } catch { /* garder original */ }
+        let compressOk = false;
+        try {
+          compressed = await this._compressPhoto(base64, 1200, 0.75);
+          compressOk = true;
+        } catch (err) {
+          console.warn('[mensurations] compression standard failed, trying fallback:', err);
+        }
+
+        // Tentative 2 : fallback agressif (800 px, 55 %) si T1 a échoué OU si
+        // le résultat dépasse encore la limite (photo source déjà très compressée).
+        if (!compressOk || estimateDataUrlBytes(compressed) > MAX_PHOTO_BYTES) {
+          try {
+            compressed = await this._compressPhoto(base64, 800, 0.55);
+            compressOk = true;
+          } catch (err) {
+            console.warn('[mensurations] compression fallback failed:', err);
+          }
+        }
+
+        // Refus explicite si encore trop gros, plutôt que d'écrire une valeur
+        // que validateStorageValue rejettera silencieusement côté IdbStorage.
+        const finalBytes = estimateDataUrlBytes(compressed);
+        if (finalBytes > MAX_PHOTO_BYTES) {
+          const mb    = (finalBytes / 1_048_576).toFixed(1);
+          const maxMb = (MAX_PHOTO_BYTES / 1_048_576).toFixed(1);
+          window.dispatchEvent(new CustomEvent('kinetic:notify', {
+            detail: {
+              kind: 'error',
+              message: `Photo trop volumineuse (${mb} Mo > ${maxMb} Mo max). `
+                + `Essaie une photo moins détaillée ou depuis l'appli Appareil photo.`,
+            },
+          }));
+          return;
+        }
 
         const today = new Date().toISOString().slice(0, 10);
         const entry: ProgressPhoto = {
@@ -275,10 +315,8 @@ export function mensurations() {
 
         const deps = await getDeps();
 
-        // FIX C3: stocker le base64 dans une clé dédiée (évite le seuil 1 MB du tableau)
         await deps.storage.set(photoDataKey(entry.id), { base64: compressed });
 
-        // Mettre à jour le tableau de métadonnées (sans base64)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { base64: _b, ...meta } = entry;
         const existingMeta: PhotoMeta[] = this.photos.map(
@@ -292,8 +330,15 @@ export function mensurations() {
         }));
       } catch (err) {
         console.error('[mensurations] takePhoto failed:', err);
+        const msg = err instanceof Error ? err.message : String(err);
+        const isPermission = /permission|denied|not allowed/i.test(msg);
         window.dispatchEvent(new CustomEvent('kinetic:notify', {
-          detail: { kind: 'error', message: 'Impossible de prendre la photo.' },
+          detail: {
+            kind: 'error',
+            message: isPermission
+              ? 'Accès à la caméra refusé. Autorise l\'accès dans les réglages.'
+              : 'Impossible de sauvegarder la photo. Réessaie.',
+          },
         }));
       } finally {
         this.takingPhoto = false;
