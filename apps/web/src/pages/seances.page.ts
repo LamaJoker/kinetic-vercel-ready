@@ -106,6 +106,21 @@ function isCoachGoal(value: string | null): value is CoachGoal {
   return value === 'force' || value === 'hypertrophie' || value === 'endurance';
 }
 
+/**
+ * Lit le coach goal persisté en validant la valeur. Utilisé à l'init du store
+ * et factorisable avec setCoachGoal pour garder une seule source de vérité.
+ * localStorage peut throw (mode privé iOS, WebView Capacitor restreinte) →
+ * try/catch obligatoire avec fallback sur la valeur par défaut.
+ */
+function _readCoachGoal(): CoachGoal {
+  try {
+    const stored = localStorage.getItem('kinetic:coach-goal');
+    return isCoachGoal(stored) ? stored : 'hypertrophie';
+  } catch {
+    return 'hypertrophie';
+  }
+}
+
 function sessionsCacheVersion(sessions: readonly WorkoutSession[]): string {
   const last = sessions.at(-1);
   return `${sessions.length}:${last?.id ?? ''}:${last?.startedAt ?? ''}:${last?.endedAt ?? ''}`;
@@ -126,16 +141,7 @@ export function seances() {
     userProfile: null as UserProfile | null,
     latestBodyweight: null as number | null,
 
-    coachGoal: ((): CoachGoal => {
-      // localStorage peut throw en mode privé iOS / quota dépassé / WebView
-      // Capacitor avec restrictions → fallback sûr pour ne pas crasher la page
-      try {
-        const stored = localStorage.getItem('kinetic:coach-goal');
-        return isCoachGoal(stored) ? stored : 'hypertrophie';
-      } catch {
-        return 'hypertrophie';
-      }
-    })(),
+    coachGoal: _readCoachGoal(),
     coachGoals: COACH_GOALS,
 
     showTemplates: false,
