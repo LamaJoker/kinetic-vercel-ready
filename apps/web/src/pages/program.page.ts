@@ -303,11 +303,16 @@ export function program() {
     },
 
     weekKey(): string {
+      // Clé basée sur le lundi de la semaine ISO — toute la semaine (lun→dim)
+      // partage la même clé, peu importe le jour du mois.
       const d = new Date();
-      // FIX C2: getMonth() retourne 0-11, on ajoute 1 et on zero-pad
-      const m    = String(d.getMonth() + 1).padStart(2, '0');
-      const week = Math.ceil(d.getDate() / 7);
-      return `${d.getFullYear()}-W${m}-${week}`;
+      const day = d.getDay(); // 0=dim, 1=lun, ..., 6=sam
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+      const y  = monday.getFullYear();
+      const m  = String(monday.getMonth() + 1).padStart(2, '0');
+      const dd = String(monday.getDate()).padStart(2, '0');
+      return `${y}-W${m}-${dd}`;
     },
 
     todayKey(): string {

@@ -42,6 +42,9 @@ export function goalsStore() {
 
     // Handlers stockés pour cleanup dans destroy()
     _sessionSavedHandler: null as ((event: Event) => void) | null,
+    _depsReadyHandler:    null as (() => void) | null,
+    // Mutex pour éviter le double-crédit du bonus (deux sessions rapides)
+    _awardingBonus: false,
 
     async init(): Promise<void> {
       // Un seul handler gère les deux cas :
@@ -66,6 +69,12 @@ export function goalsStore() {
       };
 
       window.addEventListener('kinetic:session-saved', this._sessionSavedHandler);
+
+      // Recharger depuis IDB quand les deps sont reconstruits (reset profil,
+      // changement de compte) — évite un cache de sessions devenu fantôme.
+      this._depsReadyHandler = () => { void this.reload(); };
+      window.addEventListener('kinetic:deps-ready', this._depsReadyHandler);
+
       await this.reload();
     },
 
@@ -73,6 +82,10 @@ export function goalsStore() {
       if (this._sessionSavedHandler) {
         window.removeEventListener('kinetic:session-saved', this._sessionSavedHandler);
         this._sessionSavedHandler = null;
+      }
+      if (this._depsReadyHandler) {
+        window.removeEventListener('kinetic:deps-ready', this._depsReadyHandler);
+        this._depsReadyHandler = null;
       }
     },
 
@@ -123,20 +136,29 @@ export function goalsStore() {
 
     /** Vérifie et crédite le bonus si nécessaire — utilisé après un delta. */
     async _maybeAwardBonus(): Promise<void> {
+      // Mutex synchrone : deux sessions rapides ne peuvent pas créer un double-crédit.
+      if (this._awardingBonus) return;
       const state = { allOk: this.allOk, weekKey: this.weekKey };
       if (!shouldAwardWeeklyBonusXp(state, this.xpAwardedWeek)) return;
+      this._awardingBonus = true;
       try {
         const deps = await getDeps();
         await this._awardBonus(deps);
       } catch (err) {
         console.warn('[goals] _maybeAwardBonus failed:', err);
+      } finally {
+        this._awardingBonus = false;
       }
     },
 
     async _awardBonus(deps: Awaited<ReturnType<typeof getDeps>>): Promise<void> {
       await awardXp(
         { storage: deps.storage, notifier: deps.notifier },
-        { amount: WEEKLY_GOAL_BONUS_XP, silent: true },
+        {
+          amount: WEEKLY_GOAL_BONUS_XP,
+          idempotencyKey: `goals:weekly-bonus:${this.weekKey}`,
+          silent: true,
+        },
       );
       this.xpAwardedWeek = this.weekKey;
       await this.save();
