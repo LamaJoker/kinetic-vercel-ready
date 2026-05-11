@@ -201,6 +201,7 @@ export class HybridStorage implements StoragePort {
       const entries = [...this.pendingWrites.entries()];
       for (const [key, pending] of entries) {
         try {
+          if (!this.pendingWrites.has(key)) continue;
           await this.remote.set(key, pending.value);
           this.pendingWrites.delete(key);
         } catch (err) {

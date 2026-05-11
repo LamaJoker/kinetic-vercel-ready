@@ -83,7 +83,7 @@ export function vitaliteStore() {
     customSpecs: [] as CustomTaskSpec[],
     loading: true,
     completingId: null as string | null,
-    _pendingIds: new Set<string>(),
+    _pendingIds: [] as string[],
 
     showAddForm: false,
     newTaskTitle: '',
@@ -119,11 +119,11 @@ export function vitaliteStore() {
     },
 
     async complete(taskId: string): Promise<void> {
-      if (this._pendingIds.has(taskId)) return;
+      if (this._pendingIds.includes(taskId)) return;
       const task = this.tasks.find((entry) => entry.id === taskId);
       if (!task || task.done) return;
 
-      this._pendingIds.add(taskId);
+      this._pendingIds = [...this._pendingIds, taskId];
       this.completingId = taskId;
 
       try {
@@ -187,17 +187,17 @@ export function vitaliteStore() {
         console.error('[vitalite] complete failed:', err);
         notify('error', 'Impossible de valider la tache. Reessaie.');
       } finally {
-        this._pendingIds.delete(taskId);
+        this._pendingIds = this._pendingIds.filter((id) => id !== taskId);
         this.completingId = null;
       }
     },
 
     async undo(taskId: string): Promise<void> {
-      if (this._pendingIds.has(taskId)) return;
+      if (this._pendingIds.includes(taskId)) return;
       const task = this.tasks.find((entry) => entry.id === taskId);
       if (!task || !task.done) return;
 
-      this._pendingIds.add(taskId);
+      this._pendingIds = [...this._pendingIds, taskId];
       this.completingId = taskId;
 
       try {
@@ -237,7 +237,7 @@ export function vitaliteStore() {
         console.error('[vitalite] undo failed:', err);
         notify('error', 'Impossible d\'annuler. Reessaie.');
       } finally {
-        this._pendingIds.delete(taskId);
+        this._pendingIds = this._pendingIds.filter((id) => id !== taskId);
         this.completingId = null;
       }
     },
@@ -369,7 +369,12 @@ export function vitaliteStore() {
     },
 
     isLocked(id: string): boolean {
-      return this._pendingIds.has(id);
+      return this._pendingIds.includes(id);
+    },
+
+    destroy(): void {
+      this._pendingIds = [];
+      this.completingId = null;
     },
 
     _hasXpBonus(): boolean {

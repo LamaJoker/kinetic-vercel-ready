@@ -1,7 +1,8 @@
 import type { StoragePort } from '@kinetic/core';
+import { STORAGE_KEYS } from '@kinetic/core';
 import type { UserProfile } from './types';
 
-const KEY_PROFILE = 'kinetic:userProfile';
+const KEY_PROFILE = STORAGE_KEYS.USER_PROFILE;
 
 export async function loadUserProfile(storage: StoragePort): Promise<UserProfile | null> {
   const data = await storage.get<UserProfile>(KEY_PROFILE);

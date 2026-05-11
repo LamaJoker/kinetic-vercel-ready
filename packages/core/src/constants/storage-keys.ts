@@ -45,7 +45,7 @@ export const STORAGE_KEYS = {
   MEASUREMENTS_PHOTOS: 'kinetic:measurements:photos' as const,
 
   // ─── Profil utilisateur ───────────────────────────────────────
-  USER_PROFILE: 'kinetic:user:profile' as const,
+  USER_PROFILE: 'kinetic:userProfile' as const,
 
   // ─── Objectifs ────────────────────────────────────────────────
   GOALS: 'kinetic:goals' as const,
