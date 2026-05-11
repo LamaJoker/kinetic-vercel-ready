@@ -169,6 +169,8 @@ export function seances() {
     // sessions array changes (tracked via its length as a cheap version counter).
     _suggestionCache: null as Map<string, ProgressionSuggestion | null> | null,
     _suggestionCacheVersion: '',
+    _exercisesByGroupCache: null as ExerciseGroup[] | null,
+    _exercisesByGroupVersion: -1,
     restPresets: [
       { label: '1 min', sec: 60 },
       { label: '90 s',  sec: 90 },
@@ -183,15 +185,21 @@ export function seances() {
 
     /** Exercices regroupés par groupe musculaire, dans l'ordre CATEGORY_ORDER. */
     get exercisesByGroup(): ExerciseGroup[] {
+      if (this._exercisesByGroupCache !== null && this._exercisesByGroupVersion === this.exercises.length) {
+        return this._exercisesByGroupCache;
+      }
       const map = new Map<MuscleCategory, Exercise[]>();
       for (const cat of CATEGORY_ORDER) map.set(cat, []);
       for (const ex of this.exercises) {
         const cat = getMuscleCategory(ex.muscles);
         map.get(cat)!.push(ex);
       }
-      return CATEGORY_ORDER
+      const result = CATEGORY_ORDER
         .filter(cat => map.get(cat)!.length > 0)
         .map(cat => ({ category: cat, exercises: map.get(cat)! }));
+      this._exercisesByGroupCache = result;
+      this._exercisesByGroupVersion = this.exercises.length;
+      return result;
     },
 
     async init(): Promise<void> {
@@ -246,6 +254,7 @@ export function seances() {
         this.tickHandle = null;
       }
       this.stopRest();
+      if (this._prDismissTimer) { clearTimeout(this._prDismissTimer); this._prDismissTimer = null; }
     },
 
     // ─── Records (PR) ────────────────────────────────────────
@@ -423,9 +432,18 @@ export function seances() {
       const reps = Number(this.draft.reps);
       const weightKg = Number(this.draft.weightKg);
       const rpe = Number(this.draft.rpe);
-      if (!Number.isFinite(reps) || reps <= 0) return;
-      if (!Number.isFinite(weightKg) || weightKg < 0) return;
-      if (!Number.isFinite(rpe) || rpe < 6 || rpe > 10) return;
+      if (!Number.isFinite(reps) || reps <= 0) {
+        window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind: 'warning', message: 'Reps invalides (min 1).' } }));
+        return;
+      }
+      if (!Number.isFinite(weightKg) || weightKg < 0) {
+        window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind: 'warning', message: 'Charge invalide (≥ 0 kg).' } }));
+        return;
+      }
+      if (!Number.isFinite(rpe) || rpe < 6 || rpe > 10) {
+        window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind: 'warning', message: 'RPE invalide (6–10).' } }));
+        return;
+      }
 
       const entry = this.currentSession.entries.find(e => e.exerciseId === exerciseId);
       if (!entry) return;

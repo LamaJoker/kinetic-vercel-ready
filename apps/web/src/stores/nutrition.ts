@@ -2,7 +2,7 @@
  * Store Alpine `nutrition` — journal macros du jour + plan cible
  * FIX: FoodEntry défini localement (pas exporté par @kinetic/core)
  */
-import { buildNutritionPlan, macroProgress } from '@kinetic/core';
+import { buildNutritionPlan, macroProgress, STORAGE_KEYS } from '@kinetic/core';
 import type { NutritionPlan } from '@kinetic/core';
 import { getDeps } from '../deps';
 
@@ -22,8 +22,8 @@ export interface LoggedMeal {
   loggedAt: string;
 }
 
-const KEY_PLAN    = 'kinetic:nutrition:plan';
-const KEY_LOG     = (date: string) => `kinetic:nutrition:log:${date}`;
+const KEY_PLAN = STORAGE_KEYS.NUTRITION_PLAN;
+const KEY_LOG  = (date: string) => STORAGE_KEYS.NUTRITION_LOG(date);
 
 function todayIso(): string {
   const d = new Date();
@@ -35,6 +35,7 @@ export function nutritionStore() {
     plan:        null as NutritionPlan | null,
     todayLog:    [] as LoggedMeal[],
     loading:     true,
+    _addMealInflightNames: new Set<string>(),
 
     get consumed() {
       let kcal = 0, proteinG = 0, carbsG = 0, fatG = 0;
@@ -89,7 +90,7 @@ export function nutritionStore() {
     async recalculatePlan(): Promise<void> {
       try {
         const deps = await getDeps();
-        const profile = await deps.storage.get<Record<string, unknown>>('kinetic:userProfile');
+        const profile = await deps.storage.get<Record<string, unknown>>(STORAGE_KEYS.USER_PROFILE);
         if (!profile) return;
         const plan = buildNutritionPlan(profile as unknown as Parameters<typeof buildNutritionPlan>[0]);
         this.plan = plan;
@@ -100,6 +101,8 @@ export function nutritionStore() {
     },
 
     async addMealItem(mealName: string, food: FoodEntry, grams: number): Promise<void> {
+      if (this._addMealInflightNames.has(mealName)) return;
+      this._addMealInflightNames.add(mealName);
       try {
         const deps  = await getDeps();
         const today = todayIso();
@@ -123,6 +126,8 @@ export function nutritionStore() {
         window.dispatchEvent(new CustomEvent('kinetic:notify', {
           detail: { kind: 'error', message: 'Impossible d\'ajouter cet aliment. Réessaie.' },
         }));
+      } finally {
+        this._addMealInflightNames.delete(mealName);
       }
     },
 

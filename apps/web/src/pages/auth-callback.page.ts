@@ -309,6 +309,7 @@ export function authCallback() {
       }
       this._subscription?.unsubscribe();
       this._subscription = null;
+      this.apkDeepLink = '';
     },
 
     /** Appelé par Alpine/router lors du démontage du composant */

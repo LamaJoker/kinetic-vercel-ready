@@ -18,6 +18,8 @@ export function bodyweight() {
     newNote:   '',
     goalWeight: null as number | null,
     period: 90,
+    _chartSvgCache: '' as string,
+    _chartSvgVersion: '' as string,
 
     get filteredEntries(): BodyweightEntry[] {
       if (this.period >= 9999) return this.entries;
@@ -153,6 +155,9 @@ export function bodyweight() {
       const pts = this.filteredEntries;
       if (pts.length < 2) return '';
 
+      const version = `${pts.length}:${pts.at(-1)?.date ?? ''}:${this.goalWeight ?? ''}:${this.period}`;
+      if (this._chartSvgVersion === version && this._chartSvgCache) return this._chartSvgCache;
+
       const W = 320, H = 140, padX = 10, padY = 20, labelH = 14;
       const weights = pts.map(e => e.weight);
       const minY = Math.min(...weights) - 0.5;
@@ -194,7 +199,7 @@ export function bodyweight() {
       const startLabel = this.formatDate(pts[0]!.date);
       const endLabel = this.formatDate(lastPt.date);
 
-      return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe de poids">
+      const svg = `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe de poids">
         ${gridLines}
         ${goalLine}
         <path d="${areaPath}" fill="#A8FF00" fill-opacity="0.07"/>
@@ -206,6 +211,9 @@ export function bodyweight() {
         <text x="${padX}" y="12" fill="#6B7280" font-size="9">${maxY.toFixed(1)} kg</text>
         <text x="${padX}" y="${chartH - 4}" fill="#6B7280" font-size="9">${minY.toFixed(1)} kg</text>
       </svg>`;
+      this._chartSvgCache = svg;
+      this._chartSvgVersion = version;
+      return svg;
     },
   };
 }

@@ -52,6 +52,10 @@ const win = typeof window !== 'undefined'
 if (win && !win._kineticAuthChangedListening) {
   win._kineticAuthChangedListening = true;
   win.addEventListener('kinetic:auth-changed', async () => {
+    if (authRebuildInflight) {
+      await authRebuildInflight;
+      return;
+    }
     const current = await getDeps().catch(() => null);
     if (current?.storage instanceof HybridStorage) return;
     if (authRebuildInflight) {
