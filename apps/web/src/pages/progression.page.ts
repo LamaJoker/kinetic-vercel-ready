@@ -26,6 +26,7 @@ export function progression() {
     selectedExerciseId: '',
     // M1 FIX: cache pour éviter de recalculer O(sessions×sets) à chaque getter Alpine
     _cachedSets: null as AnalyticsSet[] | null,
+    _sessionSavedHandler: null as ((e: Event) => void) | null,
 
     async init(): Promise<void> {
       this.loading = true;
@@ -41,6 +42,26 @@ export function progression() {
         console.error('[progression] init failed:', err);
       } finally {
         this.loading = false;
+      }
+
+      // Invalider le cache et ajouter la session en delta quand une séance est sauvegardée
+      this._sessionSavedHandler = (e: Event) => {
+        const session = (e as CustomEvent<{ session?: WorkoutSession }>).detail?.session;
+        if (session) {
+          const idx = this.sessions.findIndex(s => s.id === session.id);
+          this.sessions = idx >= 0
+            ? this.sessions.map((s, i) => i === idx ? session : s)
+            : [...this.sessions, session];
+        }
+        this._cachedSets = null; // forcer recalcul au prochain accès getter
+      };
+      window.addEventListener('kinetic:session-saved', this._sessionSavedHandler);
+    },
+
+    destroy(): void {
+      if (this._sessionSavedHandler) {
+        window.removeEventListener('kinetic:session-saved', this._sessionSavedHandler);
+        this._sessionSavedHandler = null;
       }
     },
 

@@ -8,6 +8,7 @@ import {
 } from '@kinetic/core';
 import type { Task } from '@kinetic/core';
 import { getDeps } from '../deps';
+import { sanitizeUserInput } from '../lib/security';
 
 const DEFAULT_TASKS_SPEC = [
   { id: 'morning-stretch', title: 'Etirements matin', icon: '🧘', xp: 50, priority: 'high' as const },
@@ -168,8 +169,9 @@ export function vitaliteStore() {
                 silent: true,
               },
             );
-          } catch {
-            // keep primary completion successful even if bonus write fails
+          } catch (bonusErr) {
+            // Bonus non bloquant : on garde la complétion principale réussie.
+            console.warn('[vitalite] bonus XP failed (non-bloquant):', bonusErr);
           }
         }
 
@@ -244,7 +246,7 @@ export function vitaliteStore() {
 
     async addCustomTask(): Promise<void> {
       this.addFormError = '';
-      const title = this.newTaskTitle.trim();
+      const title = sanitizeUserInput(this.newTaskTitle, 60);
       if (!title) {
         this.addFormError = 'Le titre est requis.';
         return;
@@ -320,9 +322,15 @@ export function vitaliteStore() {
           }]),
         );
         const dates = Array.from({ length: this._rewardsHistoryDays() }, (_, index) => dateIso(-(index + 1)));
-        const allDoneIds = await Promise.all(
-          dates.map((date) => deps.storage.get<string[]>(`kinetic:vitalite:done:${date}`)),
-        );
+        // Batching par 5 pour éviter d'engorger le thread IDB sur mobile
+        const BATCH = 5;
+        const allDoneIds: (string[] | null)[] = [];
+        for (let i = 0; i < dates.length; i += BATCH) {
+          const batchResult = await Promise.all(
+            dates.slice(i, i + BATCH).map((date) => deps.storage.get<string[]>(`kinetic:vitalite:done:${date}`)),
+          );
+          allDoneIds.push(...batchResult);
+        }
         this.historyDays = dates.map((date, index) => {
           const doneIds = allDoneIds[index] ?? [];
           return {

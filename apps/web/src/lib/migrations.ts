@@ -51,7 +51,19 @@ export async function runMigrationsIfNeeded(storage: StoragePort): Promise<void>
       await runMigration(v, storage);
       await storage.set(KEY, v);
     } catch (err) {
-      await restoreSnapshot(storage, snapshot);
+      try {
+        await restoreSnapshot(storage, snapshot);
+      } catch (restoreErr) {
+        console.error('[migrations] restoreSnapshot échoué — données potentiellement corrompues:', restoreErr);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('kinetic:notify', {
+            detail: {
+              kind: 'error',
+              message: 'Migration échouée. Sauvegardez vos données et rechargez l\'application.',
+            },
+          }));
+        }
+      }
       throw err;
     }
   }

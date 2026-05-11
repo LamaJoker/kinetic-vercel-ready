@@ -57,7 +57,7 @@ export function nutritionStore() {
     },
 
     get progress() {
-      if (!this.plan) return null;
+      if (!this.plan?.macros) return null;
       return macroProgress(this.consumed, this.plan.macros);
     },
 
@@ -101,6 +101,12 @@ export function nutritionStore() {
     },
 
     async addMealItem(mealName: string, food: FoodEntry, grams: number): Promise<void> {
+      if (!Number.isFinite(grams) || grams <= 0) {
+        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          detail: { kind: 'warning', message: 'Quantité invalide (doit être > 0 g).' },
+        }));
+        return;
+      }
       if (this._addMealInflightNames.has(mealName)) return;
       this._addMealInflightNames.add(mealName);
       try {
