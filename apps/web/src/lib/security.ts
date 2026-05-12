@@ -32,16 +32,26 @@ export function buildCSPString(): string {
     .join('; ');
 }
 
+/**
+ * Sanitize a user-supplied string for safe use as text content (never as HTML).
+ *
+ * Strategy: encode HTML entities so the string is always safe to insert via
+ * textContent or as an attribute value. This is a whitelist-output approach
+ * rather than a blacklist-strip approach, which is more robust against bypass.
+ *
+ * IMPORTANT: Never insert the returned string via innerHTML. Use .textContent
+ * or setAttribute() instead. If you need to render HTML, use DOMPurify.
+ */
 export function sanitizeUserInput(input: unknown, maxLength = 500): string {
   if (input === null || input === undefined) return '';
-  const str = String(input).trim();
+  const str = String(input).trim().slice(0, maxLength);
 
   return str
-    .replace(/[<>]/g, '')
-    .replace(/javascript:/gi, '')
-    .replace(/on\w+\s*=/gi, '')
-    .replace(/data:/gi, '')
-    .slice(0, maxLength);
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
 }
 
 export function sanitizeEmail(email: string): string {

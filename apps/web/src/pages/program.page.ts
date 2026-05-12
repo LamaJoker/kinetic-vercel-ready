@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { navigate } from '../router';
 
@@ -217,10 +218,10 @@ export function program() {
         const deps = await getDeps();
         // Lectures parallèles : 4 round-trips IDB → 1 batch
         const [stored, completed, todo, genCount] = await Promise.all([
-          deps.storage.get<ActiveProgram>('kinetic:program:active'),
-          deps.storage.get<number[]>('kinetic:program:completedDays:' + this.weekKey()),
-          deps.storage.get<Record<string, boolean>>('kinetic:program:todoStatus:' + this.todayKey()),
-          deps.storage.get<number>('kinetic:program:generatedCount'),
+          deps.storage.get<ActiveProgram>(STORAGE_KEYS.PROGRAM_ACTIVE),
+          deps.storage.get<number[]>(STORAGE_KEYS.PROGRAM_COMPLETED_DAYS(this.weekKey())),
+          deps.storage.get<Record<string, boolean>>(STORAGE_KEYS.PROGRAM_TODO_STATUS(this.todayKey())),
+          deps.storage.get<number>(STORAGE_KEYS.PROGRAM_GENERATED_COUNT),
         ]);
         if (stored) this.activeProgram = stored;
         if (completed) this.completedDayIds = completed;
@@ -236,8 +237,8 @@ export function program() {
       this.generating = true;
       try {
         const deps = await getDeps();
-        const exercises = (await deps.storage.get<ExerciseRecord[]>('kinetic:training:exercises')) ?? [];
-        const existingTemplates = (await deps.storage.get<TrainingTemplate[]>('kinetic:training:templates')) ?? [];
+        const exercises = (await deps.storage.get<ExerciseRecord[]>(STORAGE_KEYS.TRAINING_EXERCISES)) ?? [];
+        const existingTemplates = (await deps.storage.get<TrainingTemplate[]>(STORAGE_KEYS.TRAINING_TEMPLATES)) ?? [];
 
         const allExIds = exercises.map(e => e.id);
         const newTemplates: TrainingTemplate[] = [];
@@ -284,9 +285,9 @@ export function program() {
 
         if (newTemplates.length > 0) {
           const merged = [...existingTemplates, ...newTemplates];
-          await deps.storage.set('kinetic:training:templates', merged);
+          await deps.storage.set(STORAGE_KEYS.TRAINING_TEMPLATES, merged);
           this.generatedCount = newTemplates.length;
-          await deps.storage.set('kinetic:program:generatedCount', this.generatedCount);
+          await deps.storage.set(STORAGE_KEYS.PROGRAM_GENERATED_COUNT, this.generatedCount);
           window.dispatchEvent(new CustomEvent('kinetic:notify', {
             detail: { kind: 'success', message: newTemplates.length + ' templates créés ✓' },
           }));
@@ -333,7 +334,7 @@ export function program() {
       };
       try {
         const deps = await getDeps();
-        await deps.storage.set('kinetic:program:active', prog);
+        await deps.storage.set(STORAGE_KEYS.PROGRAM_ACTIVE, prog);
         this.activeProgram = prog;
         window.dispatchEvent(new CustomEvent('kinetic:notify', {
           detail: { kind: 'success', message: 'Programme activé ✓' },
@@ -350,14 +351,14 @@ export function program() {
       try {
         const deps = await getDeps();
         this.todoStatus = { ...this.todoStatus, [exId]: !(this.todoStatus[exId] ?? false) };
-        await deps.storage.set('kinetic:program:todoStatus:' + this.todayKey(), this.todoStatus);
+        await deps.storage.set(STORAGE_KEYS.PROGRAM_TODO_STATUS(this.todayKey()), this.todoStatus);
 
         const exs = this.todayExercises;
         if (exs.length > 0 && exs.every(e => this.todoStatus[e.id])) {
           const today = new Date().getDay();
           if (!this.completedDayIds.includes(today)) {
             this.completedDayIds = [...this.completedDayIds, today];
-            await deps.storage.set('kinetic:program:completedDays:' + this.weekKey(), this.completedDayIds);
+            await deps.storage.set(STORAGE_KEYS.PROGRAM_COMPLETED_DAYS(this.weekKey()), this.completedDayIds);
             window.dispatchEvent(new CustomEvent('kinetic:notify', {
               detail: { kind: 'success', message: 'Séance complète ! 🏆 +50 XP' },
             }));
@@ -385,7 +386,7 @@ export function program() {
       }
       try {
         const deps = await getDeps();
-        const templates = (await deps.storage.get<TrainingTemplate[]>('kinetic:training:templates')) ?? [];
+        const templates = (await deps.storage.get<TrainingTemplate[]>(STORAGE_KEYS.TRAINING_TEMPLATES)) ?? [];
         const match = templates.find(t =>
           t.name.toLowerCase() === focus.focus.toLowerCase() ||
           t.name.toLowerCase().includes(focus.focus.toLowerCase()) ||
@@ -394,7 +395,7 @@ export function program() {
         if (match) {
           // Passe le template ID via sessionStorage — seances.page.ts le récupère dans init().
           // sessionStorage peut throw en mode privé iOS / quota plein → safe wrap.
-          try { sessionStorage.setItem('kinetic:program:auto-template', match.id); }
+          try { sessionStorage.setItem(STORAGE_KEYS.PROGRAM_AUTO_TEMPLATE, match.id); }
           catch { /* on perd le hand-off mais l'utilisateur peut choisir manuellement */ }
         }
       } catch {}

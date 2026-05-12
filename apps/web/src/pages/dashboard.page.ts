@@ -2,8 +2,9 @@
  * Composant Alpine pour la page dashboard.
  * Enregistré dans main.ts via Alpine.data('dashboard', dashboard).
  */
-import { getDeps } from '../deps';
+import { STORAGE_KEYS } from '@kinetic/core';
 import type { StreakState } from '@kinetic/core';
+import { getDeps } from '../deps';
 
 interface ActivityDay {
   label:  string;
@@ -36,7 +37,7 @@ export function dashboard() {
       try {
         const deps = await getDeps();
 
-        const streakData = await deps.storage.get<StreakState>('kinetic:streak');
+        const streakData = await deps.storage.get<StreakState>(STORAGE_KEYS.STREAK);
         if (streakData) {
           this.streak     = streakData.count ?? 0;
           this.bestStreak = streakData.best  ?? 0;

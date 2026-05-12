@@ -4,6 +4,7 @@
  * FIX #3: Hash URL préservé avant navigation pour les magic links
  */
 import Alpine from 'alpinejs';
+import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from './deps';
 
 const PAGE_MODULES = import.meta.glob('./pages/*.html', {
@@ -70,7 +71,7 @@ async function hasCompletedOnboarding(): Promise<boolean> {
   if (_onboardingKnown !== null) return _onboardingKnown;
   try {
     const deps = await getDeps();
-    const profile = await deps.storage.get('kinetic:userProfile');
+    const profile = await deps.storage.get(STORAGE_KEYS.USER_PROFILE);
     _onboardingKnown = Boolean(profile);
     return _onboardingKnown;
   } catch {

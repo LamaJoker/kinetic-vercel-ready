@@ -9,6 +9,7 @@ import type { StoragePort } from '../ports/storage.port.js';
 import type { ClockPort }   from '../ports/clock.port.js';
 import type { Task }        from '../domain/task.domain.js';
 import { resetRecurringTask } from '../domain/task.domain.js';
+import { STORAGE_KEYS } from '../constants/storage-keys.js';
 
 export interface ResetDailyTasksDeps {
   storage: StoragePort;
@@ -16,14 +17,14 @@ export interface ResetDailyTasksDeps {
 }
 
 export interface ResetDailyTasksResult {
-  reset:      boolean;  // true si un reset a été effectué
-  tasksReset: number;   // Nombre de tâches réinitialisées
-  date:       string;   // Date du reset
+  reset:      boolean;
+  tasksReset: number;
+  date:       string;
 }
 
-const KEY_VITALITE_TASKS     = 'kinetic:vitalite:tasks';
+const KEY_VITALITE_TASKS      = STORAGE_KEYS.VITALITE_TASKS;
 const KEY_VITALITE_LAST_RESET = 'kinetic:vitalite:last-reset';
-const KEY_COMPLETED          = 'kinetic:completed-keys';
+const KEY_COMPLETED           = 'kinetic:completed-keys';
 
 export async function resetDailyTasks(
   deps: ResetDailyTasksDeps,

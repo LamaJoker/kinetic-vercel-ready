@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 
 interface BodyweightEntry {
@@ -7,8 +8,8 @@ interface BodyweightEntry {
   note: string | null;
 }
 
-const STORAGE_KEY_ENTRIES = 'kinetic:bodyweight:entries';
-const STORAGE_KEY_GOAL    = 'kinetic:bodyweight:goal';
+const STORAGE_KEY_ENTRIES = STORAGE_KEYS.BODYWEIGHT_ENTRIES;
+const STORAGE_KEY_GOAL    = STORAGE_KEYS.BODYWEIGHT_GOAL;
 
 export function bodyweight() {
   return {

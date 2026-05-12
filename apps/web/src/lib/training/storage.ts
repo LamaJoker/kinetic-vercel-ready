@@ -1,10 +1,11 @@
 import type { StoragePort } from '@kinetic/core';
+import { STORAGE_KEYS } from '@kinetic/core';
 import type { Exercise, WorkoutSession, WorkoutTemplate } from './types';
 import { DEFAULT_EXERCISES, DEFAULT_TEMPLATES } from './seed';
 
-const KEY_EXERCISES = 'kinetic:training:exercises';
-const KEY_TEMPLATES = 'kinetic:training:templates';
-const KEY_SESSIONS = 'kinetic:training:sessions';
+const KEY_EXERCISES = STORAGE_KEYS.TRAINING_EXERCISES;
+const KEY_TEMPLATES = STORAGE_KEYS.TRAINING_TEMPLATES;
+const KEY_SESSIONS  = STORAGE_KEYS.TRAINING_SESSIONS;
 const EXERCISES_FETCH_TIMEOUT_MS = 8000;
 
 export async function loadExercises(storage: StoragePort): Promise<Exercise[]> {

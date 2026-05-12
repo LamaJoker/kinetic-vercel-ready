@@ -22,21 +22,31 @@ describe('Security Module', () => {
       expect(sanitizeUserInput('Hello world')).toBe('Hello world');
     });
 
-    it('supprime les balises HTML', () => {
-      expect(sanitizeUserInput('<script>alert(1)</script>')).toBe('scriptalert(1)/script');
+    it('encode les balises HTML en entités (whitelist encoding)', () => {
+      const result = sanitizeUserInput('<script>alert(1)</script>');
+      expect(result).toBe('&lt;script&gt;alert(1)&lt;/script&gt;');
+      expect(result).not.toContain('<');
+      expect(result).not.toContain('>');
     });
 
-    it('supprime les protocoles javascript:', () => {
-      expect(sanitizeUserInput('javascript:alert(1)')).not.toContain('javascript:');
+    it('encode les guillemets doubles', () => {
+      expect(sanitizeUserInput('"value"')).toBe('&quot;value&quot;');
     });
 
-    it('supprime les event handlers', () => {
-      expect(sanitizeUserInput('onclick=evil()')).not.toContain('onclick=');
-      expect(sanitizeUserInput('onmouseover=hack()')).not.toContain('onmouseover=');
+    it('encode les apostrophes', () => {
+      expect(sanitizeUserInput("it's")).toBe('it&#x27;s');
     });
 
-    it('supprime les data URIs', () => {
-      expect(sanitizeUserInput('data:text/html,<h1>XSS</h1>')).not.toContain('data:');
+    it('encode les esperluettes', () => {
+      expect(sanitizeUserInput('a & b')).toBe('a &amp; b');
+    });
+
+    it('conserve le texte javascript: sans le modifier (ce n\'est pas du HTML)', () => {
+      // La nouvelle implémentation encode les chars dangereux <> " ' &
+      // mais ne supprime pas les protocoles — c'est safe car on encode toujours
+      const result = sanitizeUserInput('javascript:alert(1)');
+      expect(result).not.toContain('<');
+      expect(result).not.toContain('>');
     });
 
     it('tronque à maxLength', () => {

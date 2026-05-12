@@ -10,11 +10,11 @@
  *   - Exposer l'état dérivé (currentLevel, progressPercent, etc.)
  *   - Fournir `reload()` pour que d'autres stores demandent un refresh après un use-case
  */
-import { computeXpState } from '@kinetic/core';
+import { STORAGE_KEYS, computeXpState } from '@kinetic/core';
 import type { XpState } from '@kinetic/core';
 import { getDeps } from '../deps';
 
-const KEY_XP = 'kinetic:xp';
+const KEY_XP = STORAGE_KEYS.XP;
 
 export function xpStore() {
   const empty = computeXpState(0);

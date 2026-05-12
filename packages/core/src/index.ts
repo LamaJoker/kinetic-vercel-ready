@@ -38,7 +38,6 @@ export {
   addXp,
   didLevelUp,
   getNewLevel,
-  getRewardForLevel,
 }                                             from './domain/xp.domain.js';
 export type { Level, XpState, Reward, RewardKind } from './domain/xp.domain.js';
 

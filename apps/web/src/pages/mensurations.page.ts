@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
@@ -44,8 +45,8 @@ const METRICS: readonly MetricDef[] = [
   { key: 'neck',       label: 'Cou',       color: '#FFD166' },
 ] as const;
 
-const STORAGE_KEY   = 'kinetic:measurements:entries';
-const PHOTOS_KEY    = 'kinetic:measurements:photos'; // array of PhotoMeta (sans base64)
+const STORAGE_KEY = STORAGE_KEYS.MEASUREMENTS_ENTRIES;
+const PHOTOS_KEY  = STORAGE_KEYS.MEASUREMENTS_PHOTOS;
 // Limite IDB côté validateStorageValue = 1 MB. On garde 48 KB de marge pour
 // l'overhead JSON ({"base64":""}) + l'enrobage de la valeur stockée.
 const MAX_PHOTO_BYTES = 1_000_000;

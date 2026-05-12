@@ -1,7 +1,8 @@
 import { Capacitor } from '@capacitor/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { STORAGE_KEYS } from '@kinetic/core';
 
-const DEBUG_KEY = 'kinetic:auth-debug';
+const DEBUG_KEY = STORAGE_KEYS.AUTH_DEBUG;
 
 /**
  * Stocke un message de debug dans localStorage.

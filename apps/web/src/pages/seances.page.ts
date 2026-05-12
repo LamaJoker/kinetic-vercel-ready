@@ -1,12 +1,12 @@
-import { getDeps } from '../deps';
+import { STORAGE_KEYS, suggestProgression, needsDeload, type ProgressionSuggestion, type PerformedSet } from '@kinetic/core';
 import { UuidGenerator } from '@kinetic/adapters-web';
+import { getDeps } from '../deps';
 import type { Exercise, SessionExerciseEntry, WorkoutSession, WorkoutTemplate } from '../lib/training/types';
 import { loadExercises, loadSessions, loadTemplates, saveSessions, saveTemplates } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
 import { estimateStrengthWorkoutCaloriesKcal } from '../lib/training/calories';
 import type { UserProfile } from '../lib/user/types';
 import { loadUserProfile } from '../lib/user/storage';
-import { suggestProgression, needsDeload, type ProgressionSuggestion, type PerformedSet } from '@kinetic/core';
 import { suggestedRestSec, requestNotificationPermission } from '../lib/training/rest-timer';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import { hapticLight, hapticMedium, hapticSuccess, hapticHeavy } from '../lib/haptics';
@@ -114,7 +114,7 @@ function isCoachGoal(value: string | null): value is CoachGoal {
  */
 function _readCoachGoal(): CoachGoal {
   try {
-    const stored = localStorage.getItem('kinetic:coach-goal');
+    const stored = localStorage.getItem(STORAGE_KEYS.COACH_GOAL);
     return isCoachGoal(stored) ? stored : 'hypertrophie';
   } catch {
     return 'hypertrophie';
@@ -212,7 +212,7 @@ export function seances() {
         this.userProfile = await loadUserProfile(deps.storage);
 
         // Charger le dernier poids corporel
-        const bwEntries = await deps.storage.get<Array<{weight: number}>>('kinetic:bodyweight:entries');
+        const bwEntries = await deps.storage.get<Array<{weight: number}>>(STORAGE_KEYS.BODYWEIGHT_ENTRIES);
         if (Array.isArray(bwEntries) && bwEntries.length > 0) {
           this.latestBodyweight = bwEntries.at(-1)?.weight ?? null;
         }
@@ -221,8 +221,8 @@ export function seances() {
         // sessionStorage peut throw en mode privé / WebView restreint
         let autoTemplateId: string | null = null;
         try {
-          autoTemplateId = sessionStorage.getItem('kinetic:program:auto-template');
-          if (autoTemplateId) sessionStorage.removeItem('kinetic:program:auto-template');
+          autoTemplateId = sessionStorage.getItem(STORAGE_KEYS.PROGRAM_AUTO_TEMPLATE);
+          if (autoTemplateId) sessionStorage.removeItem(STORAGE_KEYS.PROGRAM_AUTO_TEMPLATE);
         } catch { /* sessionStorage indisponible — on saute silencieusement */ }
 
         if (autoTemplateId) {
@@ -637,7 +637,7 @@ export function seances() {
       if (!isCoachGoal(goal)) return;
       this.coachGoal = goal;
       try {
-        localStorage.setItem('kinetic:coach-goal', goal);
+        localStorage.setItem(STORAGE_KEYS.COACH_GOAL, goal);
       } catch (err) {
         // Quota dépassé / mode privé : on garde le choix en mémoire pour la
         // session, sans bloquer l'UI. Au pire, le goal repasse au défaut au reload.

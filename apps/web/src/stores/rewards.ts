@@ -11,15 +11,15 @@
  * par vitaliteStore via `Alpine.store('rewards')`.
  */
 
-import { REWARDS, processActivity } from '@kinetic/core';
+import { STORAGE_KEYS, REWARDS, processActivity } from '@kinetic/core';
 import type { Reward, StreakState } from '@kinetic/core';
 import { getDeps } from '../deps';
 
 // ─── Clés storage ────────────────────────────────────────────────────────────
-const KEY_FREEZE_TOKENS      = 'kinetic:rewards:freeze-tokens';
-const KEY_FREEZE_WEEK        = 'kinetic:rewards:freeze-replenished-week';
-const KEY_STREAK             = 'kinetic:streak';
-const KEY_THEME              = 'kinetic:rewards:theme';
+const KEY_FREEZE_TOKENS = STORAGE_KEYS.REWARDS_FREEZE_TOKENS;
+const KEY_FREEZE_WEEK   = STORAGE_KEYS.REWARDS_FREEZE_WEEK;
+const KEY_STREAK        = STORAGE_KEYS.STREAK;
+const KEY_THEME         = STORAGE_KEYS.REWARDS_THEME;
 
 // ─── Thèmes ───────────────────────────────────────────────────────────────────
 export interface Theme {

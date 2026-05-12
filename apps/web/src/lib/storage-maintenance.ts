@@ -11,12 +11,13 @@
  */
 
 import type { StoragePort } from '@kinetic/core';
+import { STORAGE_KEYS } from '@kinetic/core';
 
 const RETENTION_DAYS = 90;
 
 const DAILY_KEY_PREFIXES = [
-  'kinetic:vitalite:done:',
-  'kinetic:xp:earned:',
+  STORAGE_KEYS.VITALITE_DONE_PREFIX,
+  STORAGE_KEYS.XP_EARNED_PREFIX,
 ];
 
 function dateFromDailyKey(key: string): string | null {

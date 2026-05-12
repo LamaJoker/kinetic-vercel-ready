@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import {
@@ -41,9 +42,9 @@ export function profile() {
 
         // Lectures parallèles : 3 round-trips IDB → 1 batch
         const [profileData, streakData, stats] = await Promise.all([
-          deps.storage.get<ProfileShape>('kinetic:profile'),
-          deps.storage.get<StreakShape>('kinetic:streak'),
-          deps.storage.get<StatsShape>('kinetic:stats'),
+          deps.storage.get<ProfileShape>(STORAGE_KEYS.PROFILE),
+          deps.storage.get<StreakShape>(STORAGE_KEYS.STREAK),
+          deps.storage.get<StatsShape>(STORAGE_KEYS.STATS),
         ]);
 
         if (profileData && typeof profileData === 'object') {
@@ -101,8 +102,8 @@ export function profile() {
       const name = this.displayNameInput.trim().slice(0, 40);
       try {
         const deps = await getDeps();
-        const profileData = (await deps.storage.get<ProfileShape>('kinetic:profile')) ?? {};
-        await deps.storage.set('kinetic:profile', { ...profileData, displayName: name });
+        const profileData = (await deps.storage.get<ProfileShape>(STORAGE_KEYS.PROFILE)) ?? {};
+        await deps.storage.set(STORAGE_KEYS.PROFILE, { ...profileData, displayName: name });
         this.displayName = name;
         const now = new Date();
         this.savedAt = `Sauvegardé à ${now.getHours()}h${String(now.getMinutes()).padStart(2,'0')}`;
@@ -120,8 +121,8 @@ export function profile() {
       try {
         const deps = await getDeps();
         const [sessions, exercises] = await Promise.all([
-          deps.storage.get<WorkoutSession[]>('kinetic:training:sessions'),
-          deps.storage.get<Exercise[]>('kinetic:training:exercises'),
+          deps.storage.get<WorkoutSession[]>(STORAGE_KEYS.TRAINING_SESSIONS),
+          deps.storage.get<Exercise[]>(STORAGE_KEYS.TRAINING_EXERCISES),
         ]);
         const s = Array.isArray(sessions) ? sessions : [];
         const e = Array.isArray(exercises) ? exercises : [];
@@ -146,8 +147,8 @@ export function profile() {
       try {
         const deps = await getDeps();
         const [sessions, exercises] = await Promise.all([
-          deps.storage.get<WorkoutSession[]>('kinetic:training:sessions'),
-          deps.storage.get<Exercise[]>('kinetic:training:exercises'),
+          deps.storage.get<WorkoutSession[]>(STORAGE_KEYS.TRAINING_SESSIONS),
+          deps.storage.get<Exercise[]>(STORAGE_KEYS.TRAINING_EXERCISES),
         ]);
         const s = Array.isArray(sessions) ? sessions : [];
         const e = Array.isArray(exercises) ? exercises : [];
