@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from '@kinetic/core';
+﻿import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 
 interface BodyweightEntry {
@@ -121,12 +121,12 @@ export function bodyweight() {
         }
         this.entries = next;
         this.newWeight = null; this.newBf = null; this.newNote = '';
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'success', message: entry.weight.toFixed(1) + ' kg enregistré' },
         }));
       } catch (err) {
         console.error('[bodyweight] addEntry failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec enregistrement du poids. Réessaie.' },
         }));
       }
@@ -140,7 +140,7 @@ export function bodyweight() {
         this.entries = next;
       } catch (err) {
         console.error('[bodyweight] removeEntry failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec de suppression. Réessaie.' },
         }));
       }

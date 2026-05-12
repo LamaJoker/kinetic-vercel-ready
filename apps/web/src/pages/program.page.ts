@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from '@kinetic/core';
+﻿import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { navigate } from '../router';
 
@@ -288,11 +288,11 @@ export function program() {
           await deps.storage.set(STORAGE_KEYS.TRAINING_TEMPLATES, merged);
           this.generatedCount = newTemplates.length;
           await deps.storage.set(STORAGE_KEYS.PROGRAM_GENERATED_COUNT, this.generatedCount);
-          window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
             detail: { kind: 'success', message: newTemplates.length + ' templates créés ✓' },
           }));
         } else {
-          window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
             detail: { kind: 'info', message: 'Templates déjà existants pour ce programme' },
           }));
         }
@@ -336,12 +336,12 @@ export function program() {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEYS.PROGRAM_ACTIVE, prog);
         this.activeProgram = prog;
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'success', message: 'Programme activé ✓' },
         }));
       } catch (err) {
         console.error('[program] selectSplit failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec activation du programme. Réessaie.' },
         }));
       }
@@ -359,7 +359,7 @@ export function program() {
           if (!this.completedDayIds.includes(today)) {
             this.completedDayIds = [...this.completedDayIds, today];
             await deps.storage.set(STORAGE_KEYS.PROGRAM_COMPLETED_DAYS(this.weekKey()), this.completedDayIds);
-            window.dispatchEvent(new CustomEvent('kinetic:notify', {
+            window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
               detail: { kind: 'success', message: 'Séance complète ! 🏆 +50 XP' },
             }));
           }
@@ -398,7 +398,7 @@ export function program() {
           try { sessionStorage.setItem(STORAGE_KEYS.PROGRAM_AUTO_TEMPLATE, match.id); }
           catch { /* on perd le hand-off mais l'utilisateur peut choisir manuellement */ }
         }
-      } catch {}
+      } catch { /* ignore — sessionStorage peut throw en mode privé */ }
       navigate('/seances');
     },
   };

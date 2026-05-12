@@ -165,12 +165,12 @@ export function initRouter(): void {
 
   let _authReadyReceived = false;
 
-  window.addEventListener('kinetic:auth-ready', () => {
+  window.addEventListener(STORAGE_KEYS.EVENT_AUTH_READY, () => {
     _authReadyReceived = true;
     void render(window.location.pathname || '/');
   }, { once: true });
 
-  window.addEventListener('kinetic:onboarding-complete', () => {
+  window.addEventListener(STORAGE_KEYS.EVENT_ONBOARDING_COMPLETE, () => {
     _onboardingKnown = true;
     void render(window.location.pathname || '/');
   });
@@ -188,7 +188,8 @@ export function initRouter(): void {
     if (_authReadyReceived) return; // listener déjà consommé, render en cours
     const appOutlet = document.getElementById('app-outlet');
     if (appOutlet && appOutlet.hasChildNodes()) return; // déjà rendu
-    const auth = (window as any).Alpine?.store?.('auth') as { loading?: boolean } | undefined;
+    type WindowWithAlpine = Window & { Alpine?: { store?: (name: string) => unknown } };
+    const auth = (window as WindowWithAlpine).Alpine?.store?.('auth') as { loading?: boolean } | undefined;
     if (!auth || auth.loading === false) {
       void render(window.location.pathname || '/');
     }

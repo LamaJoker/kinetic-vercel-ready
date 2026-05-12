@@ -1,3 +1,4 @@
+﻿import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import {
   weeklyVolume,
@@ -55,12 +56,12 @@ export function progression() {
         }
         this._cachedSets = null; // forcer recalcul au prochain accès getter
       };
-      window.addEventListener('kinetic:session-saved', this._sessionSavedHandler);
+      window.addEventListener(STORAGE_KEYS.EVENT_SESSION_SAVED, this._sessionSavedHandler);
     },
 
     destroy(): void {
       if (this._sessionSavedHandler) {
-        window.removeEventListener('kinetic:session-saved', this._sessionSavedHandler);
+        window.removeEventListener(STORAGE_KEYS.EVENT_SESSION_SAVED, this._sessionSavedHandler);
         this._sessionSavedHandler = null;
       }
     },

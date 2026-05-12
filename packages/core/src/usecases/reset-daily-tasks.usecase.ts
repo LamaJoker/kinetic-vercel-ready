@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ResetDailyTasks Use Case — réinitialise les tâches récurrentes pour un nouveau jour.
  *
  * Appelé au démarrage de l'app si le dernier reset était un jour différent.
@@ -23,8 +23,8 @@ export interface ResetDailyTasksResult {
 }
 
 const KEY_VITALITE_TASKS      = STORAGE_KEYS.VITALITE_TASKS;
-const KEY_VITALITE_LAST_RESET = 'kinetic:vitalite:last-reset';
-const KEY_COMPLETED           = 'kinetic:completed-keys';
+const KEY_VITALITE_LAST_RESET = STORAGE_KEYS.VITALITE_LAST_RESET;
+const KEY_COMPLETED           = STORAGE_KEYS.COMPLETED_KEYS;
 
 export async function resetDailyTasks(
   deps: ResetDailyTasksDeps,

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * stores/auth.ts
  *
  * FIX #1 : dispatchAuthReady() appelé UNE SEULE FOIS.
@@ -20,6 +20,7 @@ import {
   authRateLimiter, callbackUrl,
 } from '@kinetic/adapters-web';
 import type { AuthUser } from '@kinetic/adapters-web';
+import { STORAGE_KEYS } from '@kinetic/core';
 import { flushAndResetDeps, resetDeps } from '../deps';
 
 // FIX #4 : Log explicite plutôt que dégradation silencieuse
@@ -42,7 +43,7 @@ let _authReadyDispatched = false; // FIX #1 : guard contre le double dispatch
 function dispatchAuthReady(): void {
   if (_authReadyDispatched) return; // FIX #1 : idempotent
   _authReadyDispatched = true;
-  window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
+  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_AUTH_READY));
 }
 
 export function authStore() {
@@ -110,7 +111,7 @@ export function authStore() {
           // dispatche une notification de mise à jour pour que les composants
           // qui en ont besoin puissent se recharger (ex: dashboard).
           if (event === 'SIGNED_IN' && _authReadyDispatched) {
-            window.dispatchEvent(new CustomEvent('kinetic:auth-changed'));
+            window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_AUTH_CHANGED));
           }
         });
         this._authSubscription = subscription;

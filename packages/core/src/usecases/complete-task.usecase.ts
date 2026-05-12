@@ -1,8 +1,9 @@
-import type { StoragePort } from '../ports/storage.port.js';
+﻿import type { StoragePort } from '../ports/storage.port.js';
 import type { ClockPort }   from '../ports/clock.port.js';
 import type { NotifierPort } from '../ports/notifier.port.js';
 
-import { canComplete, completeTask } from '../domain/task.domain.js';
+import { STORAGE_KEYS } from '../constants/storage-keys.js';
+import { canComplete } from '../domain/task.domain.js';
 import type { Task }                 from '../domain/task.domain.js';
 import { addXp, computeXpState, didLevelUp } from '../domain/xp.domain.js';
 import { processActivity }           from '../domain/streak.domain.js';
@@ -28,9 +29,9 @@ export type CompleteTaskResult =
   | { ok: true;  xpAwarded: number; leveledUp: boolean; newLevel?: number | undefined }
   | { ok: false; reason: 'already_done' | 'already_completed_today' | 'invalid_task' };
 
-const KEY_XP           = 'kinetic:xp';
-const KEY_STREAK       = 'kinetic:streak';
-const KEY_COMPLETED    = 'kinetic:completed-keys';
+const KEY_XP           = STORAGE_KEYS.XP;
+const KEY_STREAK       = STORAGE_KEYS.STREAK;
+const KEY_COMPLETED    = STORAGE_KEYS.COMPLETED_KEYS;
 const COMPLETED_KEYS_TTL_DAYS = 90;
 
 /** Daily XP counter — separate from cumulative `kinetic:xp` so we can

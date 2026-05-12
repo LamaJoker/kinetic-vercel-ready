@@ -1,7 +1,8 @@
-import type { StoragePort } from '../ports/storage.port.js';
+﻿import type { StoragePort } from '../ports/storage.port.js';
 import type { ClockPort } from '../ports/clock.port.js';
 import type { NotifierPort } from '../ports/notifier.port.js';
 import type { Task } from '../domain/task.domain.js';
+import { STORAGE_KEYS } from '../constants/storage-keys.js';
 import {
   commitTaskMutationPlan,
   recoverPendingTaskMutation,
@@ -26,9 +27,9 @@ export type UndoTaskResult =
   | { ok: true; undone: false; reason: 'not_completed' }
   | { ok: false; reason: 'invalid_bonus' };
 
-const KEY_XP = 'kinetic:xp';
-const KEY_COMPLETED = 'kinetic:completed-keys';
-const KEY_AWARDED_IDS = 'kinetic:awarded-ids';
+const KEY_XP = STORAGE_KEYS.XP;
+const KEY_COMPLETED = STORAGE_KEYS.COMPLETED_KEYS;
+const KEY_AWARDED_IDS = STORAGE_KEYS.AWARDED_IDS;
 
 function doneKeyFor(date: string): string {
   return `kinetic:vitalite:done:${date}`;

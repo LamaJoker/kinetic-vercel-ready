@@ -1,6 +1,7 @@
-import type { StorageKey, StoragePort } from '../ports/storage.port.js';
+﻿import type { StorageKey, StoragePort } from '../ports/storage.port.js';
+import { STORAGE_KEYS } from '../constants/storage-keys.js';
 
-const KEY_PENDING_TASK_MUTATION = 'kinetic:pending:task-mutation';
+const KEY_PENDING_TASK_MUTATION = STORAGE_KEYS.PENDING_TASK_MUTATION;
 
 export interface TaskMutationPlan {
   kind: 'complete_task' | 'undo_task';

@@ -10,6 +10,7 @@ import {
   supabase,
   getAuthUser,
 } from '@kinetic/adapters-web';
+import { STORAGE_KEYS } from '@kinetic/core';
 import { createDepsManager } from './deps.factory';
 
 export type { AppDeps } from './deps.factory';
@@ -51,7 +52,7 @@ const win = typeof window !== 'undefined'
 
 if (win && !win._kineticAuthChangedListening) {
   win._kineticAuthChangedListening = true;
-  win.addEventListener('kinetic:auth-changed', async () => {
+  win.addEventListener(STORAGE_KEYS.EVENT_AUTH_CHANGED, async () => {
     if (authRebuildInflight) {
       await authRebuildInflight;
       return;
@@ -71,7 +72,7 @@ if (win && !win._kineticAuthChangedListening) {
         console.warn('[deps] rebuild after auth-changed failed:', err);
         return;
       }
-      win.dispatchEvent(new CustomEvent('kinetic:deps-ready'));
+      win.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_DEPS_READY));
     })();
 
     try {

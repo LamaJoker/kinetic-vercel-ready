@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Store Alpine `goals` - objectifs hebdomadaires d'entrainement.
  * La logique pure vit dans `@kinetic/core/domain/goals.domain`.
  *
@@ -69,23 +69,23 @@ export function goalsStore() {
         }
       };
 
-      window.addEventListener('kinetic:session-saved', this._sessionSavedHandler);
+      window.addEventListener(STORAGE_KEYS.EVENT_SESSION_SAVED, this._sessionSavedHandler);
 
       // Recharger depuis IDB quand les deps sont reconstruits (reset profil,
       // changement de compte) — évite un cache de sessions devenu fantôme.
       this._depsReadyHandler = () => { void this.reload(); };
-      window.addEventListener('kinetic:deps-ready', this._depsReadyHandler);
+      window.addEventListener(STORAGE_KEYS.EVENT_DEPS_READY, this._depsReadyHandler);
 
       await this.reload();
     },
 
     destroy(): void {
       if (this._sessionSavedHandler) {
-        window.removeEventListener('kinetic:session-saved', this._sessionSavedHandler);
+        window.removeEventListener(STORAGE_KEYS.EVENT_SESSION_SAVED, this._sessionSavedHandler);
         this._sessionSavedHandler = null;
       }
       if (this._depsReadyHandler) {
-        window.removeEventListener('kinetic:deps-ready', this._depsReadyHandler);
+        window.removeEventListener(STORAGE_KEYS.EVENT_DEPS_READY, this._depsReadyHandler);
         this._depsReadyHandler = null;
       }
     },
@@ -129,7 +129,7 @@ export function goalsStore() {
         });
       } catch (err) {
         console.error('[goals] save failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Echec sauvegarde des objectifs. Reessaie.' },
         }));
       }
@@ -164,10 +164,10 @@ export function goalsStore() {
       this.xpAwardedWeek = this.weekKey;
       await this.save();
 
-      window.dispatchEvent(new CustomEvent('kinetic:notify', {
+      window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
         detail: { kind: 'success', message: `Objectifs semaine atteints - +${WEEKLY_GOAL_BONUS_XP} XP !` },
       }));
-      window.dispatchEvent(new CustomEvent('kinetic:xp-updated'));
+      window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_XP_UPDATED));
     },
 
     /**

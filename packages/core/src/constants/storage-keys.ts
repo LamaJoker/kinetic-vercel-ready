@@ -79,6 +79,12 @@ export const STORAGE_KEYS = {
   REWARDS_FREEZE_WEEK:   'kinetic:rewards:freeze-replenished-week' as const,
   REWARDS_THEME:         'kinetic:rewards:theme' as const,
 
+  // ─── Tâches internes (usecases) ───────────────────────────────
+  AWARDED_IDS:          'kinetic:awarded-ids' as const,
+  COMPLETED_KEYS:       'kinetic:completed-keys' as const,
+  VITALITE_LAST_RESET:  'kinetic:vitalite:last-reset' as const,
+  PENDING_TASK_MUTATION: 'kinetic:pending:task-mutation' as const,
+
   // ─── Sync interne ─────────────────────────────────────────────
   SYNC_LAST_AT:      'kinetic:sync:last-at' as const,
   SYNC_INITIAL_DONE: '_kinetic:initial-sync-done' as const,
@@ -93,6 +99,18 @@ export const STORAGE_KEYS = {
   SCHEMA_VERSION: 'kinetic:schema-version' as const,
   AUTH_DEBUG: 'kinetic:auth-debug' as const,   // localStorage, diagnostic OAuth APK
   ERRORS: 'kinetic:errors' as const,           // localStorage, buffer d'erreurs runtime
+
+  // ─── Événements DOM (CustomEvent names) ────────────────────────
+  EVENT_NOTIFY: 'kinetic:notify' as const,
+  EVENT_AUTH_CHANGED: 'kinetic:auth-changed' as const,
+  EVENT_AUTH_READY: 'kinetic:auth-ready' as const,
+  EVENT_DEPS_READY: 'kinetic:deps-ready' as const,
+  EVENT_ONBOARDING_COMPLETE: 'kinetic:onboarding-complete' as const,
+  EVENT_LEVELUP: 'kinetic:levelup' as const,
+  EVENT_XP_UPDATED: 'kinetic:xp-updated' as const,
+  EVENT_STREAK_UPDATED: 'kinetic:streak-updated' as const,
+  EVENT_SESSION_SAVED: 'kinetic:session-saved' as const,
+  EVENT_SYNC_FAILED: 'kinetic:sync-failed' as const,
 } as const;
 
 /** Type union de toutes les clés statiques (sans les fonctions) */

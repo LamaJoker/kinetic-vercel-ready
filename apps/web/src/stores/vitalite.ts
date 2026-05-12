@@ -1,4 +1,4 @@
-import {
+﻿import {
   STORAGE_KEYS,
   REWARDS,
   awardXp,
@@ -76,7 +76,7 @@ function buildTasks(customSpecs: CustomTaskSpec[]): Task[] {
 }
 
 function notify(kind: 'success' | 'error' | 'warning' | 'info', message: string): void {
-  window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind, message } }));
+  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
 }
 
 export function vitaliteStore() {
@@ -182,7 +182,7 @@ export function vitaliteStore() {
 
         if (result.leveledUp && result.newLevel !== undefined) {
           const reward = REWARDS.find((entry) => entry.level === result.newLevel);
-          window.dispatchEvent(new CustomEvent('kinetic:levelup', {
+          window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_LEVELUP, {
             detail: { level: result.newLevel, title: reward?.title ?? '' },
           }));
         }

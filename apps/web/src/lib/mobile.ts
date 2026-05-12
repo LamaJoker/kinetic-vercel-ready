@@ -112,7 +112,7 @@ export async function handleOAuthCallback(
       const decoded = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
       debugLog(`OAuth error from provider: ${decoded}`);
       try {
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: `Connexion refusée : ${decoded}` },
         }));
       } catch { /* ignore */ }
@@ -174,7 +174,7 @@ export async function handleOAuthCallback(
       window.dispatchEvent(new PopStateEvent('popstate'));
       // Notifier les stores Alpine pour reload (les deps doivent passer en
       // mode HybridStorage maintenant que l'utilisateur est authentifié).
-      window.dispatchEvent(new CustomEvent('kinetic:auth-changed'));
+      window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_AUTH_CHANGED));
     } catch (e) {
       debugLog(`SPA-nav err, fallback hard reload: ${String(e).slice(0,80)}`);
       window.location.href = '/';

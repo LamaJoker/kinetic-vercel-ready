@@ -26,13 +26,13 @@ export async function loadExercises(storage: StoragePort): Promise<Exercise[]> {
       const json = await res.json();
       if (Array.isArray(json) && json.length > 0) {
         const normalized = json
-          .filter((x) => x && typeof x === 'object')
-          .map((x: any) => ({
-            id: String(x.id ?? ''),
-            name: String(x.name ?? ''),
-            muscles: Array.isArray(x.muscles) ? x.muscles.map(String) : [],
-            equipment: (x.equipment ?? 'other') as Exercise['equipment'],
-            incrementKg: Number.isFinite(Number(x.incrementKg)) ? Number(x.incrementKg) : 2.5,
+          .filter((x): x is Record<string, unknown> => x !== null && typeof x === 'object')
+          .map((x) => ({
+            id: String(x['id'] ?? ''),
+            name: String(x['name'] ?? ''),
+            muscles: Array.isArray(x['muscles']) ? (x['muscles'] as unknown[]).map(String) : [],
+            equipment: (x['equipment'] ?? 'other') as Exercise['equipment'],
+            incrementKg: Number.isFinite(Number(x['incrementKg'])) ? Number(x['incrementKg']) : 2.5,
           }))
           .filter((x) => x.id && x.name);
 

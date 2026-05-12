@@ -1,4 +1,4 @@
-/**
+﻿/**
  * syncDailyLog — remonte l'activité du jour vers le backend si disponible.
  *
  * Appelé après chaque complétion de tâche. Idempotent côté backend grâce
@@ -13,6 +13,7 @@ import type { StoragePort }       from '../ports/storage.port.js';
 import type { ClockPort }         from '../ports/clock.port.js';
 import type { DailyLogSyncPort }  from '../ports/daily-log-sync.port.js';
 import type { StreakState }       from '../domain/streak.domain.js';
+import { STORAGE_KEYS } from '../constants/storage-keys.js';
 
 export interface SyncDailyLogDeps {
   storage:        StoragePort;
@@ -25,7 +26,7 @@ export type SyncDailyLogResult =
   | { ok: true;  synced: false; reason: 'noop' | 'no_activity' }
   | { ok: false; error:  string };
 
-const KEY_STREAK   = 'kinetic:streak';
+const KEY_STREAK   = STORAGE_KEYS.STREAK;
 
 function doneKeyFor(date: string): string {
   return `kinetic:vitalite:done:${date}`;

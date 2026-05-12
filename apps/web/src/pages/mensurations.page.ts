@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from '@kinetic/core';
+﻿import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
@@ -192,7 +192,6 @@ export function mensurations() {
         }
       }));
       // Mettre à jour PHOTOS_KEY sans les base64
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const meta: PhotoMeta[] = old.map(({ base64: _b, ...rest }) => rest);
       await deps.storage.set(PHOTOS_KEY, meta);
       this.photos = old; // base64 déjà en mémoire
@@ -296,7 +295,7 @@ export function mensurations() {
         if (finalBytes > MAX_PHOTO_BYTES) {
           const mb    = (finalBytes / 1_048_576).toFixed(1);
           const maxMb = (MAX_PHOTO_BYTES / 1_048_576).toFixed(1);
-          window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
             detail: {
               kind: 'error',
               message: `Photo trop volumineuse (${mb} Mo > ${maxMb} Mo max). `
@@ -321,19 +320,18 @@ export function mensurations() {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { base64: _b, ...meta } = entry;
         const existingMeta: PhotoMeta[] = this.photos.map(
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           ({ base64: _b2, ...m }) => m
         );
         await deps.storage.set(PHOTOS_KEY, [...existingMeta, meta]);
         this.photos = [...this.photos, entry];
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'success', message: 'Photo de progression ajoutée ✓' },
         }));
       } catch (err) {
         console.error('[mensurations] takePhoto failed:', err);
         const msg = err instanceof Error ? err.message : String(err);
         const isPermission = /permission|denied|not allowed/i.test(msg);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: {
             kind: 'error',
             message: isPermission
@@ -374,14 +372,13 @@ export function mensurations() {
         const deps = await getDeps();
         // Supprimer aussi la clé de données séparée
         await deps.storage.remove(photoDataKey(id));
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const meta: PhotoMeta[] = next.map(({ base64: _b, ...m }) => m);
         await deps.storage.set(PHOTOS_KEY, meta);
         this.photos = next;
         if (this.selectedPhotoId === id) this.selectedPhotoId = null;
       } catch (err) {
         console.error('[mensurations] deletePhoto failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec suppression de la photo. Réessaie.' },
         }));
       }
@@ -423,12 +420,12 @@ export function mensurations() {
         await deps.storage.set(STORAGE_KEY, next);
         this.entries = next;
         this._resetForm();
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'success', message: 'Mensurations enregistrées ✓' },
         }));
       } catch (err) {
         console.error('[mensurations] addEntry failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec enregistrement. Réessaie.' },
         }));
       }
@@ -442,7 +439,7 @@ export function mensurations() {
         this.entries = next;
       } catch (err) {
         console.error('[mensurations] removeEntry failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec suppression. Réessaie.' },
         }));
       }

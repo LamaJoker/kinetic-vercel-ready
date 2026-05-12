@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, suggestProgression, needsDeload, type ProgressionSuggestion, type PerformedSet } from '@kinetic/core';
+﻿import { STORAGE_KEYS, suggestProgression, needsDeload, type ProgressionSuggestion, type PerformedSet } from '@kinetic/core';
 import { UuidGenerator } from '@kinetic/adapters-web';
 import { getDeps } from '../deps';
 import type { Exercise, SessionExerciseEntry, WorkoutSession, WorkoutTemplate } from '../lib/training/types';
@@ -229,7 +229,7 @@ export function seances() {
           const t = this.templates.find(x => x.id === autoTemplateId);
           if (t) {
             this.startFromTemplate(t.id);
-            window.dispatchEvent(new CustomEvent('kinetic:notify', {
+            window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
               detail: { kind: 'info', message: `Séance "${t.name}" chargée depuis ton programme 🎯` },
             }));
           }
@@ -433,15 +433,15 @@ export function seances() {
       const weightKg = Number(this.draft.weightKg);
       const rpe = Number(this.draft.rpe);
       if (!Number.isFinite(reps) || reps <= 0) {
-        window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind: 'warning', message: 'Reps invalides (min 1).' } }));
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind: 'warning', message: 'Reps invalides (min 1).' } }));
         return;
       }
       if (!Number.isFinite(weightKg) || weightKg < 0) {
-        window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind: 'warning', message: 'Charge invalide (≥ 0 kg).' } }));
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind: 'warning', message: 'Charge invalide (≥ 0 kg).' } }));
         return;
       }
       if (!Number.isFinite(rpe) || rpe < 6 || rpe > 10) {
-        window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind: 'warning', message: 'RPE invalide (6–10).' } }));
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind: 'warning', message: 'RPE invalide (6–10).' } }));
         return;
       }
 
@@ -543,7 +543,7 @@ export function seances() {
         await exportAsJson(this.sessions, this.exercises);
       } catch (err) {
         console.error('[seances] exportJson failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec export JSON. Réessaie.' },
         }));
       }
@@ -554,7 +554,7 @@ export function seances() {
         await exportAsCsv(this.sessions, this.exercises);
       } catch (err) {
         console.error('[seances] exportCsv failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec export CSV. Réessaie.' },
         }));
       }
@@ -591,12 +591,12 @@ export function seances() {
         this.sessions          = next;
         this.confirmDeleteId   = null;
         this.expandedSessionId = null;
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'success', message: 'Séance supprimée.' },
         }));
       } catch (err) {
         console.error('[seances] deleteSession failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec de la suppression.' },
         }));
       } finally {
@@ -822,10 +822,10 @@ export function seances() {
         this.stopRest();
         this.dismissPrCelebration();
 
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'success', message: `Séance sauvegardée — ${durationMin} min${caloriesKcal ? ` · ~${caloriesKcal} kcal` : ''}` },
         }));
-        window.dispatchEvent(new CustomEvent('kinetic:session-saved', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_SESSION_SAVED, {
           detail: { session: finalized },
         }));
       } catch (err) {
@@ -835,7 +835,7 @@ export function seances() {
         const message = isQuota
           ? "Stockage plein — va dans Profil → Stockage et appuie sur \"Compacter\" pour libérer de la place."
           : `Échec de sauvegarde (${name}). Réessaie ou recharge la page.`;
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message },
         }));
       }
@@ -857,12 +857,12 @@ export function seances() {
         await saveTemplates(deps.storage, next);
         this.templates = next;
         this.templateName = '';
-        window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind: 'success', message: `Modèle "${name}" créé` } }));
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind: 'success', message: `Modèle "${name}" créé` } }));
       } catch (err) {
         console.error('[seances] saveTemplate failed:', err);
         const name = err instanceof Error ? err.name : 'Error';
         const detail = err instanceof Error && err.message ? err.message.slice(0, 120) : '';
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: {
             kind: 'error',
             message: `Échec création du modèle (${name})${detail ? ` — ${detail}` : ''}. Réessaie.`,

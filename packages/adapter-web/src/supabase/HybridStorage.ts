@@ -1,4 +1,4 @@
-import type { StoragePort, StorageKey } from '@kinetic/core';
+﻿import type { StoragePort, StorageKey } from '@kinetic/core';
 import { STORAGE_KEYS } from '@kinetic/core';
 
 /**
@@ -213,7 +213,7 @@ export class HybridStorage implements StoragePort {
             this.pendingWrites.delete(key);
             // M10 FIX: notifier l'UI que la donnée n'a pas pu être synchronisée
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('kinetic:sync-failed', { detail: { key } }));
+              window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_SYNC_FAILED, { detail: { key } }));
             }
           }
         }

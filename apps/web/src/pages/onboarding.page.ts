@@ -1,5 +1,6 @@
-import { Capacitor } from '@capacitor/core';
+﻿import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import type { ActivityLevel, UserGoal, UserProfile } from '../lib/user/types';
 import { saveUserProfile, loadUserProfile } from '../lib/user/storage';
@@ -122,15 +123,15 @@ export function onboarding() {
           : { ...draft, createdAt: now, updatedAt: now };
         await saveUserProfile(deps.storage, next);
 
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'success', message: 'Profil sauvegarde' },
         }));
-        window.dispatchEvent(new CustomEvent('kinetic:onboarding-complete'));
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_ONBOARDING_COMPLETE));
 
         navigate('/', true);
       } catch (err) {
         console.error('[onboarding] save failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Erreur sauvegarde profil' },
         }));
       } finally {

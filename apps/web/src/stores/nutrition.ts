@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Store Alpine `nutrition` — journal macros du jour + plan cible
  * FIX: FoodEntry défini localement (pas exporté par @kinetic/core)
  */
@@ -102,7 +102,7 @@ export function nutritionStore() {
 
     async addMealItem(mealName: string, food: FoodEntry, grams: number): Promise<void> {
       if (!Number.isFinite(grams) || grams <= 0) {
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'warning', message: 'Quantité invalide (doit être > 0 g).' },
         }));
         return;
@@ -129,7 +129,7 @@ export function nutritionStore() {
         await deps.storage.set(KEY_LOG(today), this.todayLog);
       } catch (err) {
         console.error('[nutrition] addMealItem failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Impossible d\'ajouter cet aliment. Réessaie.' },
         }));
       } finally {
@@ -148,7 +148,7 @@ export function nutritionStore() {
         await deps.storage.set(KEY_LOG(today), this.todayLog);
       } catch (err) {
         console.error('[nutrition] removeMealItem failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Impossible de retirer cet aliment. Réessaie.' },
         }));
       }

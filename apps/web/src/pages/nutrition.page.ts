@@ -1,5 +1,5 @@
-import Alpine from 'alpinejs';
-import { mealTimingPlan, type MealTiming, type NutritionPlan } from '@kinetic/core';
+﻿import Alpine from 'alpinejs';
+import { mealTimingPlan, STORAGE_KEYS, type MealTiming, type NutritionPlan } from '@kinetic/core';
 
 interface NutritionStoreShape {
   plan: NutritionPlan | null;
@@ -107,7 +107,7 @@ export function nutrition() {
       this.foodResults  = [];
       this.showAddForm  = false;
 
-      window.dispatchEvent(new CustomEvent('kinetic:notify', {
+      window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
         detail: { kind: 'success', message: `${name} ajouté ✓` },
       }));
     },

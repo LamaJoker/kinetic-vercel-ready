@@ -57,7 +57,7 @@ export async function runMigrationsIfNeeded(storage: StoragePort): Promise<void>
       } catch (restoreErr) {
         console.error('[migrations] restoreSnapshot échoué — données potentiellement corrompues:', restoreErr);
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
             detail: {
               kind: 'error',
               message: 'Migration échouée. Sauvegardez vos données et rechargez l\'application.',

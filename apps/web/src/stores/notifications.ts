@@ -1,6 +1,7 @@
+﻿import { STORAGE_KEYS } from '@kinetic/core';
+
 /**
  * Store Alpine `notifications` — toasts.
- * Écoute `kinetic:notify` et maintient une file de toasts.
  */
 interface NotificationPayload {
   kind:      'success' | 'error' | 'warning' | 'info';
@@ -22,12 +23,12 @@ export function notificationsStore() {
         const payload = (e as CustomEvent<NotificationPayload>).detail;
         if (payload) this.push(payload);
       };
-      window.addEventListener('kinetic:notify', this._notifyHandler);
+      window.addEventListener(STORAGE_KEYS.EVENT_NOTIFY, this._notifyHandler);
     },
 
     destroy(): void {
       if (this._notifyHandler) {
-        window.removeEventListener('kinetic:notify', this._notifyHandler);
+        window.removeEventListener(STORAGE_KEYS.EVENT_NOTIFY, this._notifyHandler);
         this._notifyHandler = null;
       }
     },

@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from '@kinetic/core';
+﻿import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import {
@@ -80,7 +80,7 @@ export function profile() {
         const deps = await getDeps();
         const report = await compactStorage(deps.storage);
         await this._refreshStorageUsage();
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: {
             kind: 'success',
             message: report.removedKeys > 0
@@ -90,7 +90,7 @@ export function profile() {
         }));
       } catch (err) {
         console.error('[profile] compact failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec du compactage. Réessaie.' },
         }));
       } finally {
@@ -110,7 +110,7 @@ export function profile() {
         setTimeout(() => { this.savedAt = ''; }, 3000);
       } catch (err) {
         console.error('[profile] saveName failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec sauvegarde du nom. Réessaie.' },
         }));
       }
@@ -127,14 +127,14 @@ export function profile() {
         const s = Array.isArray(sessions) ? sessions : [];
         const e = Array.isArray(exercises) ? exercises : [];
         if (s.length === 0) {
-          window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
             detail: { kind: 'info', message: 'Aucune séance à exporter pour le moment.' },
           }));
         }
         await exportAsJson(s, e);
       } catch (err) {
         console.error('[profile] exportJson failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec export JSON. Réessaie.' },
         }));
       } finally {
@@ -153,14 +153,14 @@ export function profile() {
         const s = Array.isArray(sessions) ? sessions : [];
         const e = Array.isArray(exercises) ? exercises : [];
         if (s.length === 0) {
-          window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
             detail: { kind: 'info', message: 'Aucune séance à exporter pour le moment.' },
           }));
         }
         await exportAsCsv(s, e);
       } catch (err) {
         console.error('[profile] exportCsv failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec export CSV. Réessaie.' },
         }));
       } finally {
@@ -177,18 +177,18 @@ export function profile() {
           syncFromRemote?: (opts?: { force?: boolean }) => Promise<void>;
         };
         if (typeof storage.syncFromRemote !== 'function') {
-          window.dispatchEvent(new CustomEvent('kinetic:notify', {
+          window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
             detail: { kind: 'info', message: 'Cloud non configuré sur cet appareil.' },
           }));
           return;
         }
         await storage.syncFromRemote({ force: true });
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'success', message: 'Restauration cloud terminée. Recharge la page pour voir les données.' },
         }));
       } catch (err) {
         console.error('[profile] restoreFromCloud failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec de restauration. Vérifie ta connexion.' },
         }));
       } finally {
@@ -202,14 +202,14 @@ export function profile() {
         const deps = await getDeps();
         // Clear all storage — les stores Alpine se rechargent proprement au reload
         await deps.storage.clear();
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'success', message: 'Données réinitialisées ✓' },
         }));
         // Reload complet pour repartir de zéro
         setTimeout(() => { window.location.reload(); }, 1200);
       } catch (err) {
         console.error('[profile] doReset failed:', err);
-        window.dispatchEvent(new CustomEvent('kinetic:notify', {
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: { kind: 'error', message: 'Échec de la réinitialisation. Recharge la page et réessaie.' },
         }));
       }

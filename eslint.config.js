@@ -42,18 +42,29 @@ export default [
 
   // ─── Fichiers de config (pas de projet TS) ───────────────────
   {
-    files: ['*.config.{js,mjs,ts}', 'scripts/**/*.{js,mjs}'],
+    files: ['**/*.config.{js,mjs,ts}', 'scripts/**/*.{js,mjs}'],
     languageOptions: {
       globals: globals.node,
+      parserOptions: { project: false },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
 
   // ─── Tests ───────────────────────────────────────────────────
   {
     files: ['tests/**/*.ts'],
+    languageOptions: {
+      parserOptions: { project: false },
+      globals: globals.browser,
+    },
     rules: {
-      'no-restricted-syntax': 'off',       // les tests peuvent accéder aux strings brutes
+      'no-restricted-syntax': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'off',
+      'no-undef': 'off',
     },
   },
 
@@ -65,6 +76,8 @@ export default [
       'apps/web/android/**',
       'apps/web/public/sw.js',
       'packages/adapter-web/src/supabase/database.types.ts',
+      // storage-keys.ts is the definitions file — it must declare the literal strings
+      'packages/core/src/constants/storage-keys.ts',
       'tests/coverage/**',
       'playwright-report/**',
     ],

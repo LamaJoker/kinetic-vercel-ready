@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Store Alpine `rewards` — système de récompenses par niveau.
  *
  * Responsabilités :
@@ -56,7 +56,7 @@ function isoWeekKey(date: Date = new Date()): string {
 }
 
 function notify(kind: 'success' | 'error' | 'info', message: string): void {
-  window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind, message } }));
+  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
 }
 
 // ─── Store ───────────────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ export function rewardsStore() {
           this.showRewardModal = true;
         }
       };
-      window.addEventListener('kinetic:levelup', this._levelupHandler);
+      window.addEventListener(STORAGE_KEYS.EVENT_LEVELUP, this._levelupHandler);
 
       // Charger / renouveler les jetons de gel
       void this._initFreezeTokens();
@@ -106,7 +106,7 @@ export function rewardsStore() {
 
     destroy(): void {
       if (this._levelupHandler) {
-        window.removeEventListener('kinetic:levelup', this._levelupHandler);
+        window.removeEventListener(STORAGE_KEYS.EVENT_LEVELUP, this._levelupHandler);
         this._levelupHandler = null;
       }
     },
@@ -163,7 +163,7 @@ export function rewardsStore() {
         this.freezeTokens = newCount;
 
         // Rafraîchir le dashboard streak si visible
-        window.dispatchEvent(new CustomEvent('kinetic:streak-updated'));
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_STREAK_UPDATED));
 
         notify(
           'success',

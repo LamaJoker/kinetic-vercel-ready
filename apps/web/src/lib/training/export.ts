@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Export — sérialise l'historique d'entraînement en JSON ou CSV.
  *
  * Sur le web : déclenche un téléchargement classique via blob + lien `<a download>`.
@@ -9,6 +9,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { STORAGE_KEYS } from '@kinetic/core';
 import type { WorkoutSession, Exercise } from './types';
 
 export interface ExportBundle {
@@ -104,7 +105,7 @@ export async function downloadOrShare(
   }
 }
 
-async function downloadNative(content: string, filename: string, mime: string): Promise<void> {
+async function downloadNative(content: string, filename: string, _mime: string): Promise<void> {
   // Écrit dans Documents/ — accessible par tous les explorateurs de fichiers
   // Android. UTF-8 pour préserver le BOM CSV et les accents.
   const result = await Filesystem.writeFile({
@@ -124,7 +125,7 @@ async function downloadNative(content: string, filename: string, mime: string): 
       url:      result.uri,
       dialogTitle: 'Sauvegarder ton export',
     });
-  } catch (err) {
+  } catch {
     // L'utilisateur a annulé OU le partage n'est pas dispo.
     // Le fichier est déjà écrit dans Documents/, on l'informe juste.
     console.info('[export] Share cancelled or unavailable, file saved at:', result.uri);
@@ -173,5 +174,5 @@ function csvCell(value: string): string {
 
 function notify(kind: 'success' | 'error' | 'info', message: string): void {
   if (typeof window === 'undefined') return;
-  window.dispatchEvent(new CustomEvent('kinetic:notify', { detail: { kind, message } }));
+  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
 }

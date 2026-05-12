@@ -1,6 +1,7 @@
-import type { StoragePort }  from '../ports/storage.port.js';
+﻿import type { StoragePort }  from '../ports/storage.port.js';
 import type { NotifierPort } from '../ports/notifier.port.js';
 import { addXp, computeXpState, didLevelUp } from '../domain/xp.domain.js';
+import { STORAGE_KEYS } from '../constants/storage-keys.js';
 
 export interface AwardXpDeps {
   storage:  StoragePort;
@@ -18,8 +19,8 @@ export type AwardXpResult =
   | { ok: true;  skipped: true }
   | { ok: false; reason: string };
 
-const KEY_XP          = 'kinetic:xp';
-const KEY_AWARDED_IDS = 'kinetic:awarded-ids';
+const KEY_XP          = STORAGE_KEYS.XP;
+const KEY_AWARDED_IDS = STORAGE_KEYS.AWARDED_IDS;
 
 export async function awardXp(
   deps:  AwardXpDeps,
