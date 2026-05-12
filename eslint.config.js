@@ -72,6 +72,7 @@ export default [
   {
     ignores: [
       'dist/**',
+      '**/dist/**',
       '**/node_modules/**',
       'apps/web/android/**',
       'apps/web/public/sw.js',
