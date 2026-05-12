@@ -1,0 +1,6 @@
+dist/
+node_modules/
+apps/web/android/
+apps/web/public/sw.js
+pnpm-lock.yaml
+packages/adapter-web/src/supabase/database.types.ts

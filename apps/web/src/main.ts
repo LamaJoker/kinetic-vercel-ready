@@ -3,6 +3,7 @@
  * FIX: auth-ready dispatché même en guest mode
  */
 import Alpine from 'alpinejs';
+import { STORAGE_KEYS, resetDailyTasks } from '@kinetic/core';
 
 // ─── Filets globaux : aucun crash silencieux ────────────────────────────────
 // Sans ces listeners, une promesse rejetée non capturée (fetch → throw,
@@ -20,7 +21,7 @@ if (typeof window !== 'undefined') {
     // En mode dev, persister dans un buffer lisible depuis le profil pour
     // qu'on puisse récupérer la stack même quand DevTools n'est pas connecté.
     try {
-      const KEY = 'kinetic:errors';
+      const KEY = STORAGE_KEYS.ERRORS;
       const prev = localStorage.getItem(KEY) ?? '';
       const stamp = new Date().toISOString();
       localStorage.setItem(KEY, `${prev}\n[${stamp}] rejection: ${msg}`.slice(-4000));
@@ -32,7 +33,7 @@ if (typeof window !== 'undefined') {
     if (typeof event.message === 'string' && /ResizeObserver/i.test(event.message)) return;
     console.error('[kinetic] uncaught error:', event.error ?? event.message);
     try {
-      const KEY = 'kinetic:errors';
+      const KEY = STORAGE_KEYS.ERRORS;
       const prev = localStorage.getItem(KEY) ?? '';
       const stamp = new Date().toISOString();
       const detail = event.error instanceof Error
@@ -120,9 +121,10 @@ void initMobile();
 
 scheduleStreakReminder();
 
-// Migrations schéma IDB (one-shot, idempotent) puis nettoyage bloat.
+// Migrations schéma IDB, reset quotidien des tâches, puis nettoyage bloat.
 void getDeps().then(async (deps) => {
   await runMigrationsIfNeeded(deps.storage);
+  await resetDailyTasks({ storage: deps.storage, clock: deps.clock });
   await autoCompactOnStartup(deps.storage);
 }).catch(() => undefined);
 

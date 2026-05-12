@@ -10,9 +10,10 @@
  * The runner is idempotent — calling it multiple times is safe.
  */
 import type { StoragePort } from '@kinetic/core';
+import { STORAGE_KEYS } from '@kinetic/core';
 
 const SCHEMA_VERSION = 1;
-const KEY = 'kinetic:schema-version';
+const KEY = STORAGE_KEYS.SCHEMA_VERSION;
 
 async function snapshotStorage(storage: StoragePort): Promise<Map<string, unknown>> {
   const snapshot = new Map<string, unknown>();

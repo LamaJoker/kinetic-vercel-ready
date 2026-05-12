@@ -1,4 +1,5 @@
 import {
+  STORAGE_KEYS,
   REWARDS,
   awardXp,
   completeTask_usecase,
@@ -38,7 +39,7 @@ export interface HistoryDay {
   tasks: { id: string; title: string; icon: string }[];
 }
 
-const KEY_CUSTOM_TASKS = 'kinetic:vitalite:custom-tasks';
+const KEY_CUSTOM_TASKS = STORAGE_KEYS.VITALITE_CUSTOM_TASKS;
 
 function todayIso(): string {
   const d = new Date();

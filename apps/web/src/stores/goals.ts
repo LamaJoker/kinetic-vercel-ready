@@ -7,6 +7,7 @@
  * Sur 200+ séances, cela évite 100-300 ko de lectures disque à chaque save.
  */
 import {
+  STORAGE_KEYS,
   evaluateWeeklyGoals,
   shouldAwardWeeklyBonusXp,
   WEEKLY_GOAL_BONUS_XP,
@@ -15,7 +16,7 @@ import {
 import { getDeps } from '../deps';
 import { loadSessions } from '../lib/training/storage';
 
-const KEY_GOALS = 'kinetic:goals:weekly';
+const KEY_GOALS = STORAGE_KEYS.GOALS_WEEKLY;
 type SessionList = Awaited<ReturnType<typeof loadSessions>>;
 type SessionItem = SessionList[number];
 

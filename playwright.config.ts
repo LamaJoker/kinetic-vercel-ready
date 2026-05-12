@@ -68,6 +68,12 @@ export default defineConfig({
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
     },
+
+    // ── Safari / WebKit (iOS coverage) ───────────────────────
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 14 Pro'] }, // defaultBrowserType: 'webkit'
+    },
   ],
 
   // Toujours servir le build de production (local et CI identiques).

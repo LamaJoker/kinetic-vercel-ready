@@ -7,6 +7,10 @@
  *   Un objet typé ici force une erreur TS dès la compile si une clé est mal orthographiée.
  *
  * Convention : `kinetic:<domaine>:<sous-clé>` (lowercase, séparateurs `:`)
+ *
+ * IMPORTANT : certaines clés (_DEBUG, _ERRORS, _COACH_GOAL, _AUTO_TEMPLATE) ciblent
+ * localStorage / sessionStorage plutôt que StoragePort (IDB). Elles sont listées ici
+ * pour garantir la cohérence des noms.
  */
 
 // ─── XP & Niveaux ─────────────────────────────────────────────
@@ -19,12 +23,18 @@ export const STORAGE_KEYS = {
 
   // XP gagné par date ISO (kinetic:xp:earned:YYYY-MM-DD)
   XP_EARNED: (date: string) => `kinetic:xp:earned:${date}` as const,
+  // Préfixe pour le scan de maintenance (storage-maintenance.ts)
+  XP_EARNED_PREFIX: 'kinetic:xp:earned:' as const,
 
   // ─── Vitalité ─────────────────────────────────────────────────
   // Tâches complétées par date (kinetic:vitalite:done:YYYY-MM-DD)
   VITALITE_DONE: (date: string) => `kinetic:vitalite:done:${date}` as const,
+  // Préfixe pour le scan de maintenance
+  VITALITE_DONE_PREFIX: 'kinetic:vitalite:done:' as const,
   // Tâches de base (définition)
   VITALITE_TASKS: 'kinetic:vitalite:tasks' as const,
+  // Tâches personnalisées créées par l'utilisateur
+  VITALITE_CUSTOM_TASKS: 'kinetic:vitalite:custom-tasks' as const,
 
   // ─── Nutrition ────────────────────────────────────────────────
   NUTRITION_LOG: (date: string) => `kinetic:nutrition:log:${date}` as const,
@@ -38,31 +48,51 @@ export const STORAGE_KEYS = {
 
   // ─── Programme ────────────────────────────────────────────────
   PROGRAM: 'kinetic:program' as const,
+  PROGRAM_ACTIVE: 'kinetic:program:active' as const,
+  PROGRAM_GENERATED_COUNT: 'kinetic:program:generatedCount' as const,
+  PROGRAM_COMPLETED_DAYS: (weekKey: string) => `kinetic:program:completedDays:${weekKey}` as const,
+  PROGRAM_TODO_STATUS: (dayKey: string) => `kinetic:program:todoStatus:${dayKey}` as const,
+  // Clé sessionStorage : template pré-sélectionné depuis la page Programme
+  PROGRAM_AUTO_TEMPLATE: 'kinetic:program:auto-template' as const,
+
+  // ─── Objectif coach séance (localStorage) ─────────────────────
+  COACH_GOAL: 'kinetic:coach-goal' as const,
 
   // ─── Mesures corporelles ──────────────────────────────────────
   BODYWEIGHT_ENTRIES: 'kinetic:bodyweight:entries' as const,
-  MEASUREMENTS: 'kinetic:measurements' as const,
-  MEASUREMENTS_PHOTOS: 'kinetic:measurements:photos' as const,
+  BODYWEIGHT_GOAL:    'kinetic:bodyweight:goal' as const,
+  MEASUREMENTS_ENTRIES: 'kinetic:measurements:entries' as const,
+  MEASUREMENTS_PHOTOS:  'kinetic:measurements:photos' as const,
 
   // ─── Profil utilisateur ───────────────────────────────────────
   USER_PROFILE: 'kinetic:userProfile' as const,
+  PROFILE: 'kinetic:profile' as const,   // displayName et préférences UI
+  STATS:   'kinetic:stats' as const,     // stats agrégées en cache (totalSessions, etc.)
 
   // ─── Objectifs ────────────────────────────────────────────────
   GOALS: 'kinetic:goals' as const,
+  GOALS_WEEKLY: 'kinetic:goals:weekly' as const,
 
   // ─── Récompenses ──────────────────────────────────────────────
-  REWARDS_UNLOCKED: 'kinetic:rewards:unlocked' as const,
+  REWARDS_UNLOCKED:     'kinetic:rewards:unlocked' as const,
+  REWARDS_FREEZE_TOKENS: 'kinetic:rewards:freeze-tokens' as const,
+  REWARDS_FREEZE_WEEK:   'kinetic:rewards:freeze-replenished-week' as const,
+  REWARDS_THEME:         'kinetic:rewards:theme' as const,
 
   // ─── Sync interne ─────────────────────────────────────────────
-  // Dernier timestamp de sync delta (kinetic:sync:last-at)
-  SYNC_LAST_AT:     'kinetic:sync:last-at' as const,
-  // Flag de première sync complète effectuée
+  SYNC_LAST_AT:      'kinetic:sync:last-at' as const,
   SYNC_INITIAL_DONE: '_kinetic:initial-sync-done' as const,
-  // Device ID unique pour CRDT
-  DEVICE_ID:        'kinetic:deviceId' as const,
+  DEVICE_ID:         'kinetic:deviceId' as const,
 
-  // ─── Notifications ────────────────────────────────────────────
+  // ─── Rappels & Notifications ──────────────────────────────────
   NOTIFICATIONS_ENABLED: 'kinetic:notifications:enabled' as const,
+  REMINDER_DATE: 'kinetic:reminder:lastDate' as const,
+  DAILY_LOG: (date: string) => `kinetic:dailyLog:${date}` as const,
+
+  // ─── Schéma IDB & Diagnostics ─────────────────────────────────
+  SCHEMA_VERSION: 'kinetic:schema-version' as const,
+  AUTH_DEBUG: 'kinetic:auth-debug' as const,   // localStorage, diagnostic OAuth APK
+  ERRORS: 'kinetic:errors' as const,           // localStorage, buffer d'erreurs runtime
 } as const;
 
 /** Type union de toutes les clés statiques (sans les fonctions) */

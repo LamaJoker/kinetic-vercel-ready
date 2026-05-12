@@ -13,9 +13,18 @@
     "android:build:release": "pnpm --filter @kinetic/web android:build:release",
     "android:run": "pnpm --filter @kinetic/web android:run",
     "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage",
     "typecheck": "tsc --build",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "audit:prod": "pnpm audit --prod",
     "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:headed": "playwright test --headed",
     "test:e2e": "playwright test"
   },
   "engines": {
@@ -23,8 +32,15 @@
     "pnpm": ">=9"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@playwright/test": "^1.59.1",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^2",
+    "@vitest/ui": "^2",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "prettier": "^3.0.0",
     "typescript": "^5.5.0",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^2"
