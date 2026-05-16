@@ -149,25 +149,21 @@ test.describe('Kinetic App — Navigation', () => {
 test.describe('Kinetic App — Complétion de tâches', () => {
   test.beforeEach(async ({ page }) => {
     await gotoApp(page, '/vitalite');
-    // Sur mobile-safari (WebKit), les opérations IDB sont plus lentes : le store
-    // vitalite peut ne pas avoir fini son init() asynchrone (2 lectures IDB) quand
-    // gotoApp() retourne. On attend explicitement que loading === false ET que
-    // tasks soit peuplé avant de chercher les boutons "+N XP" dans le DOM.
+    // Sur mobile-safari (WebKit) en CI, deux délais s'accumulent :
+    //   1) Les opérations IDB du store vitalite (2 lectures séquentielles)
+    //   2) La mise à jour DOM d'Alpine (x-for sur $store.vitalite.tasks)
+    // Vérifier le store JS ne suffit pas : Alpine peut avoir les données mais
+    // ne pas encore avoir rendu le DOM. On interroge directement le DOM avec
+    // un timeout généreux (30 s) pour les runners CI WebKit lents.
     await page.waitForFunction(
       () => {
-        const a = (window as any).Alpine;
-        if (!a?.store) return false;
-        const v = a.store('vitalite') as { loading?: boolean; tasks?: unknown[] } | null;
-        return v != null && v.loading === false && Array.isArray(v.tasks) && v.tasks.length > 0;
+        const buttons = Array.from(
+          document.querySelectorAll<HTMLButtonElement>('#app-outlet button'),
+        );
+        return buttons.some((btn) => /\+\d+ XP/.test(btn.textContent?.trim() ?? ''));
       },
-      { timeout: 15_000 },
+      { timeout: 30_000 },
     );
-    await expect(
-      page
-        .locator('#app-outlet button')
-        .filter({ hasText: /\+\d+ XP/ })
-        .first(),
-    ).toBeVisible({ timeout: 10000 });
   });
 
   test('complète une tâche et la marque disabled', async ({ page }) => {
