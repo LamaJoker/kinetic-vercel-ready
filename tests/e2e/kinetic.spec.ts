@@ -265,22 +265,52 @@ test.describe('Kinetic App — PWA & Offline', () => {
     // playwright.config.ts utilise désormais `preview:ci` en local ET en CI
     // → ce test est valide dans les deux contextes.
     //
-    // Stratégie : charger la page DEUX fois pour s'assurer que le SW est actif
-    // et que tous les assets statiques (/static/assets/*) sont dans le cache
-    // runtime. Sur Firefox le SW s'active plus lentement qu'en Chrome, et les
-    // assets hashés ne sont cachés qu'à la demande (runtime-cache) : après le
-    // premier chargement complet, le second chargement est entièrement servi
-    // depuis le cache → on peut alors couper le réseau en toute sécurité.
-    await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
-    await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
-
-    // Attendre la fin de l'init Alpine avant de couper le réseau
+    // On ne peut pas utiliser waitUntil:'networkidle' : pendant l'installation
+    // du SW, celui-ci effectue lui-même des requêtes de précache qui maintiennent
+    // le réseau occupé → networkidle ne se déclenche jamais dans les 30 s, et
+    // page.goto() timeout sur CI.
+    //
+    // Stratégie : charger une fois avec waitUntil:'load' (tous les sous-resources
+    // sont chargés), puis attendre explicitement que le SW contrôle la page ET que
+    // les assets /static/ soient présents dans l'un des caches SW. La mise en cache
+    // est fire-and-forget dans cacheFirst(), donc on poll jusqu'à ce qu'elle soit
+    // effective — c'est plus fiable que networkidle ou un délai fixe.
+    await page.goto('http://localhost:3000', { waitUntil: 'load' });
     await waitForAlpineInit(page);
+
+    // Attendre que le SW soit controller ET que le cache contienne :
+    //   - le shell "/" (STATIC_CACHE, mis en place lors de l'install)
+    //   - au moins un asset /static/assets/ (RUNTIME_CACHE, mis en place lors du fetch)
+    // Sans ces deux vérifications, le rechargement offline peut tomber sur
+    // la réponse 503 de secours du SW, ce qui provoque une page blanche
+    // sur Firefox (Playwright n'a pas accès aux pages d'erreur internes).
+    await page.waitForFunction(
+      async () => {
+        if (!('serviceWorker' in navigator)) return true; // pas de SW = test skip
+        if (!navigator.serviceWorker.controller) return false;
+        let hasShell = false;
+        let hasStatic = false;
+        const keys = await caches.keys();
+        for (const k of keys) {
+          const c = await caches.open(k);
+          const reqs = await c.keys();
+          for (const r of reqs) {
+            const p = new URL(r.url).pathname;
+            if (p === '/') hasShell = true;
+            if (p.startsWith('/static/assets/')) hasStatic = true;
+          }
+        }
+        return hasShell && hasStatic;
+      },
+      { timeout: 20_000 },
+    );
 
     await context.setOffline(true);
 
-    // Recharger sans crash (SW sert depuis le cache, ou offline.html)
-    await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+    // Naviguer (pas reload) vers la même URL : page.reload() peut contourner
+    // le SW sur Firefox en mode offline. page.goto() force une nouvelle requête
+    // de navigation qui est interceptée par le fetch handler du SW.
+    await page.goto('http://localhost:3000', { waitUntil: 'domcontentloaded' }).catch(() => {});
 
     // L'app ou la page offline doit afficher quelque chose (pas de page blanche)
     const bodyText = await page
