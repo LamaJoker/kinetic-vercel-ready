@@ -45,7 +45,7 @@
               fill="none"
               stroke="#A8FF00"
               stroke-width="8"
-              :stroke-dasharray="`${Math.min(188, ($store.nutrition.progress?.kcalPct ?? 0) * 1.88)} 188`"
+              :stroke-dasharray="Math.min(188, ($store.nutrition.progress ? ($store.nutrition.progress.kcalPct || 0) : 0) * 1.88) + ' 188'"
               stroke-linecap="round"
               style="transition: stroke-dasharray 0.5s ease"
             />
@@ -64,7 +64,7 @@
             <span class="flex-shrink-0">Objectif</span>
             <span
               class="font-semibold text-gray-400"
-              x-text="($store.nutrition.plan?.macros.kcal ?? 0) + ' kcal'"
+              x-text="($store.nutrition.plan ? $store.nutrition.plan.macros.kcal : 0) + ' kcal'"
             ></span>
           </div>
           <div class="flex justify-between gap-2 text-xs mb-2">
@@ -78,7 +78,7 @@
             <span class="text-gray-500 flex-shrink-0">Restant</span>
             <span
               class="text-kinetic-neon font-semibold"
-              x-text="($store.nutrition.remaining?.kcal ?? 0) + ' kcal'"
+              x-text="($store.nutrition.remaining ? $store.nutrition.remaining.kcal : 0) + ' kcal'"
             ></span>
           </div>
         </div>
@@ -99,14 +99,16 @@
               <span class="text-white">
                 <span x-text="$store.nutrition.consumed[macro.key]"></span>
                 <span class="text-gray-500"> / </span>
-                <span x-text="$store.nutrition.plan?.macros[macro.key]"></span>
+                <span
+                  x-text="$store.nutrition.plan ? $store.nutrition.plan.macros[macro.key] : ''"
+                ></span>
                 <span class="text-gray-500" x-text="' ' + macro.unit"></span>
               </span>
             </div>
             <div class="h-2 bg-kinetic-elevated rounded-full overflow-hidden">
               <div
                 class="h-full rounded-full transition-all duration-500"
-                :style="`width: ${Math.min(100, ($store.nutrition.progress?.[macro.pctKey] ?? 0))}%; background: ${macro.color}`"
+                :style="'width: ' + Math.min(100, ($store.nutrition.progress ? ($store.nutrition.progress[macro.pctKey] || 0) : 0)) + '%; background: ' + macro.color"
               ></div>
             </div>
           </div>
@@ -169,7 +171,7 @@
               <span class="text-xs text-white font-medium" x-text="selectedFood.name"></span>
               <span
                 class="ml-auto text-[10px] text-gray-500"
-                x-text="`${selectedFood.kcal} kcal · P${selectedFood.protein}g · G${selectedFood.carbs}g · L${selectedFood.fat}g /100g`"
+                x-text="selectedFood.kcal + ' kcal · P' + selectedFood.protein + 'g · G' + selectedFood.carbs + 'g · L' + selectedFood.fat + 'g /100g'"
               ></span>
             </div>
           </template>
@@ -188,7 +190,7 @@
                   <span class="text-sm text-white" x-text="food.name"></span>
                   <span
                     class="text-[10px] text-gray-500 shrink-0"
-                    x-text="`${food.kcal}kcal · P${food.protein}g`"
+                    x-text="food.kcal + 'kcal · P' + food.protein + 'g'"
                   ></span>
                 </div>
               </button>
@@ -285,7 +287,7 @@
             <p class="text-[10px] text-gray-500 mt-0.5">kcal</p>
             <p
               class="text-[10px] text-gray-400 mt-1"
-              x-text="`P${(newMeal.protein*newMeal.grams/100).toFixed(0)} G${(newMeal.carbs*newMeal.grams/100).toFixed(0)} L${(newMeal.fat*newMeal.grams/100).toFixed(0)}`"
+              x-text="'P' + (newMeal.protein*newMeal.grams/100).toFixed(0) + ' G' + (newMeal.carbs*newMeal.grams/100).toFixed(0) + ' L' + (newMeal.fat*newMeal.grams/100).toFixed(0)"
             ></p>
           </div>
         </div>
@@ -316,7 +318,7 @@
                 <p class="text-sm text-white" x-text="item.food.name"></p>
                 <p
                   class="text-xs text-gray-500"
-                  x-text="`${item.grams}g · P${(item.food.proteinPer100*item.grams/100).toFixed(0)}g · G${(item.food.carbsPer100*item.grams/100).toFixed(0)}g · L${(item.food.fatPer100*item.grams/100).toFixed(0)}g`"
+                  x-text="item.grams + 'g · P' + (item.food.proteinPer100*item.grams/100).toFixed(0) + 'g · G' + (item.food.carbsPer100*item.grams/100).toFixed(0) + 'g · L' + (item.food.fatPer100*item.grams/100).toFixed(0) + 'g'"
                 ></p>
               </div>
               <div class="flex items-center gap-2">
@@ -345,41 +347,41 @@
           <p class="text-xs text-gray-500">BMR</p>
           <p
             class="text-lg font-black text-white"
-            x-text="$store.nutrition.plan?.bmrKcal + ' kcal'"
+            x-text="($store.nutrition.plan ? $store.nutrition.plan.bmrKcal : 0) + ' kcal'"
           ></p>
         </div>
         <div class="bg-kinetic-elevated/60 rounded-xl p-3">
           <p class="text-xs text-gray-500">TDEE</p>
           <p
             class="text-lg font-black text-kinetic-neon"
-            x-text="$store.nutrition.plan?.tdeeKcal + ' kcal'"
+            x-text="($store.nutrition.plan ? $store.nutrition.plan.tdeeKcal : 0) + ' kcal'"
           ></p>
         </div>
         <div class="bg-kinetic-elevated/60 rounded-xl p-3">
           <p class="text-xs text-gray-500">Eau / jour</p>
           <p
             class="text-lg font-black text-blue-400"
-            x-text="((($store.nutrition.plan?.macros.waterMl ?? 0) / 1000).toFixed(1)) + ' L'"
+            x-text="(($store.nutrition.plan ? $store.nutrition.plan.macros.waterMl : 0) / 1000).toFixed(1) + ' L'"
           ></p>
         </div>
         <div class="bg-kinetic-elevated/60 rounded-xl p-3">
           <p class="text-xs text-gray-500">Fibres cible</p>
           <p
             class="text-lg font-black text-green-400"
-            x-text="($store.nutrition.plan?.macros.fiberG ?? 0) + ' g'"
+            x-text="($store.nutrition.plan ? $store.nutrition.plan.macros.fiberG : 0) + ' g'"
           ></p>
         </div>
       </div>
-      <template x-if="$store.nutrition.plan?.weeklyFatLossG">
+      <template x-if="$store.nutrition.plan && $store.nutrition.plan.weeklyFatLossG">
         <div class="bg-kinetic-neon/10 border border-kinetic-neon/20 rounded-xl p-3 mb-3">
           <p class="text-xs text-kinetic-neon font-semibold">Perte de masse grasse théorique</p>
           <p
             class="text-sm text-white mt-0.5"
-            x-text="`~${($store.nutrition.plan?.weeklyFatLossG / 1000).toFixed(2)} kg / semaine`"
+            x-text="'~' + ($store.nutrition.plan ? ($store.nutrition.plan.weeklyFatLossG / 1000).toFixed(2) : '0.00') + ' kg / semaine'"
           ></p>
         </div>
       </template>
-      <template x-for="note in ($store.nutrition.plan?.notes ?? [])">
+      <template x-for="note in ($store.nutrition.plan ? $store.nutrition.plan.notes : [])">
         <p class="text-xs text-gray-500 mb-1 before:content-['→_']" x-text="note"></p>
       </template>
     </div>
@@ -400,9 +402,9 @@
             <span class="text-xs text-gray-400" x-text="meal.kcal + ' kcal'"></span>
           </div>
           <div class="flex gap-3 text-xs text-gray-500 mb-1">
-            <span x-text="`P: ${meal.proteinG}g`" class="text-kinetic-neon"></span>
-            <span x-text="`G: ${meal.carbsG}g`" class="text-kinetic-neon"></span>
-            <span x-text="`L: ${meal.fatG}g`" class="text-kinetic-electric"></span>
+            <span x-text="'P: ' + meal.proteinG + 'g'" class="text-kinetic-neon"></span>
+            <span x-text="'G: ' + meal.carbsG + 'g'" class="text-kinetic-neon"></span>
+            <span x-text="'L: ' + meal.fatG + 'g'" class="text-kinetic-electric"></span>
           </div>
           <p class="text-xs text-gray-500" x-text="meal.notes"></p>
         </div>

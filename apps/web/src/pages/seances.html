@@ -31,17 +31,23 @@
         </p>
         <p
           class="text-white font-black text-xl mb-3 leading-tight"
-          x-text="prCelebration?.exerciseName"
+          x-text="prCelebration ? prCelebration.exerciseName : ''"
         ></p>
         <div class="flex items-center justify-center gap-3 mb-4">
           <div class="text-center">
             <p class="text-[10px] text-gray-400 uppercase tracking-wider">Charge</p>
-            <p class="text-3xl font-black text-white" x-text="prCelebration?.weightKg + ' kg'"></p>
+            <p
+              class="text-3xl font-black text-white"
+              x-text="(prCelebration ? prCelebration.weightKg : 0) + ' kg'"
+            ></p>
           </div>
           <div class="text-gray-500 text-xl">×</div>
           <div class="text-center">
             <p class="text-[10px] text-gray-400 uppercase tracking-wider">Reps</p>
-            <p class="text-3xl font-black text-white" x-text="prCelebration?.reps"></p>
+            <p
+              class="text-3xl font-black text-white"
+              x-text="prCelebration ? prCelebration.reps : 0"
+            ></p>
           </div>
         </div>
         <div
@@ -50,7 +56,7 @@
           <p class="text-[10px] text-gray-400 uppercase tracking-wider">e1RM estimé</p>
           <p
             class="text-2xl font-black text-kinetic-electric"
-            x-text="prCelebration?.e1rmKg + ' kg'"
+            x-text="(prCelebration ? prCelebration.e1rmKg : 0) + ' kg'"
           ></p>
         </div>
         <p class="text-xs text-gray-500">Appuie n'importe où pour fermer</p>
@@ -264,7 +270,11 @@
                 <span x-text="entry.sets.length"></span> série(s)
                 <template x-if="pr(entry.exerciseId)">
                   <span class="ml-2 text-kinetic-electric"
-                    >PR : <span x-text="pr(entry.exerciseId)?.toFixed(1)"></span> kg e1RM</span
+                    >PR :
+                    <span
+                      x-text="pr(entry.exerciseId) ? pr(entry.exerciseId).toFixed(1) : '0'"
+                    ></span>
+                    kg e1RM</span
                   >
                 </template>
               </p>
@@ -328,13 +338,15 @@
               <!-- Conseil principal -->
               <div class="px-3 py-2 bg-kinetic-elevated/40">
                 <!-- Cible recommandée -->
-                <template x-if="coachAdvice(entry.exerciseId)?.weightKg > 0">
+                <template
+                  x-if="coachAdvice(entry.exerciseId) && coachAdvice(entry.exerciseId).weightKg > 0"
+                >
                   <div class="flex items-center gap-3 mb-2">
                     <div class="text-center">
                       <p class="text-[10px] uppercase tracking-widest text-gray-500">Poids cible</p>
                       <p
                         class="text-2xl font-black text-white leading-none"
-                        x-text="coachAdvice(entry.exerciseId)?.weightKg + ' kg'"
+                        x-text="coachAdvice(entry.exerciseId).weightKg + ' kg'"
                       ></p>
                     </div>
                     <div class="text-gray-500">×</div>
@@ -342,7 +354,7 @@
                       <p class="text-[10px] uppercase tracking-widest text-gray-500">Reps</p>
                       <p
                         class="text-2xl font-black text-white leading-none"
-                        x-text="coachAdvice(entry.exerciseId)?.reps"
+                        x-text="coachAdvice(entry.exerciseId).reps"
                       ></p>
                     </div>
                     <div class="text-gray-500">@</div>
@@ -350,12 +362,12 @@
                       <p class="text-[10px] uppercase tracking-widest text-gray-500">RPE</p>
                       <p
                         class="text-2xl font-black text-kinetic-electric leading-none"
-                        x-text="coachAdvice(entry.exerciseId)?.rpe"
+                        x-text="coachAdvice(entry.exerciseId).rpe"
                       ></p>
                     </div>
                     <!-- Bouton appliquer -->
                     <button
-                      @click="draft.weightKg = coachAdvice(entry.exerciseId)?.weightKg; draft.reps = coachAdvice(entry.exerciseId)?.reps; draft.rpe = coachAdvice(entry.exerciseId)?.rpe"
+                      @click="draft.weightKg = coachAdvice(entry.exerciseId).weightKg; draft.reps = coachAdvice(entry.exerciseId).reps; draft.rpe = coachAdvice(entry.exerciseId).rpe"
                       class="ml-auto text-xs px-2.5 py-1.5 rounded-lg bg-kinetic-neon text-gray-950 font-bold hover:brightness-110 active:scale-95 flex-shrink-0"
                     >
                       Appliquer
@@ -365,17 +377,17 @@
                 <!-- Message conseil -->
                 <p
                   class="text-xs text-gray-300 leading-relaxed"
-                  x-text="coachAdvice(entry.exerciseId)?.message"
+                  x-text="coachAdvice(entry.exerciseId) ? coachAdvice(entry.exerciseId).message : ''"
                 ></p>
                 <!-- Source scientifique -->
                 <p
                   class="text-[10px] text-gray-600 italic mt-1"
-                  x-text="'Source : ' + (coachAdvice(entry.exerciseId)?.science ?? '')"
+                  x-text="'Source : ' + (coachAdvice(entry.exerciseId) ? coachAdvice(entry.exerciseId).science : '')"
                 ></p>
 
                 <!-- Note de périodisation (Coach Avancé — niveau 3+) -->
                 <template
-                  x-if="$store.rewards.hasAdvancedCoach && coachAdvice(entry.exerciseId)?.periodizationNote"
+                  x-if="$store.rewards.hasAdvancedCoach && coachAdvice(entry.exerciseId) && coachAdvice(entry.exerciseId).periodizationNote"
                 >
                   <div
                     class="mt-2 flex items-start gap-1.5 bg-purple-900/30 ring-1 ring-purple-500/20 rounded-lg px-2.5 py-2"
@@ -385,7 +397,7 @@
                     >
                     <p
                       class="text-xs text-purple-200 leading-relaxed"
-                      x-text="coachAdvice(entry.exerciseId)?.periodizationNote"
+                      x-text="coachAdvice(entry.exerciseId) ? coachAdvice(entry.exerciseId).periodizationNote : ''"
                     ></p>
                   </div>
                 </template>
@@ -421,7 +433,7 @@
           </div>
           <!-- Suggestion auto-progression (bloc indépendant, full width) -->
           <template
-            x-if="progressionSuggestion(entry.exerciseId)?.strategy !== 'first_time' && progressionSuggestion(entry.exerciseId) !== null"
+            x-if="progressionSuggestion(entry.exerciseId) !== null && progressionSuggestion(entry.exerciseId).strategy !== 'first_time'"
           >
             <div class="bg-kinetic-elevated/60 rounded-xl px-3 py-2 mb-2">
               <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-0.5">
@@ -429,16 +441,16 @@
               </p>
               <p class="text-sm text-white font-bold leading-tight">
                 <span
-                  x-text="(progressionSuggestion(entry.exerciseId)?.suggestedWeight ?? 0) + ' kg × ' + (progressionSuggestion(entry.exerciseId)?.suggestedReps ?? 0)"
+                  x-text="progressionSuggestion(entry.exerciseId).suggestedWeight + ' kg × ' + progressionSuggestion(entry.exerciseId).suggestedReps"
                 ></span>
                 <span
                   class="text-gray-400 font-normal text-xs ml-1"
-                  x-text="'@ RPE ' + (progressionSuggestion(entry.exerciseId)?.suggestedRpe ?? 0)"
+                  x-text="'@ RPE ' + progressionSuggestion(entry.exerciseId).suggestedRpe"
                 ></span>
               </p>
               <p
                 class="text-xs text-gray-400 mt-0.5 leading-snug"
-                x-text="progressionSuggestion(entry.exerciseId)?.rationale ?? ''"
+                x-text="progressionSuggestion(entry.exerciseId) ? progressionSuggestion(entry.exerciseId).rationale : ''"
               ></p>
             </div>
           </template>
@@ -627,7 +639,7 @@
       <p
         class="text-[10px] text-gray-600 text-center pt-1"
         x-show="sessions.length > 20"
-        x-text="`+${sessions.length - 20} séance(s) plus anciennes — exporte en JSON pour tout consulter.`"
+        x-text="'+' + (sessions.length - 20) + ' séance(s) plus anciennes — exporte en JSON pour tout consulter.'"
       ></p>
     </div>
   </div>
@@ -684,7 +696,7 @@
           <p class="text-xs text-gray-500">Dernier</p>
           <p
             class="text-lg font-bold text-white"
-            x-text="progressPoints().at(-1)?.y?.toFixed(1) + ' kg'"
+            x-text="(progressPoints().at(-1) ? (progressPoints().at(-1).y ? progressPoints().at(-1).y.toFixed(1) : '0') : '0') + ' kg'"
           ></p>
         </div>
       </div>

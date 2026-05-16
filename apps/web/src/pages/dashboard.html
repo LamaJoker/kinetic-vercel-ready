@@ -43,18 +43,18 @@
     <div class="h-2 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
       <div
         class="h-full bg-gradient-to-r from-kinetic-neon to-lime-300 rounded-full transition-all duration-700 ease-out shadow-[0_0_14px_rgba(168,255,0,0.7)]"
-        :style="`width: ${$store.xp.progressPercent}%`"
+        :style="'width: ' + $store.xp.progressPercent + '%'"
       ></div>
     </div>
     <div class="flex justify-between mt-2">
       <p
         class="text-[10px] uppercase tracking-wider text-gray-600 font-semibold"
-        x-text="`LV.${$store.xp.currentLevel}`"
+        x-text="'LV.' + $store.xp.currentLevel"
       ></p>
       <p
         class="text-xs text-gray-500"
         x-show="!$store.xp.isMaxLevel"
-        x-text="`${$store.xp.remaining} XP → LV.${$store.xp.currentLevel + 1}`"
+        x-text="$store.xp.remaining + ' XP → LV.' + ($store.xp.currentLevel + 1)"
       ></p>
       <p class="text-xs text-kinetic-electric font-medium" x-show="$store.xp.isMaxLevel">🏆 MAX</p>
     </div>
@@ -136,13 +136,13 @@
       <h2 class="font-display font-bold text-white tracking-tight">Routine vitalité</h2>
       <span
         class="text-xs bg-kinetic-neon/10 text-kinetic-neon px-2.5 py-0.5 rounded-full font-semibold ring-1 ring-kinetic-neon/20"
-        x-text="`${$store.vitalite.doneCount}/${$store.vitalite.totalCount}`"
+        x-text="$store.vitalite.doneCount + '/' + $store.vitalite.totalCount"
       ></span>
     </div>
     <div class="h-1.5 bg-black/40 rounded-full overflow-hidden mb-3 ring-1 ring-white/5">
       <div
         class="h-full bg-gradient-to-r from-kinetic-neon to-lime-300 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(168,255,0,0.5)]"
-        :style="`width: ${$store.vitalite.progress}%`"
+        :style="'width: ' + $store.vitalite.progress + '%'"
       ></div>
     </div>
 
@@ -291,7 +291,7 @@
           :class="$store.goals.sessionsOk
                ? 'bg-kinetic-neon shadow-[0_0_10px_rgba(168,255,0,0.5)]'
                : 'bg-kinetic-electric/70'"
-          :style="`width: ${$store.goals.sessionsPercent}%`"
+          :style="'width: ' + $store.goals.sessionsPercent + '%'"
         ></div>
       </div>
     </div>
@@ -311,7 +311,7 @@
           :class="$store.goals.tonnageOk
                ? 'bg-kinetic-neon shadow-[0_0_10px_rgba(168,255,0,0.5)]'
                : 'bg-kinetic-electric/70'"
-          :style="`width: ${$store.goals.tonnagePercent}%`"
+          :style="'width: ' + $store.goals.tonnagePercent + '%'"
         ></div>
       </div>
     </div>
@@ -386,18 +386,21 @@
     class="relative bg-kinetic-surface ring-1 ring-white/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl"
   >
     <div class="flex items-start gap-4 mb-5">
-      <div class="text-5xl leading-none" x-text="$store.rewards.pendingReward?.emoji ?? '🎁'"></div>
+      <div
+        class="text-5xl leading-none"
+        x-text="$store.rewards.pendingReward ? $store.rewards.pendingReward.emoji : '🎁'"
+      ></div>
       <div>
         <p class="text-xs uppercase tracking-widest text-kinetic-neon font-bold mb-0.5">
           Niveau <span x-text="$store.rewards.pendingLevel"></span> débloqué !
         </p>
         <h3
           class="font-display font-black text-xl text-white"
-          x-text="$store.rewards.pendingReward?.title"
+          x-text="$store.rewards.pendingReward ? $store.rewards.pendingReward.title : ''"
         ></h3>
         <p
           class="text-sm text-gray-400 mt-1"
-          x-text="$store.rewards.pendingReward?.description"
+          x-text="$store.rewards.pendingReward ? $store.rewards.pendingReward.description : ''"
         ></p>
       </div>
     </div>

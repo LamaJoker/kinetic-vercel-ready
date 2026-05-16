@@ -36,7 +36,7 @@
       >
         <p
           class="text-[9px] uppercase tracking-widest font-bold mb-1 truncate transition-colors"
-          :style="`color: ${hasData(m.key) ? m.color : '#4B5563'}`"
+          :style="'color: ' + (hasData(m.key) ? m.color : '#4B5563')"
           x-text="m.label"
         ></p>
         <p
@@ -141,7 +141,7 @@
           <p class="text-[9px] uppercase tracking-widest text-gray-600 font-semibold">Actuel</p>
           <p
             class="font-display font-black text-sm mt-0.5"
-            :style="`color: ${activeMetricDef.color}`"
+            :style="'color: ' + activeMetricDef.color"
             x-text="currentValue(activeMetric) !== null ? currentValue(activeMetric).toFixed(1) + ' cm' : '—'"
           ></p>
         </div>
@@ -516,7 +516,7 @@
       <p
         x-show="photos.length > 12"
         class="text-[10px] text-gray-600 text-center mt-2"
-        x-text="`+${photos.length - 12} plus ancien(s)`"
+        x-text="'+' + (photos.length - 12) + ' plus ancien(s)'"
       ></p>
     </div>
   </div>

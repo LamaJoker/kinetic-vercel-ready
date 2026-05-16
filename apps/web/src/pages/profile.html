@@ -64,7 +64,10 @@
         :class="$store.rewards.hasLegendBadge ? 'text-yellow-400' : 'text-white'"
         x-text="displayName || 'Anonyme'"
       ></p>
-      <p class="text-sm text-gray-400" x-text="$store.auth.user?.email ?? 'Mode invité'"></p>
+      <p
+        class="text-sm text-gray-400"
+        x-text="$store.auth.user ? $store.auth.user.email : 'Mode invité'"
+      ></p>
       <p
         class="text-xs mt-0.5 font-medium"
         :class="$store.rewards.hasLegendBadge ? 'text-yellow-400' : 'text-kinetic-neon'"
@@ -107,18 +110,18 @@
     <div class="h-2 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
       <div
         class="h-full bg-gradient-to-r from-kinetic-neon to-lime-300 rounded-full transition-all duration-700 ease-out shadow-[0_0_14px_rgba(168,255,0,0.7)]"
-        :style="`width: ${$store.xp.progressPercent}%`"
+        :style="'width: ' + $store.xp.progressPercent + '%'"
       ></div>
     </div>
     <div class="flex justify-between mt-2">
       <p
         class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold"
-        x-text="`LV.${$store.xp.currentLevel}`"
+        x-text="'LV.' + $store.xp.currentLevel"
       ></p>
       <p
         class="text-xs text-gray-500"
         x-show="!$store.xp.isMaxLevel"
-        x-text="`${$store.xp.remaining} XP → LV.${$store.xp.currentLevel + 1}`"
+        x-text="$store.xp.remaining + ' XP → LV.' + ($store.xp.currentLevel + 1)"
       ></p>
       <p class="text-xs text-kinetic-electric font-medium" x-show="$store.xp.isMaxLevel">🏆 MAX</p>
     </div>
@@ -177,7 +180,7 @@
             <template x-if="!$store.rewards.isUnlocked(reward.level)">
               <span
                 class="text-[10px] text-gray-600 font-mono"
-                x-text="`LV.${reward.level}`"
+                x-text="'LV.' + reward.level"
               ></span>
             </template>
           </div>
@@ -233,8 +236,8 @@
           >
             <!-- Aperçu double-couleur -->
             <div class="w-8 h-8 rounded-full overflow-hidden flex">
-              <div class="w-1/2 h-full" :style="`background: ${theme.neon}`"></div>
-              <div class="w-1/2 h-full" :style="`background: ${theme.accent}`"></div>
+              <div class="w-1/2 h-full" :style="'background: ' + theme.neon"></div>
+              <div class="w-1/2 h-full" :style="'background: ' + theme.accent"></div>
             </div>
             <span
               class="text-[9px] text-gray-400 font-medium text-center leading-tight"
@@ -247,7 +250,7 @@
 
       <p
         class="text-[10px] text-gray-600 mt-3 text-center"
-        x-text="'Thème actif : ' + ($store.rewards.allThemes.find(t => t.id === $store.rewards.currentTheme)?.label ?? '—')"
+        x-text="'Thème actif : ' + ($store.rewards.allThemes.find(t => t.id === $store.rewards.currentTheme) ? $store.rewards.allThemes.find(t => t.id === $store.rewards.currentTheme).label : '—')"
       ></p>
     </div>
   </template>
@@ -291,7 +294,10 @@
     <div x-show="$store.auth.isAuthenticated">
       <p class="text-sm text-gray-300 mb-3">
         Connecté ·
-        <span class="font-medium text-white" x-text="$store.auth.user?.email"></span>
+        <span
+          class="font-medium text-white"
+          x-text="$store.auth.user ? $store.auth.user.email : ''"
+        ></span>
       </p>
       <button
         @click="$store.auth.logout()"
@@ -355,7 +361,7 @@
       <div class="h-2 bg-kinetic-elevated rounded-full overflow-hidden">
         <div
           class="h-full rounded-full transition-all duration-500"
-          :style="`width: ${storagePercent ?? 0}%; background: ${storagePercent !== null && storagePercent > 80 ? '#FF6A00' : '#A8FF00'}`"
+          :style="'width: ' + (storagePercent !== null ? storagePercent : 0) + '%; background: ' + (storagePercent !== null && storagePercent > 80 ? '#FF6A00' : '#A8FF00')"
         ></div>
       </div>
     </div>
@@ -376,7 +382,7 @@
 
   <!-- Sync cloud -->
   <div
-    x-show="$store.auth.isAuthenticated && $store.auth.user?.id !== 'guest'"
+    x-show="$store.auth.isAuthenticated && $store.auth.user && $store.auth.user.id !== 'guest'"
     class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5"
   >
     <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Cloud</h2>
