@@ -149,9 +149,19 @@ test.describe('Kinetic App — Navigation', () => {
 test.describe('Kinetic App — Complétion de tâches', () => {
   test.beforeEach(async ({ page }) => {
     await gotoApp(page, '/vitalite');
-    // Le dispatch manuel de kinetic:auth-ready dans gotoApp() force le rendu
-    // immédiat du router. Le store vitalite finit son init() rapidement
-    // (getDeps cached), donc les buttons "+N XP" apparaissent en quelques ms.
+    // Sur mobile-safari (WebKit), les opérations IDB sont plus lentes : le store
+    // vitalite peut ne pas avoir fini son init() asynchrone (2 lectures IDB) quand
+    // gotoApp() retourne. On attend explicitement que loading === false ET que
+    // tasks soit peuplé avant de chercher les boutons "+N XP" dans le DOM.
+    await page.waitForFunction(
+      () => {
+        const a = (window as any).Alpine;
+        if (!a?.store) return false;
+        const v = a.store('vitalite') as { loading?: boolean; tasks?: unknown[] } | null;
+        return v != null && v.loading === false && Array.isArray(v.tasks) && v.tasks.length > 0;
+      },
+      { timeout: 15_000 },
+    );
     await expect(
       page
         .locator('#app-outlet button')
@@ -258,7 +268,15 @@ test.describe('Kinetic App — PWA & Offline', () => {
     // Ce test nécessite le build de production (Service Worker enregistré).
     // playwright.config.ts utilise désormais `preview:ci` en local ET en CI
     // → ce test est valide dans les deux contextes.
-    await page.goto('http://localhost:3000');
+    //
+    // Stratégie : charger la page DEUX fois pour s'assurer que le SW est actif
+    // et que tous les assets statiques (/static/assets/*) sont dans le cache
+    // runtime. Sur Firefox le SW s'active plus lentement qu'en Chrome, et les
+    // assets hashés ne sont cachés qu'à la demande (runtime-cache) : après le
+    // premier chargement complet, le second chargement est entièrement servi
+    // depuis le cache → on peut alors couper le réseau en toute sécurité.
+    await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
+    await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
 
     // Attendre la fin de l'init Alpine avant de couper le réseau
     await waitForAlpineInit(page);
