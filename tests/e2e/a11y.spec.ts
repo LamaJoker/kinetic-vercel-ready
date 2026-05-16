@@ -14,54 +14,15 @@ import AxeBuilder from '@axe-core/playwright';
 async function setupApp(page: Page, path = '/'): Promise<void> {
   await page.goto('http://localhost:3000/manifest.json');
 
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) => {
-        try {
-          localStorage.clear();
-        } catch {
-          /* ignored */
-        }
-        if (!('indexedDB' in window)) {
-          resolve();
-          return;
-        }
-        const req = indexedDB.open('keyval-store', 1);
-        req.onupgradeneeded = (): void => {
-          try {
-            req.result.createObjectStore('keyval');
-          } catch {
-            /* exists */
-          }
-        };
-        req.onsuccess = (): void => {
-          const db = req.result;
-          const tx = db.transaction('keyval', 'readwrite');
-          const store = tx.objectStore('keyval');
-          store.clear();
-          store.put(
-            {
-              weightKg: 75,
-              heightCm: 175,
-              birthYear: 1990,
-              activityLevel: 'moderate',
-              goal: 'lean',
-              sex: 'M',
-            },
-            'kinetic:userProfile',
-          );
-          tx.oncomplete = (): void => {
-            db.close();
-            resolve();
-          };
-          tx.onerror = (): void => {
-            db.close();
-            resolve();
-          };
-        };
-        req.onerror = (): void => resolve();
-      }),
-  );
+  // Avoid IDB writes from test context — causes WebKit IDB connection
+  // hang on subsequent app navigation. See kinetic.spec.ts gotoApp() comment.
+  await page.evaluate(() => {
+    try {
+      localStorage.clear();
+    } catch {
+      /* ignored */
+    }
+  });
 
   await page.goto(`http://localhost:3000${path}`);
   await page.waitForFunction(

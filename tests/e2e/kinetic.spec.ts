@@ -28,60 +28,26 @@ async function waitForAlpineInit(page: Page): Promise<void> {
  * aucun code Alpine ne tourne et l'IDB est libre.
  */
 async function gotoApp(page: Page, path = '/'): Promise<void> {
-  // 1. Asset statique = même origine, zéro JS d'app, zéro contention IDB
+  // 1. Asset statique = même origine, zéro JS d'app
   await page.goto('http://localhost:3000/manifest.json');
 
-  // 2. Clear + injection du profil en une seule transaction IDB
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) => {
-        try {
-          localStorage.clear();
-        } catch {
-          /* ignoré */
-        }
-        if (!('indexedDB' in window)) {
-          resolve();
-          return;
-        }
-        const req = indexedDB.open('keyval-store', 1);
-        req.onupgradeneeded = (): void => {
-          try {
-            req.result.createObjectStore('keyval');
-          } catch {
-            /* déjà créé */
-          }
-        };
-        req.onsuccess = (): void => {
-          const db = req.result;
-          const tx = db.transaction('keyval', 'readwrite');
-          const store = tx.objectStore('keyval');
-          store.clear();
-          store.put(
-            {
-              weightKg: 75,
-              heightCm: 175,
-              birthYear: 1990,
-              activityLevel: 'moderate',
-              goal: 'lean',
-              sex: 'M',
-            },
-            'kinetic:userProfile',
-          );
-          tx.oncomplete = (): void => {
-            db.close();
-            resolve();
-          };
-          tx.onerror = (): void => {
-            db.close();
-            resolve();
-          };
-        };
-        req.onerror = (): void => resolve();
-      }),
-  );
+  // 2. Clear localStorage uniquement. On NE touche PAS à l'IDB depuis ici :
+  //    sur mobile-safari (WebKit) en CI, ouvrir l'IDB depuis ce contexte de
+  //    test puis naviguer immédiatement vers l'app cause un hang persistant
+  //    de la connexion IDB côté app — toutes les lectures (vitalite.init,
+  //    hasCompletedOnboarding) restent pendantes. Le bypass de l'onboarding
+  //    se fait via le dispatch kinetic:onboarding-complete plus bas.
+  //    Vitalite : sans profil en IDB, le store tombe sur buildTasks([])
+  //    (10 tâches DEFAULT_TASKS_SPEC) → les boutons +N XP apparaissent.
+  await page.evaluate(() => {
+    try {
+      localStorage.clear();
+    } catch {
+      /* ignoré */
+    }
+  });
 
-  // 3. Naviguer vers la route cible (profil déjà en IDB → pas de redirect onboarding)
+  // 3. Naviguer vers la route cible
   await page.goto(`http://localhost:3000${path}`);
   await waitForAlpineInit(page);
 
