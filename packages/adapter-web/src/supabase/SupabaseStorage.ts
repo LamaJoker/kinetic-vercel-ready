@@ -50,16 +50,7 @@ export class SupabaseStorage implements StoragePort {
   }
 
   async keys(): Promise<readonly StorageKey[]> {
-    const { data, error } = await this.client
-      .from('user_storage')
-      .select('key')
-      .eq('user_id', this.userId);
-
-    if (error) {
-      console.error('[SupabaseStorage] keys failed:', error.message);
-      throw new Error(error.message);
-    }
-    return (data ?? []).map((row) => row.key);
+    return this._paginateKeys(null);
   }
 
   /**
@@ -70,17 +61,43 @@ export class SupabaseStorage implements StoragePort {
    * sync (N+1 problem). Falls back to full keys() scan on first sync (no lastSyncAt).
    */
   async keysSince(since: string): Promise<readonly StorageKey[]> {
-    const { data, error } = await this.client
-      .from('user_storage')
-      .select('key')
-      .eq('user_id', this.userId)
-      .gte('updated_at', since);
+    return this._paginateKeys(since);
+  }
 
-    if (error) {
-      console.error('[SupabaseStorage] keysSince failed:', error.message);
-      throw new Error(error.message);
+  /**
+   * _paginateKeys — fetches all keys in pages of 1 000 to bypass the PostgREST
+   * default row cap. Pass `since` for a delta query, null for a full scan.
+   */
+  private async _paginateKeys(since: string | null): Promise<readonly StorageKey[]> {
+    const PAGE = 1000;
+    const keys: StorageKey[] = [];
+    let offset = 0;
+
+    for (;;) {
+      let q = this.client
+        .from('user_storage')
+        .select('key')
+        .eq('user_id', this.userId)
+        .range(offset, offset + PAGE - 1);
+
+      if (since !== null) {
+        q = q.gte('updated_at', since);
+      }
+
+      const { data, error } = await q;
+
+      if (error) {
+        console.error('[SupabaseStorage] keys fetch failed:', error.message);
+        throw new Error(error.message);
+      }
+
+      const page = (data ?? []) as Array<{ key: StorageKey }>;
+      for (const row of page) keys.push(row.key);
+      if (page.length < PAGE) break;
+      offset += PAGE;
     }
-    return (data ?? []).map((row) => row.key);
+
+    return keys;
   }
 
   async clear(): Promise<void> {

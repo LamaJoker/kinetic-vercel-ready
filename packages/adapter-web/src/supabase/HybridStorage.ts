@@ -47,15 +47,22 @@ const MAX_PENDING_WRITES = 500;
 export class HybridStorage implements StoragePort {
   private pendingWrites = new Map<StorageKey, PendingWrite>();
   private flushing = false;
+  private _onlineHandler: (() => void) | null = null;
 
   constructor(
     private readonly local: StoragePort,
     private readonly remote: StoragePort,
   ) {
     if (typeof window !== 'undefined') {
-      window.addEventListener('online', () => {
-        void this.flushPendingWrites();
-      });
+      this._onlineHandler = () => void this.flushPendingWrites();
+      window.addEventListener('online', this._onlineHandler);
+    }
+  }
+
+  dispose(): void {
+    if (this._onlineHandler && typeof window !== 'undefined') {
+      window.removeEventListener('online', this._onlineHandler);
+      this._onlineHandler = null;
     }
   }
 

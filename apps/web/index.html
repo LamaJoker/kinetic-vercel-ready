@@ -20,7 +20,11 @@
     <title>Kinetic — Performance OS</title>
   </head>
 
-  <body class="h-full bg-kinetic-ink text-gray-100 antialiased" x-data>
+  <body
+    class="h-full bg-kinetic-ink text-gray-100 antialiased"
+    x-data="{ currentPath: location.pathname }"
+    @kinetic:route-changed.window="currentPath = $event.detail.path"
+  >
     <!-- Skip to main content (accessibility) -->
     <a
       href="#app-outlet"
@@ -101,15 +105,15 @@
       <div class="max-w-md mx-auto flex items-center justify-around px-1">
         <a
           href="/"
-          :aria-current="location.pathname === '/' ? 'page' : null"
+          :aria-current="currentPath === '/' ? 'page' : null"
           class="relative flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-2xl transition-all min-w-0"
-          :class="location.pathname === '/' ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
+          :class="currentPath === '/' ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
         >
           <svg
             aria-hidden="true"
             focusable="false"
             class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="location.pathname === '/' ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
+            :class="currentPath === '/' ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -120,26 +124,26 @@
             <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
             <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
-          <span class="text-[10px]" :class="location.pathname === '/' ? 'font-bold' : 'font-medium'"
+          <span class="text-[10px]" :class="currentPath === '/' ? 'font-bold' : 'font-medium'"
             >Accueil</span
           >
           <span
-            x-show="location.pathname === '/'"
+            x-show="currentPath === '/'"
             class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"
           ></span>
         </a>
 
         <a
           href="/seances"
-          :aria-current="location.pathname === '/seances' ? 'page' : null"
+          :aria-current="currentPath === '/seances' ? 'page' : null"
           class="relative flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-2xl transition-all min-w-0"
-          :class="location.pathname === '/seances' ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
+          :class="currentPath === '/seances' ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
         >
           <svg
             aria-hidden="true"
             focusable="false"
             class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="location.pathname === '/seances' ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
+            :class="currentPath === '/seances' ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -153,26 +157,26 @@
           </svg>
           <span
             class="text-[10px]"
-            :class="location.pathname === '/seances' ? 'font-bold' : 'font-medium'"
+            :class="currentPath === '/seances' ? 'font-bold' : 'font-medium'"
             >Séances</span
           >
           <span
-            x-show="location.pathname === '/seances'"
+            x-show="currentPath === '/seances'"
             class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"
           ></span>
         </a>
 
         <a
           href="/bodyweight"
-          :aria-current="['/bodyweight','/mensurations'].includes(location.pathname) ? 'page' : null"
+          :aria-current="['/bodyweight','/mensurations'].includes(currentPath) ? 'page' : null"
           class="relative flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-2xl transition-all min-w-0"
-          :class="['/bodyweight','/mensurations'].includes(location.pathname) ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
+          :class="['/bodyweight','/mensurations'].includes(currentPath) ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
         >
           <svg
             aria-hidden="true"
             focusable="false"
             class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="['/bodyweight','/mensurations'].includes(location.pathname) ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
+            :class="['/bodyweight','/mensurations'].includes(currentPath) ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -187,26 +191,26 @@
           </svg>
           <span
             class="text-[10px]"
-            :class="['/bodyweight','/mensurations'].includes(location.pathname) ? 'font-bold' : 'font-medium'"
+            :class="['/bodyweight','/mensurations'].includes(currentPath) ? 'font-bold' : 'font-medium'"
             >Corps</span
           >
           <span
-            x-show="['/bodyweight','/mensurations'].includes(location.pathname)"
+            x-show="['/bodyweight','/mensurations'].includes(currentPath)"
             class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"
           ></span>
         </a>
 
         <a
           href="/vitalite"
-          :aria-current="location.pathname === '/vitalite' ? 'page' : null"
+          :aria-current="currentPath === '/vitalite' ? 'page' : null"
           class="relative flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-2xl transition-all min-w-0"
-          :class="location.pathname === '/vitalite' ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
+          :class="currentPath === '/vitalite' ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
         >
           <svg
             aria-hidden="true"
             focusable="false"
             class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="location.pathname === '/vitalite' ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
+            :class="currentPath === '/vitalite' ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -220,26 +224,26 @@
           </svg>
           <span
             class="text-[10px]"
-            :class="location.pathname === '/vitalite' ? 'font-bold' : 'font-medium'"
+            :class="currentPath === '/vitalite' ? 'font-bold' : 'font-medium'"
             >Vitalité</span
           >
           <span
-            x-show="location.pathname === '/vitalite'"
+            x-show="currentPath === '/vitalite'"
             class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"
           ></span>
         </a>
 
         <a
           href="/profile"
-          :aria-current="location.pathname === '/profile' ? 'page' : null"
+          :aria-current="currentPath === '/profile' ? 'page' : null"
           class="relative flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-2xl transition-all min-w-0"
-          :class="location.pathname === '/profile' ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
+          :class="currentPath === '/profile' ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
         >
           <svg
             aria-hidden="true"
             focusable="false"
             class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="location.pathname === '/profile' ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
+            :class="currentPath === '/profile' ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -252,11 +256,11 @@
           </svg>
           <span
             class="text-[10px]"
-            :class="location.pathname === '/profile' ? 'font-bold' : 'font-medium'"
+            :class="currentPath === '/profile' ? 'font-bold' : 'font-medium'"
             >Profil</span
           >
           <span
-            x-show="location.pathname === '/profile'"
+            x-show="currentPath === '/profile'"
             class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"
           ></span>
         </a>
@@ -267,8 +271,6 @@
     <main
       id="app-outlet"
       tabindex="-1"
-      role="main"
-      aria-live="polite"
       aria-busy="false"
       class="min-h-screen pb-28 focus:outline-none"
     >

@@ -26,7 +26,6 @@
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "playwright test --headed",
     "e2e:a11y": "playwright test tests/e2e/a11y.spec.ts",
-    "test:e2e": "playwright test",
     "supabase:gen-types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID --schema public > packages/adapter-web/src/database.types.ts",
     "prepare": "husky",
     "size": "pnpm build && node scripts/check-bundle-size.mjs"
@@ -55,7 +54,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,cjs}": [
-      "eslint --fix --max-warnings 0",
+      "eslint --fix --max-warnings 0 --no-warn-ignored",
       "prettier --write"
     ],
     "*.{json,md,yml,yaml,html,css}": [

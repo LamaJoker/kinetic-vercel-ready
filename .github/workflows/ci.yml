@@ -215,40 +215,7 @@ jobs:
           VITE_APP_VERSION: ${{ github.sha }}
 
       - name: Check bundle size (gzip metrics + threshold)
-        run: |
-          set -e
-          echo "::group::Bundle global size"
-          du -sh apps/web/dist/
-          echo "::endgroup::"
-
-          echo "::group::Top 10 JS files (raw)"
-          find apps/web/dist/static -name "*.js" -print0 | xargs -0 ls -la | sort -k5 -rn | head -10
-          echo "::endgroup::"
-
-          echo "::group::Per-file gzip & brotli"
-          for f in $(find apps/web/dist/static -name "*.js" -o -name "*.css"); do
-            raw=$(stat -c%s "$f")
-            gz=$(gzip -c "$f" | wc -c)
-            br=$(command -v brotli >/dev/null && brotli -c "$f" | wc -c || echo "n/a")
-            printf "%-60s raw=%8d  gz=%8d  br=%s\n" "$f" "$raw" "$gz" "$br"
-          done
-          echo "::endgroup::"
-
-          # Seuil bloquant: total dist > 2 MiB → fail
-          TOTAL_KB=$(du -sk apps/web/dist/ | awk '{print $1}')
-          echo "Total dist size: ${TOTAL_KB} KiB"
-          if [ "$TOTAL_KB" -gt 2048 ]; then
-            echo "::error::Bundle dépasse 2 MiB ($TOTAL_KB KiB). Optimiser avant merge."
-            exit 1
-          fi
-
-          # Seuil bloquant: aucun JS individuel > 350 KiB raw
-          LARGE_JS=$(find apps/web/dist/static -name "*.js" -size +358400c)
-          if [ -n "$LARGE_JS" ]; then
-            echo "::error::Fichier(s) JS > 350 KiB :"
-            echo "$LARGE_JS"
-            exit 1
-          fi
+        run: node scripts/check-bundle-size.mjs
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

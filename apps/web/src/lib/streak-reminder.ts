@@ -34,10 +34,18 @@ async function shouldRemind(): Promise<boolean> {
     );
     if (dailyLog && Object.keys(dailyLog).length >= 5) return false;
 
-    await deps.storage.set(KEY_REMINDER_DATE, todayIso());
     return true;
   } catch {
     return false;
+  }
+}
+
+async function markReminderSentToday(): Promise<void> {
+  try {
+    const deps = await getDeps();
+    await deps.storage.set(KEY_REMINDER_DATE, todayIso());
+  } catch {
+    /* non-critical */
   }
 }
 
@@ -88,5 +96,7 @@ export function scheduleStreakReminder(): void {
     } else {
       sendStreakNotificationWeb();
     }
+    // Only record "reminded today" after the notification was actually sent
+    await markReminderSentToday();
   }, delay);
 }

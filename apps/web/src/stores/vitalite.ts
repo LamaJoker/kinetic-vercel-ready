@@ -137,7 +137,7 @@ export function vitaliteStore() {
         const deps = await getDeps();
         const today = todayIso();
         this.customSpecs = (await deps.storage.get<CustomTaskSpec[]>(KEY_CUSTOM_TASKS)) ?? [];
-        const doneIds = (await deps.storage.get<string[]>(`kinetic:vitalite:done:${today}`)) ?? [];
+        const doneIds = (await deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(today))) ?? [];
         this.tasks = buildTasks(this.customSpecs).map((task) =>
           doneIds.includes(task.id)
             ? { ...task, done: true, completedAt: today, completionCount: 1 }
@@ -194,7 +194,7 @@ export function vitaliteStore() {
             : entry,
         );
 
-        const doneKey = `kinetic:vitalite:done:${today}`;
+        const doneKey = STORAGE_KEYS.VITALITE_DONE(today);
         const doneIds = (await deps.storage.get<string[]>(doneKey)) ?? [];
         if (!doneIds.includes(taskId)) {
           await deps.storage.set(doneKey, [...doneIds, taskId]);
@@ -389,7 +389,7 @@ export function vitaliteStore() {
           const batchResult = await Promise.all(
             dates
               .slice(i, i + BATCH)
-              .map((date) => deps.storage.get<string[]>(`kinetic:vitalite:done:${date}`)),
+              .map((date) => deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(date))),
           );
           allDoneIds.push(...batchResult);
         }

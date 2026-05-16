@@ -88,9 +88,11 @@ export default defineConfig({
   },
 
   esbuild: {
-    // Garder console.error et console.warn en prod : ces logs sont
-    // vitaux pour diagnostiquer les bugs APK qui n'ont pas de DevTools.
-    // Le global handler de main.ts persiste aussi les erreurs en localStorage.
+    // console.error + console.warn kept in prod: vital for diagnosing APK bugs
+    // without DevTools. The global handler in main.ts also persists them to
+    // localStorage so errors surface even on device.
+    // console.log/debug/info/trace: marked pure so esbuild drops them as
+    // side-effect-free dead code (their return values are always unused).
     pure:
       process.env['NODE_ENV'] === 'production'
         ? ['console.log', 'console.debug', 'console.info', 'console.trace']

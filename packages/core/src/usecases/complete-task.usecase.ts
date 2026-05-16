@@ -38,7 +38,7 @@ const COMPLETED_KEYS_TTL_DAYS = 90;
  *  report accurate per-day XP in the daily log. Reset implicitly every day
  *  by namespacing the key with the ISO date. */
 function dailyXpKeyFor(date: string): string {
-  return `kinetic:xp:earned:${date}`;
+  return STORAGE_KEYS.XP_EARNED(date);
 }
 
 function parseTrailingIsoDate(value: string): Date | null {

@@ -21,6 +21,7 @@ export interface AuthLikeUser {
 export interface FlushableStorage extends StoragePort {
   flushPendingWrites?(): Promise<void>;
   syncFromRemote?(): Promise<void>;
+  dispose?(): void;
 }
 
 export interface DepsFactoryOptions {
@@ -122,6 +123,7 @@ export function createDepsManager(options: DepsFactoryOptions): DepsManager {
           console.warn('[deps] flush before reset failed:', err);
         }
       }
+      currentStorage?.dispose?.();
       this.resetDeps();
     },
 

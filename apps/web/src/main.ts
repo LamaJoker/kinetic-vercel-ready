@@ -79,6 +79,7 @@ import { scheduleStreakReminder } from './lib/streak-reminder';
 import { autoCompactOnStartup } from './lib/storage-maintenance';
 import { runMigrationsIfNeeded } from './lib/migrations';
 import { initMobile } from './lib/mobile';
+import { initAnalytics } from './lib/analytics';
 import './styles.css';
 
 // ─── Stores ──────────────────────────────────────────────────
@@ -117,6 +118,7 @@ window.Alpine = Alpine;
 
 // ─── Démarrage ───────────────────────────────────────────────
 Alpine.start();
+initAnalytics();
 
 // Démarrer le router APRÈS Alpine.start()
 // Le store auth dispatche kinetic:auth-ready dans son init()

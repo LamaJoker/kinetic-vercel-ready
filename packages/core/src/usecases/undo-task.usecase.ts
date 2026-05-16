@@ -32,11 +32,11 @@ const KEY_COMPLETED = STORAGE_KEYS.COMPLETED_KEYS;
 const KEY_AWARDED_IDS = STORAGE_KEYS.AWARDED_IDS;
 
 function doneKeyFor(date: string): string {
-  return `kinetic:vitalite:done:${date}`;
+  return STORAGE_KEYS.VITALITE_DONE(date);
 }
 
 function dailyXpKeyFor(date: string): string {
-  return `kinetic:xp:earned:${date}`;
+  return STORAGE_KEYS.XP_EARNED(date);
 }
 
 export async function undoTask_usecase(

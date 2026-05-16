@@ -150,6 +150,10 @@ async function render(path: string): Promise<void> {
       const pageTitle = host.querySelector<HTMLElement>('[data-page-title]')?.textContent?.trim();
       if (pageTitle) document.title = `${pageTitle} — Kinetic`;
     }
+    // Notify body x-data so nav active indicator stays in sync (H3)
+    window.dispatchEvent(
+      new CustomEvent(STORAGE_KEYS.EVENT_ROUTE_CHANGED, { detail: { path: normalizedPath } }),
+    );
   });
 }
 

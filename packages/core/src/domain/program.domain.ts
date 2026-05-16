@@ -27,9 +27,10 @@ export interface TrainingProgram {
 
 export const PRESET_SPLITS: Record<
   SplitType,
-  Omit<TrainingProgram, 'id' | 'createdAt' | 'active' | 'name'>
+  Omit<TrainingProgram, 'id' | 'createdAt' | 'active'>
 > = {
   ppl: {
+    name: 'Push Pull Legs',
     splitType: 'ppl',
     daysPerWeek: 6,
     goal: 'hypertrophie',
@@ -80,6 +81,7 @@ export const PRESET_SPLITS: Record<
     ],
   },
   upper_lower: {
+    name: 'Haut / Bas',
     splitType: 'upper_lower',
     daysPerWeek: 4,
     goal: 'force + hypertrophie',
@@ -118,6 +120,7 @@ export const PRESET_SPLITS: Record<
     ],
   },
   full_body: {
+    name: 'Full Body',
     splitType: 'full_body',
     daysPerWeek: 3,
     goal: 'débutant / maintenance',
@@ -150,6 +153,7 @@ export const PRESET_SPLITS: Record<
     ],
   },
   bro_split: {
+    name: 'Bro Split',
     splitType: 'bro_split',
     daysPerWeek: 5,
     goal: 'hypertrophie',
@@ -188,6 +192,7 @@ export const PRESET_SPLITS: Record<
     ],
   },
   custom: {
+    name: 'Personnalisé',
     splitType: 'custom',
     daysPerWeek: 3,
     goal: 'personnalisé',

@@ -29,12 +29,12 @@ export type SyncDailyLogResult =
 const KEY_STREAK = STORAGE_KEYS.STREAK;
 
 function doneKeyFor(date: string): string {
-  return `kinetic:vitalite:done:${date}`;
+  return STORAGE_KEYS.VITALITE_DONE(date);
 }
 
 /** Daily XP key — must match `complete-task.usecase` */
 function dailyXpKeyFor(date: string): string {
-  return `kinetic:xp:earned:${date}`;
+  return STORAGE_KEYS.XP_EARNED(date);
 }
 
 export async function syncDailyLog(deps: SyncDailyLogDeps): Promise<SyncDailyLogResult> {

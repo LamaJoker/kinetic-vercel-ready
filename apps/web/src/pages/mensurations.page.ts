@@ -74,7 +74,7 @@ export interface ProgressPhoto extends PhotoMeta {
 
 /** Clé IDB individuelle pour le base64 d'une photo */
 function photoDataKey(id: string): string {
-  return `kinetic:measurements:photo:${id}`;
+  return STORAGE_KEYS.MEASUREMENT_PHOTO_DATA(id);
 }
 
 function estimateDataUrlBytes(dataUrl: string): number {

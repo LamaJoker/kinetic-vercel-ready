@@ -1,4 +1,4 @@
-﻿import { STORAGE_KEYS } from '@kinetic/core';
+﻿import { STORAGE_KEYS, PRESET_SPLITS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { navigate } from '../router';
 
@@ -55,173 +55,7 @@ interface TrainingTemplate {
   }>;
 }
 
-const SPLIT_DEFINITIONS: Record<
-  ActiveProgram['splitType'],
-  Omit<ActiveProgram, 'id' | 'createdAt' | 'active'>
-> = {
-  ppl: {
-    name: 'Push Pull Legs',
-    splitType: 'ppl',
-    daysPerWeek: 6,
-    goal: 'hypertrophie',
-    schedule: [
-      {
-        dayOfWeek: 1,
-        label: 'Lundi',
-        focus: 'Push A',
-        muscleGroups: ['pectoraux', 'épaules', 'triceps'],
-        restDay: false,
-      },
-      {
-        dayOfWeek: 2,
-        label: 'Mardi',
-        focus: 'Pull A',
-        muscleGroups: ['dos', 'biceps'],
-        restDay: false,
-      },
-      {
-        dayOfWeek: 3,
-        label: 'Mercredi',
-        focus: 'Jambes A',
-        muscleGroups: ['quadriceps', 'ischio', 'fessiers'],
-        restDay: false,
-      },
-      {
-        dayOfWeek: 4,
-        label: 'Jeudi',
-        focus: 'Push B',
-        muscleGroups: ['pectoraux', 'épaules', 'triceps'],
-        restDay: false,
-      },
-      {
-        dayOfWeek: 5,
-        label: 'Vendredi',
-        focus: 'Pull B',
-        muscleGroups: ['dos', 'biceps'],
-        restDay: false,
-      },
-      {
-        dayOfWeek: 6,
-        label: 'Samedi',
-        focus: 'Jambes B',
-        muscleGroups: ['quadriceps', 'ischio', 'fessiers'],
-        restDay: false,
-      },
-      { dayOfWeek: 0, label: 'Dimanche', focus: 'Repos', muscleGroups: [], restDay: true },
-    ],
-  },
-  upper_lower: {
-    name: 'Haut / Bas',
-    splitType: 'upper_lower',
-    daysPerWeek: 4,
-    goal: 'force',
-    schedule: [
-      {
-        dayOfWeek: 1,
-        label: 'Lundi',
-        focus: 'Haut A',
-        muscleGroups: ['pectoraux', 'dos', 'épaules', 'bras'],
-        restDay: false,
-      },
-      {
-        dayOfWeek: 2,
-        label: 'Mardi',
-        focus: 'Bas A',
-        muscleGroups: ['quadriceps', 'ischio', 'fessiers'],
-        restDay: false,
-      },
-      { dayOfWeek: 3, label: 'Mercredi', focus: 'Repos', muscleGroups: [], restDay: true },
-      {
-        dayOfWeek: 4,
-        label: 'Jeudi',
-        focus: 'Haut B',
-        muscleGroups: ['pectoraux', 'dos', 'épaules', 'bras'],
-        restDay: false,
-      },
-      {
-        dayOfWeek: 5,
-        label: 'Vendredi',
-        focus: 'Bas B',
-        muscleGroups: ['quadriceps', 'ischio', 'fessiers'],
-        restDay: false,
-      },
-      { dayOfWeek: 6, label: 'Samedi', focus: 'Repos', muscleGroups: [], restDay: true },
-      { dayOfWeek: 0, label: 'Dimanche', focus: 'Repos', muscleGroups: [], restDay: true },
-    ],
-  },
-  full_body: {
-    name: 'Full Body',
-    splitType: 'full_body',
-    daysPerWeek: 3,
-    goal: 'débutant',
-    schedule: [
-      {
-        dayOfWeek: 1,
-        label: 'Lundi',
-        focus: 'Full Body A',
-        muscleGroups: ['corps entier'],
-        restDay: false,
-      },
-      { dayOfWeek: 2, label: 'Mardi', focus: 'Repos', muscleGroups: [], restDay: true },
-      {
-        dayOfWeek: 3,
-        label: 'Mercredi',
-        focus: 'Full Body B',
-        muscleGroups: ['corps entier'],
-        restDay: false,
-      },
-      { dayOfWeek: 4, label: 'Jeudi', focus: 'Repos', muscleGroups: [], restDay: true },
-      {
-        dayOfWeek: 5,
-        label: 'Vendredi',
-        focus: 'Full Body C',
-        muscleGroups: ['corps entier'],
-        restDay: false,
-      },
-      { dayOfWeek: 6, label: 'Samedi', focus: 'Repos', muscleGroups: [], restDay: true },
-      { dayOfWeek: 0, label: 'Dimanche', focus: 'Repos', muscleGroups: [], restDay: true },
-    ],
-  },
-  bro_split: {
-    name: 'Bro Split',
-    splitType: 'bro_split',
-    daysPerWeek: 5,
-    goal: 'isolation',
-    schedule: [
-      {
-        dayOfWeek: 1,
-        label: 'Lundi',
-        focus: 'Pectoraux',
-        muscleGroups: ['pectoraux'],
-        restDay: false,
-      },
-      { dayOfWeek: 2, label: 'Mardi', focus: 'Dos', muscleGroups: ['dos'], restDay: false },
-      {
-        dayOfWeek: 3,
-        label: 'Mercredi',
-        focus: 'Épaules',
-        muscleGroups: ['épaules'],
-        restDay: false,
-      },
-      {
-        dayOfWeek: 4,
-        label: 'Jeudi',
-        focus: 'Bras',
-        muscleGroups: ['biceps', 'triceps'],
-        restDay: false,
-      },
-      {
-        dayOfWeek: 5,
-        label: 'Vendredi',
-        focus: 'Jambes',
-        muscleGroups: ['jambes'],
-        restDay: false,
-      },
-      { dayOfWeek: 6, label: 'Samedi', focus: 'Repos', muscleGroups: [], restDay: true },
-      { dayOfWeek: 0, label: 'Dimanche', focus: 'Repos', muscleGroups: [], restDay: true },
-    ],
-  },
-};
+// PRESET_SPLITS imported from @kinetic/core — single source of truth
 
 const FALLBACK_EXERCISES: Record<string, TodoExercise[]> = {
   push: [
@@ -481,10 +315,11 @@ export function program() {
     },
 
     async selectSplit(type: ActiveProgram['splitType']): Promise<void> {
-      const def = SPLIT_DEFINITIONS[type];
+      const def = PRESET_SPLITS[type];
       const prog: ActiveProgram = {
         id: crypto.randomUUID(),
         ...def,
+        splitType: type, // narrow to ActiveProgram['splitType'] (excludes 'custom')
         createdAt: new Date().toISOString(),
         active: true,
       };

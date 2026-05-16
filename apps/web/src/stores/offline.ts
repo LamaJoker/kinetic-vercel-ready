@@ -9,9 +9,11 @@ export function offlineStore() {
     lastOnlineAt: navigator.onLine ? Date.now() : (null as number | null),
     sinceSecs: 0,
     _timer: null as ReturnType<typeof setInterval> | null,
+    _onOnline: null as (() => void) | null,
+    _onOffline: null as (() => void) | null,
 
     init(): void {
-      const onOnline = () => {
+      this._onOnline = () => {
         this.wasOffline = this.isOffline;
         this.isOffline = false;
         this.lastOnlineAt = Date.now();
@@ -22,13 +24,13 @@ export function offlineStore() {
           }, 3000);
         }
       };
-      const onOffline = () => {
+      this._onOffline = () => {
         this.isOffline = true;
         this.wasOffline = false;
       };
 
-      window.addEventListener('online', onOnline);
-      window.addEventListener('offline', onOffline);
+      window.addEventListener('online', this._onOnline);
+      window.addEventListener('offline', this._onOffline);
 
       this._timer = setInterval(() => {
         if (this.isOffline && this.lastOnlineAt) {
@@ -39,6 +41,8 @@ export function offlineStore() {
 
     destroy(): void {
       if (this._timer) clearInterval(this._timer);
+      if (this._onOnline) window.removeEventListener('online', this._onOnline);
+      if (this._onOffline) window.removeEventListener('offline', this._onOffline);
     },
   };
 }

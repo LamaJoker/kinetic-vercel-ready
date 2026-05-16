@@ -63,6 +63,7 @@ export const STORAGE_KEYS = {
   BODYWEIGHT_GOAL: 'kinetic:bodyweight:goal' as const,
   MEASUREMENTS_ENTRIES: 'kinetic:measurements:entries' as const,
   MEASUREMENTS_PHOTOS: 'kinetic:measurements:photos' as const,
+  MEASUREMENT_PHOTO_DATA: (id: string) => `kinetic:measurements:photo:${id}` as const,
 
   // ─── Profil utilisateur ───────────────────────────────────────
   USER_PROFILE: 'kinetic:userProfile' as const,
@@ -111,6 +112,7 @@ export const STORAGE_KEYS = {
   EVENT_STREAK_UPDATED: 'kinetic:streak-updated' as const,
   EVENT_SESSION_SAVED: 'kinetic:session-saved' as const,
   EVENT_SYNC_FAILED: 'kinetic:sync-failed' as const,
+  EVENT_ROUTE_CHANGED: 'kinetic:route-changed' as const,
 } as const;
 
 /** Type union de toutes les clés statiques (sans les fonctions) */

@@ -58,6 +58,11 @@ export default [
           message:
             "Utilise STORAGE_KEYS.<KEY> depuis @kinetic/core au lieu d'une string littérale.",
         },
+        {
+          selector: 'TemplateLiteral > TemplateElement[value.cooked=/^kinetic:[a-z]/]',
+          message:
+            "Utilise STORAGE_KEYS.<KEY>(…) depuis @kinetic/core au lieu d'un template littéral.",
+        },
       ],
     },
   },

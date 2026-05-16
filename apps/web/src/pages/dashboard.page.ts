@@ -61,7 +61,7 @@ export function dashboard() {
         const dones = await Promise.all(
           dates.map((d) => {
             const iso = d.toISOString().slice(0, 10);
-            return deps.storage.get<string[]>(`kinetic:vitalite:done:${iso}`);
+            return deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(iso));
           }),
         );
         return dates.map((d, k) => ({
