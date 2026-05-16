@@ -108,10 +108,13 @@
       </div>
 
       <div x-show="emailMode" class="space-y-2">
+        <label for="email-magic-link" class="sr-only">Adresse e-mail</label>
         <input
+          id="email-magic-link"
           type="email"
           x-model="$store.auth.emailInput"
           placeholder="ton@email.com"
+          autocomplete="email"
           @keydown.enter="$store.auth.loginWithEmail()"
           class="w-full px-4 py-3.5 ring-1 ring-white/10 rounded-2xl bg-kinetic-elevated text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon placeholder-gray-600 text-sm"
         />

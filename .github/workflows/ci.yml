@@ -141,7 +141,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [mobile-chrome, mobile-safari]
+        project: [mobile-chrome, mobile-safari, desktop-chrome]
     steps:
       - uses: actions/checkout@v4
 

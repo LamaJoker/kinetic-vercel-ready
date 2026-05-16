@@ -1,36 +1,18 @@
 /**
  * apps/web/src/lib/sync.ts
  *
- * CRDT Vector Clock — re-exports depuis @kinetic/core pour les consommateurs
- * tiers et tests legacy. Le runtime utilise HybridStorage (cf. adapter-web)
- * comme moteur de sync ; cet ancien SyncManager class a été retiré pour
- * éviter le dead code et la confusion (deux moteurs de sync coexistants).
+ * Device identity for multi-device sync.
+ * CRDT vector clock utilities live in @kinetic/core and can be imported directly.
  */
 
-import {
-  createClock,
-  incrementClock,
-  mergeClock,
-  compareClocks,
-  resolveConflict,
-  STORAGE_KEYS,
-} from '@kinetic/core';
-import type { VectorClock, ClockComparison, CRDTValue } from '@kinetic/core';
-
-export { createClock, incrementClock, mergeClock, compareClocks, resolveConflict };
-export type { ClockComparison };
-export type { VectorClock, ClockComparison as CausalOrder };
-// Alias rétro-compat : CRDTValue était nommé SyncedValue ici
-export type { CRDTValue as SyncedValue };
-
-// ── Device Identity ───────────────────────────────────────────────────────
+import { STORAGE_KEYS } from '@kinetic/core';
 
 export type DeviceId = string;
 
 /**
- * getOrCreateDeviceId — retourne le device ID persisté en localStorage.
- * Note : localStorage est utilisé intentionnellement (pas IDB) pour survivre
- * à un clear() IndexedDB et être synchrone (utilisable pré-init des stores).
+ * Returns a stable device UUID persisted in localStorage.
+ * localStorage is used intentionally (not IDB) so the ID survives an IDB clear()
+ * and is available synchronously before store initialisation.
  */
 export function getOrCreateDeviceId(): DeviceId {
   if (typeof window === 'undefined') {
@@ -44,8 +26,7 @@ export function getOrCreateDeviceId(): DeviceId {
     }
     return id;
   } catch {
-    // localStorage indisponible (mode privé iOS, quota plein) → ID volatile
-    // pour la session courante. Pas idéal pour le multi-device mais évite le crash.
+    // localStorage unavailable (iOS private mode, quota full) → volatile ID for this session.
     return crypto.randomUUID();
   }
 }

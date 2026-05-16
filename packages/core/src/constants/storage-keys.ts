@@ -98,6 +98,7 @@ export const STORAGE_KEYS = {
 
   // ─── Schéma IDB & Diagnostics ─────────────────────────────────
   SCHEMA_VERSION: 'kinetic:schema-version' as const,
+  SCHEMA_MIGRATION_LOCK: 'kinetic:schema-migration' as const,
   AUTH_DEBUG: 'kinetic:auth-debug' as const, // localStorage, diagnostic OAuth APK
   ERRORS: 'kinetic:errors' as const, // localStorage, buffer d'erreurs runtime
 

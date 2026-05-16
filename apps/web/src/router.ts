@@ -6,6 +6,7 @@
 import Alpine from 'alpinejs';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from './deps';
+import { ric } from './lib/performance';
 
 const PAGE_MODULES = import.meta.glob('./pages/*.html', {
   query: '?raw',
@@ -135,25 +136,29 @@ async function render(path: string): Promise<void> {
   requestAnimationFrame(() => {
     host.style.opacity = '1';
     host.setAttribute('aria-busy', 'false');
-    // FIX #3 : Ne pas remonter en haut de page sur /auth-callback
-    // (évite un éventuel flash avant la redirection)
-    if (normalizedPath !== '/auth-callback') {
-      window.scrollTo({ top: 0, behavior: 'auto' });
-      // A11y: déplacer le focus vers le contenu principal après navigation
-      // pour permettre aux utilisateurs de lecteurs d'écran de suivre la page
-      try {
-        host.focus({ preventScroll: true });
-      } catch {
-        // preventScroll non supporté → fallback silencieux
-      }
-      // Annonce du titre de page aux lecteurs d'écran via document.title
-      const pageTitle = host.querySelector<HTMLElement>('[data-page-title]')?.textContent?.trim();
-      if (pageTitle) document.title = `${pageTitle} — Kinetic`;
-    }
     // Notify body x-data so nav active indicator stays in sync (H3)
     window.dispatchEvent(
       new CustomEvent(STORAGE_KEYS.EVENT_ROUTE_CHANGED, { detail: { path: normalizedPath } }),
     );
+    // Defer non-critical post-render work (scroll, focus, title) to idle time
+    // so the paint of the new page isn't blocked.
+    if (normalizedPath !== '/auth-callback') {
+      ric(
+        () => {
+          window.scrollTo({ top: 0, behavior: 'auto' });
+          try {
+            host.focus({ preventScroll: true });
+          } catch {
+            // preventScroll not supported — silent fallback
+          }
+          const pageTitle = host
+            .querySelector<HTMLElement>('[data-page-title]')
+            ?.textContent?.trim();
+          if (pageTitle) document.title = `${pageTitle} — Kinetic`;
+        },
+        { timeout: 300 },
+      );
+    }
   });
 }
 

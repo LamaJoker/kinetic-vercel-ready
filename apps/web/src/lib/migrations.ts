@@ -50,6 +50,17 @@ async function restoreSnapshot(
 }
 
 export async function runMigrationsIfNeeded(storage: StoragePort): Promise<void> {
+  // navigator.locks prevents concurrent migration runs across tabs opening simultaneously.
+  if (typeof navigator !== 'undefined' && navigator.locks) {
+    await navigator.locks.request(STORAGE_KEYS.SCHEMA_MIGRATION_LOCK, async () => {
+      await _runMigrationsCore(storage);
+    });
+  } else {
+    await _runMigrationsCore(storage);
+  }
+}
+
+async function _runMigrationsCore(storage: StoragePort): Promise<void> {
   let stored = await storage.get<number>(KEY);
   // Fresh install: no key → treat as version 0
   if (typeof stored !== 'number') stored = 0;

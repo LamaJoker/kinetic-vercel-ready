@@ -6,15 +6,18 @@
  */
 
 import { describe, it, expect } from 'vitest';
-// M5 FIX: importer les vraies fonctions depuis le module de production
 import {
   createClock,
   incrementClock,
   mergeClock,
   compareClocks,
   resolveConflict,
-} from '../../apps/web/src/lib/sync.js';
-import type { VectorClock, SyncedValue, CausalOrder } from '../../apps/web/src/lib/sync.js';
+} from '@kinetic/core';
+import type { VectorClock, CRDTValue, ClockComparison } from '@kinetic/core';
+
+// Type aliases matching old sync.ts exports so test bodies stay unchanged
+type SyncedValue<T> = CRDTValue<T>;
+type CausalOrder = ClockComparison;
 
 describe('CRDT Vector Clock', () => {
   describe('createClock', () => {
