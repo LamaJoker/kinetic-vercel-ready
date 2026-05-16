@@ -7,12 +7,18 @@ function clampInt(n: number, min: number, max: number): number {
 
 export function activityMultiplier(level: ActivityLevel): number {
   switch (level) {
-    case 'sedentary':   return 1.2;
-    case 'light':       return 1.375;
-    case 'moderate':    return 1.55;
-    case 'active':      return 1.725;
-    case 'very_active': return 1.9;
-    default:            return 1.55;
+    case 'sedentary':
+      return 1.2;
+    case 'light':
+      return 1.375;
+    case 'moderate':
+      return 1.55;
+    case 'active':
+      return 1.725;
+    case 'very_active':
+      return 1.9;
+    default:
+      return 1.55;
   }
 }
 
@@ -32,11 +38,16 @@ export function estimateTdeeKcal(profile: UserProfile): number {
 export function goalDeltaKcal(goal: UserGoal): number {
   // Conservative defaults; user can fine-tune later.
   switch (goal) {
-    case 'lose_fat':    return -400;
-    case 'gain_muscle': return +250;
-    case 'recomp':      return -150;
-    case 'performance': return 0;
-    default:            return 0;
+    case 'lose_fat':
+      return -400;
+    case 'gain_muscle':
+      return +250;
+    case 'recomp':
+      return -150;
+    case 'performance':
+      return 0;
+    default:
+      return 0;
   }
 }
 
@@ -44,4 +55,3 @@ export function estimateTargetCaloriesKcal(profile: UserProfile): number {
   const tdee = estimateTdeeKcal(profile);
   return Math.round(tdee + goalDeltaKcal(profile.goal));
 }
-

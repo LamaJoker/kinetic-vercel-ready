@@ -8,20 +8,20 @@
 
 export interface RestTimerOptions {
   durationSec: number;
-  onTick?:  (remainingSec: number) => void;
-  onDone?:  () => void;
-  vibrate?: boolean;          // défaut true
-  notify?:  boolean;          // défaut true
-  label?:   string;           // ex: "Prêt pour la prochaine série"
+  onTick?: (remainingSec: number) => void;
+  onDone?: () => void;
+  vibrate?: boolean; // défaut true
+  notify?: boolean; // défaut true
+  label?: string; // ex: "Prêt pour la prochaine série"
 }
 
 export interface RestTimerHandle {
   remaining: () => number;
   isRunning: () => boolean;
-  pause:     () => void;
-  resume:    () => void;
-  stop:      () => void;          // annule, ne déclenche pas onDone
-  skip:      () => void;          // termine, déclenche onDone
+  pause: () => void;
+  resume: () => void;
+  stop: () => void; // annule, ne déclenche pas onDone
+  skip: () => void; // termine, déclenche onDone
 }
 
 const VIBRATION_PATTERN = [200, 80, 200];
@@ -50,7 +50,7 @@ export function startRestTimer(opts: RestTimerOptions): RestTimerHandle {
 
   const fireDone = () => {
     if (opts.vibrate !== false) tryVibrate();
-    if (opts.notify !== false)  tryNotify(opts.label ?? 'Série suivante !');
+    if (opts.notify !== false) tryNotify(opts.label ?? 'Série suivante !');
     opts.onDone?.();
   };
 
@@ -60,8 +60,12 @@ export function startRestTimer(opts: RestTimerOptions): RestTimerHandle {
   return {
     remaining: () => remaining,
     isRunning: () => timerId !== null && !paused,
-    pause() { paused = true; },
-    resume() { paused = false; },
+    pause() {
+      paused = true;
+    },
+    resume() {
+      paused = false;
+    },
     stop() {
       stopped = true;
       cleanup();

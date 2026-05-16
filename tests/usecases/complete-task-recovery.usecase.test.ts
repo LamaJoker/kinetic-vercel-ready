@@ -32,14 +32,20 @@ describe('completeTask_usecase recovery', () => {
     const failingStorage = new FailAfterNWritesStorage(3);
     deps = makeTestDeps({ storage: failingStorage });
 
-    await expect(completeTask_usecase(
-      { storage: deps.storage, clock: deps.clock, notifier: deps.notifier },
-      { task, idempotencyKey: `vitalite:stretch:${today}` },
-    )).rejects.toThrow(/Injected failure/);
+    await expect(
+      completeTask_usecase(
+        { storage: deps.storage, clock: deps.clock, notifier: deps.notifier },
+        { task, idempotencyKey: `vitalite:stretch:${today}` },
+      ),
+    ).rejects.toThrow(/Injected failure/);
 
     expect(await deps.storage.get('kinetic:pending:task-mutation')).not.toBeNull();
 
-    const retry = makeTestDeps({ storage: deps.storage, clock: deps.clock, notifier: deps.notifier });
+    const retry = makeTestDeps({
+      storage: deps.storage,
+      clock: deps.clock,
+      notifier: deps.notifier,
+    });
     const result = await completeTask_usecase(
       { storage: retry.storage, clock: retry.clock, notifier: retry.notifier },
       { task, idempotencyKey: `vitalite:stretch:${today}` },
@@ -49,6 +55,8 @@ describe('completeTask_usecase recovery', () => {
     expect(await retry.storage.get('kinetic:pending:task-mutation')).toBeNull();
     expect(await retry.storage.get('kinetic:xp')).toEqual({ xp: 50 });
     expect(await retry.storage.get(`kinetic:xp:earned:${today}`)).toEqual({ xp: 50 });
-    expect(await retry.storage.get('kinetic:completed-keys')).toEqual([`vitalite:stretch:${today}`]);
+    expect(await retry.storage.get('kinetic:completed-keys')).toEqual([
+      `vitalite:stretch:${today}`,
+    ]);
   });
 });

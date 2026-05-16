@@ -11,14 +11,14 @@ import {
 
 function makeProgram(overrides: Partial<TrainingProgram> = {}): TrainingProgram {
   return {
-    id:          'prog-1',
-    name:        'Test Program',
-    splitType:   'ppl',
+    id: 'prog-1',
+    name: 'Test Program',
+    splitType: 'ppl',
     daysPerWeek: 6,
-    goal:        'hypertrophie',
-    createdAt:   '2025-01-01T00:00:00Z',
-    active:      true,
-    schedule:    PRESET_SPLITS.ppl.schedule,
+    goal: 'hypertrophie',
+    createdAt: '2025-01-01T00:00:00Z',
+    active: true,
+    schedule: PRESET_SPLITS.ppl.schedule,
     ...overrides,
   };
 }
@@ -102,7 +102,7 @@ describe('todayFocus', () => {
     expect(focus!.focus).toBe('Push A');
   });
 
-  it('retourne dimanche (repos) si aujourd\'hui est dimanche', () => {
+  it("retourne dimanche (repos) si aujourd'hui est dimanche", () => {
     vi.setSystemTime(new Date('2025-01-05T10:00:00Z')); // dimanche
     const program = makeProgram();
     const focus = todayFocus(program);
@@ -110,7 +110,7 @@ describe('todayFocus', () => {
     expect(focus!.restDay).toBe(true);
   });
 
-  it('retourne null si le programme n\'a pas de jour pour aujourd\'hui', () => {
+  it("retourne null si le programme n'a pas de jour pour aujourd'hui", () => {
     vi.setSystemTime(new Date('2025-01-06T10:00:00Z')); // lundi
     // Programme sans lundi
     const program = makeProgram({
@@ -138,9 +138,7 @@ describe('weekProgress', () => {
 
   it('retourne 100 si tous les jours de travail sont complétés (PPL = 6 jours)', () => {
     const program = makeProgram();
-    const trainingDays = program.schedule
-      .filter((d) => !d.restDay)
-      .map((d) => d.dayOfWeek);
+    const trainingDays = program.schedule.filter((d) => !d.restDay).map((d) => d.dayOfWeek);
     expect(weekProgress(program, trainingDays)).toBe(100);
   });
 
@@ -158,7 +156,7 @@ describe('weekProgress', () => {
     expect(progress).toBe(0);
   });
 
-  it('retourne 0 si le programme n\'a que des jours de repos', () => {
+  it("retourne 0 si le programme n'a que des jours de repos", () => {
     const program = makeProgram({
       schedule: [
         { dayOfWeek: 0, label: 'Dim', focus: 'Repos', muscleGroups: [], restDay: true },
@@ -176,16 +174,16 @@ describe('weekProgress', () => {
   it('Upper/Lower — 4 jours → 25% à 1 jour complété', () => {
     const program = makeProgram({
       splitType: 'upper_lower',
-      schedule:  PRESET_SPLITS.upper_lower.schedule,
+      schedule: PRESET_SPLITS.upper_lower.schedule,
     });
     expect(weekProgress(program, [1])).toBe(25);
   });
 
-  it('arrondit le pourcentage à l\'entier le plus proche', () => {
+  it("arrondit le pourcentage à l'entier le plus proche", () => {
     // Bro split : 5 jours → 1 complété = 20%
     const program = makeProgram({
       splitType: 'bro_split',
-      schedule:  PRESET_SPLITS.bro_split.schedule,
+      schedule: PRESET_SPLITS.bro_split.schedule,
     });
     expect(weekProgress(program, [1])).toBe(20);
   });

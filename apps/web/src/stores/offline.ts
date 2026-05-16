@@ -4,28 +4,30 @@
  */
 export function offlineStore() {
   return {
-    isOffline:    !navigator.onLine,
-    wasOffline:   false,
-    lastOnlineAt: navigator.onLine ? Date.now() : null as number | null,
-    sinceSecs:    0,
-    _timer:       null as ReturnType<typeof setInterval> | null,
+    isOffline: !navigator.onLine,
+    wasOffline: false,
+    lastOnlineAt: navigator.onLine ? Date.now() : (null as number | null),
+    sinceSecs: 0,
+    _timer: null as ReturnType<typeof setInterval> | null,
 
     init(): void {
       const onOnline = () => {
-        this.wasOffline   = this.isOffline;
-        this.isOffline    = false;
+        this.wasOffline = this.isOffline;
+        this.isOffline = false;
         this.lastOnlineAt = Date.now();
-        this.sinceSecs    = 0;
+        this.sinceSecs = 0;
         if (this.wasOffline) {
-          setTimeout(() => { this.wasOffline = false; }, 3000);
+          setTimeout(() => {
+            this.wasOffline = false;
+          }, 3000);
         }
       };
       const onOffline = () => {
-        this.isOffline  = true;
+        this.isOffline = true;
         this.wasOffline = false;
       };
 
-      window.addEventListener('online',  onOnline);
+      window.addEventListener('online', onOnline);
       window.addEventListener('offline', onOffline);
 
       this._timer = setInterval(() => {

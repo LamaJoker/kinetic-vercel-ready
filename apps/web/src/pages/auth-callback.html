@@ -1,13 +1,22 @@
-<div class="min-h-screen bg-kinetic-ink flex flex-col items-center justify-center px-4"
-     x-data="authCallback" x-init="init()">
-
+<div
+  class="min-h-screen bg-kinetic-ink flex flex-col items-center justify-center px-4"
+  x-data="authCallback"
+  x-init="init()"
+>
   <!-- Mode 1 : sans deep link APK = flow web normal -->
   <div x-show="!error && !apkDeepLink" x-transition class="flex flex-col items-center gap-6">
     <div class="relative">
       <div class="absolute inset-0 rounded-3xl bg-kinetic-neon/20 blur-2xl"></div>
-      <div class="relative w-16 h-16 bg-gradient-to-br from-kinetic-neon to-lime-400 rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(168,255,0,0.5)] ring-1 ring-white/10 animate-pulse">
-        <svg class="w-8 h-8 text-gray-950" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z"/>
+      <div
+        class="relative w-16 h-16 bg-gradient-to-br from-kinetic-neon to-lime-400 rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(168,255,0,0.5)] ring-1 ring-white/10 animate-pulse"
+      >
+        <svg
+          class="w-8 h-8 text-gray-950"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z" />
         </svg>
       </div>
     </div>
@@ -16,9 +25,18 @@
       <p class="text-gray-500 text-sm">Authentification sécurisée…</p>
     </div>
     <div class="flex gap-1.5">
-      <div class="w-1.5 h-1.5 rounded-full bg-kinetic-neon animate-bounce" style="animation-delay: 0ms"></div>
-      <div class="w-1.5 h-1.5 rounded-full bg-kinetic-neon animate-bounce" style="animation-delay: 150ms"></div>
-      <div class="w-1.5 h-1.5 rounded-full bg-kinetic-neon animate-bounce" style="animation-delay: 300ms"></div>
+      <div
+        class="w-1.5 h-1.5 rounded-full bg-kinetic-neon animate-bounce"
+        style="animation-delay: 0ms"
+      ></div>
+      <div
+        class="w-1.5 h-1.5 rounded-full bg-kinetic-neon animate-bounce"
+        style="animation-delay: 150ms"
+      ></div>
+      <div
+        class="w-1.5 h-1.5 rounded-full bg-kinetic-neon animate-bounce"
+        style="animation-delay: 300ms"
+      ></div>
     </div>
   </div>
 
@@ -26,12 +44,23 @@
        L'auto-redirect (window.location.href + intent URL) est tenté en
        arrière-plan mais Brave / certains navigateurs le bloquent. Le bouton
        en clic direct = user gesture qui bypasse les blocages. -->
-  <div x-show="!error && apkDeepLink" x-transition class="flex flex-col items-center gap-5 max-w-sm w-full">
+  <div
+    x-show="!error && apkDeepLink"
+    x-transition
+    class="flex flex-col items-center gap-5 max-w-sm w-full"
+  >
     <div class="relative">
       <div class="absolute inset-0 rounded-3xl bg-kinetic-neon/30 blur-2xl"></div>
-      <div class="relative w-16 h-16 bg-gradient-to-br from-kinetic-neon to-lime-400 rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(168,255,0,0.5)] ring-1 ring-white/10">
-        <svg class="w-8 h-8 text-gray-950" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z"/>
+      <div
+        class="relative w-16 h-16 bg-gradient-to-br from-kinetic-neon to-lime-400 rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(168,255,0,0.5)] ring-1 ring-white/10"
+      >
+        <svg
+          class="w-8 h-8 text-gray-950"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z" />
         </svg>
       </div>
     </div>
@@ -44,41 +73,56 @@
     </div>
 
     <!-- Bouton primary : <a href> avec deep link → user gesture garanti -->
-    <a :href="apkDeepLink"
-       class="w-full px-6 py-4 bg-gradient-to-r from-kinetic-neon to-lime-300 text-gray-950 rounded-2xl font-display font-black shadow-[0_0_32px_rgba(168,255,0,0.5)] active:scale-[0.98] text-base text-center transition-transform">
+    <a
+      :href="apkDeepLink"
+      class="w-full px-6 py-4 bg-gradient-to-r from-kinetic-neon to-lime-300 text-gray-950 rounded-2xl font-display font-black shadow-[0_0_32px_rgba(168,255,0,0.5)] active:scale-[0.98] text-base text-center transition-transform"
+    >
       Ouvrir dans Kinetic →
     </a>
 
     <!-- Escape hatch : pour PC ou si APK bloqué -->
-    <button @click="continueOnWeb()"
-            class="text-gray-500 hover:text-gray-300 text-xs underline decoration-dotted underline-offset-4 transition-colors">
+    <button
+      @click="continueOnWeb()"
+      class="text-gray-500 hover:text-gray-300 text-xs underline decoration-dotted underline-offset-4 transition-colors"
+    >
       Continuer sur le web à la place
     </button>
 
     <p class="text-gray-600 text-[10px] text-center px-4 leading-relaxed">
-      Si Android te demande "Ouvrir avec Kinetic ?", choisis l'application.
-      Tu peux ensuite revenir ici et fermer cet onglet.
+      Si Android te demande "Ouvrir avec Kinetic ?", choisis l'application. Tu peux ensuite revenir
+      ici et fermer cet onglet.
     </p>
   </div>
 
   <!-- Erreur -->
   <div x-show="error" x-transition class="flex flex-col items-center gap-6 text-center max-w-xs">
-    <div class="w-16 h-16 bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30 rounded-3xl flex items-center justify-center">
-      <svg class="w-8 h-8 text-kinetic-electric" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/>
-        <line x1="12" y1="16" x2="12.01" y2="16"/>
+    <div
+      class="w-16 h-16 bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30 rounded-3xl flex items-center justify-center"
+    >
+      <svg
+        class="w-8 h-8 text-kinetic-electric"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
       </svg>
     </div>
     <div class="space-y-2">
       <p class="text-white font-display font-black text-xl tracking-tight">Échec de connexion</p>
       <p class="text-kinetic-electric text-sm font-medium" x-text="error"></p>
     </div>
-    <a href="/login"
-       class="inline-flex items-center gap-2 px-6 py-3 text-kinetic-neon text-sm font-display font-bold underline decoration-kinetic-neon/40 underline-offset-4 hover:decoration-kinetic-neon transition-all">
+    <a
+      href="/login"
+      class="inline-flex items-center gap-2 px-6 py-3 text-kinetic-neon text-sm font-display font-bold underline decoration-kinetic-neon/40 underline-offset-4 hover:decoration-kinetic-neon transition-all"
+    >
       Réessayer la connexion →
     </a>
   </div>
-
 </div>
-

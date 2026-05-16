@@ -15,16 +15,21 @@
  */
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import {
-  supabase, getAuthUser, signInWithEmail,
-  signInWithGitHub, signInWithGoogle, signOut,
-  authRateLimiter, callbackUrl,
+  supabase,
+  getAuthUser,
+  signInWithEmail,
+  signInWithGitHub,
+  signInWithGoogle,
+  signOut,
+  authRateLimiter,
+  callbackUrl,
 } from '@kinetic/adapters-web';
 import type { AuthUser } from '@kinetic/adapters-web';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { flushAndResetDeps, resetDeps } from '../deps';
 
 // FIX #4 : Log explicite plutôt que dégradation silencieuse
-const SUPABASE_URL      = import.meta.env['VITE_SUPABASE_URL'] as string | undefined;
+const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'] as string | undefined;
 const SUPABASE_ANON_KEY = import.meta.env['VITE_SUPABASE_ANON_KEY'] as string | undefined;
 
 const GUEST_MODE = supabase === null;
@@ -33,8 +38,8 @@ if (GUEST_MODE && SUPABASE_URL && !SUPABASE_URL.includes('xxxxxxxxxxxxxxxxxxxx')
   // L'URL est configurée mais le client est null → clé probablement invalide
   console.warn(
     '[auth] Supabase client is null. Check VITE_SUPABASE_ANON_KEY format. ' +
-    'Expected: starts with "eyJ" (JWT) or "sb_publishable_". ' +
-    `Got: "${SUPABASE_ANON_KEY?.slice(0, 20) ?? 'undefined'}..."`
+      'Expected: starts with "eyJ" (JWT) or "sb_publishable_". ' +
+      `Got: "${SUPABASE_ANON_KEY?.slice(0, 20) ?? 'undefined'}..."`,
   );
 }
 
@@ -48,13 +53,13 @@ function dispatchAuthReady(): void {
 
 export function authStore() {
   return {
-    user:          null as AuthUser | null,
-    loading:       true,
-    error:         null as string | null,
+    user: null as AuthUser | null,
+    loading: true,
+    error: null as string | null,
     magicLinkSent: false,
-    emailInput:    '',
+    emailInput: '',
     /** FIX #5 : track si on est déjà allé chercher l'user une fois */
-    _initDone:     false,
+    _initDone: false,
     /** H5 FIX : handle pour unsubscribe à la destruction */
     _authSubscription: null as { unsubscribe: () => void } | null,
 
@@ -79,43 +84,46 @@ export function authStore() {
         //   - SIGNED_IN après un magic link / OAuth (si l'init a timeout)
         //   - SIGNED_OUT sur logout
         //   - TOKEN_REFRESHED en arrière-plan
-        const { data: { subscription } } = supabase!.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-          if (session?.user) {
-            const freshUser = await getAuthUser();
-            this.user = freshUser;
+        const {
+          data: { subscription },
+        } = supabase!.auth.onAuthStateChange(
+          async (event: AuthChangeEvent, session: Session | null) => {
+            if (session?.user) {
+              const freshUser = await getAuthUser();
+              this.user = freshUser;
 
-            // FIX #5 : Si l'init avait timeout (user null), on rebascule les deps
-            // sur HybridStorage maintenant qu'on sait que l'user est connecté.
-            if (!this._initDone || !freshUser) {
-              this._initDone = true;
-              resetDeps(); // force la reconstruction avec SupabaseStorage
-              // Note : les stores Alpine rechargeront leurs données au prochain getDeps()
+              // FIX #5 : Si l'init avait timeout (user null), on rebascule les deps
+              // sur HybridStorage maintenant qu'on sait que l'user est connecté.
+              if (!this._initDone || !freshUser) {
+                this._initDone = true;
+                resetDeps(); // force la reconstruction avec SupabaseStorage
+                // Note : les stores Alpine rechargeront leurs données au prochain getDeps()
+              }
+            } else if (event === 'SIGNED_OUT') {
+              // Déconnexion explicite : réinitialiser les deps vers le mode local.
+              // NE PAS appeler resetDeps() sur INITIAL_SESSION null — ce serait
+              // l'état normal d'un utilisateur non connecté au démarrage.
+              // Appeler resetDeps() sur INITIAL_SESSION force un double getDeps()
+              // (8s Supabase timeout × 2) avant que la page se rende.
+              this.user = null;
+              await flushAndResetDeps();
+            } else if (!session?.user) {
+              // INITIAL_SESSION, TOKEN_REFRESHED, etc. sans session active :
+              // mettre à jour l'état local sans invalider le cache deps.
+              this.user = null;
             }
-          } else if (event === 'SIGNED_OUT') {
-            // Déconnexion explicite : réinitialiser les deps vers le mode local.
-            // NE PAS appeler resetDeps() sur INITIAL_SESSION null — ce serait
-            // l'état normal d'un utilisateur non connecté au démarrage.
-            // Appeler resetDeps() sur INITIAL_SESSION force un double getDeps()
-            // (8s Supabase timeout × 2) avant que la page se rende.
-            this.user = null;
-            await flushAndResetDeps();
-          } else if (!session?.user) {
-            // INITIAL_SESSION, TOKEN_REFRESHED, etc. sans session active :
-            // mettre à jour l'état local sans invalider le cache deps.
-            this.user = null;
-          }
-          this.loading = false;
+            this.loading = false;
 
-          // FIX #1 : Pas de dispatchAuthReady ici — le finally() s'en charge.
-          // Exception : si l'init a timeout ET que SIGNED_IN arrive après, on
-          // dispatche une notification de mise à jour pour que les composants
-          // qui en ont besoin puissent se recharger (ex: dashboard).
-          if (event === 'SIGNED_IN' && _authReadyDispatched) {
-            window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_AUTH_CHANGED));
-          }
-        });
+            // FIX #1 : Pas de dispatchAuthReady ici — le finally() s'en charge.
+            // Exception : si l'init a timeout ET que SIGNED_IN arrive après, on
+            // dispatche une notification de mise à jour pour que les composants
+            // qui en ont besoin puissent se recharger (ex: dashboard).
+            if (event === 'SIGNED_IN' && _authReadyDispatched) {
+              window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_AUTH_CHANGED));
+            }
+          },
+        );
         this._authSubscription = subscription;
-
       } catch (err) {
         console.error('[auth] init failed:', err);
         this.error = err instanceof Error ? err.message : 'Erreur auth';
@@ -192,8 +200,9 @@ export function authStore() {
     /** Diagnostic : URL de callback qui sera envoyée à Supabase (avec ?from=apk si APK) */
     _diagCallbackUrl(): string {
       try {
-        const isCap = typeof window !== 'undefined'
-          && !!(window as unknown as Record<string, unknown>)['Capacitor'];
+        const isCap =
+          typeof window !== 'undefined' &&
+          !!(window as unknown as Record<string, unknown>)['Capacitor'];
         return callbackUrl({ capacitor: isCap });
       } catch {
         return '(erreur)';
@@ -211,7 +220,15 @@ export function authStore() {
 
     get initials(): string {
       const name = this.user?.full_name ?? this.user?.email ?? '?';
-      return name.split(/\s+|@/).filter(Boolean).map((n) => n[0] ?? '').join('').toUpperCase().slice(0, 2) || '?';
+      return (
+        name
+          .split(/\s+|@/)
+          .filter(Boolean)
+          .map((n) => n[0] ?? '')
+          .join('')
+          .toUpperCase()
+          .slice(0, 2) || '?'
+      );
     },
   };
 }

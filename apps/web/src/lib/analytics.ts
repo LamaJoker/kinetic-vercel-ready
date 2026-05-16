@@ -24,12 +24,12 @@ export interface VitalMetric {
 
 // ─── Seuils officiels Google Web Vitals ──────────────────────
 const THRESHOLDS: Record<string, [number, number]> = {
-  LCP:  [2500, 4000],  // ms : good < 2500, poor > 4000
-  CLS:  [0.1, 0.25],   // score unitless
-  FID:  [100, 300],    // ms
-  INP:  [200, 500],    // ms
-  TTFB: [800, 1800],   // ms
-  FCP:  [1800, 3000],  // ms
+  LCP: [2500, 4000], // ms : good < 2500, poor > 4000
+  CLS: [0.1, 0.25], // score unitless
+  FID: [100, 300], // ms
+  INP: [200, 500], // ms
+  TTFB: [800, 1800], // ms
+  FCP: [1800, 3000], // ms
 };
 
 function getRating(name: string, value: number): 'good' | 'needs-improvement' | 'poor' {
@@ -118,7 +118,11 @@ export function collectWebVitals(onMetric: ReportFn): void {
   let maxINP = 0;
   observe('event', (entries) => {
     for (const entry of entries) {
-      const e = entry as PerformanceEntry & { processingEnd: number; processingStart: number; startTime: number };
+      const e = entry as PerformanceEntry & {
+        processingEnd: number;
+        processingStart: number;
+        startTime: number;
+      };
       const duration = e.processingEnd - e.startTime;
       if (duration > maxINP) {
         maxINP = duration;
@@ -153,7 +157,7 @@ function flushMetrics(): void {
         metrics: batch,
         url: location.pathname,
         ts: Date.now(),
-      })
+      }),
     );
   }
 }
@@ -163,8 +167,11 @@ export function initAnalytics(): void {
 
   collectWebVitals((metric) => {
     if (isDev) {
-      const emoji = metric.rating === 'good' ? '✅' : metric.rating === 'needs-improvement' ? '⚠️' : '❌';
-      console.log(`[Vitals] ${emoji} ${metric.name}: ${metric.value.toFixed(1)} (${metric.rating})`);
+      const emoji =
+        metric.rating === 'good' ? '✅' : metric.rating === 'needs-improvement' ? '⚠️' : '❌';
+      console.log(
+        `[Vitals] ${emoji} ${metric.name}: ${metric.value.toFixed(1)} (${metric.rating})`,
+      );
     } else {
       _metricsBuffer.push(metric);
       if (_flushTimer) clearTimeout(_flushTimer);
@@ -187,11 +194,7 @@ export function markStart(label: string): void {
 export function markEnd(label: string): void {
   try {
     performance.mark(`kinetic-${label}-end`);
-    performance.measure(
-      `kinetic-${label}`,
-      `kinetic-${label}-start`,
-      `kinetic-${label}-end`
-    );
+    performance.measure(`kinetic-${label}`, `kinetic-${label}-start`, `kinetic-${label}-end`);
     if (import.meta.env.DEV) {
       const measure = performance.getEntriesByName(`kinetic-${label}`).at(-1);
       if (measure) {

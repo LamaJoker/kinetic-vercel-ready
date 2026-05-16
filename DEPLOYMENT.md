@@ -43,14 +43,14 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 
 ### Réglages dashboard
 
-| Paramètre | Valeur |
-|-----------|--------|
-| Root Directory | `/` |
-| Framework Preset | **Other** |
-| Build Command | *(vide — hérité de `vercel.json`)* |
-| Output Directory | *(vide — hérité de `vercel.json`)* |
-| Install Command | *(vide — hérité de `vercel.json`)* |
-| Node.js Version | **20.x** |
+| Paramètre             | Valeur                                                     |
+| --------------------- | ---------------------------------------------------------- |
+| Root Directory        | `/`                                                        |
+| Framework Preset      | **Other**                                                  |
+| Build Command         | _(vide — hérité de `vercel.json`)_                         |
+| Output Directory      | _(vide — hérité de `vercel.json`)_                         |
+| Install Command       | _(vide — hérité de `vercel.json`)_                         |
+| Node.js Version       | **20.x**                                                   |
 | Environment Variables | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (optionnels) |
 
 ### Ce que fait `vercel.json`
@@ -80,6 +80,7 @@ Créer un projet sur [supabase.com](https://supabase.com). Récupérer URL + ano
 ### 2. Migrations (ordre strict)
 
 Via CLI :
+
 ```bash
 supabase link --project-ref <ref>
 supabase db push
@@ -92,6 +93,7 @@ Ou via le **SQL Editor** du dashboard — coller dans l'ordre :
 3. `supabase/migrations/003_security_hardening.sql` — **obligatoire pour la prod**
 
 La migration 003 ferme 5 vulnérabilités :
+
 - `SET search_path` sur toutes les `SECURITY DEFINER` (injection de schéma)
 - Validation d'entrée dans `upsert_daily_log` (bornes XP/tasks/streak)
 - Vues en `SECURITY INVOKER` explicite
@@ -144,6 +146,7 @@ Root Directory mal configuré sur Vercel. Doit être `/`, pas `apps/web`. Voir s
 ### `Command "build" not found`
 
 `package.json` racine sans script `build`. Restaurer :
+
 ```json
 "scripts": { "build": "pnpm --filter @kinetic/web build" }
 ```
@@ -151,9 +154,11 @@ Root Directory mal configuré sur Vercel. Doit être `/`, pas `apps/web`. Voir s
 ### `ERR_PNPM_OUTDATED_LOCKFILE` en local
 
 Après modif des `package.json` :
+
 ```bash
 rm pnpm-lock.yaml && pnpm install
 ```
+
 (En CI on garde `--frozen-lockfile` : le lockfile à jour doit être commité.)
 
 ### Magic link Supabase ne fonctionne pas

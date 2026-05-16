@@ -25,10 +25,7 @@ export default defineConfig({
   retries: isCI ? 2 : 1,
   workers: 1,
 
-  reporter: [
-    ['html', { outputFolder: 'tests/e2e/report', open: 'never' }],
-    ['list'],
-  ],
+  reporter: [['html', { outputFolder: 'tests/e2e/report', open: 'never' }], ['list']],
 
   use: {
     baseURL: 'http://localhost:3000',

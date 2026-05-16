@@ -18,4 +18,3 @@ export async function saveUserProfile(storage: StoragePort, profile: UserProfile
 export async function clearUserProfile(storage: StoragePort): Promise<void> {
   await storage.remove(KEY_PROFILE);
 }
-

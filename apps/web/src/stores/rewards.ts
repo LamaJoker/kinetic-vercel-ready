@@ -17,25 +17,25 @@ import { getDeps } from '../deps';
 
 // ─── Clés storage ────────────────────────────────────────────────────────────
 const KEY_FREEZE_TOKENS = STORAGE_KEYS.REWARDS_FREEZE_TOKENS;
-const KEY_FREEZE_WEEK   = STORAGE_KEYS.REWARDS_FREEZE_WEEK;
-const KEY_STREAK        = STORAGE_KEYS.STREAK;
-const KEY_THEME         = STORAGE_KEYS.REWARDS_THEME;
+const KEY_FREEZE_WEEK = STORAGE_KEYS.REWARDS_FREEZE_WEEK;
+const KEY_STREAK = STORAGE_KEYS.STREAK;
+const KEY_THEME = STORAGE_KEYS.REWARDS_THEME;
 
 // ─── Thèmes ───────────────────────────────────────────────────────────────────
 export interface Theme {
-  id:     string;
-  label:  string;
-  emoji:  string;
-  neon:   string;   // couleur hex de prévisualisation
+  id: string;
+  label: string;
+  emoji: string;
+  neon: string; // couleur hex de prévisualisation
   accent: string;
 }
 
 export const THEMES: readonly Theme[] = [
   { id: 'electrique', label: 'Électrique', emoji: '⚡', neon: '#A8FF00', accent: '#FF6A00' },
-  { id: 'cyber',      label: 'Cyber',      emoji: '🩵', neon: '#00E0FF', accent: '#0070FF' },
-  { id: 'violet',     label: 'Violet',     emoji: '💜', neon: '#C060FF', accent: '#FF40A0' },
-  { id: 'phoenix',    label: 'Phoenix',    emoji: '🔴', neon: '#FFD200', accent: '#FF3C32' },
-  { id: 'fantome',    label: 'Fantôme',    emoji: '🩶', neon: '#DCDCE6', accent: '#8C8CA0' },
+  { id: 'cyber', label: 'Cyber', emoji: '🩵', neon: '#00E0FF', accent: '#0070FF' },
+  { id: 'violet', label: 'Violet', emoji: '💜', neon: '#C060FF', accent: '#FF40A0' },
+  { id: 'phoenix', label: 'Phoenix', emoji: '🔴', neon: '#FFD200', accent: '#FF3C32' },
+  { id: 'fantome', label: 'Fantôme', emoji: '🩶', neon: '#DCDCE6', accent: '#8C8CA0' },
 ] as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -47,8 +47,8 @@ function todayIso(): string {
 
 /** Numéro de semaine ISO-8601. */
 function isoWeekKey(date: Date = new Date()): string {
-  const d    = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const day  = d.getUTCDay() || 7;
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - day);
   const jan1 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   const week = Math.ceil(((d.getTime() - jan1.getTime()) / 86_400_000 + 1) / 7);
@@ -64,16 +64,16 @@ export function rewardsStore() {
   return {
     // ── Modal level-up ──
     showRewardModal: false,
-    pendingReward:   null as Reward | null,
-    pendingLevel:    0,
+    pendingReward: null as Reward | null,
+    pendingLevel: 0,
 
     // ── Gel de streak ──
-    freezeTokens:  0,
+    freezeTokens: 0,
     freezeLoading: false,
 
     // ── Thème de couleur ──
     currentTheme: 'electrique',
-    allThemes:    THEMES,
+    allThemes: THEMES,
 
     // Référence statique pour les templates
     allRewards: REWARDS,
@@ -90,8 +90,8 @@ export function rewardsStore() {
         if (!detail) return;
         const reward = REWARDS.find((r) => r.level === detail.level);
         if (reward && reward.kind !== 'base') {
-          this.pendingReward   = reward;
-          this.pendingLevel    = detail.level;
+          this.pendingReward = reward;
+          this.pendingLevel = detail.level;
           this.showRewardModal = true;
         }
       };
@@ -114,7 +114,7 @@ export function rewardsStore() {
     // ─── Jetons de gel ───────────────────────────────────────────────────────
     async _initFreezeTokens(): Promise<void> {
       try {
-        const deps    = await getDeps();
+        const deps = await getDeps();
         const weekKey = isoWeekKey();
         const lastWeek = await deps.storage.get<string>(KEY_FREEZE_WEEK);
 
@@ -125,7 +125,7 @@ export function rewardsStore() {
             const current = (await deps.storage.get<number>(KEY_FREEZE_TOKENS)) ?? 0;
             const renewed = Math.min(current + 1, 2);
             await deps.storage.set(KEY_FREEZE_TOKENS, renewed);
-            await deps.storage.set(KEY_FREEZE_WEEK,   weekKey);
+            await deps.storage.set(KEY_FREEZE_WEEK, weekKey);
           }
         }
 
@@ -145,12 +145,14 @@ export function rewardsStore() {
 
       this.freezeLoading = true;
       try {
-        const deps    = await getDeps();
-        const today   = todayIso();
+        const deps = await getDeps();
+        const today = todayIso();
 
         // Lire le streak courant
         const streakData = (await deps.storage.get<StreakState>(KEY_STREAK)) ?? {
-          count: 0, best: 0, lastActiveDate: null,
+          count: 0,
+          best: 0,
+          lastActiveDate: null,
         };
 
         // Appliquer l'activité du jour (même logique que compléter une tâche)
@@ -194,11 +196,13 @@ export function rewardsStore() {
 
     async _loadTheme(): Promise<void> {
       try {
-        const deps    = await getDeps();
-        const saved   = (await deps.storage.get<string>(KEY_THEME)) ?? 'electrique';
+        const deps = await getDeps();
+        const saved = (await deps.storage.get<string>(KEY_THEME)) ?? 'electrique';
         this.currentTheme = saved;
         this._setThemeDom(saved);
-      } catch { /* pas bloquant */ }
+      } catch {
+        /* pas bloquant */
+      }
     },
 
     _setThemeDom(themeId: string): void {
@@ -210,7 +214,7 @@ export function rewardsStore() {
     // ─── Modale ──────────────────────────────────────────────────────────────
     dismissModal(): void {
       this.showRewardModal = false;
-      this.pendingReward   = null;
+      this.pendingReward = null;
     },
 
     // ─── Getters dérivés du niveau ────────────────────────────────────────────
@@ -257,7 +261,9 @@ export function rewardsStore() {
 
     _currentLevel(): number {
       try {
-        const Alpine = (window as unknown as { Alpine: { store: (n: string) => { currentLevel?: number } } }).Alpine;
+        const Alpine = (
+          window as unknown as { Alpine: { store: (n: string) => { currentLevel?: number } } }
+        ).Alpine;
         return Alpine?.store('xp')?.currentLevel ?? 1;
       } catch {
         return 1;

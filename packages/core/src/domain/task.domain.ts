@@ -11,28 +11,28 @@
 
 // ─── Entités ─────────────────────────────────────────────────────────────────
 
-export type TaskId       = string;
-export type TaskType     = 'one-time' | 'recurring' | 'habit';
+export type TaskId = string;
+export type TaskType = 'one-time' | 'recurring' | 'habit';
 export type TaskPriority = 'high' | 'med' | 'low';
 
 export interface Task {
-  readonly id:          TaskId;
-  readonly title:       string;
+  readonly id: TaskId;
+  readonly title: string;
   readonly description: string;
-  readonly type:        TaskType;
-  readonly xp:          number;         // XP accordé à la complétion
-  readonly priority:    TaskPriority;
-  readonly icon:        string;         // Emoji ou identifiant d'icône
-  readonly createdAt:   string;         // ISO date "YYYY-MM-DD"
-  readonly done:        boolean;
-  readonly completedAt: string | null;  // ISO date
-  readonly completionCount: number;     // Total de complétions (pour recurring)
+  readonly type: TaskType;
+  readonly xp: number; // XP accordé à la complétion
+  readonly priority: TaskPriority;
+  readonly icon: string; // Emoji ou identifiant d'icône
+  readonly createdAt: string; // ISO date "YYYY-MM-DD"
+  readonly done: boolean;
+  readonly completedAt: string | null; // ISO date
+  readonly completionCount: number; // Total de complétions (pour recurring)
 }
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 export interface TaskValidationError {
-  field:   string;
+  field: string;
   message: string;
 }
 
@@ -87,9 +87,9 @@ export function completeTask(task: Task, completedAtIso: string): Task {
 
   return {
     ...task,
-    done:             true,
-    completedAt:      completedAtIso,
-    completionCount:  task.completionCount + 1,
+    done: true,
+    completedAt: completedAtIso,
+    completionCount: task.completionCount + 1,
   };
 }
 
@@ -103,7 +103,7 @@ export function resetRecurringTask(task: Task): Task {
 
   return {
     ...task,
-    done:        false,
+    done: false,
     completedAt: null,
   };
 }
@@ -113,8 +113,8 @@ export function resetRecurringTask(task: Task): Task {
  */
 const PRIORITY_ORDER: Record<TaskPriority, number> = {
   high: 0,
-  med:  1,
-  low:  2,
+  med: 1,
+  low: 2,
 };
 
 export function sortByPriority(a: Task, b: Task): number {
@@ -129,14 +129,14 @@ export function sortByPriority(a: Task, b: Task): number {
 // ─── Constructeur ─────────────────────────────────────────────────────────────
 
 export interface CreateTaskInput {
-  id:           TaskId;
-  title:        string;
+  id: TaskId;
+  title: string;
   description?: string;
-  type?:        TaskType;
-  xp?:          number;
-  priority?:    TaskPriority;
-  icon?:        string;
-  createdAt:    string;
+  type?: TaskType;
+  xp?: number;
+  priority?: TaskPriority;
+  icon?: string;
+  createdAt: string;
 }
 
 export function createTask(input: CreateTaskInput): Task {
@@ -146,16 +146,16 @@ export function createTask(input: CreateTaskInput): Task {
   }
 
   return {
-    id:               input.id,
-    title:            input.title.trim(),
-    description:      input.description?.trim() ?? '',
-    type:             input.type     ?? 'recurring',
-    xp:               input.xp      ?? 50,
-    priority:         input.priority ?? 'med',
-    icon:             input.icon     ?? '✅',
-    createdAt:        input.createdAt,
-    done:             false,
-    completedAt:      null,
-    completionCount:  0,
+    id: input.id,
+    title: input.title.trim(),
+    description: input.description?.trim() ?? '',
+    type: input.type ?? 'recurring',
+    xp: input.xp ?? 50,
+    priority: input.priority ?? 'med',
+    icon: input.icon ?? '✅',
+    createdAt: input.createdAt,
+    done: false,
+    completedAt: null,
+    completionCount: 0,
   };
 }

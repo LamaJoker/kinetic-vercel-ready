@@ -13,9 +13,7 @@ function toJson(value: unknown): Json | undefined {
   }
 
   if (Array.isArray(value)) {
-    return value
-      .map((item) => toJson(item))
-      .filter((item): item is Json => item !== undefined);
+    return value.map((item) => toJson(item)).filter((item): item is Json => item !== undefined);
   }
 
   if (typeof value === 'object') {
@@ -65,4 +63,3 @@ export class NoopDailyLogSync implements DailyLogSyncPort {
     // intentionally empty
   }
 }
-

@@ -8,51 +8,54 @@ import { getDeps } from '../deps';
 
 // FIX: défini ici au lieu d'être importé depuis @kinetic/core
 export interface FoodEntry {
-  name:           string;
-  kcalPer100:     number;
-  proteinPer100:  number;
-  carbsPer100:    number;
-  fatPer100:      number;
+  name: string;
+  kcalPer100: number;
+  proteinPer100: number;
+  carbsPer100: number;
+  fatPer100: number;
 }
 
 export interface LoggedMeal {
-  id:       string;
+  id: string;
   mealName: string;
-  items:    Array<{ food: FoodEntry; grams: number }>;
+  items: Array<{ food: FoodEntry; grams: number }>;
   loggedAt: string;
 }
 
 const KEY_PLAN = STORAGE_KEYS.NUTRITION_PLAN;
-const KEY_LOG  = (date: string) => STORAGE_KEYS.NUTRITION_LOG(date);
+const KEY_LOG = (date: string) => STORAGE_KEYS.NUTRITION_LOG(date);
 
 function todayIso(): string {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export function nutritionStore() {
   return {
-    plan:        null as NutritionPlan | null,
-    todayLog:    [] as LoggedMeal[],
-    loading:     true,
+    plan: null as NutritionPlan | null,
+    todayLog: [] as LoggedMeal[],
+    loading: true,
     _addMealInflightNames: new Set<string>(),
 
     get consumed() {
-      let kcal = 0, proteinG = 0, carbsG = 0, fatG = 0;
+      let kcal = 0,
+        proteinG = 0,
+        carbsG = 0,
+        fatG = 0;
       for (const meal of this.todayLog) {
         for (const item of meal.items) {
           const f = item.grams / 100;
-          kcal     += item.food.kcalPer100    * f;
+          kcal += item.food.kcalPer100 * f;
           proteinG += item.food.proteinPer100 * f;
-          carbsG   += item.food.carbsPer100   * f;
-          fatG     += item.food.fatPer100     * f;
+          carbsG += item.food.carbsPer100 * f;
+          fatG += item.food.fatPer100 * f;
         }
       }
       return {
         kcal: Math.round(kcal),
         proteinG: +proteinG.toFixed(1),
-        carbsG:   +carbsG.toFixed(1),
-        fatG:     +fatG.toFixed(1),
+        carbsG: +carbsG.toFixed(1),
+        fatG: +fatG.toFixed(1),
       };
     },
 
@@ -66,10 +69,10 @@ export function nutritionStore() {
       const c = this.consumed;
       const t = this.plan.macros;
       return {
-        kcal:     Math.max(0, t.kcal     - c.kcal),
+        kcal: Math.max(0, t.kcal - c.kcal),
         proteinG: Math.max(0, +(t.proteinG - c.proteinG).toFixed(1)),
-        carbsG:   Math.max(0, +(t.carbsG   - c.carbsG).toFixed(1)),
-        fatG:     Math.max(0, +(t.fatG     - c.fatG).toFixed(1)),
+        carbsG: Math.max(0, +(t.carbsG - c.carbsG).toFixed(1)),
+        fatG: Math.max(0, +(t.fatG - c.fatG).toFixed(1)),
       };
     },
 
@@ -92,7 +95,9 @@ export function nutritionStore() {
         const deps = await getDeps();
         const profile = await deps.storage.get<Record<string, unknown>>(STORAGE_KEYS.USER_PROFILE);
         if (!profile) return;
-        const plan = buildNutritionPlan(profile as unknown as Parameters<typeof buildNutritionPlan>[0]);
+        const plan = buildNutritionPlan(
+          profile as unknown as Parameters<typeof buildNutritionPlan>[0],
+        );
         this.plan = plan;
         await deps.storage.set(KEY_PLAN, plan);
       } catch (err) {
@@ -102,36 +107,44 @@ export function nutritionStore() {
 
     async addMealItem(mealName: string, food: FoodEntry, grams: number): Promise<void> {
       if (!Number.isFinite(grams) || grams <= 0) {
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'warning', message: 'Quantité invalide (doit être > 0 g).' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'warning', message: 'Quantité invalide (doit être > 0 g).' },
+          }),
+        );
         return;
       }
       if (this._addMealInflightNames.has(mealName)) return;
       this._addMealInflightNames.add(mealName);
       try {
-        const deps  = await getDeps();
+        const deps = await getDeps();
         const today = todayIso();
         // Mutation via spread, sans push() sur le proxy Alpine — évite que
         // IDB voie un Proxy non-clonable (DataCloneError sur Safari/Firefox).
         const existing = this.todayLog.find((m) => m.mealName === mealName);
         if (existing) {
           this.todayLog = this.todayLog.map((m) =>
-            m.mealName !== mealName ? m :
-            { ...m, items: [...m.items, { food, grams }] },
+            m.mealName !== mealName ? m : { ...m, items: [...m.items, { food, grams }] },
           );
         } else {
-          this.todayLog = [...this.todayLog, {
-            id: crypto.randomUUID(), mealName,
-            items: [{ food, grams }], loggedAt: new Date().toISOString(),
-          }];
+          this.todayLog = [
+            ...this.todayLog,
+            {
+              id: crypto.randomUUID(),
+              mealName,
+              items: [{ food, grams }],
+              loggedAt: new Date().toISOString(),
+            },
+          ];
         }
         await deps.storage.set(KEY_LOG(today), this.todayLog);
       } catch (err) {
         console.error('[nutrition] addMealItem failed:', err);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: 'Impossible d\'ajouter cet aliment. Réessaie.' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: "Impossible d'ajouter cet aliment. Réessaie." },
+          }),
+        );
       } finally {
         this._addMealInflightNames.delete(mealName);
       }
@@ -139,18 +152,19 @@ export function nutritionStore() {
 
     async removeMealItem(mealName: string, idx: number): Promise<void> {
       try {
-        const deps  = await getDeps();
+        const deps = await getDeps();
         const today = todayIso();
         this.todayLog = this.todayLog.map((m) =>
-          m.mealName !== mealName ? m :
-          { ...m, items: m.items.filter((_, i) => i !== idx) },
+          m.mealName !== mealName ? m : { ...m, items: m.items.filter((_, i) => i !== idx) },
         );
         await deps.storage.set(KEY_LOG(today), this.todayLog);
       } catch (err) {
         console.error('[nutrition] removeMealItem failed:', err);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: 'Impossible de retirer cet aliment. Réessaie.' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Impossible de retirer cet aliment. Réessaie.' },
+          }),
+        );
       }
     },
   };

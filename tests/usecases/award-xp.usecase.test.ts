@@ -27,7 +27,7 @@ describe('awardXp', () => {
     expect(saved?.xp).toBe(100);
   });
 
-  it('s\'accumule sur du XP existant', async () => {
+  it("s'accumule sur du XP existant", async () => {
     await deps.storage.set('kinetic:xp', { xp: 150 });
     await awardXp(deps, { amount: 75 });
 
@@ -46,7 +46,7 @@ describe('awardXp', () => {
     expect(saved?.xp).toBe(100); // pas 200
   });
 
-  it('sans clé d\'idempotence : toujours crédite', async () => {
+  it("sans clé d'idempotence : toujours crédite", async () => {
     await awardXp(deps, { amount: 50 });
     await awardXp(deps, { amount: 50 });
 

@@ -34,10 +34,10 @@ describe('DEFAULT_EXERCISES', () => {
 
   it('contains expected key exercises', () => {
     const ids = new Set(DEFAULT_EXERCISES.map((e) => e.id));
-    expect(ids.has('sq')).toBe(true);   // Back Squat
-    expect(ids.has('bp')).toBe(true);   // Bench Press
-    expect(ids.has('dl')).toBe(true);   // Deadlift
-    expect(ids.has('ohp')).toBe(true);  // Overhead Press
+    expect(ids.has('sq')).toBe(true); // Back Squat
+    expect(ids.has('bp')).toBe(true); // Bench Press
+    expect(ids.has('dl')).toBe(true); // Deadlift
+    expect(ids.has('ohp')).toBe(true); // Overhead Press
   });
 });
 
@@ -79,6 +79,8 @@ describe('DEFAULT_TEMPLATES', () => {
     const names = DEFAULT_TEMPLATES.map((t) => t.name);
     expect(names.some((n) => n.toLowerCase().includes('push'))).toBe(true);
     expect(names.some((n) => n.toLowerCase().includes('pull'))).toBe(true);
-    expect(names.some((n) => n.toLowerCase().includes('legs') || n.toLowerCase().includes('leg'))).toBe(true);
+    expect(
+      names.some((n) => n.toLowerCase().includes('legs') || n.toLowerCase().includes('leg')),
+    ).toBe(true);
   });
 });

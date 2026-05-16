@@ -16,10 +16,11 @@ import { createDepsManager } from './deps.factory';
 export type { AppDeps } from './deps.factory';
 
 const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'] as string | undefined;
-const hasRemoteSync = supabase !== null
-  && typeof supabaseUrl === 'string'
-  && supabaseUrl.length > 10
-  && !supabaseUrl.includes('xxxxxxxxxxxxxxxxxxxx');
+const hasRemoteSync =
+  supabase !== null &&
+  typeof supabaseUrl === 'string' &&
+  supabaseUrl.length > 10 &&
+  !supabaseUrl.includes('xxxxxxxxxxxxxxxxxxxx');
 
 const manager = createDepsManager({
   createLocalStorage: () => new IdbStorage(),
@@ -43,12 +44,14 @@ const manager = createDepsManager({
 export const getDeps = () => manager.getDeps();
 export const resetDeps = () => manager.resetDeps();
 export const flushAndResetDeps = () => manager.flushAndResetDeps();
-export const _resetDepsForTesting = (mock: import('./deps.factory').AppDeps) => manager.setDepsForTesting(mock);
+export const _resetDepsForTesting = (mock: import('./deps.factory').AppDeps) =>
+  manager.setDepsForTesting(mock);
 
 let authRebuildInflight: Promise<void> | null = null;
-const win = typeof window !== 'undefined'
-  ? (window as Window & { _kineticAuthChangedListening?: boolean })
-  : null;
+const win =
+  typeof window !== 'undefined'
+    ? (window as Window & { _kineticAuthChangedListening?: boolean })
+    : null;
 
 if (win && !win._kineticAuthChangedListening) {
   win._kineticAuthChangedListening = true;

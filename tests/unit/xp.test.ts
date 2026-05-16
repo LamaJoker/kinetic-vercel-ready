@@ -11,14 +11,14 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 // ─── Reproduit la logique XP du core (à importer en vrai projet) ──────────
 const LEVELS = [
-  { level: 1, title: 'Rookie',    threshold: 0    },
-  { level: 2, title: 'Apprenti',  threshold: 200  },
-  { level: 3, title: 'Confirmé',  threshold: 500  },
-  { level: 4, title: 'Expert',    threshold: 1000 },
-  { level: 5, title: 'Elite',     threshold: 2000 },
-  { level: 6, title: 'Champion',  threshold: 3500 },
-  { level: 7, title: 'Maître',    threshold: 5500 },
-  { level: 8, title: 'Légende',   threshold: 8000 },
+  { level: 1, title: 'Rookie', threshold: 0 },
+  { level: 2, title: 'Apprenti', threshold: 200 },
+  { level: 3, title: 'Confirmé', threshold: 500 },
+  { level: 4, title: 'Expert', threshold: 1000 },
+  { level: 5, title: 'Elite', threshold: 2000 },
+  { level: 6, title: 'Champion', threshold: 3500 },
+  { level: 7, title: 'Maître', threshold: 5500 },
+  { level: 8, title: 'Légende', threshold: 8000 },
 ];
 
 function computeXpState(totalXp: number) {
@@ -56,7 +56,6 @@ function addXp(currentXp: number, amount: number): number {
 // ──────────────────────────────────────────────────────────────────────────
 
 describe('XP Engine', () => {
-
   describe('computeXpState — niveau de base', () => {
     it('retourne niveau 1 pour 0 XP', () => {
       const state = computeXpState(0);
@@ -103,9 +102,14 @@ describe('XP Engine', () => {
 
     it('retourne les bons titres pour chaque niveau', () => {
       const expected: [number, string][] = [
-        [0, 'Rookie'], [200, 'Apprenti'], [500, 'Confirmé'],
-        [1000, 'Expert'], [2000, 'Elite'], [3500, 'Champion'],
-        [5500, 'Maître'], [8000, 'Légende'],
+        [0, 'Rookie'],
+        [200, 'Apprenti'],
+        [500, 'Confirmé'],
+        [1000, 'Expert'],
+        [2000, 'Elite'],
+        [3500, 'Champion'],
+        [5500, 'Maître'],
+        [8000, 'Légende'],
       ];
       for (const [xp, title] of expected) {
         expect(computeXpState(xp).title).toBe(title);

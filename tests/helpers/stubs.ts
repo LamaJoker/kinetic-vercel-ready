@@ -69,11 +69,11 @@ export class InMemoryStorage implements StoragePort {
  */
 export class FakeClock implements ClockPort {
   private _dateIso: string;
-  private _nowMs:   number;
+  private _nowMs: number;
 
   constructor(dateIso = '2026-01-01', nowMs?: number) {
     this._dateIso = dateIso;
-    this._nowMs   = nowMs ?? Date.now();
+    this._nowMs = nowMs ?? Date.now();
   }
 
   nowMs(): number {
@@ -90,11 +90,11 @@ export class FakeClock implements ClockPort {
     const date = new Date(y!, m! - 1, d!);
     date.setDate(date.getDate() + n);
 
-    const yy  = date.getFullYear();
-    const mm  = String(date.getMonth() + 1).padStart(2, '0');
-    const dd  = String(date.getDate()).padStart(2, '0');
+    const yy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
     this._dateIso = `${yy}-${mm}-${dd}`;
-    this._nowMs  += n * 24 * 60 * 60 * 1000;
+    this._nowMs += n * 24 * 60 * 60 * 1000;
   }
 
   /** Définir une date précise */
@@ -169,19 +169,29 @@ export class SpyNotifier implements NotifierPort {
 export class FailingStorage implements StoragePort {
   constructor(private readonly error = new Error('Storage unavailable')) {}
 
-  async get<T>(_key: StorageKey): Promise<T | null> { throw this.error; }
-  async set<T>(_key: StorageKey, _value: T): Promise<void> { throw this.error; }
-  async remove(_key: StorageKey): Promise<void> { throw this.error; }
-  async keys(): Promise<readonly StorageKey[]> { throw this.error; }
-  async clear(): Promise<void> { throw this.error; }
+  async get<T>(_key: StorageKey): Promise<T | null> {
+    throw this.error;
+  }
+  async set<T>(_key: StorageKey, _value: T): Promise<void> {
+    throw this.error;
+  }
+  async remove(_key: StorageKey): Promise<void> {
+    throw this.error;
+  }
+  async keys(): Promise<readonly StorageKey[]> {
+    throw this.error;
+  }
+  async clear(): Promise<void> {
+    throw this.error;
+  }
 }
 
 // ─── Factory makeTestDeps ─────────────────────────────────────────────────────
 
 export interface TestDeps {
-  storage:  InMemoryStorage;
-  clock:    FakeClock;
-  idGen:    SequentialIdGenerator;
+  storage: InMemoryStorage;
+  clock: FakeClock;
+  idGen: SequentialIdGenerator;
   notifier: SpyNotifier;
 }
 
@@ -194,9 +204,9 @@ export interface TestDeps {
  */
 export function makeTestDeps(overrides: Partial<TestDeps> = {}): TestDeps {
   return {
-    storage:  overrides.storage  ?? new InMemoryStorage(),
-    clock:    overrides.clock    ?? new FakeClock('2026-04-20'),
-    idGen:    overrides.idGen    ?? new SequentialIdGenerator(),
+    storage: overrides.storage ?? new InMemoryStorage(),
+    clock: overrides.clock ?? new FakeClock('2026-04-20'),
+    idGen: overrides.idGen ?? new SequentialIdGenerator(),
     notifier: overrides.notifier ?? new SpyNotifier(),
   };
 }

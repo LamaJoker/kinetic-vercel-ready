@@ -43,7 +43,7 @@ export function goalsStore() {
 
     // Handlers stockés pour cleanup dans destroy()
     _sessionSavedHandler: null as ((event: Event) => void) | null,
-    _depsReadyHandler:    null as (() => void) | null,
+    _depsReadyHandler: null as (() => void) | null,
     // Mutex pour éviter le double-crédit du bonus (deux sessions rapides)
     _awardingBonus: false,
 
@@ -73,7 +73,9 @@ export function goalsStore() {
 
       // Recharger depuis IDB quand les deps sont reconstruits (reset profil,
       // changement de compte) — évite un cache de sessions devenu fantôme.
-      this._depsReadyHandler = () => { void this.reload(); };
+      this._depsReadyHandler = () => {
+        void this.reload();
+      };
       window.addEventListener(STORAGE_KEYS.EVENT_DEPS_READY, this._depsReadyHandler);
 
       await this.reload();
@@ -101,9 +103,9 @@ export function goalsStore() {
         }>(KEY_GOALS);
 
         if (saved) {
-          this.targetSessions  = saved.targetSessions  ?? 3;
+          this.targetSessions = saved.targetSessions ?? 3;
           this.targetTonnageKg = saved.targetTonnageKg ?? 0;
-          this.xpAwardedWeek   = saved.xpAwardedWeek   ?? '';
+          this.xpAwardedWeek = saved.xpAwardedWeek ?? '';
         }
 
         this._sessionsCache = await loadSessions(deps.storage);
@@ -123,15 +125,17 @@ export function goalsStore() {
       try {
         const deps = await getDeps();
         await deps.storage.set(KEY_GOALS, {
-          targetSessions:  this.targetSessions,
+          targetSessions: this.targetSessions,
           targetTonnageKg: this.targetTonnageKg,
-          xpAwardedWeek:   this.xpAwardedWeek,
+          xpAwardedWeek: this.xpAwardedWeek,
         });
       } catch (err) {
         console.error('[goals] save failed:', err);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: 'Echec sauvegarde des objectifs. Reessaie.' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Echec sauvegarde des objectifs. Reessaie.' },
+          }),
+        );
       }
     },
 
@@ -164,9 +168,14 @@ export function goalsStore() {
       this.xpAwardedWeek = this.weekKey;
       await this.save();
 
-      window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-        detail: { kind: 'success', message: `Objectifs semaine atteints - +${WEEKLY_GOAL_BONUS_XP} XP !` },
-      }));
+      window.dispatchEvent(
+        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+          detail: {
+            kind: 'success',
+            message: `Objectifs semaine atteints - +${WEEKLY_GOAL_BONUS_XP} XP !`,
+          },
+        }),
+      );
       window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_XP_UPDATED));
     },
 
@@ -196,18 +205,18 @@ export function goalsStore() {
 
     _applyState(sessions: SessionList) {
       const state = evaluateWeeklyGoals(sessions, {
-        targetSessions:  this.targetSessions,
+        targetSessions: this.targetSessions,
         targetTonnageKg: this.targetTonnageKg,
       });
 
-      this.weekKey         = state.weekKey;
-      this.doneSessions    = state.doneSessions;
-      this.doneTonnageKg   = state.doneTonnageKg;
+      this.weekKey = state.weekKey;
+      this.doneSessions = state.doneSessions;
+      this.doneTonnageKg = state.doneTonnageKg;
       this.sessionsPercent = state.sessionsPercent;
-      this.tonnagePercent  = state.tonnagePercent;
-      this.sessionsOk      = state.sessionsOk;
-      this.tonnageOk       = state.tonnageOk;
-      this.allOk           = state.allOk;
+      this.tonnagePercent = state.tonnagePercent;
+      this.sessionsOk = state.sessionsOk;
+      this.tonnageOk = state.tonnageOk;
+      this.allOk = state.allOk;
 
       return state;
     },

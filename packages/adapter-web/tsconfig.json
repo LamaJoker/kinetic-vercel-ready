@@ -1,13 +1,11 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir":    "./dist",
-    "rootDir":   "./src",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "composite": true,
-    "types":     ["vite/client"]
+    "types": ["vite/client"]
   },
   "include": ["src"],
-  "references": [
-    { "path": "../core" }
-  ]
+  "references": [{ "path": "../core" }]
 }

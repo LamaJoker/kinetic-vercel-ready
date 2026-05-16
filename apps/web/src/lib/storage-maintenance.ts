@@ -15,10 +15,7 @@ import { STORAGE_KEYS } from '@kinetic/core';
 
 const RETENTION_DAYS = 90;
 
-const DAILY_KEY_PREFIXES = [
-  STORAGE_KEYS.VITALITE_DONE_PREFIX,
-  STORAGE_KEYS.XP_EARNED_PREFIX,
-];
+const DAILY_KEY_PREFIXES = [STORAGE_KEYS.VITALITE_DONE_PREFIX, STORAGE_KEYS.XP_EARNED_PREFIX];
 
 function dateFromDailyKey(key: string): string | null {
   for (const prefix of DAILY_KEY_PREFIXES) {
@@ -50,11 +47,12 @@ export async function getStorageUsage(): Promise<StorageUsage> {
   }
   try {
     const { usage, quota } = await navigator.storage.estimate();
-    const usedBytes  = typeof usage  === 'number' ? usage  : null;
-    const quotaBytes = typeof quota  === 'number' ? quota  : null;
-    const percent = (usedBytes !== null && quotaBytes !== null && quotaBytes > 0)
-      ? Math.round((usedBytes / quotaBytes) * 100)
-      : null;
+    const usedBytes = typeof usage === 'number' ? usage : null;
+    const quotaBytes = typeof quota === 'number' ? quota : null;
+    const percent =
+      usedBytes !== null && quotaBytes !== null && quotaBytes > 0
+        ? Math.round((usedBytes / quotaBytes) * 100)
+        : null;
     return { usedBytes, quotaBytes, percent };
   } catch {
     return { usedBytes: null, quotaBytes: null, percent: null };
@@ -64,7 +62,7 @@ export async function getStorageUsage(): Promise<StorageUsage> {
 export interface CompactReport {
   removedKeys: number;
   scannedKeys: number;
-  cutoffDate:  string;
+  cutoffDate: string;
 }
 
 /**

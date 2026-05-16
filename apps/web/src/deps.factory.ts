@@ -1,4 +1,10 @@
-import type { DailyLogSyncPort, IdGeneratorPort, NotifierPort, StoragePort, ClockPort } from '@kinetic/core';
+import type {
+  DailyLogSyncPort,
+  IdGeneratorPort,
+  NotifierPort,
+  StoragePort,
+  ClockPort,
+} from '@kinetic/core';
 
 export interface AppDeps {
   storage: StoragePort;

@@ -12,7 +12,9 @@ import { test, expect, type Page } from '@playwright/test';
 // ─── Helpers ──────────────────────────────────────────────────
 
 async function waitForAlpineInit(page: Page): Promise<void> {
-  await page.waitForFunction(() => typeof (window as any).Alpine !== 'undefined', { timeout: 8000 });
+  await page.waitForFunction(() => typeof (window as any).Alpine !== 'undefined', {
+    timeout: 8000,
+  });
 }
 
 /**
@@ -30,27 +32,54 @@ async function gotoApp(page: Page, path = '/'): Promise<void> {
   await page.goto('http://localhost:3000/manifest.json');
 
   // 2. Clear + injection du profil en une seule transaction IDB
-  await page.evaluate(() => new Promise<void>((resolve) => {
-    try { localStorage.clear(); } catch { /* ignoré */ }
-    if (!('indexedDB' in window)) { resolve(); return; }
-    const req = indexedDB.open('keyval-store', 1);
-    req.onupgradeneeded = (): void => {
-      try { req.result.createObjectStore('keyval'); } catch { /* déjà créé */ }
-    };
-    req.onsuccess = (): void => {
-      const db    = req.result;
-      const tx    = db.transaction('keyval', 'readwrite');
-      const store = tx.objectStore('keyval');
-      store.clear();
-      store.put({
-        weightKg: 75, heightCm: 175, birthYear: 1990,
-        activityLevel: 'moderate', goal: 'lean', sex: 'M',
-      }, 'kinetic:userProfile');
-      tx.oncomplete = (): void => { db.close(); resolve(); };
-      tx.onerror    = (): void => { db.close(); resolve(); };
-    };
-    req.onerror = (): void => resolve();
-  }));
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        try {
+          localStorage.clear();
+        } catch {
+          /* ignoré */
+        }
+        if (!('indexedDB' in window)) {
+          resolve();
+          return;
+        }
+        const req = indexedDB.open('keyval-store', 1);
+        req.onupgradeneeded = (): void => {
+          try {
+            req.result.createObjectStore('keyval');
+          } catch {
+            /* déjà créé */
+          }
+        };
+        req.onsuccess = (): void => {
+          const db = req.result;
+          const tx = db.transaction('keyval', 'readwrite');
+          const store = tx.objectStore('keyval');
+          store.clear();
+          store.put(
+            {
+              weightKg: 75,
+              heightCm: 175,
+              birthYear: 1990,
+              activityLevel: 'moderate',
+              goal: 'lean',
+              sex: 'M',
+            },
+            'kinetic:userProfile',
+          );
+          tx.oncomplete = (): void => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = (): void => {
+            db.close();
+            resolve();
+          };
+        };
+        req.onerror = (): void => resolve();
+      }),
+  );
 
   // 3. Naviguer vers la route cible (profil déjà en IDB → pas de redirect onboarding)
   await page.goto(`http://localhost:3000${path}`);
@@ -90,7 +119,6 @@ async function gotoApp(page: Page, path = '/'): Promise<void> {
 // ──────────────────────────────────────────────────────────────
 
 test.describe('Kinetic App — Navigation', () => {
-
   test.beforeEach(async ({ page }) => {
     await gotoApp(page);
   });
@@ -106,7 +134,9 @@ test.describe('Kinetic App — Navigation', () => {
     await page.locator('a[href="/vitalite"]').first().click();
     await expect(page).toHaveURL(/vitalite/);
     // Attendre le contenu (pas un délai fixe)
-    await page.waitForFunction(() => document.querySelector('[x-data]') !== null, { timeout: 5000 });
+    await page.waitForFunction(() => document.querySelector('[x-data]') !== null, {
+      timeout: 5000,
+    });
   });
 
   test('le bouton retour fonctionne depuis vitalité', async ({ page }) => {
@@ -117,21 +147,26 @@ test.describe('Kinetic App — Navigation', () => {
 });
 
 test.describe('Kinetic App — Complétion de tâches', () => {
-
   test.beforeEach(async ({ page }) => {
     await gotoApp(page, '/vitalite');
     // Le dispatch manuel de kinetic:auth-ready dans gotoApp() force le rendu
     // immédiat du router. Le store vitalite finit son init() rapidement
     // (getDeps cached), donc les buttons "+N XP" apparaissent en quelques ms.
     await expect(
-      page.locator('#app-outlet button').filter({ hasText: /\+\d+ XP/ }).first(),
+      page
+        .locator('#app-outlet button')
+        .filter({ hasText: /\+\d+ XP/ })
+        .first(),
     ).toBeVisible({ timeout: 10000 });
   });
 
   test('complète une tâche et la marque disabled', async ({ page }) => {
     // Cibler spécifiquement un bouton de tâche via son texte "+N XP"
     // (même pattern que le test guard ci-dessous)
-    const taskButton = page.locator('button').filter({ hasText: /\+\d+ XP/ }).first();
+    const taskButton = page
+      .locator('button')
+      .filter({ hasText: /\+\d+ XP/ })
+      .first();
     await expect(taskButton).toBeVisible({ timeout: 5000 });
     await taskButton.click();
 
@@ -143,7 +178,10 @@ test.describe('Kinetic App — Complétion de tâches', () => {
   test('impossible de compléter deux fois la même tâche (guard)', async ({ page }) => {
     // Cibler spécifiquement les boutons de tâche (pas les boutons toast ✕)
     // en filtrant sur le texte "+N XP" présent uniquement sur les tâches incomplètes.
-    const taskButton = page.locator('button').filter({ hasText: /\+\d+ XP/ }).first();
+    const taskButton = page
+      .locator('button')
+      .filter({ hasText: /\+\d+ XP/ })
+      .first();
     await expect(taskButton).toBeVisible({ timeout: 5000 });
     await taskButton.click();
 
@@ -157,10 +195,9 @@ test.describe('Kinetic App — Complétion de tâches', () => {
     // Le reload XP se fait APRÈS que task.done passe à true (les deux sont
     // des étapes async distinctes dans complete()). Sans cette attente,
     // xpBefore serait capturé à 0 et xpAfter à 50 → faux positif.
-    await page.waitForFunction(
-      () => ((window as any).Alpine?.store?.('xp')?.xp ?? 0) > 0,
-      { timeout: 5000 },
-    );
+    await page.waitForFunction(() => ((window as any).Alpine?.store?.('xp')?.xp ?? 0) > 0, {
+      timeout: 5000,
+    });
 
     // Capturer XP avant tentative de double-click
     const xpBefore = await page.evaluate(() => {
@@ -187,7 +224,6 @@ test.describe('Kinetic App — Complétion de tâches', () => {
 });
 
 test.describe('Kinetic App — PWA & Offline', () => {
-
   test('le manifest PWA est accessible', async ({ page }) => {
     const response = await page.goto('http://localhost:3000/manifest.json');
     expect(response?.status()).toBe(200);
@@ -233,7 +269,10 @@ test.describe('Kinetic App — PWA & Offline', () => {
     await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
 
     // L'app ou la page offline doit afficher quelque chose (pas de page blanche)
-    const bodyText = await page.locator('body').innerText({ timeout: 8000 }).catch(() => '');
+    const bodyText = await page
+      .locator('body')
+      .innerText({ timeout: 8000 })
+      .catch(() => '');
     expect(bodyText.length).toBeGreaterThan(0);
 
     await context.setOffline(false);
@@ -241,7 +280,6 @@ test.describe('Kinetic App — PWA & Offline', () => {
 });
 
 test.describe('Kinetic App — Sécurité', () => {
-
   test('la page charge avec un statut 200', async ({ page }) => {
     const response = await page.goto('http://localhost:3000');
     expect(response?.status()).toBe(200);
@@ -270,12 +308,11 @@ test.describe('Kinetic App — Sécurité', () => {
 });
 
 test.describe('Kinetic App — Streak', () => {
-
   test.beforeEach(async ({ page }) => {
     await gotoApp(page);
   });
 
-  test("le dashboard se charge sans erreur de rendu", async ({ page }) => {
+  test('le dashboard se charge sans erreur de rendu', async ({ page }) => {
     // Corps de page non vide = rendu Alpine OK
     await expect(page.locator('body')).not.toBeEmpty();
     // Nav présente (lien vitalité)

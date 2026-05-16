@@ -57,9 +57,22 @@ describe('nutritionStore.consumed', () => {
   });
 
   it('scales correctly by grams', () => {
-    store.todayLog = [makeMeal({
-      items: [{ food: { name: 'Chicken', kcalPer100: 165, proteinPer100: 31, carbsPer100: 0, fatPer100: 3.6 }, grams: 200 }],
-    })];
+    store.todayLog = [
+      makeMeal({
+        items: [
+          {
+            food: {
+              name: 'Chicken',
+              kcalPer100: 165,
+              proteinPer100: 31,
+              carbsPer100: 0,
+              fatPer100: 3.6,
+            },
+            grams: 200,
+          },
+        ],
+      }),
+    ];
     const c = store.consumed;
     expect(c.kcal).toBe(Math.round(165 * 2));
     expect(c.proteinG).toBeCloseTo(31 * 2, 1);
@@ -67,8 +80,24 @@ describe('nutritionStore.consumed', () => {
 
   it('sums across multiple meals', () => {
     store.todayLog = [
-      makeMeal({ id: 'meal-1', items: [{ food: { name: 'A', kcalPer100: 100, proteinPer100: 10, carbsPer100: 10, fatPer100: 5 }, grams: 100 }] }),
-      makeMeal({ id: 'meal-2', items: [{ food: { name: 'B', kcalPer100: 200, proteinPer100: 20, carbsPer100: 20, fatPer100: 10 }, grams: 100 }] }),
+      makeMeal({
+        id: 'meal-1',
+        items: [
+          {
+            food: { name: 'A', kcalPer100: 100, proteinPer100: 10, carbsPer100: 10, fatPer100: 5 },
+            grams: 100,
+          },
+        ],
+      }),
+      makeMeal({
+        id: 'meal-2',
+        items: [
+          {
+            food: { name: 'B', kcalPer100: 200, proteinPer100: 20, carbsPer100: 20, fatPer100: 10 },
+            grams: 100,
+          },
+        ],
+      }),
     ];
     const c = store.consumed;
     expect(c.kcal).toBe(300);
@@ -76,9 +105,16 @@ describe('nutritionStore.consumed', () => {
   });
 
   it('rounds kcal to integer', () => {
-    store.todayLog = [makeMeal({
-      items: [{ food: { name: 'X', kcalPer100: 333, proteinPer100: 10, carbsPer100: 10, fatPer100: 5 }, grams: 50 }],
-    })];
+    store.todayLog = [
+      makeMeal({
+        items: [
+          {
+            food: { name: 'X', kcalPer100: 333, proteinPer100: 10, carbsPer100: 10, fatPer100: 5 },
+            grams: 50,
+          },
+        ],
+      }),
+    ];
     const c = store.consumed;
     expect(Number.isInteger(c.kcal)).toBe(true);
   });

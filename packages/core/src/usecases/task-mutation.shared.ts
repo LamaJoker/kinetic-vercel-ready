@@ -10,10 +10,7 @@ export interface TaskMutationPlan {
   remove?: readonly StorageKey[];
 }
 
-async function applyMutationPlan(
-  storage: StoragePort,
-  plan: TaskMutationPlan,
-): Promise<void> {
+async function applyMutationPlan(storage: StoragePort, plan: TaskMutationPlan): Promise<void> {
   for (const [key, value] of plan.set) {
     await storage.set(key, value);
   }
@@ -22,7 +19,9 @@ async function applyMutationPlan(
   }
 }
 
-export async function recoverPendingTaskMutation(storage: StoragePort): Promise<TaskMutationPlan | null> {
+export async function recoverPendingTaskMutation(
+  storage: StoragePort,
+): Promise<TaskMutationPlan | null> {
   const pending = await storage.get<TaskMutationPlan>(KEY_PENDING_TASK_MUTATION);
   if (!pending) return null;
 

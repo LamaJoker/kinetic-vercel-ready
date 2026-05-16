@@ -21,9 +21,17 @@ export interface MeasurementEntry {
 }
 
 type MetricKey =
-  | 'neck' | 'shoulders' | 'chest' | 'waist' | 'hips'
-  | 'leftBicep' | 'rightBicep' | 'leftThigh' | 'rightThigh'
-  | 'leftCalf' | 'rightCalf';
+  | 'neck'
+  | 'shoulders'
+  | 'chest'
+  | 'waist'
+  | 'hips'
+  | 'leftBicep'
+  | 'rightBicep'
+  | 'leftThigh'
+  | 'rightThigh'
+  | 'leftCalf'
+  | 'rightCalf';
 
 interface MetricDef {
   key: MetricKey;
@@ -32,36 +40,36 @@ interface MetricDef {
 }
 
 const METRICS: readonly MetricDef[] = [
-  { key: 'chest',      label: 'Poitrine',  color: '#A8FF00' },
-  { key: 'waist',      label: 'Taille',    color: '#FF6A00' },
-  { key: 'hips',       label: 'Hanches',   color: '#7F77DD' },
-  { key: 'shoulders',  label: 'Épaules',   color: '#00C2A0' },
-  { key: 'leftBicep',  label: 'Bras G',    color: '#FFD166' },
-  { key: 'rightBicep', label: 'Bras D',    color: '#FFD166' },
-  { key: 'leftThigh',  label: 'Cuisse G',  color: '#FF6B6B' },
-  { key: 'rightThigh', label: 'Cuisse D',  color: '#FF6B6B' },
-  { key: 'leftCalf',   label: 'Mollet G',  color: '#00C2A0' },
-  { key: 'rightCalf',  label: 'Mollet D',  color: '#00C2A0' },
-  { key: 'neck',       label: 'Cou',       color: '#FFD166' },
+  { key: 'chest', label: 'Poitrine', color: '#A8FF00' },
+  { key: 'waist', label: 'Taille', color: '#FF6A00' },
+  { key: 'hips', label: 'Hanches', color: '#7F77DD' },
+  { key: 'shoulders', label: 'Épaules', color: '#00C2A0' },
+  { key: 'leftBicep', label: 'Bras G', color: '#FFD166' },
+  { key: 'rightBicep', label: 'Bras D', color: '#FFD166' },
+  { key: 'leftThigh', label: 'Cuisse G', color: '#FF6B6B' },
+  { key: 'rightThigh', label: 'Cuisse D', color: '#FF6B6B' },
+  { key: 'leftCalf', label: 'Mollet G', color: '#00C2A0' },
+  { key: 'rightCalf', label: 'Mollet D', color: '#00C2A0' },
+  { key: 'neck', label: 'Cou', color: '#FFD166' },
 ] as const;
 
 const STORAGE_KEY = STORAGE_KEYS.MEASUREMENTS_ENTRIES;
-const PHOTOS_KEY  = STORAGE_KEYS.MEASUREMENTS_PHOTOS;
+const PHOTOS_KEY = STORAGE_KEYS.MEASUREMENTS_PHOTOS;
 // Limite IDB côté validateStorageValue = 1 MB. On garde 48 KB de marge pour
 // l'overhead JSON ({"base64":""}) + l'enrobage de la valeur stockée.
 const MAX_PHOTO_BYTES = 1_000_000;
 
 /** Métadonnées d'une photo (persisté dans PHOTOS_KEY) */
 interface PhotoMeta {
-  id:      string;
-  date:    string;   // ISO date (YYYY-MM-DD)
-  takenAt: string;   // ISO timestamp
-  note?:   string;
+  id: string;
+  date: string; // ISO date (YYYY-MM-DD)
+  takenAt: string; // ISO timestamp
+  note?: string;
 }
 
 /** Photo complète en mémoire (base64 chargé depuis la clé séparée) */
 export interface ProgressPhoto extends PhotoMeta {
-  base64: string;  // data:image/jpeg;base64,…
+  base64: string; // data:image/jpeg;base64,…
 }
 
 /** Clé IDB individuelle pour le base64 d'une photo */
@@ -80,49 +88,59 @@ function val(entry: MeasurementEntry, key: MetricKey): number | undefined {
 
 export function mensurations() {
   return {
-    entries:      [] as MeasurementEntry[],
+    entries: [] as MeasurementEntry[],
     activeMetric: 'chest' as MetricKey,
-    period:       90,
-    metrics:      METRICS as MetricDef[],
+    period: 90,
+    metrics: METRICS as MetricDef[],
 
     // ── Photos ────────────────────────────────────────────────
-    photos:          [] as ProgressPhoto[],
-    showPhotos:      false,
+    photos: [] as ProgressPhoto[],
+    showPhotos: false,
     selectedPhotoId: null as string | null,
-    takingPhoto:     false,
+    takingPhoto: false,
 
     // Form bindings (flat — Alpine x-model requires direct properties)
-    fNeck:       null as number | null,
-    fShoulders:  null as number | null,
-    fChest:      null as number | null,
-    fWaist:      null as number | null,
-    fHips:       null as number | null,
-    fLeftBicep:  null as number | null,
+    fNeck: null as number | null,
+    fShoulders: null as number | null,
+    fChest: null as number | null,
+    fWaist: null as number | null,
+    fHips: null as number | null,
+    fLeftBicep: null as number | null,
     fRightBicep: null as number | null,
-    fLeftThigh:  null as number | null,
+    fLeftThigh: null as number | null,
     fRightThigh: null as number | null,
-    fLeftCalf:   null as number | null,
-    fRightCalf:  null as number | null,
-    fNote:       '',
+    fLeftCalf: null as number | null,
+    fRightCalf: null as number | null,
+    fNote: '',
 
     // ── Computed ─────────────────────────────────────────────
 
     get filteredEntries(): MeasurementEntry[] {
       if (this.period >= 9999) return this.entries;
       const cutoff = Date.now() - this.period * 86_400_000;
-      return this.entries.filter(e => Date.parse(e.date) >= cutoff);
+      return this.entries.filter((e) => Date.parse(e.date) >= cutoff);
     },
 
     get activeMetricDef(): MetricDef {
-      return (this.metrics as MetricDef[]).find(m => m.key === this.activeMetric)
-        ?? (this.metrics as MetricDef[])[0]!;
+      return (
+        (this.metrics as MetricDef[]).find((m) => m.key === this.activeMetric) ??
+        (this.metrics as MetricDef[])[0]!
+      );
     },
 
     get hasFormData(): boolean {
       return !!(
-        this.fNeck || this.fShoulders || this.fChest || this.fWaist || this.fHips ||
-        this.fLeftBicep || this.fRightBicep || this.fLeftThigh ||
-        this.fRightThigh || this.fLeftCalf || this.fRightCalf
+        this.fNeck ||
+        this.fShoulders ||
+        this.fChest ||
+        this.fWaist ||
+        this.fHips ||
+        this.fLeftBicep ||
+        this.fRightBicep ||
+        this.fLeftThigh ||
+        this.fRightThigh ||
+        this.fLeftCalf ||
+        this.fRightCalf
       );
     },
 
@@ -137,20 +155,20 @@ export function mensurations() {
     },
 
     metricDelta(key: MetricKey): number | null {
-      const pts = this.filteredEntries.filter(e => val(e, key) !== undefined);
+      const pts = this.filteredEntries.filter((e) => val(e, key) !== undefined);
       if (pts.length < 2) return null;
       return val(pts.at(-1)!, key)! - val(pts[0]!, key)!;
     },
 
     hasData(key: MetricKey): boolean {
-      return this.entries.some(e => val(e, key) !== undefined);
+      return this.entries.some((e) => val(e, key) !== undefined);
     },
 
     chartPoints(key?: MetricKey): Array<{ x: number; y: number }> {
       const k = key ?? this.activeMetric;
       return this.filteredEntries
-        .filter(e => val(e, k) !== undefined)
-        .map(e => ({ x: Date.parse(e.date), y: val(e, k)! }));
+        .filter((e) => val(e, k) !== undefined)
+        .map((e) => ({ x: Date.parse(e.date), y: val(e, k)! }));
     },
 
     // ── Persistence ───────────────────────────────────────────
@@ -184,13 +202,15 @@ export function mensurations() {
       old: ProgressPhoto[],
       deps: Awaited<ReturnType<typeof getDeps>>,
     ): Promise<void> {
-      await Promise.all(old.map(async (p) => {
-        try {
-          await deps.storage.set(photoDataKey(p.id), { base64: p.base64 });
-        } catch (err) {
-          console.warn('[mensurations] migration photo failed for', p.id, err);
-        }
-      }));
+      await Promise.all(
+        old.map(async (p) => {
+          try {
+            await deps.storage.set(photoDataKey(p.id), { base64: p.base64 });
+          } catch (err) {
+            console.warn('[mensurations] migration photo failed for', p.id, err);
+          }
+        }),
+      );
       // Mettre à jour PHOTOS_KEY sans les base64
       const meta: PhotoMeta[] = old.map(({ base64: _b, ...rest }) => rest);
       await deps.storage.set(PHOTOS_KEY, meta);
@@ -203,7 +223,7 @@ export function mensurations() {
       deps: Awaited<ReturnType<typeof getDeps>>,
     ): Promise<ProgressPhoto[]> {
       const dataArr = await Promise.all(
-        meta.map(m => deps.storage.get<{ base64: string }>(photoDataKey(m.id)))
+        meta.map((m) => deps.storage.get<{ base64: string }>(photoDataKey(m.id))),
       );
       return meta.map((m, i) => ({ ...m, base64: dataArr[i]?.base64 ?? '' }));
     },
@@ -221,7 +241,7 @@ export function mensurations() {
             const w = Math.round(img.width * scale);
             const h = Math.round(img.height * scale);
             const canvas = document.createElement('canvas');
-            canvas.width  = w;
+            canvas.width = w;
             canvas.height = h;
             const ctx = canvas.getContext('2d');
             if (!ctx) {
@@ -235,7 +255,7 @@ export function mensurations() {
             reject(err);
           }
         };
-        img.onerror = () => reject(new Error('Impossible de charger l\'image'));
+        img.onerror = () => reject(new Error("Impossible de charger l'image"));
         img.src = dataUrl;
       });
     },
@@ -254,10 +274,10 @@ export function mensurations() {
 
         if (Capacitor.isNativePlatform()) {
           const photo = await Camera.getPhoto({
-            quality:      85,
+            quality: 85,
             allowEditing: false,
-            resultType:   CameraResultType.Base64,
-            source:       CameraSource.Camera,
+            resultType: CameraResultType.Base64,
+            source: CameraSource.Camera,
             correctOrientation: true,
           });
           base64 = `data:image/jpeg;base64,${photo.base64String ?? ''}`;
@@ -293,24 +313,27 @@ export function mensurations() {
         // que validateStorageValue rejettera silencieusement côté IdbStorage.
         const finalBytes = estimateDataUrlBytes(compressed);
         if (finalBytes > MAX_PHOTO_BYTES) {
-          const mb    = (finalBytes / 1_048_576).toFixed(1);
+          const mb = (finalBytes / 1_048_576).toFixed(1);
           const maxMb = (MAX_PHOTO_BYTES / 1_048_576).toFixed(1);
-          window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'error',
-              message: `Photo trop volumineuse (${mb} Mo > ${maxMb} Mo max). `
-                + `Essaie une photo moins détaillée ou depuis l'appli Appareil photo.`,
-            },
-          }));
+          window.dispatchEvent(
+            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+              detail: {
+                kind: 'error',
+                message:
+                  `Photo trop volumineuse (${mb} Mo > ${maxMb} Mo max). ` +
+                  `Essaie une photo moins détaillée ou depuis l'appli Appareil photo.`,
+              },
+            }),
+          );
           return;
         }
 
         const today = new Date().toISOString().slice(0, 10);
         const entry: ProgressPhoto = {
-          id:      crypto.randomUUID(),
-          date:    today,
+          id: crypto.randomUUID(),
+          date: today,
           takenAt: new Date().toISOString(),
-          base64:  compressed,
+          base64: compressed,
         };
 
         const deps = await getDeps();
@@ -319,26 +342,28 @@ export function mensurations() {
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { base64: _b, ...meta } = entry;
-        const existingMeta: PhotoMeta[] = this.photos.map(
-          ({ base64: _b2, ...m }) => m
-        );
+        const existingMeta: PhotoMeta[] = this.photos.map(({ base64: _b2, ...m }) => m);
         await deps.storage.set(PHOTOS_KEY, [...existingMeta, meta]);
         this.photos = [...this.photos, entry];
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'success', message: 'Photo de progression ajoutée ✓' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'success', message: 'Photo de progression ajoutée ✓' },
+          }),
+        );
       } catch (err) {
         console.error('[mensurations] takePhoto failed:', err);
         const msg = err instanceof Error ? err.message : String(err);
         const isPermission = /permission|denied|not allowed/i.test(msg);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: {
-            kind: 'error',
-            message: isPermission
-              ? 'Accès à la caméra refusé. Autorise l\'accès dans les réglages.'
-              : 'Impossible de sauvegarder la photo. Réessaie.',
-          },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: {
+              kind: 'error',
+              message: isPermission
+                ? "Accès à la caméra refusé. Autorise l'accès dans les réglages."
+                : 'Impossible de sauvegarder la photo. Réessaie.',
+            },
+          }),
+        );
       } finally {
         this.takingPhoto = false;
       }
@@ -348,18 +373,23 @@ export function mensurations() {
     _pickPhotoWeb(): Promise<string> {
       return new Promise((resolve, reject) => {
         const input = document.createElement('input');
-        input.type  = 'file';
+        input.type = 'file';
         input.accept = 'image/*';
         input.capture = 'environment';
         input.onchange = async () => {
           const file = input.files?.[0];
-          if (!file) { resolve(''); return; }
+          if (!file) {
+            resolve('');
+            return;
+          }
           try {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result as string);
             reader.onerror = reject;
             reader.readAsDataURL(file);
-          } catch (e) { reject(e); }
+          } catch (e) {
+            reject(e);
+          }
         };
         input.oncancel = () => resolve('');
         input.click();
@@ -367,7 +397,7 @@ export function mensurations() {
     },
 
     async deletePhoto(id: string): Promise<void> {
-      const next = this.photos.filter(p => p.id !== id);
+      const next = this.photos.filter((p) => p.id !== id);
       try {
         const deps = await getDeps();
         // Supprimer aussi la clé de données séparée
@@ -378,29 +408,42 @@ export function mensurations() {
         if (this.selectedPhotoId === id) this.selectedPhotoId = null;
       } catch (err) {
         console.error('[mensurations] deletePhoto failed:', err);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: 'Échec suppression de la photo. Réessaie.' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Échec suppression de la photo. Réessaie.' },
+          }),
+        );
       }
     },
 
     formatPhotoDate(iso: string): string {
       try {
         return new Date(iso).toLocaleDateString('fr-FR', {
-          weekday: 'short', day: 'numeric', month: 'short', year: '2-digit',
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          year: '2-digit',
         });
-      } catch { return iso; }
+      } catch {
+        return iso;
+      }
     },
 
     async addEntry(): Promise<void> {
       if (!this.hasFormData) return;
 
       const fieldMap: Record<string, number | null> = {
-        neck: this.fNeck, shoulders: this.fShoulders,
-        chest: this.fChest, waist: this.fWaist, hips: this.fHips,
-        leftBicep: this.fLeftBicep, rightBicep: this.fRightBicep,
-        leftThigh: this.fLeftThigh, rightThigh: this.fRightThigh,
-        leftCalf:  this.fLeftCalf,  rightCalf:  this.fRightCalf,
+        neck: this.fNeck,
+        shoulders: this.fShoulders,
+        chest: this.fChest,
+        waist: this.fWaist,
+        hips: this.fHips,
+        leftBicep: this.fLeftBicep,
+        rightBicep: this.fRightBicep,
+        leftThigh: this.fLeftThigh,
+        rightThigh: this.fRightThigh,
+        leftCalf: this.fLeftCalf,
+        rightCalf: this.fRightCalf,
       };
 
       const today = new Date().toISOString().slice(0, 10);
@@ -410,45 +453,52 @@ export function mensurations() {
       }
       if (this.fNote.trim()) entry.note = this.fNote.trim();
 
-      const existing = this.entries.findIndex(e => e.date === today);
-      const next = existing >= 0
-        ? this.entries.map((e, i) => i === existing ? { ...e, ...entry, id: e.id } : e)
-        : [...this.entries, entry].sort((a, b) => a.date.localeCompare(b.date));
+      const existing = this.entries.findIndex((e) => e.date === today);
+      const next =
+        existing >= 0
+          ? this.entries.map((e, i) => (i === existing ? { ...e, ...entry, id: e.id } : e))
+          : [...this.entries, entry].sort((a, b) => a.date.localeCompare(b.date));
 
       try {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEY, next);
         this.entries = next;
         this._resetForm();
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'success', message: 'Mensurations enregistrées ✓' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'success', message: 'Mensurations enregistrées ✓' },
+          }),
+        );
       } catch (err) {
         console.error('[mensurations] addEntry failed:', err);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: 'Échec enregistrement. Réessaie.' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Échec enregistrement. Réessaie.' },
+          }),
+        );
       }
     },
 
     async removeEntry(id: string): Promise<void> {
-      const next = this.entries.filter(e => e.id !== id);
+      const next = this.entries.filter((e) => e.id !== id);
       try {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEY, next);
         this.entries = next;
       } catch (err) {
         console.error('[mensurations] removeEntry failed:', err);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: 'Échec suppression. Réessaie.' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Échec suppression. Réessaie.' },
+          }),
+        );
       }
     },
 
     _resetForm(): void {
       this.fNeck = this.fShoulders = this.fChest = this.fWaist = this.fHips = null;
       this.fLeftBicep = this.fRightBicep = this.fLeftThigh = this.fRightThigh = null;
-      this.fLeftCalf  = this.fRightCalf  = null;
+      this.fLeftCalf = this.fRightCalf = null;
       this.fNote = '';
     },
 
@@ -457,15 +507,23 @@ export function mensurations() {
     formatDate(iso: string): string {
       try {
         return new Date(iso).toLocaleDateString('fr-FR', {
-          day: '2-digit', month: 'short', year: '2-digit',
+          day: '2-digit',
+          month: 'short',
+          year: '2-digit',
         });
-      } catch { return iso; }
+      } catch {
+        return iso;
+      }
     },
 
     entrySummary(entry: MeasurementEntry): string {
       const abbrs: Array<[string, MetricKey]> = [
-        ['Poit', 'chest'], ['Taille', 'waist'], ['Hanch', 'hips'],
-        ['Épau', 'shoulders'], ['Bras G', 'leftBicep'], ['Bras D', 'rightBicep'],
+        ['Poit', 'chest'],
+        ['Taille', 'waist'],
+        ['Hanch', 'hips'],
+        ['Épau', 'shoulders'],
+        ['Bras G', 'leftBicep'],
+        ['Bras D', 'rightBicep'],
       ];
       const parts: string[] = [];
       for (const [abbr, k] of abbrs) {
@@ -473,9 +531,11 @@ export function mensurations() {
         if (v !== undefined) parts.push(`${abbr} ${v}`);
         if (parts.length >= 3) break;
       }
-      const extraCount = Object.keys(entry).filter(
-        k => k !== 'id' && k !== 'date' && k !== 'note' && val(entry, k as MetricKey) !== undefined
-      ).length - parts.length;
+      const extraCount =
+        Object.keys(entry).filter(
+          (k) =>
+            k !== 'id' && k !== 'date' && k !== 'note' && val(entry, k as MetricKey) !== undefined,
+        ).length - parts.length;
       if (extraCount > 0) parts.push(`+${extraCount} autres`);
       return parts.join(' · ') || entry.note || '';
     },
@@ -487,50 +547,61 @@ export function mensurations() {
       if (pts.length < 2) return '';
 
       const metricDef = this.activeMetricDef;
-      const W = 320, H = 140, padX = 12, padY = 22, labelH = 16;
-      const ys  = pts.map(p => p.y);
+      const W = 320,
+        H = 140,
+        padX = 12,
+        padY = 22,
+        labelH = 16;
+      const ys = pts.map((p) => p.y);
       const pad = Math.max(0.5, (Math.max(...ys) - Math.min(...ys)) * 0.05 + 0.5);
       const minY = Math.min(...ys) - pad;
       const maxY = Math.max(...ys) + pad;
       const minX = pts[0]!.x;
       const maxX = pts.at(-1)!.x;
-      const dx   = Math.max(1, maxX - minX);
-      const dy   = Math.max(0.1, maxY - minY);
+      const dx = Math.max(1, maxX - minX);
+      const dy = Math.max(0.1, maxY - minY);
       const chartH = H - labelH;
 
-      const sx = (d: number) => padX + (d - minX) / dx * (W - padX * 2);
-      const sy = (y: number) => chartH - padY - (y - minY) / dy * (chartH - padY * 2);
+      const sx = (d: number) => padX + ((d - minX) / dx) * (W - padX * 2);
+      const sy = (y: number) => chartH - padY - ((y - minY) / dy) * (chartH - padY * 2);
 
       const color = metricDef.color;
 
-      const linePath = pts.map((p, i) =>
-        `${i === 0 ? 'M' : 'L'} ${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`
-      ).join(' ');
+      const linePath = pts
+        .map((p, i) => `${i === 0 ? 'M' : 'L'} ${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`)
+        .join(' ');
 
-      const lastP   = pts.at(-1)!;
-      const areaPath = linePath
-        + ` L ${sx(lastP.x).toFixed(1)} ${chartH.toFixed(1)}`
-        + ` L ${padX} ${chartH.toFixed(1)} Z`;
+      const lastP = pts.at(-1)!;
+      const areaPath =
+        linePath +
+        ` L ${sx(lastP.x).toFixed(1)} ${chartH.toFixed(1)}` +
+        ` L ${padX} ${chartH.toFixed(1)} Z`;
 
-      const gridLines = [0, 0.25, 0.5, 0.75, 1].map(ratio => {
-        const y = padY + ratio * (chartH - padY * 2);
-        return `<line x1="${padX}" y1="${y.toFixed(1)}" x2="${W - padX}" y2="${y.toFixed(1)}"
+      const gridLines = [0, 0.25, 0.5, 0.75, 1]
+        .map((ratio) => {
+          const y = padY + ratio * (chartH - padY * 2);
+          return `<line x1="${padX}" y1="${y.toFixed(1)}" x2="${W - padX}" y2="${y.toFixed(1)}"
           stroke="#ffffff06" stroke-width="1"/>`;
-      }).join('');
+        })
+        .join('');
 
       // Data point dots (only for small datasets — avoids visual clutter)
-      const dots = pts.length <= 20
-        ? pts.map(p =>
-            `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="2"
-              fill="${color}" opacity="0.5"/>`
-          ).join('')
-        : '';
+      const dots =
+        pts.length <= 20
+          ? pts
+              .map(
+                (p) =>
+                  `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="2"
+              fill="${color}" opacity="0.5"/>`,
+              )
+              .join('')
+          : '';
 
       const lastCx = sx(lastP.x).toFixed(1);
       const lastCy = sy(lastP.y).toFixed(1);
 
-      const d0  = new Date(pts[0]!.x);
-      const dN  = new Date(lastP.x);
+      const d0 = new Date(pts[0]!.x);
+      const dN = new Date(lastP.x);
       const fmt = (d: Date) => d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe ${metricDef.label}">

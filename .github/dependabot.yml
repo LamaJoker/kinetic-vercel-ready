@@ -8,16 +8,16 @@ updates:
     open-pull-requests-limit: 5
     groups:
       capacitor:
-        patterns: ["@capacitor/*"]
+        patterns: ['@capacitor/*']
       supabase:
-        patterns: ["@supabase/*"]
+        patterns: ['@supabase/*']
       vite-build:
-        patterns: ["vite", "vite-*", "vitest", "@vitest/*"]
+        patterns: ['vite', 'vite-*', 'vitest', '@vitest/*']
       typescript:
-        patterns: ["typescript", "@typescript-eslint/*"]
+        patterns: ['typescript', '@typescript-eslint/*']
     ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: /

@@ -4,8 +4,8 @@
  * Store Alpine `notifications` — toasts.
  */
 interface NotificationPayload {
-  kind:      'success' | 'error' | 'warning' | 'info';
-  message:   string;
+  kind: 'success' | 'error' | 'warning' | 'info';
+  message: string;
   duration?: number;
 }
 
@@ -13,7 +13,7 @@ type Toast = NotificationPayload & { id: number; visible: boolean };
 
 export function notificationsStore() {
   return {
-    toasts:   [] as Toast[],
+    toasts: [] as Toast[],
     _counter: 0,
     // M3 FIX: handler stocké pour removeEventListener dans destroy()
     _notifyHandler: null as ((e: Event) => void) | null,
@@ -55,12 +55,16 @@ export function notificationsStore() {
     },
 
     kindClass(kind: string): string {
-      return ({
-        success: 'bg-kinetic-neon text-gray-950',
-        error:   'bg-kinetic-electric text-white',
-        warning: 'bg-kinetic-electric/80 text-white',
-        info:    'bg-kinetic-surface text-white ring-1 ring-white/10',
-      } as Record<string, string>)[kind] ?? 'bg-kinetic-surface text-white';
+      return (
+        (
+          {
+            success: 'bg-kinetic-neon text-gray-950',
+            error: 'bg-kinetic-electric text-white',
+            warning: 'bg-kinetic-electric/80 text-white',
+            info: 'bg-kinetic-surface text-white ring-1 ring-white/10',
+          } as Record<string, string>
+        )[kind] ?? 'bg-kinetic-surface text-white'
+      );
     },
   };
 }

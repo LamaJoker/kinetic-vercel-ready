@@ -5,7 +5,7 @@ import { DEFAULT_EXERCISES, DEFAULT_TEMPLATES } from './seed';
 
 const KEY_EXERCISES = STORAGE_KEYS.TRAINING_EXERCISES;
 const KEY_TEMPLATES = STORAGE_KEYS.TRAINING_TEMPLATES;
-const KEY_SESSIONS  = STORAGE_KEYS.TRAINING_SESSIONS;
+const KEY_SESSIONS = STORAGE_KEYS.TRAINING_SESSIONS;
 const EXERCISES_FETCH_TIMEOUT_MS = 8000;
 
 export async function loadExercises(storage: StoragePort): Promise<Exercise[]> {
@@ -61,7 +61,10 @@ export async function loadTemplates(storage: StoragePort): Promise<WorkoutTempla
   return [...DEFAULT_TEMPLATES];
 }
 
-export async function saveTemplates(storage: StoragePort, templates: WorkoutTemplate[]): Promise<void> {
+export async function saveTemplates(
+  storage: StoragePort,
+  templates: WorkoutTemplate[],
+): Promise<void> {
   // JSON round-trip = unwrap Alpine reactive proxies before structured-clone (IDB).
   // Without ça, Safari/Firefox lèvent DataCloneError sur les Proxy objects.
   await storage.set(KEY_TEMPLATES, JSON.parse(JSON.stringify(templates)));
@@ -72,7 +75,10 @@ export async function loadSessions(storage: StoragePort): Promise<WorkoutSession
   return Array.isArray(data) ? data : [];
 }
 
-export async function saveSessions(storage: StoragePort, sessions: WorkoutSession[]): Promise<void> {
+export async function saveSessions(
+  storage: StoragePort,
+  sessions: WorkoutSession[],
+): Promise<void> {
   // Idem saveTemplates : neutralise les proxies Alpine avant le structured-clone IDB.
   await storage.set(KEY_SESSIONS, JSON.parse(JSON.stringify(sessions)));
 }

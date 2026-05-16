@@ -1,5 +1,4 @@
 <div x-data="dashboard" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
-
   <!-- En-tête -->
   <div class="flex items-center justify-between mb-7">
     <div>
@@ -7,9 +6,21 @@
       <p class="text-sm text-gray-500" x-text="todayLabel"></p>
     </div>
     <a href="/profile" class="relative select-none">
-      <div class="w-11 h-11 rounded-full bg-gradient-to-br from-kinetic-electric to-orange-600 flex items-center justify-center text-white font-display font-black text-sm shadow-[0_0_22px_rgba(255,106,0,0.4)] ring-1 ring-white/10" x-text="$store.auth.initials"></div>
-      <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-kinetic-neon rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(168,255,0,0.6)]">
-        <svg viewBox="0 0 24 24" fill="currentColor" class="w-2.5 h-2.5 text-gray-950" aria-hidden="true"><path d="M13 2L4 14H10L11 22L20 10H14L13 2Z"/></svg>
+      <div
+        class="w-11 h-11 rounded-full bg-gradient-to-br from-kinetic-electric to-orange-600 flex items-center justify-center text-white font-display font-black text-sm shadow-[0_0_22px_rgba(255,106,0,0.4)] ring-1 ring-white/10"
+        x-text="$store.auth.initials"
+      ></div>
+      <div
+        class="absolute -bottom-1 -right-1 w-5 h-5 bg-kinetic-neon rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(168,255,0,0.6)]"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          class="w-2.5 h-2.5 text-gray-950"
+          aria-hidden="true"
+        >
+          <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z" />
+        </svg>
       </div>
     </a>
   </div>
@@ -18,47 +29,103 @@
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-3 ring-1 ring-white/5">
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2">
-        <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Niveau</span>
-        <span class="font-display font-black text-kinetic-neon text-xl leading-none"
-              x-text="$store.xp.currentLevel"></span>
+        <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
+          >Niveau</span
+        >
+        <span
+          class="font-display font-black text-kinetic-neon text-xl leading-none"
+          x-text="$store.xp.currentLevel"
+        ></span>
         <span class="text-xs text-gray-400 font-medium" x-text="$store.xp.title"></span>
       </div>
-      <span class="text-sm font-mono font-bold text-white"
-            x-text="$store.xp.xp + ' XP'"></span>
+      <span class="text-sm font-mono font-bold text-white" x-text="$store.xp.xp + ' XP'"></span>
     </div>
     <div class="h-2 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
-      <div class="h-full bg-gradient-to-r from-kinetic-neon to-lime-300
-                  rounded-full transition-all duration-700 ease-out
-                  shadow-[0_0_14px_rgba(168,255,0,0.7)]"
-           :style="`width: ${$store.xp.progressPercent}%`"></div>
+      <div
+        class="h-full bg-gradient-to-r from-kinetic-neon to-lime-300 rounded-full transition-all duration-700 ease-out shadow-[0_0_14px_rgba(168,255,0,0.7)]"
+        :style="`width: ${$store.xp.progressPercent}%`"
+      ></div>
     </div>
     <div class="flex justify-between mt-2">
-      <p class="text-[10px] uppercase tracking-wider text-gray-600 font-semibold"
-         x-text="`LV.${$store.xp.currentLevel}`"></p>
-      <p class="text-xs text-gray-500"
-         x-show="!$store.xp.isMaxLevel"
-         x-text="`${$store.xp.remaining} XP → LV.${$store.xp.currentLevel + 1}`"></p>
-      <p class="text-xs text-kinetic-electric font-medium"
-         x-show="$store.xp.isMaxLevel">🏆 MAX</p>
+      <p
+        class="text-[10px] uppercase tracking-wider text-gray-600 font-semibold"
+        x-text="`LV.${$store.xp.currentLevel}`"
+      ></p>
+      <p
+        class="text-xs text-gray-500"
+        x-show="!$store.xp.isMaxLevel"
+        x-text="`${$store.xp.remaining} XP → LV.${$store.xp.currentLevel + 1}`"
+      ></p>
+      <p class="text-xs text-kinetic-electric font-medium" x-show="$store.xp.isMaxLevel">🏆 MAX</p>
     </div>
   </div>
 
   <!-- Quick actions -->
   <div class="grid grid-cols-4 gap-2 mb-3">
-    <a href="/seances" class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-electric/40 transition-all group">
-      <svg class="w-5 h-5 text-kinetic-electric" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h2m8 0h2M5 9v6a2 2 0 002 2h1v2h2v-2h4v2h2v-2h1a2 2 0 002-2V9M8 7V5a1 1 0 011-1h6a1 1 0 011 1v2"/></svg>
+    <a
+      href="/seances"
+      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-electric/40 transition-all group"
+    >
+      <svg
+        class="w-5 h-5 text-kinetic-electric"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M6 7h2m8 0h2M5 9v6a2 2 0 002 2h1v2h2v-2h4v2h2v-2h1a2 2 0 002-2V9M8 7V5a1 1 0 011-1h6a1 1 0 011 1v2"
+        />
+      </svg>
       <span class="text-[10px] text-gray-400 font-semibold">Séances</span>
     </a>
-    <a href="/progression" class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-electric/40 transition-all group">
-      <svg class="w-5 h-5 text-kinetic-electric" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 17l6-6 4 4 8-8M14 7h7v7"/></svg>
+    <a
+      href="/progression"
+      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-electric/40 transition-all group"
+    >
+      <svg
+        class="w-5 h-5 text-kinetic-electric"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M3 17l6-6 4 4 8-8M14 7h7v7"
+        />
+      </svg>
       <span class="text-[10px] text-gray-400 font-semibold">Progrès</span>
     </a>
-    <a href="/nutrition" class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-neon/40 transition-all group">
-      <svg class="w-5 h-5 text-kinetic-neon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
+    <a
+      href="/nutrition"
+      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-neon/40 transition-all group"
+    >
+      <svg class="w-5 h-5 text-kinetic-neon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+        />
+      </svg>
       <span class="text-[10px] text-gray-400 font-semibold">Nutrition</span>
     </a>
-    <a href="/bodyweight" class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-white/20 transition-all group">
-      <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+    <a
+      href="/bodyweight"
+      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-white/20 transition-all group"
+    >
+      <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+        />
+      </svg>
       <span class="text-[10px] text-gray-400 font-semibold">Poids</span>
     </a>
   </div>
@@ -67,61 +134,112 @@
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-3 ring-1 ring-white/5">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-display font-bold text-white tracking-tight">Routine vitalité</h2>
-      <span class="text-xs bg-kinetic-neon/10 text-kinetic-neon px-2.5 py-0.5 rounded-full font-semibold ring-1 ring-kinetic-neon/20"
-            x-text="`${$store.vitalite.doneCount}/${$store.vitalite.totalCount}`"></span>
+      <span
+        class="text-xs bg-kinetic-neon/10 text-kinetic-neon px-2.5 py-0.5 rounded-full font-semibold ring-1 ring-kinetic-neon/20"
+        x-text="`${$store.vitalite.doneCount}/${$store.vitalite.totalCount}`"
+      ></span>
     </div>
     <div class="h-1.5 bg-black/40 rounded-full overflow-hidden mb-3 ring-1 ring-white/5">
-      <div class="h-full bg-gradient-to-r from-kinetic-neon to-lime-300 rounded-full transition-all duration-500
-                  shadow-[0_0_10px_rgba(168,255,0,0.5)]"
-           :style="`width: ${$store.vitalite.progress}%`"></div>
+      <div
+        class="h-full bg-gradient-to-r from-kinetic-neon to-lime-300 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(168,255,0,0.5)]"
+        :style="`width: ${$store.vitalite.progress}%`"
+      ></div>
     </div>
 
-    <div x-show="$store.vitalite.allDone"
-         x-transition
-         class="text-center py-2 text-kinetic-neon font-medium text-sm">
+    <div
+      x-show="$store.vitalite.allDone"
+      x-transition
+      class="text-center py-2 text-kinetic-neon font-medium text-sm"
+    >
       ✅ Routine complète — excellent travail !
     </div>
 
-    <a href="/vitalite"
-       x-show="!$store.vitalite.allDone"
-       class="block text-center py-2 text-sm text-kinetic-neon hover:brightness-110
-              transition-all font-semibold">
+    <a
+      href="/vitalite"
+      x-show="!$store.vitalite.allDone"
+      class="block text-center py-2 text-sm text-kinetic-neon hover:brightness-110 transition-all font-semibold"
+    >
       Continuer la routine →
     </a>
   </div>
 
   <!-- Stats rapides -->
   <div class="grid grid-cols-2 gap-3 mb-3">
-    <div class="relative overflow-hidden rounded-2xl p-4
-                bg-gradient-to-br from-kinetic-electric to-orange-600
-                ring-1 ring-kinetic-electric/20
-                shadow-[0_0_30px_rgba(255,106,0,0.25)]">
-      <div class="absolute -top-6 -right-6 w-24 h-24 bg-kinetic-electric/20 rounded-full blur-2xl"></div>
-      <p class="relative text-white/80 text-[10px] uppercase tracking-widest font-semibold mb-1">Streak</p>
+    <div
+      class="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-kinetic-electric to-orange-600 ring-1 ring-kinetic-electric/20 shadow-[0_0_30px_rgba(255,106,0,0.25)]"
+    >
+      <div
+        class="absolute -top-6 -right-6 w-24 h-24 bg-kinetic-electric/20 rounded-full blur-2xl"
+      ></div>
+      <p class="relative text-white/80 text-[10px] uppercase tracking-widest font-semibold mb-1">
+        Streak
+      </p>
       <p class="relative text-4xl font-display font-black text-white" x-text="streak + ' 🔥'"></p>
     </div>
     <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
       <p class="text-gray-500 text-[10px] uppercase tracking-widest font-semibold mb-1">Record</p>
-      <p class="text-4xl font-display font-black text-kinetic-electric" x-text="bestStreak + ' ⭐'"></p>
+      <p
+        class="text-4xl font-display font-black text-kinetic-electric"
+        x-text="bestStreak + ' ⭐'"
+      ></p>
     </div>
   </div>
 
   <!-- Objectifs semaine -->
-  <div x-show="!$store.goals.loading"
-       x-data="{ editing: false }"
-       class="bg-kinetic-surface rounded-2xl p-4 mb-3 ring-1 ring-white/5">
+  <div
+    x-show="!$store.goals.loading"
+    x-data="{ editing: false }"
+    class="bg-kinetic-surface rounded-2xl p-4 mb-3 ring-1 ring-white/5"
+  >
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-display font-bold text-white tracking-tight text-sm">Objectifs semaine</h2>
       <div class="flex items-center gap-2">
-        <span x-show="$store.goals.allOk && !editing"
-              class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-kinetic-neon/15 text-kinetic-neon ring-1 ring-kinetic-neon/30">
+        <span
+          x-show="$store.goals.allOk && !editing"
+          class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-kinetic-neon/15 text-kinetic-neon ring-1 ring-kinetic-neon/30"
+        >
           ✓ Atteints
         </span>
-        <button type="button" @click="editing = !editing"
-                class="text-gray-500 hover:text-white p-1 rounded-md hover:bg-kinetic-ink transition-colors"
-                :aria-label="editing ? 'Fermer' : 'Régler les objectifs'">
-          <svg x-show="!editing" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <svg x-show="editing" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <button
+          type="button"
+          @click="editing = !editing"
+          class="text-gray-500 hover:text-white p-1 rounded-md hover:bg-kinetic-ink transition-colors"
+          :aria-label="editing ? 'Fermer' : 'Régler les objectifs'"
+        >
+          <svg
+            x-show="!editing"
+            class="w-3.5 h-3.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+            />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+          <svg
+            x-show="editing"
+            class="w-3.5 h-3.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
         </button>
       </div>
     </div>
@@ -129,51 +247,72 @@
     <!-- Edit form -->
     <div x-show="editing" x-transition class="grid grid-cols-2 gap-2 mb-3">
       <div>
-        <label class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold block mb-1">Séances</label>
-        <input type="number" min="1" max="14" step="1"
-               x-model.number="$store.goals.targetSessions"
-               @change="$store.goals.save(); $store.goals.reload()"
-               class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-electric rounded-lg px-2.5 py-1.5 text-sm text-white outline-none"/>
+        <label class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold block mb-1"
+          >Séances</label
+        >
+        <input
+          type="number"
+          min="1"
+          max="14"
+          step="1"
+          x-model.number="$store.goals.targetSessions"
+          @change="$store.goals.save(); $store.goals.reload()"
+          class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-electric rounded-lg px-2.5 py-1.5 text-sm text-white outline-none"
+        />
       </div>
       <div>
-        <label class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold block mb-1">Tonnage (kg)</label>
-        <input type="number" min="0" step="100"
-               x-model.number="$store.goals.targetTonnageKg"
-               @change="$store.goals.save(); $store.goals.reload()"
-               placeholder="0 = aucun"
-               class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-electric rounded-lg px-2.5 py-1.5 text-sm text-white outline-none"/>
+        <label class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold block mb-1"
+          >Tonnage (kg)</label
+        >
+        <input
+          type="number"
+          min="0"
+          step="100"
+          x-model.number="$store.goals.targetTonnageKg"
+          @change="$store.goals.save(); $store.goals.reload()"
+          placeholder="0 = aucun"
+          class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-electric rounded-lg px-2.5 py-1.5 text-sm text-white outline-none"
+        />
       </div>
     </div>
     <!-- Séances -->
     <div class="mb-3">
       <div class="flex justify-between mb-1">
         <span class="text-xs text-gray-400">Séances</span>
-        <span class="text-xs font-bold"
-              :class="$store.goals.sessionsOk ? 'text-kinetic-neon' : 'text-gray-300'"
-              x-text="$store.goals.doneSessions + ' / ' + $store.goals.targetSessions"></span>
+        <span
+          class="text-xs font-bold"
+          :class="$store.goals.sessionsOk ? 'text-kinetic-neon' : 'text-gray-300'"
+          x-text="$store.goals.doneSessions + ' / ' + $store.goals.targetSessions"
+        ></span>
       </div>
       <div class="h-1.5 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
-        <div class="h-full rounded-full transition-all duration-700"
-             :class="$store.goals.sessionsOk
+        <div
+          class="h-full rounded-full transition-all duration-700"
+          :class="$store.goals.sessionsOk
                ? 'bg-kinetic-neon shadow-[0_0_10px_rgba(168,255,0,0.5)]'
                : 'bg-kinetic-electric/70'"
-             :style="`width: ${$store.goals.sessionsPercent}%`"></div>
+          :style="`width: ${$store.goals.sessionsPercent}%`"
+        ></div>
       </div>
     </div>
     <!-- Tonnage si objectif défini -->
     <div x-show="$store.goals.targetTonnageKg > 0">
       <div class="flex justify-between mb-1">
         <span class="text-xs text-gray-400">Tonnage</span>
-        <span class="text-xs font-bold"
-              :class="$store.goals.tonnageOk ? 'text-kinetic-neon' : 'text-gray-300'"
-              x-text="$store.goals.doneTonnageKg + ' / ' + $store.goals.targetTonnageKg + ' kg'"></span>
+        <span
+          class="text-xs font-bold"
+          :class="$store.goals.tonnageOk ? 'text-kinetic-neon' : 'text-gray-300'"
+          x-text="$store.goals.doneTonnageKg + ' / ' + $store.goals.targetTonnageKg + ' kg'"
+        ></span>
       </div>
       <div class="h-1.5 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
-        <div class="h-full rounded-full transition-all duration-700"
-             :class="$store.goals.tonnageOk
+        <div
+          class="h-full rounded-full transition-all duration-700"
+          :class="$store.goals.tonnageOk
                ? 'bg-kinetic-neon shadow-[0_0_10px_rgba(168,255,0,0.5)]'
                : 'bg-kinetic-electric/70'"
-             :style="`width: ${$store.goals.tonnagePercent}%`"></div>
+          :style="`width: ${$store.goals.tonnagePercent}%`"
+        ></div>
       </div>
     </div>
   </div>
@@ -186,37 +325,48 @@
     <div class="flex gap-1.5">
       <template x-for="(day, i) in activityDays" :key="i">
         <div class="flex-1 flex flex-col items-center gap-1.5">
-          <div class="w-full h-7 rounded-md transition-all"
-               :class="day.active
+          <div
+            class="w-full h-7 rounded-md transition-all"
+            :class="day.active
                  ? 'bg-gradient-to-b from-kinetic-neon to-lime-400 shadow-[0_0_10px_rgba(168,255,0,0.55)]'
                  : 'bg-white/5 ring-1 ring-white/5'"
-               :title="day.label"></div>
-          <span class="text-[10px] uppercase tracking-wider text-gray-600 font-semibold" x-text="day.short"></span>
+            :title="day.label"
+          ></div>
+          <span
+            class="text-[10px] uppercase tracking-wider text-gray-600 font-semibold"
+            x-text="day.short"
+          ></span>
         </div>
       </template>
     </div>
   </div>
-
 </div>
 
 <!-- Level-up overlay -->
-<div x-data="{ show: false, level: 0, title: '' }"
-     @kinetic:levelup.window="level = $event.detail.level; title = $event.detail.title; show = true; setTimeout(() => show = false, 4500)"
-     x-show="show"
-     x-transition:enter="transition ease-out duration-300"
-     x-transition:enter-start="opacity-0 scale-90"
-     x-transition:enter-end="opacity-100 scale-100"
-     x-transition:leave="transition ease-in duration-200"
-     x-transition:leave-start="opacity-100 scale-100"
-     x-transition:leave-end="opacity-0 scale-90"
-     class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4">
-  <div class="bg-gradient-to-br from-kinetic-neon to-lime-400 text-gray-950
-              rounded-3xl p-8 text-center shadow-2xl shadow-kinetic-neon/40 max-w-xs w-full">
+<div
+  x-data="{ show: false, level: 0, title: '' }"
+  @kinetic:levelup.window="level = $event.detail.level; title = $event.detail.title; show = true; setTimeout(() => show = false, 4500)"
+  x-show="show"
+  x-transition:enter="transition ease-out duration-300"
+  x-transition:enter-start="opacity-0 scale-90"
+  x-transition:enter-end="opacity-100 scale-100"
+  x-transition:leave="transition ease-in duration-200"
+  x-transition:leave-start="opacity-100 scale-100"
+  x-transition:leave-end="opacity-0 scale-90"
+  class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4"
+>
+  <div
+    class="bg-gradient-to-br from-kinetic-neon to-lime-400 text-gray-950 rounded-3xl p-8 text-center shadow-2xl shadow-kinetic-neon/40 max-w-xs w-full"
+  >
     <p class="text-5xl mb-3">🎉</p>
-    <p class="text-2xl font-display font-black tracking-tight">Niveau <span x-text="level"></span> !</p>
+    <p class="text-2xl font-display font-black tracking-tight">
+      Niveau <span x-text="level"></span> !
+    </p>
     <template x-if="title">
       <div class="mt-4 bg-gray-950/10 rounded-2xl px-4 py-3">
-        <p class="text-xs uppercase tracking-widest font-bold text-gray-900/60 mb-1">Récompense débloquée</p>
+        <p class="text-xs uppercase tracking-widest font-bold text-gray-900/60 mb-1">
+          Récompense débloquée
+        </p>
         <p class="text-base font-display font-black text-gray-950" x-text="title"></p>
       </div>
     </template>
@@ -224,25 +374,38 @@
 </div>
 
 <!-- Rewards modal (level-up detail) -->
-<div x-show="$store.rewards.showRewardModal"
-     @click.self="$store.rewards.dismissModal()"
-     x-transition:enter="transition ease-out duration-200"
-     x-transition:enter-start="opacity-0"
-     x-transition:enter-end="opacity-100"
-     class="fixed inset-0 z-[60] flex items-end justify-center px-4 pb-4">
+<div
+  x-show="$store.rewards.showRewardModal"
+  @click.self="$store.rewards.dismissModal()"
+  x-transition:enter="transition ease-out duration-200"
+  x-transition:enter-start="opacity-0"
+  x-transition:enter-end="opacity-100"
+  class="fixed inset-0 z-[60] flex items-end justify-center px-4 pb-4"
+>
   <div class="absolute inset-0 bg-black/70"></div>
-  <div class="relative bg-kinetic-surface ring-1 ring-white/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl">
+  <div
+    class="relative bg-kinetic-surface ring-1 ring-white/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl"
+  >
     <div class="flex items-start gap-4 mb-5">
       <div class="text-5xl leading-none" x-text="$store.rewards.pendingReward?.emoji ?? '🎁'"></div>
       <div>
-        <p class="text-xs uppercase tracking-widest text-kinetic-neon font-bold mb-0.5">Niveau <span x-text="$store.rewards.pendingLevel"></span> débloqué !</p>
-        <h3 class="font-display font-black text-xl text-white" x-text="$store.rewards.pendingReward?.title"></h3>
-        <p class="text-sm text-gray-400 mt-1" x-text="$store.rewards.pendingReward?.description"></p>
+        <p class="text-xs uppercase tracking-widest text-kinetic-neon font-bold mb-0.5">
+          Niveau <span x-text="$store.rewards.pendingLevel"></span> débloqué !
+        </p>
+        <h3
+          class="font-display font-black text-xl text-white"
+          x-text="$store.rewards.pendingReward?.title"
+        ></h3>
+        <p
+          class="text-sm text-gray-400 mt-1"
+          x-text="$store.rewards.pendingReward?.description"
+        ></p>
       </div>
     </div>
-    <button @click="$store.rewards.dismissModal()"
-            class="w-full py-3 bg-kinetic-neon text-gray-950 rounded-2xl text-sm font-bold
-                   hover:brightness-105 transition-all">
+    <button
+      @click="$store.rewards.dismissModal()"
+      class="w-full py-3 bg-kinetic-neon text-gray-950 rounded-2xl text-sm font-bold hover:brightness-105 transition-all"
+    >
       Super, merci ! ⚡
     </button>
   </div>

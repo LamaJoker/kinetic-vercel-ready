@@ -15,11 +15,7 @@ import {
   resolveConflict,
   STORAGE_KEYS,
 } from '@kinetic/core';
-import type {
-  VectorClock,
-  ClockComparison,
-  CRDTValue,
-} from '@kinetic/core';
+import type { VectorClock, ClockComparison, CRDTValue } from '@kinetic/core';
 
 export { createClock, incrementClock, mergeClock, compareClocks, resolveConflict };
 export type { ClockComparison };

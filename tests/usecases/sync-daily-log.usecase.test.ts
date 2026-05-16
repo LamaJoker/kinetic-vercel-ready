@@ -20,17 +20,17 @@ class SpyDailyLogSync implements DailyLogSyncPort {
 
 describe('syncDailyLog use-case', () => {
   let deps: TestDeps;
-  let spy:  SpyDailyLogSync;
+  let spy: SpyDailyLogSync;
 
   beforeEach(() => {
     deps = makeTestDeps();
-    spy  = new SpyDailyLogSync();
+    spy = new SpyDailyLogSync();
   });
 
   it("retourne no_activity si rien n'a été fait aujourd'hui", async () => {
     const result = await syncDailyLog({
-      storage:      deps.storage,
-      clock:        deps.clock,
+      storage: deps.storage,
+      clock: deps.clock,
       dailyLogSync: spy,
     });
 
@@ -44,34 +44,34 @@ describe('syncDailyLog use-case', () => {
     await deps.storage.set('kinetic:xp', { xp: 150 });
     // XP gagné aujourd'hui uniquement = 30
     await deps.storage.set(`kinetic:xp:earned:${today}`, { xp: 30 });
-    await deps.storage.set('kinetic:streak',  { count: 3, best: 5, lastActiveDate: today });
+    await deps.storage.set('kinetic:streak', { count: 3, best: 5, lastActiveDate: today });
     await deps.storage.set(`kinetic:vitalite:done:${today}`, ['t1', 't2']);
 
     const result = await syncDailyLog({
-      storage:      deps.storage,
-      clock:        deps.clock,
+      storage: deps.storage,
+      clock: deps.clock,
       dailyLogSync: spy,
     });
 
     expect(result).toEqual({ ok: true, synced: true, date: today });
     expect(spy.calls).toHaveLength(1);
     expect(spy.calls[0]).toEqual({
-      date:      today,
-      xpEarned:  30,    // ← XP DU JOUR, pas le 150 cumulé
+      date: today,
+      xpEarned: 30, // ← XP DU JOUR, pas le 150 cumulé
       tasksDone: 2,
       streakDay: 3,
     });
   });
 
-  it('xpEarned=0 si aucun XP n\'a été gagné aujourd\'hui (même si cumul > 0)', async () => {
+  it("xpEarned=0 si aucun XP n'a été gagné aujourd'hui (même si cumul > 0)", async () => {
     const today = deps.clock.todayIsoDate();
     await deps.storage.set('kinetic:xp', { xp: 500 }); // cumul énorme
     // pas de kinetic:xp:earned:{today}
     await deps.storage.set(`kinetic:vitalite:done:${today}`, ['t1']); // au moins une tâche
 
     const result = await syncDailyLog({
-      storage:      deps.storage,
-      clock:        deps.clock,
+      storage: deps.storage,
+      clock: deps.clock,
       dailyLogSync: spy,
     });
 
@@ -79,15 +79,15 @@ describe('syncDailyLog use-case', () => {
     expect(spy.calls[0]?.xpEarned).toBe(0);
   });
 
-  it("retourne ok:false sans jeter si le backend plante", async () => {
+  it('retourne ok:false sans jeter si le backend plante', async () => {
     const today = deps.clock.todayIsoDate();
     await deps.storage.set(`kinetic:xp:earned:${today}`, { xp: 50 });
     await deps.storage.set(`kinetic:vitalite:done:${today}`, ['t1']);
     spy.shouldThrow = true;
 
     const result = await syncDailyLog({
-      storage:      deps.storage,
-      clock:        deps.clock,
+      storage: deps.storage,
+      clock: deps.clock,
       dailyLogSync: spy,
     });
 
@@ -101,8 +101,8 @@ describe('syncDailyLog use-case', () => {
     await deps.storage.set(`kinetic:vitalite:done:${today}`, ['t']);
 
     const result = await syncDailyLog({
-      storage:      deps.storage,
-      clock:        deps.clock,
+      storage: deps.storage,
+      clock: deps.clock,
       dailyLogSync: spy,
     });
 

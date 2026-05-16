@@ -16,7 +16,6 @@ import {
 } from '../../apps/web/src/lib/security.js';
 
 describe('Security Module', () => {
-
   describe('sanitizeUserInput', () => {
     it('passe les chaînes normales sans modification', () => {
       expect(sanitizeUserInput('Hello world')).toBe('Hello world');
@@ -41,7 +40,7 @@ describe('Security Module', () => {
       expect(sanitizeUserInput('a & b')).toBe('a &amp; b');
     });
 
-    it('conserve le texte javascript: sans le modifier (ce n\'est pas du HTML)', () => {
+    it("conserve le texte javascript: sans le modifier (ce n'est pas du HTML)", () => {
       // La nouvelle implémentation encode les chars dangereux <> " ' &
       // mais ne supprime pas les protocoles — c'est safe car on encode toujours
       const result = sanitizeUserInput('javascript:alert(1)');
@@ -77,7 +76,7 @@ describe('Security Module', () => {
       expect(sanitizeEmail('test+tag@sub.domain.co')).toBe('test+tag@sub.domain.co');
     });
 
-    it('supprime les tentatives d\'injection', () => {
+    it("supprime les tentatives d'injection", () => {
       const injected = sanitizeEmail('evil@test.com;DROP TABLE users;');
       expect(injected).not.toContain(';');
     });

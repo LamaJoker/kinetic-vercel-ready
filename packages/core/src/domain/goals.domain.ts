@@ -9,27 +9,27 @@
  */
 
 export interface WeeklyGoalTargets {
-  targetSessions:  number;
+  targetSessions: number;
   targetTonnageKg: number;
 }
 
 export interface SessionLike {
   startedAt: string;
-  endedAt?:  string;
+  endedAt?: string;
   entries: ReadonlyArray<{
     sets: ReadonlyArray<{ reps: number; weightKg: number }>;
   }>;
 }
 
 export interface WeeklyGoalsState {
-  weekKey:         string;       // ISO date du lundi de la semaine (fuseau local)
-  doneSessions:    number;
-  doneTonnageKg:   number;
-  sessionsPercent: number;       // 0..100
-  tonnagePercent:  number;       // 0..100 (100 si target=0)
-  sessionsOk:      boolean;
-  tonnageOk:       boolean;
-  allOk:           boolean;
+  weekKey: string; // ISO date du lundi de la semaine (fuseau local)
+  doneSessions: number;
+  doneTonnageKg: number;
+  sessionsPercent: number; // 0..100
+  tonnagePercent: number; // 0..100 (100 si target=0)
+  sessionsOk: boolean;
+  tonnageOk: boolean;
+  allOk: boolean;
 }
 
 /**
@@ -41,9 +41,9 @@ export interface WeeklyGoalsState {
  * rester cohérent avec cette convention.
  */
 function localIsoDate(date: Date): string {
-  const year  = date.getFullYear();
+  const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day   = String(date.getDate()).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -76,32 +76,40 @@ export function weekKey(now: Date = new Date()): string {
 /** État courant des objectifs hebdo, dérivé des sessions terminées. */
 export function evaluateWeeklyGoals(
   sessions: readonly SessionLike[],
-  targets:  WeeklyGoalTargets,
-  now:      Date = new Date(),
+  targets: WeeklyGoalTargets,
+  now: Date = new Date(),
 ): WeeklyGoalsState {
   // startOfWeek retourne un Date en fuseau local, .getTime() est donc correct
   // pour comparer avec Date.parse(session.startedAt) qui est aussi en ms UTC.
   const weekStartMs = startOfWeek(now).getTime();
-  const weekSessions = sessions.filter(s =>
-    Boolean(s.endedAt) && Date.parse(s.startedAt) >= weekStartMs
+  const weekSessions = sessions.filter(
+    (s) => Boolean(s.endedAt) && Date.parse(s.startedAt) >= weekStartMs,
   );
 
   const doneSessions = weekSessions.length;
   const doneTonnageKg = Math.round(
-    weekSessions.reduce((acc, s) =>
-      acc + s.entries.reduce((a2, e) =>
-        a2 + e.sets.reduce((a3, set) => a3 + set.reps * set.weightKg, 0), 0), 0)
+    weekSessions.reduce(
+      (acc, s) =>
+        acc +
+        s.entries.reduce(
+          (a2, e) => a2 + e.sets.reduce((a3, set) => a3 + set.reps * set.weightKg, 0),
+          0,
+        ),
+      0,
+    ),
   );
 
-  const sessionsPercent = targets.targetSessions <= 0
-    ? 100
-    : Math.min(100, Math.round((doneSessions / targets.targetSessions) * 100));
-  const tonnagePercent  = targets.targetTonnageKg <= 0
-    ? 100
-    : Math.min(100, Math.round((doneTonnageKg / targets.targetTonnageKg) * 100));
+  const sessionsPercent =
+    targets.targetSessions <= 0
+      ? 100
+      : Math.min(100, Math.round((doneSessions / targets.targetSessions) * 100));
+  const tonnagePercent =
+    targets.targetTonnageKg <= 0
+      ? 100
+      : Math.min(100, Math.round((doneTonnageKg / targets.targetTonnageKg) * 100));
 
-  const sessionsOk = targets.targetSessions  <= 0 || doneSessions  >= targets.targetSessions;
-  const tonnageOk  = targets.targetTonnageKg <= 0 || doneTonnageKg >= targets.targetTonnageKg;
+  const sessionsOk = targets.targetSessions <= 0 || doneSessions >= targets.targetSessions;
+  const tonnageOk = targets.targetTonnageKg <= 0 || doneTonnageKg >= targets.targetTonnageKg;
 
   const hasActiveTarget = targets.targetSessions > 0 || targets.targetTonnageKg > 0;
 

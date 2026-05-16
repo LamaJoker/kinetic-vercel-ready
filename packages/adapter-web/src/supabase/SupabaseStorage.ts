@@ -21,16 +21,14 @@ export class SupabaseStorage implements StoragePort {
   }
 
   async set<T>(key: StorageKey, value: T): Promise<void> {
-    const { error } = await this.client
-      .from('user_storage')
-      .upsert(
-        {
-          user_id: this.userId,
-          key,
-          value: value as Json,
-        },
-        { onConflict: 'user_id,key' },
-      );
+    const { error } = await this.client.from('user_storage').upsert(
+      {
+        user_id: this.userId,
+        key,
+        value: value as Json,
+      },
+      { onConflict: 'user_id,key' },
+    );
 
     if (error) {
       console.error('[SupabaseStorage] set failed:', error.message);
@@ -86,10 +84,7 @@ export class SupabaseStorage implements StoragePort {
   }
 
   async clear(): Promise<void> {
-    const { error } = await this.client
-      .from('user_storage')
-      .delete()
-      .eq('user_id', this.userId);
+    const { error } = await this.client.from('user_storage').delete().eq('user_id', this.userId);
 
     if (error) {
       console.error('[SupabaseStorage] clear failed:', error.message);

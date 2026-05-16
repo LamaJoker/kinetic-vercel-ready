@@ -9,8 +9,8 @@
 export type NotificationKind = 'success' | 'error' | 'warning' | 'info';
 
 export interface NotificationPayload {
-  kind:      NotificationKind;
-  message:   string;
+  kind: NotificationKind;
+  message: string;
   duration?: number; // ms, défaut 3500
 }
 

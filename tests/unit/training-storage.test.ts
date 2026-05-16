@@ -23,7 +23,9 @@ describe('loadExercises', () => {
   });
 
   it('returns stored exercises when already populated', async () => {
-    const exercises = [{ id: 'test', name: 'Test', muscles: [], equipment: 'barbell' as const, incrementKg: 2.5 }];
+    const exercises = [
+      { id: 'test', name: 'Test', muscles: [], equipment: 'barbell' as const, incrementKg: 2.5 },
+    ];
     await storage.set('kinetic:training:exercises', exercises);
     const result = await loadExercises(storage);
     expect(result).toEqual(exercises);
@@ -36,11 +38,16 @@ describe('loadExercises', () => {
   });
 
   it('saves fetched exercises from /exercises.v1.json', async () => {
-    const remoteExercises = [{ id: 'remote', name: 'Remote Ex', muscles: ['back'], equipment: 'cable', incrementKg: 2.5 }];
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => remoteExercises,
-    }));
+    const remoteExercises = [
+      { id: 'remote', name: 'Remote Ex', muscles: ['back'], equipment: 'cable', incrementKg: 2.5 },
+    ];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => remoteExercises,
+      }),
+    );
     const result = await loadExercises(storage);
     expect(result[0]!.id).toBe('remote');
     // Should be persisted
@@ -49,10 +56,13 @@ describe('loadExercises', () => {
   });
 
   it('falls back to defaults if fetch returns empty array', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => [],
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      }),
+    );
     const result = await loadExercises(storage);
     expect(result.length).toBe(DEFAULT_EXERCISES.length);
   });
@@ -61,7 +71,15 @@ describe('loadExercises', () => {
 describe('saveExercises', () => {
   it('persists exercises to storage', async () => {
     const storage = new InMemoryStorage();
-    const ex = [{ id: 'sq', name: 'Squat', muscles: ['quads'], equipment: 'barbell' as const, incrementKg: 2.5 }];
+    const ex = [
+      {
+        id: 'sq',
+        name: 'Squat',
+        muscles: ['quads'],
+        equipment: 'barbell' as const,
+        incrementKg: 2.5,
+      },
+    ];
     await saveExercises(storage, ex);
     const result = await storage.get('kinetic:training:exercises');
     expect(result).toEqual(ex);

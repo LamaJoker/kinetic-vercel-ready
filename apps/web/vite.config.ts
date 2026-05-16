@@ -29,26 +29,43 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      '@kinetic/core':         resolve(__dirname, '../../packages/core/src/index.ts'),
+      '@kinetic/core': resolve(__dirname, '../../packages/core/src/index.ts'),
       '@kinetic/adapters-web': resolve(__dirname, '../../packages/adapter-web/src/index.ts'),
     },
   },
 
   build: {
-    target:      'es2022',
-    outDir:      'dist',
+    target: 'es2022',
+    outDir: 'dist',
     emptyOutDir: true,
-    sourcemap:   false,
-    minify:      'esbuild',
-    cssMinify:   true,
+    sourcemap: false,
+    minify: 'esbuild',
+    cssMinify: true,
+    cssCodeSplit: true,
+    reportCompressedSize: true,
+    chunkSizeWarningLimit: 250, // KiB — warning si un chunk dépasse
 
     rollupOptions: {
       input: { main: resolve(__dirname, 'index.html') },
       output: {
         manualChunks(id) {
-          if (id.includes('alpinejs')) return 'alpine';
-          if (id.includes('@supabase/supabase-js')) return 'supabase';
-          if (id.includes('idb-keyval')) return 'idb';
+          // Vendors séparés pour caching long
+          if (id.includes('node_modules')) {
+            if (id.includes('alpinejs')) return 'alpine';
+            if (id.includes('@supabase/supabase-js')) return 'supabase';
+            if (id.includes('idb-keyval')) return 'idb';
+            if (id.includes('@capacitor')) return 'capacitor';
+            return 'vendor';
+          }
+          // Domain layer (packages/core) — pure logic, peut être caché agressivement
+          if (id.includes('packages/core/')) return 'kinetic-core';
+          // Adapters (packages/adapter-web)
+          if (id.includes('packages/adapter-web/')) return 'kinetic-adapters';
+          // Stores Alpine — partagés entre toutes les pages
+          if (id.includes('apps/web/src/stores/')) return 'stores';
+          // Libs utilitaires
+          if (id.includes('apps/web/src/lib/training/')) return 'lib-training';
+          if (id.includes('apps/web/src/lib/user/')) return 'lib-user';
         },
         assetFileNames: 'static/assets/[name]-[hash][extname]',
         chunkFileNames: 'static/chunks/[name]-[hash].js',
@@ -74,9 +91,10 @@ export default defineConfig({
     // Garder console.error et console.warn en prod : ces logs sont
     // vitaux pour diagnostiquer les bugs APK qui n'ont pas de DevTools.
     // Le global handler de main.ts persiste aussi les erreurs en localStorage.
-    pure: process.env['NODE_ENV'] === 'production'
-      ? ['console.log', 'console.debug', 'console.info', 'console.trace']
-      : [],
+    pure:
+      process.env['NODE_ENV'] === 'production'
+        ? ['console.log', 'console.debug', 'console.info', 'console.trace']
+        : [],
     drop: process.env['NODE_ENV'] === 'production' ? ['debugger'] : [],
     legalComments: 'none',
   },

@@ -5,7 +5,10 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: '@kinetic/core', replacement: resolve(__dirname, 'packages/core/src/index.ts') },
-      { find: '@kinetic/adapters-web', replacement: resolve(__dirname, 'packages/adapter-web/src/index.ts') },
+      {
+        find: '@kinetic/adapters-web',
+        replacement: resolve(__dirname, 'packages/adapter-web/src/index.ts'),
+      },
       { find: /^@test-helpers\/(.*)$/, replacement: resolve(__dirname, 'tests/helpers') + '/$1' },
       { find: '@test-helpers', replacement: resolve(__dirname, 'tests/helpers') },
     ],
@@ -15,11 +18,11 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     exclude: ['tests/e2e/**', 'node_modules/**'],
     coverage: {
-      provider:         'v8',
+      provider: 'v8',
       reportsDirectory: 'tests/coverage',
-      reporter:         ['text', 'json', 'html', 'json-summary'],
-      include:          ['packages/*/src/**/*.ts', 'apps/web/src/**/*.ts'],
-      exclude:          [
+      reporter: ['text', 'json', 'html', 'json-summary'],
+      include: ['packages/*/src/**/*.ts', 'apps/web/src/**/*.ts'],
+      exclude: [
         '**/*.test.ts',
         '**/index.ts',
         '**/database.types.ts',
@@ -42,10 +45,10 @@ export default defineConfig({
       ],
 
       thresholds: {
-        lines:      60,
+        lines: 60,
         statements: 60,
-        functions:  60,
-        branches:   55,
+        functions: 60,
+        branches: 55,
       },
     },
   },

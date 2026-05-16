@@ -3,7 +3,13 @@ import { buildJsonExport, buildCsvExport } from '../../apps/web/src/lib/training
 import type { WorkoutSession, Exercise } from '../../apps/web/src/lib/training/types.js';
 
 const exercises: Exercise[] = [
-  { id: 'bp', name: 'Bench Press', muscles: ['chest', 'triceps'], equipment: 'barbell', incrementKg: 2.5 },
+  {
+    id: 'bp',
+    name: 'Bench Press',
+    muscles: ['chest', 'triceps'],
+    equipment: 'barbell',
+    incrementKg: 2.5,
+  },
 ];
 
 const sessions: WorkoutSession[] = [
@@ -17,7 +23,13 @@ const sessions: WorkoutSession[] = [
         exerciseId: 'bp',
         sets: [
           { setIndex: 0, reps: 8, weightKg: 100, rpe: 8, performedAt: '2026-01-01T10:05:00.000Z' },
-          { setIndex: 1, reps: 8, weightKg: 100, rpe: 8.5, performedAt: '2026-01-01T10:10:00.000Z' },
+          {
+            setIndex: 1,
+            reps: 8,
+            weightKg: 100,
+            rpe: 8.5,
+            performedAt: '2026-01-01T10:10:00.000Z',
+          },
         ],
       },
     ],
@@ -101,7 +113,20 @@ describe('buildCsvExport', () => {
     const sessionsUnknown: WorkoutSession[] = [
       {
         ...sessions[0]!,
-        entries: [{ exerciseId: 'unknown-ex', sets: [{ setIndex: 0, reps: 5, weightKg: 50, rpe: 7, performedAt: '2026-01-01T10:00:00.000Z' }] }],
+        entries: [
+          {
+            exerciseId: 'unknown-ex',
+            sets: [
+              {
+                setIndex: 0,
+                reps: 5,
+                weightKg: 50,
+                rpe: 7,
+                performedAt: '2026-01-01T10:00:00.000Z',
+              },
+            ],
+          },
+        ],
       },
     ];
     const csv = buildCsvExport(sessionsUnknown, exercises);

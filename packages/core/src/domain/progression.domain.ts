@@ -16,34 +16,34 @@
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface PerformedSet {
-  reps:     number;
+  reps: number;
   weightKg: number;
-  rpe:      number;           // 6-10
-  at:       string;           // ISO datetime
+  rpe: number; // 6-10
+  at: string; // ISO datetime
 }
 
 export interface ProgressionInput {
-  exerciseId:   string;
-  targetReps:   number;        // ex: 8
-  targetRpe:    number;        // ex: 8
-  incrementKg:  number;        // ex: 2.5 barbell, 2 dumbbell, 5 machine
-  history:      readonly PerformedSet[]; // la plus récente en dernier
+  exerciseId: string;
+  targetReps: number; // ex: 8
+  targetRpe: number; // ex: 8
+  incrementKg: number; // ex: 2.5 barbell, 2 dumbbell, 5 machine
+  history: readonly PerformedSet[]; // la plus récente en dernier
 }
 
 export type ProgressionStrategy =
-  | 'increase_weight'      // +1 increment
-  | 'increase_reps'        // +1 rep (double progression)
-  | 'hold'                 // même charge, consolider
-  | 'deload'               // -10% pour récupérer
-  | 'first_time';          // pas d'historique
+  | 'increase_weight' // +1 increment
+  | 'increase_reps' // +1 rep (double progression)
+  | 'hold' // même charge, consolider
+  | 'deload' // -10% pour récupérer
+  | 'first_time'; // pas d'historique
 
 export interface ProgressionSuggestion {
-  strategy:        ProgressionStrategy;
+  strategy: ProgressionStrategy;
   suggestedWeight: number;
-  suggestedReps:   number;
-  suggestedRpe:    number;
-  confidence:      number;     // 0..1
-  rationale:       string;     // explication courte
+  suggestedReps: number;
+  suggestedRpe: number;
+  confidence: number; // 0..1
+  rationale: string; // explication courte
 }
 
 // ─── Utilitaires ─────────────────────────────────────────────────────────────
@@ -84,7 +84,8 @@ export function slope(values: readonly number[]): number {
   const xs = Array.from({ length: n }, (_, i) => i);
   const xMean = avg(xs);
   const yMean = avg(values);
-  let num = 0, den = 0;
+  let num = 0,
+    den = 0;
   for (let i = 0; i < n; i++) {
     num += (xs[i]! - xMean) * (values[i]! - yMean);
     den += (xs[i]! - xMean) ** 2;
@@ -121,12 +122,13 @@ export function suggestProgression(input: ProgressionInput): ProgressionSuggesti
 
   if (history.length === 0) {
     return {
-      strategy:        'first_time',
+      strategy: 'first_time',
       suggestedWeight: 0,
-      suggestedReps:   targetReps,
-      suggestedRpe:    targetRpe,
-      confidence:      0.3,
-      rationale:       'Première séance sur cet exercice : choisis une charge qui te laisse 2-3 reps en réserve.',
+      suggestedReps: targetReps,
+      suggestedRpe: targetRpe,
+      confidence: 0.3,
+      rationale:
+        'Première séance sur cet exercice : choisis une charge qui te laisse 2-3 reps en réserve.',
     };
   }
 
@@ -135,21 +137,21 @@ export function suggestProgression(input: ProgressionInput): ProgressionSuggesti
   // 2. Deload : évaluation sur fenêtre temporelle de 14 jours
   //    (pas juste les 3 dernières séances — sensible à la fréquence d'entraînement)
   const windowStart = Date.now() - DELOAD_WINDOW_MS;
-  const recentSets = history.filter(s => Date.parse(s.at) >= windowStart);
+  const recentSets = history.filter((s) => Date.parse(s.at) >= windowStart);
 
   if (recentSets.length >= 3) {
     const avgRpeRecent = avg(recentSets.map((s) => s.rpe));
-    const e1rmRecent   = recentSets.map((s) => e1rm(s.weightKg, s.reps));
-    const trendRecent  = slope(e1rmRecent);
+    const e1rmRecent = recentSets.map((s) => e1rm(s.weightKg, s.reps));
+    const trendRecent = slope(e1rmRecent);
 
     if (avgRpeRecent >= 9.5 && trendRecent <= 0) {
       return {
-        strategy:        'deload',
+        strategy: 'deload',
         suggestedWeight: roundTo(last.weightKg * 0.9, incrementKg),
-        suggestedReps:   targetReps,
-        suggestedRpe:    Math.max(6, targetRpe - 2),
-        confidence:      0.8,
-        rationale:       `RPE moyen ${avgRpeRecent.toFixed(1)} sur ${recentSets.length} séances (14j) sans gain d'e1RM — semaine de deload (-10%) recommandée.`,
+        suggestedReps: targetReps,
+        suggestedRpe: Math.max(6, targetRpe - 2),
+        confidence: 0.8,
+        rationale: `RPE moyen ${avgRpeRecent.toFixed(1)} sur ${recentSets.length} séances (14j) sans gain d'e1RM — semaine de deload (-10%) recommandée.`,
       };
     }
   }
@@ -157,46 +159,46 @@ export function suggestProgression(input: ProgressionInput): ProgressionSuggesti
   // 3. Charge trop facile ET objectif reps atteint
   if (last.rpe <= targetRpe - 1 && last.reps >= targetReps) {
     return {
-      strategy:        'increase_weight',
+      strategy: 'increase_weight',
       suggestedWeight: roundTo(last.weightKg + incrementKg, incrementKg),
-      suggestedReps:   targetReps,
-      suggestedRpe:    targetRpe,
-      confidence:      0.9,
-      rationale:       `RPE ${last.rpe} < cible ${targetRpe} avec reps ok — +${incrementKg} kg.`,
+      suggestedReps: targetReps,
+      suggestedRpe: targetRpe,
+      confidence: 0.9,
+      rationale: `RPE ${last.rpe} < cible ${targetRpe} avec reps ok — +${incrementKg} kg.`,
     };
   }
 
   // 4. Charge OK, mais pas encore les reps
   if (Math.abs(last.rpe - targetRpe) <= 0.5 && last.reps < targetReps) {
     return {
-      strategy:        'increase_reps',
+      strategy: 'increase_reps',
       suggestedWeight: last.weightKg,
-      suggestedReps:   Math.min(targetReps, last.reps + 1),
-      suggestedRpe:    targetRpe,
-      confidence:      0.75,
-      rationale:       'Même charge, vise +1 rep (double progression).',
+      suggestedReps: Math.min(targetReps, last.reps + 1),
+      suggestedRpe: targetRpe,
+      confidence: 0.75,
+      rationale: 'Même charge, vise +1 rep (double progression).',
     };
   }
 
   // 5. Trop dur mais pas deload
   if (last.rpe > targetRpe + 0.5) {
     return {
-      strategy:        'hold',
+      strategy: 'hold',
       suggestedWeight: last.weightKg,
-      suggestedReps:   targetReps,
-      suggestedRpe:    targetRpe,
-      confidence:      0.6,
-      rationale:       `RPE ${last.rpe} > cible ${targetRpe} — consolider avant d'augmenter.`,
+      suggestedReps: targetReps,
+      suggestedRpe: targetRpe,
+      confidence: 0.6,
+      rationale: `RPE ${last.rpe} > cible ${targetRpe} — consolider avant d'augmenter.`,
     };
   }
 
   return {
-    strategy:        'hold',
+    strategy: 'hold',
     suggestedWeight: last.weightKg,
-    suggestedReps:   targetReps,
-    suggestedRpe:    targetRpe,
-    confidence:      0.5,
-    rationale:       'Maintiens la charge actuelle pour stabiliser la technique.',
+    suggestedReps: targetReps,
+    suggestedRpe: targetRpe,
+    confidence: 0.5,
+    rationale: 'Maintiens la charge actuelle pour stabiliser la technique.',
   };
 }
 
@@ -208,6 +210,6 @@ export function needsDeload(history: readonly PerformedSet[]): boolean {
   if (history.length < 5) return false;
   const last5 = history.slice(-5);
   const avgRpe = avg(last5.map((s) => s.rpe));
-  const trend  = slope(last5.map((s) => e1rm(s.weightKg, s.reps)));
+  const trend = slope(last5.map((s) => e1rm(s.weightKg, s.reps)));
   return avgRpe >= 9 && trend <= 0;
 }

@@ -93,7 +93,8 @@ export function onboarding() {
       const ageYears = clamp(Number(this.ageYears), 12, 90);
       const heightCm = clamp(Number(this.heightCm), 120, 230);
       const weightKg = clamp(Number(this.weightKg), 30, 250);
-      if (!Number.isFinite(ageYears) || !Number.isFinite(heightCm) || !Number.isFinite(weightKg)) return null;
+      if (!Number.isFinite(ageYears) || !Number.isFinite(heightCm) || !Number.isFinite(weightKg))
+        return null;
 
       const now = nowIso();
       return {
@@ -123,17 +124,21 @@ export function onboarding() {
           : { ...draft, createdAt: now, updatedAt: now };
         await saveUserProfile(deps.storage, next);
 
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'success', message: 'Profil sauvegarde' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'success', message: 'Profil sauvegarde' },
+          }),
+        );
         window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_ONBOARDING_COMPLETE));
 
         navigate('/', true);
       } catch (err) {
         console.error('[onboarding] save failed:', err);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: 'Erreur sauvegarde profil' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Erreur sauvegarde profil' },
+          }),
+        );
       } finally {
         this.saving = false;
       }

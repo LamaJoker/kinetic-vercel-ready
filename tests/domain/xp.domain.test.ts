@@ -6,16 +6,9 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  computeXpState,
-  addXp,
-  didLevelUp,
-  getNewLevel,
-  LEVELS,
-} from '@kinetic/core';
+import { computeXpState, addXp, didLevelUp, getNewLevel, LEVELS } from '@kinetic/core';
 
 describe('computeXpState', () => {
-
   describe('niveau 1 (Rookie)', () => {
     it('retourne niveau 1 pour 0 XP', () => {
       const s = computeXpState(0);
@@ -48,14 +41,14 @@ describe('computeXpState', () => {
 
     it('retourne les bons titres pour tous les niveaux', () => {
       const expected: [number, string][] = [
-        [0,     'Rookie'   ],
-        [200,   'Apprenti' ],
-        [500,   'Confirmé' ],
-        [1000,  'Expert'   ],
-        [2000,  'Elite'    ],
-        [3500,  'Champion' ],
-        [5500,  'Maître'   ],
-        [8000,  'Légende'  ],
+        [0, 'Rookie'],
+        [200, 'Apprenti'],
+        [500, 'Confirmé'],
+        [1000, 'Expert'],
+        [2000, 'Elite'],
+        [3500, 'Champion'],
+        [5500, 'Maître'],
+        [8000, 'Légende'],
       ];
       for (const [xp, title] of expected) {
         expect(computeXpState(xp).title).toBe(title);
@@ -120,9 +113,9 @@ describe('addXp', () => {
 });
 
 describe('didLevelUp', () => {
-  it('retourne true lors d\'un passage de niveau', () => {
-    expect(didLevelUp(180, 250)).toBe(true);  // 1 → 2
-    expect(didLevelUp(490, 510)).toBe(true);  // 2 → 3
+  it("retourne true lors d'un passage de niveau", () => {
+    expect(didLevelUp(180, 250)).toBe(true); // 1 → 2
+    expect(didLevelUp(490, 510)).toBe(true); // 2 → 3
   });
 
   it('retourne false si même niveau', () => {
@@ -136,7 +129,7 @@ describe('didLevelUp', () => {
 });
 
 describe('getNewLevel', () => {
-  it('retourne le nouveau niveau lors d\'un level-up', () => {
+  it("retourne le nouveau niveau lors d'un level-up", () => {
     const level = getNewLevel(180, 250);
     expect(level?.level).toBe(2);
     expect(level?.title).toBe('Apprenti');

@@ -5,7 +5,10 @@ const mockObserver = {
   observe: vi.fn(),
   disconnect: vi.fn(),
 };
-vi.stubGlobal('PerformanceObserver', vi.fn(() => mockObserver));
+vi.stubGlobal(
+  'PerformanceObserver',
+  vi.fn(() => mockObserver),
+);
 
 import { collectWebVitals, markStart, markEnd } from '../../apps/web/src/lib/analytics.js';
 
@@ -32,7 +35,9 @@ describe('markStart / markEnd', () => {
   beforeEach(() => {
     marks = {};
     vi.stubGlobal('performance', {
-      mark: vi.fn((name: string) => { marks[name] = Date.now(); }),
+      mark: vi.fn((name: string) => {
+        marks[name] = Date.now();
+      }),
       measure: vi.fn(),
       getEntriesByName: vi.fn(() => [{ duration: 42 }]),
     });

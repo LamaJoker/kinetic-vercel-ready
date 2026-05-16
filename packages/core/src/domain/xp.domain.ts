@@ -13,31 +13,31 @@
 // ─── Niveaux ────────────────────────────────────────────────────────────────
 
 export interface Level {
-  level:     number;
-  title:     string;
+  level: number;
+  title: string;
   threshold: number; // XP minimum pour atteindre ce niveau
 }
 
 export const LEVELS: readonly Level[] = [
-  { level: 1, title: 'Rookie',    threshold: 0     },
-  { level: 2, title: 'Apprenti',  threshold: 200   },
-  { level: 3, title: 'Confirmé',  threshold: 500   },
-  { level: 4, title: 'Expert',    threshold: 1_000 },
-  { level: 5, title: 'Elite',     threshold: 2_000 },
-  { level: 6, title: 'Champion',  threshold: 3_500 },
-  { level: 7, title: 'Maître',    threshold: 5_500 },
-  { level: 8, title: 'Légende',   threshold: 8_000 },
+  { level: 1, title: 'Rookie', threshold: 0 },
+  { level: 2, title: 'Apprenti', threshold: 200 },
+  { level: 3, title: 'Confirmé', threshold: 500 },
+  { level: 4, title: 'Expert', threshold: 1_000 },
+  { level: 5, title: 'Elite', threshold: 2_000 },
+  { level: 6, title: 'Champion', threshold: 3_500 },
+  { level: 7, title: 'Maître', threshold: 5_500 },
+  { level: 8, title: 'Légende', threshold: 8_000 },
 ] as const;
 
 // ─── État XP ─────────────────────────────────────────────────────────────────
 
 export interface XpState {
-  xp:              number;
-  currentLevel:    number;
-  title:           string;
+  xp: number;
+  currentLevel: number;
+  title: string;
   progressPercent: number; // 0–100 vers le prochain niveau
-  remaining:       number; // XP manquant pour le prochain niveau
-  isMaxLevel:      boolean;
+  remaining: number; // XP manquant pour le prochain niveau
+  isMaxLevel: boolean;
 }
 
 // ─── Fonctions pures ─────────────────────────────────────────────────────────
@@ -50,28 +50,26 @@ export function computeXpState(totalXp: number): XpState {
   if (totalXp < 0) throw new RangeError(`XP ne peut pas être négatif : ${totalXp}`);
 
   let current: Level = LEVELS[0]!;
-  let next:    Level | undefined;
+  let next: Level | undefined;
 
   for (let i = 0; i < LEVELS.length; i++) {
     if (totalXp >= LEVELS[i]!.threshold) {
       current = LEVELS[i]!;
-      next    = LEVELS[i + 1];
+      next = LEVELS[i + 1];
     }
   }
 
-  const xpInLevel   = totalXp - current.threshold;
-  const xpForNext   = next ? next.threshold - current.threshold : 1;
-  const progressPct = next
-    ? Math.min(100, Math.round((xpInLevel / xpForNext) * 100))
-    : 100;
+  const xpInLevel = totalXp - current.threshold;
+  const xpForNext = next ? next.threshold - current.threshold : 1;
+  const progressPct = next ? Math.min(100, Math.round((xpInLevel / xpForNext) * 100)) : 100;
 
   return {
-    xp:              totalXp,
-    currentLevel:    current.level,
-    title:           current.title,
+    xp: totalXp,
+    currentLevel: current.level,
+    title: current.title,
     progressPercent: progressPct,
-    remaining:       next ? next.threshold - totalXp : 0,
-    isMaxLevel:      !next,
+    remaining: next ? next.threshold - totalXp : 0,
+    isMaxLevel: !next,
   };
 }
 
@@ -101,7 +99,7 @@ export function didLevelUp(xpBefore: number, xpAfter: number): boolean {
  */
 export function getNewLevel(xpBefore: number, xpAfter: number): Level | null {
   const before = computeXpState(xpBefore);
-  const after  = computeXpState(xpAfter);
+  const after = computeXpState(xpAfter);
   if (after.currentLevel > before.currentLevel) {
     return LEVELS.find((l) => l.level === after.currentLevel) ?? null;
   }
@@ -110,15 +108,22 @@ export function getNewLevel(xpBefore: number, xpAfter: number): Level | null {
 
 // ─── Récompenses par niveau ──────────────────────────────────────────────────
 
-export type RewardKind = 'base' | 'history' | 'coach' | 'xp_boost' | 'streak_freeze' | 'theme' | 'badge';
+export type RewardKind =
+  | 'base'
+  | 'history'
+  | 'coach'
+  | 'xp_boost'
+  | 'streak_freeze'
+  | 'theme'
+  | 'badge';
 
 export interface Reward {
   /** Niveau requis pour débloquer cette récompense. */
-  level:       number;
-  emoji:       string;
-  title:       string;
+  level: number;
+  emoji: string;
+  title: string;
   description: string;
-  kind:        RewardKind;
+  kind: RewardKind;
 }
 
 /**
@@ -138,21 +143,21 @@ export const REWARDS: readonly Reward[] = [
     level: 2,
     emoji: '📅',
     title: 'Historique 14 jours',
-    description: 'Remonte jusqu\'à 14 jours dans ton historique de routine vitalité.',
+    description: "Remonte jusqu'à 14 jours dans ton historique de routine vitalité.",
     kind: 'history',
   },
   {
     level: 3,
     emoji: '🎯',
     title: 'Coach Avancé',
-    description: 'Le Coach IA affiche des notes de périodisation et l\'indice de fatigue RPE.',
+    description: "Le Coach IA affiche des notes de périodisation et l'indice de fatigue RPE.",
     kind: 'coach',
   },
   {
     level: 4,
     emoji: '📊',
     title: 'Historique 30 jours',
-    description: 'Visualise un mois complet d\'historique pour analyser tes tendances.',
+    description: "Visualise un mois complet d'historique pour analyser tes tendances.",
     kind: 'history',
   },
   {

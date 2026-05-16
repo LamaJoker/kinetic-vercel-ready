@@ -3,8 +3,13 @@ import { bmrKcal, tdeeKcal, buildNutritionPlan, macroProgress } from '@kinetic/c
 import type { UserMeasurements } from '@kinetic/core';
 
 const male75kg: UserMeasurements = {
-  sex: 'male', ageYears: 28, heightCm: 178, weightKg: 75,
-  bodyFatPct: null, activity: 'moderate', goal: 'gain_muscle',
+  sex: 'male',
+  ageYears: 28,
+  heightCm: 178,
+  weightKg: 75,
+  bodyFatPct: null,
+  activity: 'moderate',
+  goal: 'gain_muscle',
 };
 
 describe('bmrKcal — Mifflin-St Jeor', () => {
@@ -63,7 +68,11 @@ describe('buildNutritionPlan', () => {
   });
 
   it('glucides jamais en dessous de 100 g/j', () => {
-    const extremeDeficit = { ...male75kg, goal: 'lose_fat' as const, activity: 'sedentary' as const };
+    const extremeDeficit = {
+      ...male75kg,
+      goal: 'lose_fat' as const,
+      activity: 'sedentary' as const,
+    };
     const plan = buildNutritionPlan(extremeDeficit);
     expect(plan.macros.carbsG).toBeGreaterThanOrEqual(100);
   });
@@ -91,8 +100,8 @@ describe('macroProgress', () => {
   });
 
   it('score favorise les protéines (coefficient ×2)', () => {
-    const good  = macroProgress({ kcal: 2500, proteinG: 180, carbsG: 280, fatG: 78 }, target);
-    const noP   = macroProgress({ kcal: 2500, proteinG: 0,   carbsG: 280, fatG: 78 }, target);
+    const good = macroProgress({ kcal: 2500, proteinG: 180, carbsG: 280, fatG: 78 }, target);
+    const noP = macroProgress({ kcal: 2500, proteinG: 0, carbsG: 280, fatG: 78 }, target);
     expect(good.score).toBeGreaterThan(noP.score);
   });
 });

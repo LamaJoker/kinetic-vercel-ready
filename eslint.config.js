@@ -2,6 +2,7 @@
 import js from '@eslint/js';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
+import importPlugin from 'eslint-plugin-import';
 import globals from 'globals';
 
 /** @type {import('eslint').Linter.FlatConfig[]} */
@@ -23,18 +24,39 @@ export default [
         Alpine: 'readonly',
       },
     },
-    plugins: { '@typescript-eslint': tsPlugin },
+    plugins: {
+      '@typescript-eslint': tsPlugin,
+      import: importPlugin,
+    },
     rules: {
       ...tsPlugin.configs.recommended.rules,
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
 
+      // ─── Discipline d'imports (résolveur Node par défaut) ───
+      'import/no-duplicates': 'error',
+      'import/no-self-import': 'error',
+
+      // ─── Complexité & taille (warnings non bloquants) ────────
+      // Seuil large pour ne pas pénaliser les fonctions OAuth/onboarding
+      // existantes (à refactorer dans un PR dédié).
+      complexity: ['warn', 35],
+      'max-depth': ['warn', 6],
+      'max-params': ['warn', 7],
+
+      // ─── Bonnes pratiques ────────────────────────────────────
+      eqeqeq: ['error', 'smart'],
+      'no-debugger': 'error',
+      'no-throw-literal': 'error',
+      'prefer-const': 'error',
+
       // Interdit les magic-strings kinetic: (forcer STORAGE_KEYS)
       'no-restricted-syntax': [
         'error',
         {
-          selector: "Literal[value=/^kinetic:[a-z]/]",
-          message: "Utilise STORAGE_KEYS.<KEY> depuis @kinetic/core au lieu d'une string littérale.",
+          selector: 'Literal[value=/^kinetic:[a-z]/]',
+          message:
+            "Utilise STORAGE_KEYS.<KEY> depuis @kinetic/core au lieu d'une string littérale.",
         },
       ],
     },
@@ -65,6 +87,11 @@ export default [
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-unsafe-function-type': 'off',
       'no-undef': 'off',
+      complexity: 'off',
+      'max-depth': 'off',
+      'max-params': 'off',
+      'import/no-duplicates': 'off',
+      'import/no-self-import': 'off',
     },
   },
 

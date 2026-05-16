@@ -34,14 +34,14 @@ kinetic/
 
 ### Stack technique
 
-| Couche       | Choix                                  | Raison |
-|-------------|----------------------------------------|--------|
-| UI          | Alpine.js 3                            | Léger, réactif, zéro build requis |
-| Build       | Vite 5 + TypeScript 5.5                | ESM natif, HMR instantané |
-| Storage     | IndexedDB (idb-keyval) + Supabase      | Offline-first + sync cloud |
-| Auth        | Supabase Auth (Google + Magic Link)    | Clé en main, sécurisé |
-| Deploy      | Vercel (CDG1 — Paris)                  | Edge network, CI intégrée |
-| Tests       | Vitest + Playwright                    | Rapides, fiables, E2E réel |
+| Couche  | Choix                               | Raison                            |
+| ------- | ----------------------------------- | --------------------------------- |
+| UI      | Alpine.js 3                         | Léger, réactif, zéro build requis |
+| Build   | Vite 5 + TypeScript 5.5             | ESM natif, HMR instantané         |
+| Storage | IndexedDB (idb-keyval) + Supabase   | Offline-first + sync cloud        |
+| Auth    | Supabase Auth (Google + Magic Link) | Clé en main, sécurisé             |
+| Deploy  | Vercel (CDG1 — Paris)               | Edge network, CI intégrée         |
+| Tests   | Vitest + Playwright                 | Rapides, fiables, E2E réel        |
 
 ---
 
@@ -131,11 +131,11 @@ pnpm e2e:headed
 ### Coverage minimum requis (CI bloquant)
 
 | Métrique   | Seuil | Réel  |
-|-----------|-------|-------|
-| Lines     | 60%   | 60.2% |
-| Functions | 60%   | 67.5% |
-| Branches  | 55%   | 86.5% |
-| Statements| 60%   | 60.2% |
+| ---------- | ----- | ----- |
+| Lines      | 60%   | 60.2% |
+| Functions  | 60%   | 67.5% |
+| Branches   | 55%   | 86.5% |
+| Statements | 60%   | 60.2% |
 
 > **Note** : Pages Alpine et stores complexes exclus du périmètre de couverture unitaire (couverts par les tests Playwright E2E). La Phase 2 ciblera 80% avec happy-dom pour la couche stores.
 
@@ -169,13 +169,13 @@ vercel --prod
 
 Se référer à `.env.example` (unique source de vérité — copier vers `apps/web/.env.local`).
 
-| Variable                   | Scope  | Description |
-|---------------------------|--------|-------------|
-| `VITE_SUPABASE_URL`        | Client | URL projet Supabase |
-| `VITE_SUPABASE_ANON_KEY`   | Client | Clé anonyme Supabase |
-| `VITE_PUBLIC_SITE_URL`     | Client | URL canonique (requis pour APK Android OAuth) |
-| `SUPABASE_URL`             | Server | URL Supabase pour use côté serveur |
-| `SUPABASE_SERVICE_ROLE_KEY`| Server | Service role (analytics + admin uniquement) |
+| Variable                    | Scope  | Description                                   |
+| --------------------------- | ------ | --------------------------------------------- |
+| `VITE_SUPABASE_URL`         | Client | URL projet Supabase                           |
+| `VITE_SUPABASE_ANON_KEY`    | Client | Clé anonyme Supabase                          |
+| `VITE_PUBLIC_SITE_URL`      | Client | URL canonique (requis pour APK Android OAuth) |
+| `SUPABASE_URL`              | Server | URL Supabase pour use côté serveur            |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server | Service role (analytics + admin uniquement)   |
 
 ---
 
@@ -213,6 +213,7 @@ Kinetic est installable comme app native :
 - **Desktop** : Icône d'installation dans la barre d'adresse
 
 Fonctionnalités offline :
+
 - Lecture des données depuis IndexedDB
 - Complétion de tâches sans connexion
 - Synchronisation automatique au retour online

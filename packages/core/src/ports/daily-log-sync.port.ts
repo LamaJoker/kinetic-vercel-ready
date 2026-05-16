@@ -7,11 +7,11 @@
  *   - SupabaseDailyLogSync → appelle upsert_daily_log() via Supabase RPC
  */
 export interface DailyLogEntry {
-  date:       string;  // ISO "YYYY-MM-DD"
-  xpEarned:   number;
-  tasksDone:  number;
-  streakDay:  number;
-  metadata?:  Record<string, unknown>;
+  date: string; // ISO "YYYY-MM-DD"
+  xpEarned: number;
+  tasksDone: number;
+  streakDay: number;
+  metadata?: Record<string, unknown>;
 }
 
 export interface DailyLogSyncPort {

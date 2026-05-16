@@ -12,9 +12,9 @@
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface StreakState {
-  count:          number;          // Streak actuel
-  best:           number;          // Meilleur streak historique
-  lastActiveDate: string | null;   // "YYYY-MM-DD" en TZ locale
+  count: number; // Streak actuel
+  best: number; // Meilleur streak historique
+  lastActiveDate: string | null; // "YYYY-MM-DD" en TZ locale
 }
 
 // ─── Fonctions pures ──────────────────────────────────────────────────────────
@@ -59,16 +59,16 @@ export function processActivity(state: StreakState, todayIso: string): StreakSta
     // Jour consécutif — incrémente
     const newCount = state.count + 1;
     return {
-      count:          newCount,
-      best:           Math.max(state.best, newCount),
+      count: newCount,
+      best: Math.max(state.best, newCount),
       lastActiveDate: todayIso,
     };
   }
 
   // Gap > 1 jour — streak brisé, repart à 1
   return {
-    count:          1,
-    best:           state.best, // Best intact
+    count: 1,
+    best: state.best, // Best intact
     lastActiveDate: todayIso,
   };
 }
@@ -93,9 +93,9 @@ export function getStreakStatus(state: StreakState, todayIso: string): StreakSta
 
   const diff = daysBetween(state.lastActiveDate, todayIso);
 
-  if (diff === 0) return 'active';      // Actif aujourd'hui
-  if (diff === 1) return 'at_risk';     // Pas encore actif aujourd'hui
-  return 'dead';                        // Streak perdu
+  if (diff === 0) return 'active'; // Actif aujourd'hui
+  if (diff === 1) return 'at_risk'; // Pas encore actif aujourd'hui
+  return 'dead'; // Streak perdu
 }
 
 // ─── Utilitaires ──────────────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ export function getStreakStatus(state: StreakState, todayIso: string): StreakSta
  */
 export function daysBetween(fromIso: string, toIso: string): number {
   const from = parseIsoDate(fromIso);
-  const to   = parseIsoDate(toIso);
+  const to = parseIsoDate(toIso);
   const msPerDay = 1000 * 60 * 60 * 24;
   return Math.round((to - from) / msPerDay);
 }

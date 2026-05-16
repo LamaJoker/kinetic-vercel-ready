@@ -10,10 +10,7 @@ const src = resolve(repoRoot, 'apps', 'web', 'dist');
 // Some Vercel projects are configured with different "Root Directory" values.
 // We copy the build output to a couple of common locations so the deploy can
 // succeed even if the project's Output Directory points at `dist`.
-const destinations = [
-  resolve(repoRoot, 'dist'),
-  resolve(repoRoot, 'apps', 'dist'),
-];
+const destinations = [resolve(repoRoot, 'dist'), resolve(repoRoot, 'apps', 'dist')];
 
 async function exists(path) {
   try {

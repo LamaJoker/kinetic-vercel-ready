@@ -9,7 +9,11 @@ import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 export function hapticLight(): void {
   void (async () => {
     if (Capacitor.isNativePlatform()) {
-      try { await Haptics.impact({ style: ImpactStyle.Light }); } catch { /* ignore */ }
+      try {
+        await Haptics.impact({ style: ImpactStyle.Light });
+      } catch {
+        /* ignore */
+      }
     } else if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate(40);
     }
@@ -20,7 +24,11 @@ export function hapticLight(): void {
 export function hapticMedium(): void {
   void (async () => {
     if (Capacitor.isNativePlatform()) {
-      try { await Haptics.impact({ style: ImpactStyle.Medium }); } catch { /* ignore */ }
+      try {
+        await Haptics.impact({ style: ImpactStyle.Medium });
+      } catch {
+        /* ignore */
+      }
     } else if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate(80);
     }
@@ -31,7 +39,11 @@ export function hapticMedium(): void {
 export function hapticHeavy(): void {
   void (async () => {
     if (Capacitor.isNativePlatform()) {
-      try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch { /* ignore */ }
+      try {
+        await Haptics.impact({ style: ImpactStyle.Heavy });
+      } catch {
+        /* ignore */
+      }
     } else if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate(150);
     }
@@ -42,7 +54,11 @@ export function hapticHeavy(): void {
 export function hapticSuccess(): void {
   void (async () => {
     if (Capacitor.isNativePlatform()) {
-      try { await Haptics.notification({ type: NotificationType.Success }); } catch { /* ignore */ }
+      try {
+        await Haptics.notification({ type: NotificationType.Success });
+      } catch {
+        /* ignore */
+      }
     } else if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate([50, 40, 100]);
     }
@@ -53,7 +69,11 @@ export function hapticSuccess(): void {
 export function hapticError(): void {
   void (async () => {
     if (Capacitor.isNativePlatform()) {
-      try { await Haptics.notification({ type: NotificationType.Error }); } catch { /* ignore */ }
+      try {
+        await Haptics.notification({ type: NotificationType.Error });
+      } catch {
+        /* ignore */
+      }
     } else if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate([100, 50, 100, 50, 100]);
     }

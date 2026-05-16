@@ -1,10 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  getSkeletonHtml,
-  debounce,
-  throttle,
-  ric,
-} from '../../apps/web/src/lib/performance.js';
+import { getSkeletonHtml, debounce, throttle, ric } from '../../apps/web/src/lib/performance.js';
 import type { SkeletonType } from '../../apps/web/src/lib/performance.js';
 
 describe('getSkeletonHtml', () => {
@@ -109,15 +104,20 @@ describe('ric (requestIdleCallback polyfill)', () => {
 
   it('calls the callback with a deadline object', async () => {
     // In Node env, requestIdleCallback is undefined → uses setTimeout fallback
-    const deadline = await new Promise<{ didTimeout: boolean; timeRemaining(): number }>((resolve) => {
-      ric((d) => resolve(d));
-    });
+    const deadline = await new Promise<{ didTimeout: boolean; timeRemaining(): number }>(
+      (resolve) => {
+        ric((d) => resolve(d));
+      },
+    );
     expect(typeof deadline.didTimeout).toBe('boolean');
     expect(typeof deadline.timeRemaining()).toBe('number');
   });
 
   it('uses native requestIdleCallback when available', () => {
-    const mockRic = vi.fn((cb: Function) => { cb({ didTimeout: false, timeRemaining: () => 50 }); return 1; });
+    const mockRic = vi.fn((cb: Function) => {
+      cb({ didTimeout: false, timeRemaining: () => 50 });
+      return 1;
+    });
     vi.stubGlobal('requestIdleCallback', mockRic);
     // Re-import won't work due to module caching, but we verify the polyfill fallback works
     // The fallback path is already tested above

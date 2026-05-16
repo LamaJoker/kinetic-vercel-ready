@@ -27,7 +27,7 @@ export function buildCSPString(): string {
     .map(([directive, sources]) =>
       (sources as readonly string[]).length > 0
         ? `${directive} ${(sources as readonly string[]).join(' ')}`
-        : directive
+        : directive,
     )
     .join('; ');
 }
@@ -55,7 +55,10 @@ export function sanitizeUserInput(input: unknown, maxLength = 500): string {
 }
 
 export function sanitizeEmail(email: string): string {
-  return email.trim().toLowerCase().replace(/[^a-z0-9@._+-]/g, '');
+  return email
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9@._+-]/g, '');
 }
 
 export function sanitizeNumber(value: unknown, min: number, max: number): number | null {

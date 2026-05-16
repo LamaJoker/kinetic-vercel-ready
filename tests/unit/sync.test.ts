@@ -61,8 +61,12 @@ describe('getOrCreateDeviceId', () => {
 
   it('returns a volatile UUID when localStorage throws (private mode)', async () => {
     const throwingStorage = {
-      getItem: () => { throw new Error('QuotaExceededError'); },
-      setItem: () => { throw new Error('QuotaExceededError'); },
+      getItem: () => {
+        throw new Error('QuotaExceededError');
+      },
+      setItem: () => {
+        throw new Error('QuotaExceededError');
+      },
     };
     vi.stubGlobal('window', { localStorage: throwingStorage });
     vi.stubGlobal('localStorage', throwingStorage);

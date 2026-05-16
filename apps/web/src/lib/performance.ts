@@ -13,7 +13,9 @@ export type SkeletonType = 'task-list' | 'dashboard' | 'profile' | 'xp-bar';
 const SKELETONS: Record<SkeletonType, string> = {
   'task-list': `
     <div class="animate-pulse space-y-3">
-      ${Array(4).fill(`
+      ${Array(4)
+        .fill(
+          `
         <div class="flex items-center gap-4 p-4 bg-gray-800 rounded-2xl">
           <div class="w-12 h-12 bg-gray-700 rounded-xl flex-shrink-0"></div>
           <div class="flex-1 space-y-2">
@@ -21,9 +23,11 @@ const SKELETONS: Record<SkeletonType, string> = {
             <div class="h-3 bg-gray-700 rounded w-1/4"></div>
           </div>
         </div>
-      `).join('')}
+      `,
+        )
+        .join('')}
     </div>`,
-  'dashboard': `
+  dashboard: `
     <div class="animate-pulse space-y-4">
       <div class="flex justify-between items-center">
         <div class="space-y-2">
@@ -36,7 +40,7 @@ const SKELETONS: Record<SkeletonType, string> = {
       <div class="h-32 bg-gray-800 rounded-2xl"></div>
       <div class="h-20 bg-gray-700 rounded-2xl"></div>
     </div>`,
-  'profile': `
+  profile: `
     <div class="animate-pulse space-y-4">
       <div class="flex items-center gap-4">
         <div class="w-16 h-16 bg-gray-700 rounded-full"></div>
@@ -70,7 +74,7 @@ export function showSkeleton(container: HTMLElement, type: SkeletonType): () => 
   container.appendChild(node);
   return () => {
     node.style.transition = 'opacity 0.2s';
-    node.style.opacity    = '0';
+    node.style.opacity = '0';
     setTimeout(() => node.remove(), 200);
   };
 }
@@ -140,5 +144,6 @@ type IdleCb = (deadline: { didTimeout: boolean; timeRemaining(): number }) => vo
 
 export const ric: (cb: IdleCb, opts?: { timeout?: number }) => number =
   (globalThis as { requestIdleCallback?: (cb: IdleCb, opts?: { timeout?: number }) => number })
-    .requestIdleCallback
-  ?? ((cb, opts) => setTimeout(() => cb({ didTimeout: false, timeRemaining: () => 50 }), opts?.timeout ?? 1));
+    .requestIdleCallback ??
+  ((cb, opts) =>
+    setTimeout(() => cb({ didTimeout: false, timeRemaining: () => 50 }), opts?.timeout ?? 1));

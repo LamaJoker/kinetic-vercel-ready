@@ -14,7 +14,14 @@ vi.mock('../../apps/web/src/deps.js', () => ({
 
 import { bodyweight } from '../../apps/web/src/pages/bodyweight.page.js';
 
-function makeStore(entries: Array<{ date: string; weight: number; bodyFatPct?: number | null; note?: string | null }> = []) {
+function makeStore(
+  entries: Array<{
+    date: string;
+    weight: number;
+    bodyFatPct?: number | null;
+    note?: string | null;
+  }> = [],
+) {
   const store = bodyweight();
   store.entries = entries.map((e) => ({
     date: e.date,
@@ -167,7 +174,7 @@ describe('bodyweight goalProgress', () => {
   it('computes progress toward goal', () => {
     const store = makeStore([
       { date: daysAgo(20), weight: 90 }, // start
-      { date: daysAgo(5), weight: 85 },  // latest
+      { date: daysAgo(5), weight: 85 }, // latest
     ]);
     store.goalWeight = 80; // target: lose 10kg from 90
     // progress = (90-85)/(90-80) * 100 = 50%

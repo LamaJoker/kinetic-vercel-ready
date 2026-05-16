@@ -29,7 +29,9 @@ async function shouldRemind(): Promise<boolean> {
     const lastDate = await deps.storage.get<string>(KEY_REMINDER_DATE);
     if (lastDate === todayIso()) return false;
 
-    const dailyLog = await deps.storage.get<Record<string, unknown>>(STORAGE_KEYS.DAILY_LOG(todayIso()));
+    const dailyLog = await deps.storage.get<Record<string, unknown>>(
+      STORAGE_KEYS.DAILY_LOG(todayIso()),
+    );
     if (dailyLog && Object.keys(dailyLog).length >= 5) return false;
 
     await deps.storage.set(KEY_REMINDER_DATE, todayIso());
@@ -45,14 +47,16 @@ async function sendStreakNotificationNative(): Promise<void> {
     if (display !== 'granted') return;
 
     await LocalNotifications.schedule({
-      notifications: [{
-        id: NOTIF_ID,
-        title: '🔥 Garde ton streak !',
-        body: 'Il reste moins de 4h pour valider ta routine du jour.',
-        smallIcon: 'ic_stat_kinetic',
-        iconColor: '#39FF14',
-        schedule: { at: new Date(Date.now() + 500) }, // immédiat (déjà en callback 20h)
-      }],
+      notifications: [
+        {
+          id: NOTIF_ID,
+          title: '🔥 Garde ton streak !',
+          body: 'Il reste moins de 4h pour valider ta routine du jour.',
+          smallIcon: 'ic_stat_kinetic',
+          iconColor: '#39FF14',
+          schedule: { at: new Date(Date.now() + 500) }, // immédiat (déjà en callback 20h)
+        },
+      ],
     });
   } catch (err) {
     console.warn('[streak-reminder] native notification failed:', err);

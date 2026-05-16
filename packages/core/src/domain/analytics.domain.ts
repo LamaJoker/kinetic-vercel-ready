@@ -13,45 +13,45 @@ import { e1rm } from './progression.domain.js';
 // ─── Types d'entrée ──────────────────────────────────────────────────────────
 
 export interface AnalyticsSet {
-  sessionId:  string;
+  sessionId: string;
   exerciseId: string;
-  muscles:    readonly string[];
-  reps:       number;
-  weightKg:   number;
-  rpe:        number;
-  performedAt: string;         // ISO datetime
+  muscles: readonly string[];
+  reps: number;
+  weightKg: number;
+  rpe: number;
+  performedAt: string; // ISO datetime
 }
 
 // ─── Agrégats ────────────────────────────────────────────────────────────────
 
 export interface VolumeBucket {
-  isoWeek:   string;          // "2025-W03"
-  tonnageKg: number;          // Σ reps × weightKg
+  isoWeek: string; // "2025-W03"
+  tonnageKg: number; // Σ reps × weightKg
   totalSets: number;
   totalReps: number;
 }
 
 export interface ExerciseStats {
-  exerciseId:    string;
-  totalSets:     number;
-  totalReps:     number;
-  tonnageKg:     number;
-  bestE1rmKg:    number;
-  bestE1rmAt:    string;
+  exerciseId: string;
+  totalSets: number;
+  totalReps: number;
+  tonnageKg: number;
+  bestE1rmKg: number;
+  bestE1rmAt: string;
   lastPerformed: string;
 }
 
 export interface MuscleShare {
   muscle: string;
-  sets:   number;
-  share:  number;              // 0..1
+  sets: number;
+  share: number; // 0..1
 }
 
 export interface PersonalRecord {
   exerciseId: string;
-  e1rmKg:     number;
-  weightKg:   number;
-  reps:       number;
+  e1rmKg: number;
+  weightKg: number;
+  reps: number;
   achievedAt: string;
 }
 
@@ -60,7 +60,7 @@ export interface PersonalRecord {
 /** ISO week label "YYYY-Www". Implémentation basée sur jeudi de la semaine. */
 export function toIsoWeek(iso: string): string {
   const d = new Date(iso);
-  const day = (d.getUTCDay() + 6) % 7;   // lundi=0
+  const day = (d.getUTCDay() + 6) % 7; // lundi=0
   d.setUTCDate(d.getUTCDate() - day + 3); // jeudi de la semaine courante
   const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
   const diff = (d.getTime() - firstThursday.getTime()) / 86_400_000;
@@ -94,12 +94,12 @@ export function perExerciseStats(sets: readonly AnalyticsSet[]): ExerciseStats[]
   for (const s of sets) {
     const est = e1rm(s.weightKg, s.reps);
     const cur = byEx.get(s.exerciseId) ?? {
-      exerciseId:    s.exerciseId,
-      totalSets:     0,
-      totalReps:     0,
-      tonnageKg:     0,
-      bestE1rmKg:    0,
-      bestE1rmAt:    s.performedAt,
+      exerciseId: s.exerciseId,
+      totalSets: 0,
+      totalReps: 0,
+      tonnageKg: 0,
+      bestE1rmKg: 0,
+      bestE1rmAt: s.performedAt,
       lastPerformed: s.performedAt,
     };
     cur.totalSets += 1;
@@ -150,9 +150,9 @@ export function detectPRs(sets: readonly AnalyticsSet[]): PersonalRecord[] {
       best.set(s.exerciseId, est);
       prs.push({
         exerciseId: s.exerciseId,
-        e1rmKg:     Math.round(est * 10) / 10,
-        weightKg:   s.weightKg,
-        reps:       s.reps,
+        e1rmKg: Math.round(est * 10) / 10,
+        weightKg: s.weightKg,
+        reps: s.reps,
         achievedAt: s.performedAt,
       });
     }

@@ -8,14 +8,32 @@ import type { Task } from '@kinetic/core';
 import { makeTestDeps, FakeClock } from '@test-helpers/stubs.ts';
 import type { TestDeps } from '@test-helpers/stubs.ts';
 
-const KEY_TASKS      = 'kinetic:vitalite:tasks';
+const KEY_TASKS = 'kinetic:vitalite:tasks';
 const KEY_LAST_RESET = 'kinetic:vitalite:last-reset';
 
 function makeTasks(): Task[] {
   return [
-    createTask({ id: 'a', title: 'Étirements',   type: 'recurring', xp: 50, createdAt: '2026-04-20' }),
-    createTask({ id: 'b', title: 'Méditation',   type: 'recurring', xp: 50, createdAt: '2026-04-20' }),
-    createTask({ id: 'c', title: 'Onboarding',   type: 'one-time',  xp: 100, createdAt: '2026-04-20' }),
+    createTask({
+      id: 'a',
+      title: 'Étirements',
+      type: 'recurring',
+      xp: 50,
+      createdAt: '2026-04-20',
+    }),
+    createTask({
+      id: 'b',
+      title: 'Méditation',
+      type: 'recurring',
+      xp: 50,
+      createdAt: '2026-04-20',
+    }),
+    createTask({
+      id: 'c',
+      title: 'Onboarding',
+      type: 'one-time',
+      xp: 100,
+      createdAt: '2026-04-20',
+    }),
   ];
 }
 
@@ -38,8 +56,14 @@ describe('resetDailyTasks', () => {
 
   it('remet les tâches recurring à done:false', async () => {
     const tasks = [
-      completeTask(createTask({ id: 'a', title: 'A', type: 'recurring', xp: 50, createdAt: '2026-04-19' }), '2026-04-19'),
-      completeTask(createTask({ id: 'b', title: 'B', type: 'recurring', xp: 50, createdAt: '2026-04-19' }), '2026-04-19'),
+      completeTask(
+        createTask({ id: 'a', title: 'A', type: 'recurring', xp: 50, createdAt: '2026-04-19' }),
+        '2026-04-19',
+      ),
+      completeTask(
+        createTask({ id: 'b', title: 'B', type: 'recurring', xp: 50, createdAt: '2026-04-19' }),
+        '2026-04-19',
+      ),
     ];
     await deps.storage.set(KEY_TASKS, tasks);
 
@@ -50,7 +74,13 @@ describe('resetDailyTasks', () => {
   });
 
   it('ne remet pas les tâches one-time à zéro', async () => {
-    const base      = createTask({ id: 'c', title: 'One-time', type: 'one-time', xp: 100, createdAt: '2026-04-19' });
+    const base = createTask({
+      id: 'c',
+      title: 'One-time',
+      type: 'one-time',
+      xp: 100,
+      createdAt: '2026-04-19',
+    });
     const completed = completeTask(base, '2026-04-19');
     await deps.storage.set(KEY_TASKS, [completed]);
 
@@ -60,7 +90,7 @@ describe('resetDailyTasks', () => {
     expect(saved?.[0]?.done).toBe(true); // Inchangée
   });
 
-  it('ne reset pas si déjà fait aujourd\'hui', async () => {
+  it("ne reset pas si déjà fait aujourd'hui", async () => {
     await deps.storage.set(KEY_LAST_RESET, '2026-04-20');
     await deps.storage.set(KEY_TASKS, makeTasks());
 
@@ -69,9 +99,9 @@ describe('resetDailyTasks', () => {
     expect(result.tasksReset).toBe(0);
   });
 
-  it('reset le lendemain d\'un reset précédent', async () => {
+  it("reset le lendemain d'un reset précédent", async () => {
     const tasks = makeTasks().map((t) =>
-      t.type === 'recurring' ? completeTask(t, '2026-04-20') : t
+      t.type === 'recurring' ? completeTask(t, '2026-04-20') : t,
     );
     await deps.storage.set(KEY_TASKS, tasks);
     await deps.storage.set(KEY_LAST_RESET, '2026-04-20');

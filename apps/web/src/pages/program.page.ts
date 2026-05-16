@@ -55,122 +55,270 @@ interface TrainingTemplate {
   }>;
 }
 
-const SPLIT_DEFINITIONS: Record<ActiveProgram['splitType'], Omit<ActiveProgram, 'id' | 'createdAt' | 'active'>> = {
+const SPLIT_DEFINITIONS: Record<
+  ActiveProgram['splitType'],
+  Omit<ActiveProgram, 'id' | 'createdAt' | 'active'>
+> = {
   ppl: {
-    name: 'Push Pull Legs', splitType: 'ppl', daysPerWeek: 6, goal: 'hypertrophie',
+    name: 'Push Pull Legs',
+    splitType: 'ppl',
+    daysPerWeek: 6,
+    goal: 'hypertrophie',
     schedule: [
-      { dayOfWeek: 1, label: 'Lundi',    focus: 'Push A',   muscleGroups: ['pectoraux','épaules','triceps'], restDay: false },
-      { dayOfWeek: 2, label: 'Mardi',    focus: 'Pull A',   muscleGroups: ['dos','biceps'],                  restDay: false },
-      { dayOfWeek: 3, label: 'Mercredi', focus: 'Jambes A', muscleGroups: ['quadriceps','ischio','fessiers'], restDay: false },
-      { dayOfWeek: 4, label: 'Jeudi',    focus: 'Push B',   muscleGroups: ['pectoraux','épaules','triceps'], restDay: false },
-      { dayOfWeek: 5, label: 'Vendredi', focus: 'Pull B',   muscleGroups: ['dos','biceps'],                  restDay: false },
-      { dayOfWeek: 6, label: 'Samedi',   focus: 'Jambes B', muscleGroups: ['quadriceps','ischio','fessiers'], restDay: false },
-      { dayOfWeek: 0, label: 'Dimanche', focus: 'Repos',    muscleGroups: [],                                restDay: true },
+      {
+        dayOfWeek: 1,
+        label: 'Lundi',
+        focus: 'Push A',
+        muscleGroups: ['pectoraux', 'épaules', 'triceps'],
+        restDay: false,
+      },
+      {
+        dayOfWeek: 2,
+        label: 'Mardi',
+        focus: 'Pull A',
+        muscleGroups: ['dos', 'biceps'],
+        restDay: false,
+      },
+      {
+        dayOfWeek: 3,
+        label: 'Mercredi',
+        focus: 'Jambes A',
+        muscleGroups: ['quadriceps', 'ischio', 'fessiers'],
+        restDay: false,
+      },
+      {
+        dayOfWeek: 4,
+        label: 'Jeudi',
+        focus: 'Push B',
+        muscleGroups: ['pectoraux', 'épaules', 'triceps'],
+        restDay: false,
+      },
+      {
+        dayOfWeek: 5,
+        label: 'Vendredi',
+        focus: 'Pull B',
+        muscleGroups: ['dos', 'biceps'],
+        restDay: false,
+      },
+      {
+        dayOfWeek: 6,
+        label: 'Samedi',
+        focus: 'Jambes B',
+        muscleGroups: ['quadriceps', 'ischio', 'fessiers'],
+        restDay: false,
+      },
+      { dayOfWeek: 0, label: 'Dimanche', focus: 'Repos', muscleGroups: [], restDay: true },
     ],
   },
   upper_lower: {
-    name: 'Haut / Bas', splitType: 'upper_lower', daysPerWeek: 4, goal: 'force',
+    name: 'Haut / Bas',
+    splitType: 'upper_lower',
+    daysPerWeek: 4,
+    goal: 'force',
     schedule: [
-      { dayOfWeek: 1, label: 'Lundi',    focus: 'Haut A', muscleGroups: ['pectoraux','dos','épaules','bras'], restDay: false },
-      { dayOfWeek: 2, label: 'Mardi',    focus: 'Bas A',  muscleGroups: ['quadriceps','ischio','fessiers'],   restDay: false },
-      { dayOfWeek: 3, label: 'Mercredi', focus: 'Repos',  muscleGroups: [], restDay: true },
-      { dayOfWeek: 4, label: 'Jeudi',    focus: 'Haut B', muscleGroups: ['pectoraux','dos','épaules','bras'], restDay: false },
-      { dayOfWeek: 5, label: 'Vendredi', focus: 'Bas B',  muscleGroups: ['quadriceps','ischio','fessiers'],   restDay: false },
-      { dayOfWeek: 6, label: 'Samedi',   focus: 'Repos',  muscleGroups: [], restDay: true },
-      { dayOfWeek: 0, label: 'Dimanche', focus: 'Repos',  muscleGroups: [], restDay: true },
+      {
+        dayOfWeek: 1,
+        label: 'Lundi',
+        focus: 'Haut A',
+        muscleGroups: ['pectoraux', 'dos', 'épaules', 'bras'],
+        restDay: false,
+      },
+      {
+        dayOfWeek: 2,
+        label: 'Mardi',
+        focus: 'Bas A',
+        muscleGroups: ['quadriceps', 'ischio', 'fessiers'],
+        restDay: false,
+      },
+      { dayOfWeek: 3, label: 'Mercredi', focus: 'Repos', muscleGroups: [], restDay: true },
+      {
+        dayOfWeek: 4,
+        label: 'Jeudi',
+        focus: 'Haut B',
+        muscleGroups: ['pectoraux', 'dos', 'épaules', 'bras'],
+        restDay: false,
+      },
+      {
+        dayOfWeek: 5,
+        label: 'Vendredi',
+        focus: 'Bas B',
+        muscleGroups: ['quadriceps', 'ischio', 'fessiers'],
+        restDay: false,
+      },
+      { dayOfWeek: 6, label: 'Samedi', focus: 'Repos', muscleGroups: [], restDay: true },
+      { dayOfWeek: 0, label: 'Dimanche', focus: 'Repos', muscleGroups: [], restDay: true },
     ],
   },
   full_body: {
-    name: 'Full Body', splitType: 'full_body', daysPerWeek: 3, goal: 'débutant',
+    name: 'Full Body',
+    splitType: 'full_body',
+    daysPerWeek: 3,
+    goal: 'débutant',
     schedule: [
-      { dayOfWeek: 1, label: 'Lundi',    focus: 'Full Body A', muscleGroups: ['corps entier'], restDay: false },
-      { dayOfWeek: 2, label: 'Mardi',    focus: 'Repos',       muscleGroups: [], restDay: true },
-      { dayOfWeek: 3, label: 'Mercredi', focus: 'Full Body B', muscleGroups: ['corps entier'], restDay: false },
-      { dayOfWeek: 4, label: 'Jeudi',    focus: 'Repos',       muscleGroups: [], restDay: true },
-      { dayOfWeek: 5, label: 'Vendredi', focus: 'Full Body C', muscleGroups: ['corps entier'], restDay: false },
-      { dayOfWeek: 6, label: 'Samedi',   focus: 'Repos',       muscleGroups: [], restDay: true },
-      { dayOfWeek: 0, label: 'Dimanche', focus: 'Repos',       muscleGroups: [], restDay: true },
+      {
+        dayOfWeek: 1,
+        label: 'Lundi',
+        focus: 'Full Body A',
+        muscleGroups: ['corps entier'],
+        restDay: false,
+      },
+      { dayOfWeek: 2, label: 'Mardi', focus: 'Repos', muscleGroups: [], restDay: true },
+      {
+        dayOfWeek: 3,
+        label: 'Mercredi',
+        focus: 'Full Body B',
+        muscleGroups: ['corps entier'],
+        restDay: false,
+      },
+      { dayOfWeek: 4, label: 'Jeudi', focus: 'Repos', muscleGroups: [], restDay: true },
+      {
+        dayOfWeek: 5,
+        label: 'Vendredi',
+        focus: 'Full Body C',
+        muscleGroups: ['corps entier'],
+        restDay: false,
+      },
+      { dayOfWeek: 6, label: 'Samedi', focus: 'Repos', muscleGroups: [], restDay: true },
+      { dayOfWeek: 0, label: 'Dimanche', focus: 'Repos', muscleGroups: [], restDay: true },
     ],
   },
   bro_split: {
-    name: 'Bro Split', splitType: 'bro_split', daysPerWeek: 5, goal: 'isolation',
+    name: 'Bro Split',
+    splitType: 'bro_split',
+    daysPerWeek: 5,
+    goal: 'isolation',
     schedule: [
-      { dayOfWeek: 1, label: 'Lundi',    focus: 'Pectoraux', muscleGroups: ['pectoraux'], restDay: false },
-      { dayOfWeek: 2, label: 'Mardi',    focus: 'Dos',       muscleGroups: ['dos'],       restDay: false },
-      { dayOfWeek: 3, label: 'Mercredi', focus: 'Épaules',   muscleGroups: ['épaules'],   restDay: false },
-      { dayOfWeek: 4, label: 'Jeudi',    focus: 'Bras',      muscleGroups: ['biceps','triceps'], restDay: false },
-      { dayOfWeek: 5, label: 'Vendredi', focus: 'Jambes',    muscleGroups: ['jambes'],    restDay: false },
-      { dayOfWeek: 6, label: 'Samedi',   focus: 'Repos',     muscleGroups: [], restDay: true },
-      { dayOfWeek: 0, label: 'Dimanche', focus: 'Repos',     muscleGroups: [], restDay: true },
+      {
+        dayOfWeek: 1,
+        label: 'Lundi',
+        focus: 'Pectoraux',
+        muscleGroups: ['pectoraux'],
+        restDay: false,
+      },
+      { dayOfWeek: 2, label: 'Mardi', focus: 'Dos', muscleGroups: ['dos'], restDay: false },
+      {
+        dayOfWeek: 3,
+        label: 'Mercredi',
+        focus: 'Épaules',
+        muscleGroups: ['épaules'],
+        restDay: false,
+      },
+      {
+        dayOfWeek: 4,
+        label: 'Jeudi',
+        focus: 'Bras',
+        muscleGroups: ['biceps', 'triceps'],
+        restDay: false,
+      },
+      {
+        dayOfWeek: 5,
+        label: 'Vendredi',
+        focus: 'Jambes',
+        muscleGroups: ['jambes'],
+        restDay: false,
+      },
+      { dayOfWeek: 6, label: 'Samedi', focus: 'Repos', muscleGroups: [], restDay: true },
+      { dayOfWeek: 0, label: 'Dimanche', focus: 'Repos', muscleGroups: [], restDay: true },
     ],
   },
 };
 
 const FALLBACK_EXERCISES: Record<string, TodoExercise[]> = {
   push: [
-    { id: 'pp1', name: 'Développé couché',     sets: 4, targetReps: 8,  targetRpe: 8, done: false },
-    { id: 'pp2', name: 'Développé incliné',    sets: 3, targetReps: 10, targetRpe: 8, done: false },
+    { id: 'pp1', name: 'Développé couché', sets: 4, targetReps: 8, targetRpe: 8, done: false },
+    { id: 'pp2', name: 'Développé incliné', sets: 3, targetReps: 10, targetRpe: 8, done: false },
     { id: 'pp3', name: 'Élévations latérales', sets: 3, targetReps: 15, targetRpe: 8, done: false },
-    { id: 'pp4', name: 'Extensions triceps',   sets: 3, targetReps: 12, targetRpe: 8, done: false },
+    { id: 'pp4', name: 'Extensions triceps', sets: 3, targetReps: 12, targetRpe: 8, done: false },
   ],
   pull: [
-    { id: 'pl1', name: 'Tractions',    sets: 4, targetReps: 8,  targetRpe: 8, done: false },
-    { id: 'pl2', name: 'Rowing barre', sets: 4, targetReps: 8,  targetRpe: 8, done: false },
-    { id: 'pl3', name: 'Curl biceps',  sets: 3, targetReps: 12, targetRpe: 8, done: false },
+    { id: 'pl1', name: 'Tractions', sets: 4, targetReps: 8, targetRpe: 8, done: false },
+    { id: 'pl2', name: 'Rowing barre', sets: 4, targetReps: 8, targetRpe: 8, done: false },
+    { id: 'pl3', name: 'Curl biceps', sets: 3, targetReps: 12, targetRpe: 8, done: false },
   ],
   jambes: [
-    { id: 'j1', name: 'Squat',                     sets: 4, targetReps: 6,  targetRpe: 8, done: false },
-    { id: 'j2', name: 'Leg press',                 sets: 3, targetReps: 12, targetRpe: 8, done: false },
-    { id: 'j3', name: 'Soulevé de terre roumain',  sets: 3, targetReps: 10, targetRpe: 8, done: false },
-    { id: 'j4', name: 'Mollets assis',             sets: 4, targetReps: 15, targetRpe: 8, done: false },
+    { id: 'j1', name: 'Squat', sets: 4, targetReps: 6, targetRpe: 8, done: false },
+    { id: 'j2', name: 'Leg press', sets: 3, targetReps: 12, targetRpe: 8, done: false },
+    {
+      id: 'j3',
+      name: 'Soulevé de terre roumain',
+      sets: 3,
+      targetReps: 10,
+      targetRpe: 8,
+      done: false,
+    },
+    { id: 'j4', name: 'Mollets assis', sets: 4, targetReps: 15, targetRpe: 8, done: false },
   ],
   'full body': [
-    { id: 'fb1', name: 'Squat',              sets: 3, targetReps: 8, targetRpe: 7, done: false },
-    { id: 'fb2', name: 'Développé couché',   sets: 3, targetReps: 8, targetRpe: 7, done: false },
-    { id: 'fb3', name: 'Soulevé de terre',   sets: 3, targetReps: 6, targetRpe: 8, done: false },
-    { id: 'fb4', name: 'Tractions',          sets: 3, targetReps: 8, targetRpe: 8, done: false },
+    { id: 'fb1', name: 'Squat', sets: 3, targetReps: 8, targetRpe: 7, done: false },
+    { id: 'fb2', name: 'Développé couché', sets: 3, targetReps: 8, targetRpe: 7, done: false },
+    { id: 'fb3', name: 'Soulevé de terre', sets: 3, targetReps: 6, targetRpe: 8, done: false },
+    { id: 'fb4', name: 'Tractions', sets: 3, targetReps: 8, targetRpe: 8, done: false },
   ],
 };
 
 const MUSCLE_TO_EXERCISE_IDS: Record<string, string[]> = {
-  pectoraux:      ['bench_press','incline_bench','dips','cable_fly'],
-  épaules:        ['shoulder_press','lateral_raise','front_raise'],
-  triceps:        ['triceps_pushdown','skull_crusher','close_grip'],
-  dos:            ['pull_ups','barbell_row','lat_pulldown','seated_row'],
-  biceps:         ['barbell_curl','hammer_curl','preacher_curl'],
-  quadriceps:     ['squat','leg_press','leg_extension','hack_squat'],
-  ischio:         ['romanian_deadlift','leg_curl','good_morning'],
-  fessiers:       ['hip_thrust','bulgarian_split_squat'],
-  mollets:        ['standing_calf_raise','seated_calf_raise'],
-  'corps entier': ['squat','bench_press','barbell_row','overhead_press'],
+  pectoraux: ['bench_press', 'incline_bench', 'dips', 'cable_fly'],
+  épaules: ['shoulder_press', 'lateral_raise', 'front_raise'],
+  triceps: ['triceps_pushdown', 'skull_crusher', 'close_grip'],
+  dos: ['pull_ups', 'barbell_row', 'lat_pulldown', 'seated_row'],
+  biceps: ['barbell_curl', 'hammer_curl', 'preacher_curl'],
+  quadriceps: ['squat', 'leg_press', 'leg_extension', 'hack_squat'],
+  ischio: ['romanian_deadlift', 'leg_curl', 'good_morning'],
+  fessiers: ['hip_thrust', 'bulgarian_split_squat'],
+  mollets: ['standing_calf_raise', 'seated_calf_raise'],
+  'corps entier': ['squat', 'bench_press', 'barbell_row', 'overhead_press'],
 };
 
 export function program() {
   return {
-    activeProgram:   null as ActiveProgram | null,
+    activeProgram: null as ActiveProgram | null,
     completedDayIds: [] as number[],
-    todoStatus:      {} as Record<string, boolean>,
-    generating:      false,
-    generatedCount:  0,
+    todoStatus: {} as Record<string, boolean>,
+    generating: false,
+    generatedCount: 0,
 
     availableSplits: [
-      { type: 'ppl',         name: 'Push / Pull / Legs', description: 'Optimal hypertrophie, 6j/sem', daysPerWeek: 6, goal: 'hypertrophie' },
-      { type: 'upper_lower', name: 'Haut / Bas',          description: 'Force + masse, 4j/sem',       daysPerWeek: 4, goal: 'force' },
-      { type: 'full_body',   name: 'Full Body',           description: 'Fréquence maximale, 3j/sem',  daysPerWeek: 3, goal: 'débutant' },
-      { type: 'bro_split',   name: 'Bro Split',           description: '1 muscle / jour, 5j/sem',     daysPerWeek: 5, goal: 'isolation' },
+      {
+        type: 'ppl',
+        name: 'Push / Pull / Legs',
+        description: 'Optimal hypertrophie, 6j/sem',
+        daysPerWeek: 6,
+        goal: 'hypertrophie',
+      },
+      {
+        type: 'upper_lower',
+        name: 'Haut / Bas',
+        description: 'Force + masse, 4j/sem',
+        daysPerWeek: 4,
+        goal: 'force',
+      },
+      {
+        type: 'full_body',
+        name: 'Full Body',
+        description: 'Fréquence maximale, 3j/sem',
+        daysPerWeek: 3,
+        goal: 'débutant',
+      },
+      {
+        type: 'bro_split',
+        name: 'Bro Split',
+        description: '1 muscle / jour, 5j/sem',
+        daysPerWeek: 5,
+        goal: 'isolation',
+      },
     ] as SplitOption[],
 
     get todayFocus(): ProgramDay | null {
       if (!this.activeProgram) return null;
       const day = new Date().getDay();
-      return this.activeProgram.schedule.find(d => d.dayOfWeek === day) ?? null;
+      return this.activeProgram.schedule.find((d) => d.dayOfWeek === day) ?? null;
     },
 
     get weekDays() {
-      const days = ['D','L','M','M','J','V','S'];
+      const days = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
       const today = new Date().getDay();
       return Array.from({ length: 7 }, (_, i) => {
-        const pd = this.activeProgram?.schedule.find(d => d.dayOfWeek === i);
+        const pd = this.activeProgram?.schedule.find((d) => d.dayOfWeek === i);
         return {
           short: days[i],
           isToday: i === today,
@@ -188,12 +336,12 @@ export function program() {
     },
 
     get totalTrainingDays(): number {
-      return this.activeProgram?.schedule.filter(d => !d.restDay).length ?? 0;
+      return this.activeProgram?.schedule.filter((d) => !d.restDay).length ?? 0;
     },
 
     get completedTrainingDays(): number {
-      return this.completedDayIds.filter(d => {
-        const pd = this.activeProgram?.schedule.find(s => s.dayOfWeek === d);
+      return this.completedDayIds.filter((d) => {
+        const pd = this.activeProgram?.schedule.find((s) => s.dayOfWeek === d);
         return pd && !pd.restDay;
       }).length;
     },
@@ -207,7 +355,7 @@ export function program() {
       const focusLower = focus.toLowerCase();
       for (const [key, exs] of Object.entries(FALLBACK_EXERCISES)) {
         if (focusLower.includes(key)) {
-          return exs.map(e => ({ ...e, done: this.todoStatus[e.id] ?? false }));
+          return exs.map((e) => ({ ...e, done: this.todoStatus[e.id] ?? false }));
         }
       }
       return [];
@@ -220,7 +368,9 @@ export function program() {
         const [stored, completed, todo, genCount] = await Promise.all([
           deps.storage.get<ActiveProgram>(STORAGE_KEYS.PROGRAM_ACTIVE),
           deps.storage.get<number[]>(STORAGE_KEYS.PROGRAM_COMPLETED_DAYS(this.weekKey())),
-          deps.storage.get<Record<string, boolean>>(STORAGE_KEYS.PROGRAM_TODO_STATUS(this.todayKey())),
+          deps.storage.get<Record<string, boolean>>(
+            STORAGE_KEYS.PROGRAM_TODO_STATUS(this.todayKey()),
+          ),
           deps.storage.get<number>(STORAGE_KEYS.PROGRAM_GENERATED_COUNT),
         ]);
         if (stored) this.activeProgram = stored;
@@ -237,15 +387,17 @@ export function program() {
       this.generating = true;
       try {
         const deps = await getDeps();
-        const exercises = (await deps.storage.get<ExerciseRecord[]>(STORAGE_KEYS.TRAINING_EXERCISES)) ?? [];
-        const existingTemplates = (await deps.storage.get<TrainingTemplate[]>(STORAGE_KEYS.TRAINING_TEMPLATES)) ?? [];
+        const exercises =
+          (await deps.storage.get<ExerciseRecord[]>(STORAGE_KEYS.TRAINING_EXERCISES)) ?? [];
+        const existingTemplates =
+          (await deps.storage.get<TrainingTemplate[]>(STORAGE_KEYS.TRAINING_TEMPLATES)) ?? [];
 
-        const allExIds = exercises.map(e => e.id);
+        const allExIds = exercises.map((e) => e.id);
         const newTemplates: TrainingTemplate[] = [];
 
         for (const day of this.activeProgram.schedule) {
           if (day.restDay) continue;
-          if (existingTemplates.some(t => t.name === day.focus)) continue;
+          if (existingTemplates.some((t) => t.name === day.focus)) continue;
 
           const exIds = new Set<string>();
           for (const muscle of day.muscleGroups) {
@@ -256,14 +408,14 @@ export function program() {
             if (exIds.size === 0) {
               const keyword = muscle.toLowerCase();
               exercises
-                .filter(e => e.muscles?.some(m => m.toLowerCase().includes(keyword)))
+                .filter((e) => e.muscles?.some((m) => m.toLowerCase().includes(keyword)))
                 .slice(0, 4)
-                .forEach(e => exIds.add(e.id));
+                .forEach((e) => exIds.add(e.id));
             }
           }
 
           if (exIds.size === 0 && exercises.length > 0) {
-            exercises.slice(0, 4).forEach(e => exIds.add(e.id));
+            exercises.slice(0, 4).forEach((e) => exIds.add(e.id));
           }
 
           const templateExercises = [...exIds].slice(0, 6).map((id, i) => ({
@@ -288,13 +440,17 @@ export function program() {
           await deps.storage.set(STORAGE_KEYS.TRAINING_TEMPLATES, merged);
           this.generatedCount = newTemplates.length;
           await deps.storage.set(STORAGE_KEYS.PROGRAM_GENERATED_COUNT, this.generatedCount);
-          window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: newTemplates.length + ' templates créés ✓' },
-          }));
+          window.dispatchEvent(
+            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+              detail: { kind: 'success', message: newTemplates.length + ' templates créés ✓' },
+            }),
+          );
         } else {
-          window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'info', message: 'Templates déjà existants pour ce programme' },
-          }));
+          window.dispatchEvent(
+            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+              detail: { kind: 'info', message: 'Templates déjà existants pour ce programme' },
+            }),
+          );
         }
       } catch (err) {
         console.error('[program] generateTemplates failed:', err);
@@ -310,8 +466,8 @@ export function program() {
       const day = d.getDay(); // 0=dim, 1=lun, ..., 6=sam
       const monday = new Date(d);
       monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-      const y  = monday.getFullYear();
-      const m  = String(monday.getMonth() + 1).padStart(2, '0');
+      const y = monday.getFullYear();
+      const m = String(monday.getMonth() + 1).padStart(2, '0');
       const dd = String(monday.getDate()).padStart(2, '0');
       return `${y}-W${m}-${dd}`;
     },
@@ -319,7 +475,7 @@ export function program() {
     todayKey(): string {
       const d = new Date();
       // FIX C2: getMonth() retourne 0-11, on ajoute 1 et on zero-pad
-      const m   = String(d.getMonth() + 1).padStart(2, '0');
+      const m = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
       return `${d.getFullYear()}-${m}-${day}`;
     },
@@ -336,14 +492,18 @@ export function program() {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEYS.PROGRAM_ACTIVE, prog);
         this.activeProgram = prog;
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'success', message: 'Programme activé ✓' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'success', message: 'Programme activé ✓' },
+          }),
+        );
       } catch (err) {
         console.error('[program] selectSplit failed:', err);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: 'Échec activation du programme. Réessaie.' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Échec activation du programme. Réessaie.' },
+          }),
+        );
       }
     },
 
@@ -354,14 +514,19 @@ export function program() {
         await deps.storage.set(STORAGE_KEYS.PROGRAM_TODO_STATUS(this.todayKey()), this.todoStatus);
 
         const exs = this.todayExercises;
-        if (exs.length > 0 && exs.every(e => this.todoStatus[e.id])) {
+        if (exs.length > 0 && exs.every((e) => this.todoStatus[e.id])) {
           const today = new Date().getDay();
           if (!this.completedDayIds.includes(today)) {
             this.completedDayIds = [...this.completedDayIds, today];
-            await deps.storage.set(STORAGE_KEYS.PROGRAM_COMPLETED_DAYS(this.weekKey()), this.completedDayIds);
-            window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'success', message: 'Séance complète ! 🏆 +50 XP' },
-            }));
+            await deps.storage.set(
+              STORAGE_KEYS.PROGRAM_COMPLETED_DAYS(this.weekKey()),
+              this.completedDayIds,
+            );
+            window.dispatchEvent(
+              new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+                detail: { kind: 'success', message: 'Séance complète ! 🏆 +50 XP' },
+              }),
+            );
           }
         }
       } catch (err) {
@@ -386,19 +551,26 @@ export function program() {
       }
       try {
         const deps = await getDeps();
-        const templates = (await deps.storage.get<TrainingTemplate[]>(STORAGE_KEYS.TRAINING_TEMPLATES)) ?? [];
-        const match = templates.find(t =>
-          t.name.toLowerCase() === focus.focus.toLowerCase() ||
-          t.name.toLowerCase().includes(focus.focus.toLowerCase()) ||
-          focus.focus.toLowerCase().includes(t.name.toLowerCase())
+        const templates =
+          (await deps.storage.get<TrainingTemplate[]>(STORAGE_KEYS.TRAINING_TEMPLATES)) ?? [];
+        const match = templates.find(
+          (t) =>
+            t.name.toLowerCase() === focus.focus.toLowerCase() ||
+            t.name.toLowerCase().includes(focus.focus.toLowerCase()) ||
+            focus.focus.toLowerCase().includes(t.name.toLowerCase()),
         );
         if (match) {
           // Passe le template ID via sessionStorage — seances.page.ts le récupère dans init().
           // sessionStorage peut throw en mode privé iOS / quota plein → safe wrap.
-          try { sessionStorage.setItem(STORAGE_KEYS.PROGRAM_AUTO_TEMPLATE, match.id); }
-          catch { /* on perd le hand-off mais l'utilisateur peut choisir manuellement */ }
+          try {
+            sessionStorage.setItem(STORAGE_KEYS.PROGRAM_AUTO_TEMPLATE, match.id);
+          } catch {
+            /* on perd le hand-off mais l'utilisateur peut choisir manuellement */
+          }
         }
-      } catch { /* ignore — sessionStorage peut throw en mode privé */ }
+      } catch {
+        /* ignore — sessionStorage peut throw en mode privé */
+      }
       navigate('/seances');
     },
   };

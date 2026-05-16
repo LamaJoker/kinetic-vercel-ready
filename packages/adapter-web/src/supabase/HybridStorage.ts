@@ -40,20 +40,22 @@ interface DeltaCapableStorage {
   keysSince?(since: string): Promise<readonly StorageKey[]>;
 }
 
-const SYNC_FLAG_KEY    = STORAGE_KEYS.SYNC_INITIAL_DONE;
+const SYNC_FLAG_KEY = STORAGE_KEYS.SYNC_INITIAL_DONE;
 const SYNC_LAST_AT_KEY = STORAGE_KEYS.SYNC_LAST_AT;
 const MAX_PENDING_WRITES = 500;
 
 export class HybridStorage implements StoragePort {
   private pendingWrites = new Map<StorageKey, PendingWrite>();
-  private flushing      = false;
+  private flushing = false;
 
   constructor(
-    private readonly local:  StoragePort,
+    private readonly local: StoragePort,
     private readonly remote: StoragePort,
   ) {
     if (typeof window !== 'undefined') {
-      window.addEventListener('online', () => { void this.flushPendingWrites(); });
+      window.addEventListener('online', () => {
+        void this.flushPendingWrites();
+      });
     }
   }
 
@@ -101,7 +103,7 @@ export class HybridStorage implements StoragePort {
   async syncFromRemote(opts: { force?: boolean } = {}): Promise<void> {
     if (!this.isOnline()) return;
 
-    const force      = opts.force === true;
+    const force = opts.force === true;
     const lastSyncAt = await this.local.get<string>(SYNC_LAST_AT_KEY);
 
     try {
@@ -209,11 +211,15 @@ export class HybridStorage implements StoragePort {
           console.warn('[HybridStorage] remote sync failed for', key, err);
           this.pendingWrites.set(key, { ...pending, attempts: nextAttempts });
           if (nextAttempts >= 3) {
-            console.warn(`[HybridStorage] giving up after ${nextAttempts} attempts for key "${key}"`);
+            console.warn(
+              `[HybridStorage] giving up after ${nextAttempts} attempts for key "${key}"`,
+            );
             this.pendingWrites.delete(key);
             // M10 FIX: notifier l'UI que la donnée n'a pas pu être synchronisée
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_SYNC_FAILED, { detail: { key } }));
+              window.dispatchEvent(
+                new CustomEvent(STORAGE_KEYS.EVENT_SYNC_FAILED, { detail: { key } }),
+              );
             }
           }
         }
@@ -228,7 +234,9 @@ export class HybridStorage implements StoragePort {
     if (!prev && this.pendingWrites.size >= MAX_PENDING_WRITES) {
       const oldestKey = this.pendingWrites.keys().next().value as StorageKey | undefined;
       if (oldestKey) {
-        console.warn(`[HybridStorage] pending write queue full, evicting oldest key "${oldestKey}"`);
+        console.warn(
+          `[HybridStorage] pending write queue full, evicting oldest key "${oldestKey}"`,
+        );
         this.pendingWrites.delete(oldestKey);
       }
     }

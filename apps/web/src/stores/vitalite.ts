@@ -12,7 +12,13 @@ import { getDeps } from '../deps';
 import { sanitizeUserInput } from '../lib/security';
 
 const DEFAULT_TASKS_SPEC = [
-  { id: 'morning-stretch', title: 'Etirements matin', icon: '🧘', xp: 50, priority: 'high' as const },
+  {
+    id: 'morning-stretch',
+    title: 'Etirements matin',
+    icon: '🧘',
+    xp: 50,
+    priority: 'high' as const,
+  },
   { id: 'cold-shower', title: 'Douche froide', icon: '🚿', xp: 50, priority: 'high' as const },
   { id: 'breakfast', title: 'Petit-dejeuner sain', icon: '🥗', xp: 50, priority: 'med' as const },
   { id: 'meditation', title: 'Meditation 5 min', icon: '🧠', xp: 50, priority: 'med' as const },
@@ -54,7 +60,11 @@ function dateIso(offset: number): string {
 
 function dateLabel(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+    return new Date(iso).toLocaleDateString('fr-FR', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    });
   } catch {
     return iso;
   }
@@ -71,7 +81,7 @@ function buildTasks(customSpecs: CustomTaskSpec[]): Task[] {
       priority: spec.priority,
       type: 'recurring',
       createdAt: today,
-    })
+    }),
   );
 }
 
@@ -99,7 +109,28 @@ export function vitaliteStore() {
     historyLoading: false,
     detailDay: null as HistoryDay | null,
 
-    emojiSuggestions: ['⭐', '🏋️', '🧘', '🚶', '🥗', '💧', '📚', '📝', '🎯', '🔥', '💪', '🏃', '🧠', '😴', '🚴', '🤸', '🥦', '🫁', '⚡', '🎸'],
+    emojiSuggestions: [
+      '⭐',
+      '🏋️',
+      '🧘',
+      '🚶',
+      '🥗',
+      '💧',
+      '📚',
+      '📝',
+      '🎯',
+      '🔥',
+      '💪',
+      '🏃',
+      '🧠',
+      '😴',
+      '🚴',
+      '🤸',
+      '🥦',
+      '🫁',
+      '⚡',
+      '🎸',
+    ],
 
     async init(): Promise<void> {
       try {
@@ -110,7 +141,7 @@ export function vitaliteStore() {
         this.tasks = buildTasks(this.customSpecs).map((task) =>
           doneIds.includes(task.id)
             ? { ...task, done: true, completedAt: today, completionCount: 1 }
-            : task
+            : task,
         );
       } catch (err) {
         console.error('[vitalite] init failed:', err);
@@ -140,8 +171,13 @@ export function vitaliteStore() {
           if (result.reason === 'already_completed_today' || result.reason === 'already_done') {
             this.tasks = this.tasks.map((entry) =>
               entry.id === taskId
-                ? { ...entry, done: true, completedAt: today, completionCount: entry.completionCount + 1 }
-                : entry
+                ? {
+                    ...entry,
+                    done: true,
+                    completedAt: today,
+                    completionCount: entry.completionCount + 1,
+                  }
+                : entry,
             );
           }
           return;
@@ -149,8 +185,13 @@ export function vitaliteStore() {
 
         this.tasks = this.tasks.map((entry) =>
           entry.id === taskId
-            ? { ...entry, done: true, completedAt: today, completionCount: entry.completionCount + 1 }
-            : entry
+            ? {
+                ...entry,
+                done: true,
+                completedAt: today,
+                completionCount: entry.completionCount + 1,
+              }
+            : entry,
         );
 
         const doneKey = `kinetic:vitalite:done:${today}`;
@@ -177,14 +218,19 @@ export function vitaliteStore() {
         }
 
         await this._refreshXpStore();
-        void syncDailyLog({ storage: deps.storage, clock: deps.clock, dailyLogSync: deps.dailyLogSync })
-          .catch((err) => console.warn('[vitalite] sync failed:', err));
+        void syncDailyLog({
+          storage: deps.storage,
+          clock: deps.clock,
+          dailyLogSync: deps.dailyLogSync,
+        }).catch((err) => console.warn('[vitalite] sync failed:', err));
 
         if (result.leveledUp && result.newLevel !== undefined) {
           const reward = REWARDS.find((entry) => entry.level === result.newLevel);
-          window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_LEVELUP, {
-            detail: { level: result.newLevel, title: reward?.title ?? '' },
-          }));
+          window.dispatchEvent(
+            new CustomEvent(STORAGE_KEYS.EVENT_LEVELUP, {
+              detail: { level: result.newLevel, title: reward?.title ?? '' },
+            }),
+          );
         }
       } catch (err) {
         console.error('[vitalite] complete failed:', err);
@@ -219,26 +265,34 @@ export function vitaliteStore() {
         );
 
         if (!result.ok) {
-          notify('error', 'Impossible d\'annuler. Reessaie.');
+          notify('error', "Impossible d'annuler. Reessaie.");
           return;
         }
         if (!result.undone) {
-          notify('info', 'Cette tache n\'etait plus completee.');
+          notify('info', "Cette tache n'etait plus completee.");
           return;
         }
 
         this.tasks = this.tasks.map((entry) =>
           entry.id === taskId
-            ? { ...entry, done: false, completedAt: null, completionCount: Math.max(0, entry.completionCount - 1) }
-            : entry
+            ? {
+                ...entry,
+                done: false,
+                completedAt: null,
+                completionCount: Math.max(0, entry.completionCount - 1),
+              }
+            : entry,
         );
 
         await this._refreshXpStore();
-        void syncDailyLog({ storage: deps.storage, clock: deps.clock, dailyLogSync: deps.dailyLogSync })
-          .catch((err) => console.warn('[vitalite] sync failed after undo:', err));
+        void syncDailyLog({
+          storage: deps.storage,
+          clock: deps.clock,
+          dailyLogSync: deps.dailyLogSync,
+        }).catch((err) => console.warn('[vitalite] sync failed after undo:', err));
       } catch (err) {
         console.error('[vitalite] undo failed:', err);
-        notify('error', 'Impossible d\'annuler. Reessaie.');
+        notify('error', "Impossible d'annuler. Reessaie.");
       } finally {
         this._pendingIds = this._pendingIds.filter((id) => id !== taskId);
         this.completingId = null;
@@ -289,7 +343,7 @@ export function vitaliteStore() {
         notify('success', `Tache "${spec.title}" ajoutee`);
       } catch (err) {
         console.error('[vitalite] addCustomTask failed:', err);
-        notify('error', 'Impossible d\'ajouter la tache.');
+        notify('error', "Impossible d'ajouter la tache.");
       }
     },
 
@@ -316,19 +370,26 @@ export function vitaliteStore() {
       try {
         const deps = await getDeps();
         const taskMap = new Map(
-          [...DEFAULT_TASKS_SPEC, ...this.customSpecs].map((entry) => [entry.id, {
-            id: entry.id,
-            title: entry.title,
-            icon: entry.icon,
-          }]),
+          [...DEFAULT_TASKS_SPEC, ...this.customSpecs].map((entry) => [
+            entry.id,
+            {
+              id: entry.id,
+              title: entry.title,
+              icon: entry.icon,
+            },
+          ]),
         );
-        const dates = Array.from({ length: this._rewardsHistoryDays() }, (_, index) => dateIso(-(index + 1)));
+        const dates = Array.from({ length: this._rewardsHistoryDays() }, (_, index) =>
+          dateIso(-(index + 1)),
+        );
         // Batching par 5 pour éviter d'engorger le thread IDB sur mobile
         const BATCH = 5;
         const allDoneIds: (string[] | null)[] = [];
         for (let i = 0; i < dates.length; i += BATCH) {
           const batchResult = await Promise.all(
-            dates.slice(i, i + BATCH).map((date) => deps.storage.get<string[]>(`kinetic:vitalite:done:${date}`)),
+            dates
+              .slice(i, i + BATCH)
+              .map((date) => deps.storage.get<string[]>(`kinetic:vitalite:done:${date}`)),
           );
           allDoneIds.push(...batchResult);
         }
@@ -388,7 +449,9 @@ export function vitaliteStore() {
 
     _hasXpBonus(): boolean {
       try {
-        const Alpine = (window as unknown as { Alpine: { store: (name: string) => { currentLevel?: number } } }).Alpine;
+        const Alpine = (
+          window as unknown as { Alpine: { store: (name: string) => { currentLevel?: number } } }
+        ).Alpine;
         return (Alpine?.store('xp')?.currentLevel ?? 1) >= 5;
       } catch {
         return false;
@@ -397,7 +460,9 @@ export function vitaliteStore() {
 
     _rewardsHistoryDays(): number {
       try {
-        const Alpine = (window as unknown as { Alpine: { store: (name: string) => { historyDays?: number } } }).Alpine;
+        const Alpine = (
+          window as unknown as { Alpine: { store: (name: string) => { historyDays?: number } } }
+        ).Alpine;
         return (Alpine?.store('rewards') as { historyDays?: number })?.historyDays ?? 7;
       } catch {
         return 7;

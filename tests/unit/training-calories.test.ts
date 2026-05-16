@@ -9,33 +9,53 @@ describe('estimateStrengthWorkoutCaloriesKcal', () => {
   });
 
   it('returns null when profile is null', () => {
-    expect(estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: 8, profile: null })).toBeNull();
+    expect(
+      estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: 8, profile: null }),
+    ).toBeNull();
   });
 
   it('returns null when weightKg is 0 or negative', () => {
-    expect(estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: 8, profile: { weightKg: 0 } })).toBeNull();
-    expect(estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: 8, profile: { weightKg: -10 } })).toBeNull();
+    expect(
+      estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: 8, profile: { weightKg: 0 } }),
+    ).toBeNull();
+    expect(
+      estimateStrengthWorkoutCaloriesKcal({
+        durationMin: 60,
+        avgRpe: 8,
+        profile: { weightKg: -10 },
+      }),
+    ).toBeNull();
   });
 
   it('computes kcal using MET formula for moderate RPE', () => {
     // RPE 8 → delta=(8-6)*0.5=1 → MET=4.5; kcal=4.5*3.5*80/200*60
-    const expected = Math.round(4.5 * 3.5 * 80 / 200 * 60);
-    expect(estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: 8, profile })).toBe(expected);
+    const expected = Math.round(((4.5 * 3.5 * 80) / 200) * 60);
+    expect(estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: 8, profile })).toBe(
+      expected,
+    );
   });
 
   it('uses MET 3.5 for RPE 6 (minimum)', () => {
-    const expected = Math.round(3.5 * 3.5 * 80 / 200 * 60);
-    expect(estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: 6, profile })).toBe(expected);
+    const expected = Math.round(((3.5 * 3.5 * 80) / 200) * 60);
+    expect(estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: 6, profile })).toBe(
+      expected,
+    );
   });
 
   it('uses MET 5.5 for RPE 10 (clamp formula: 3.5 + (10-6)*0.5 = 5.5)', () => {
     // MET = clamp(3.5 + (rpe-6)*0.5, 3.5, 6.0) = clamp(3.5+2, 3.5, 6.0) = 5.5
-    const expected = Math.round(5.5 * 3.5 * 80 / 200 * 60);
-    expect(estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: 10, profile })).toBe(expected);
+    const expected = Math.round(((5.5 * 3.5 * 80) / 200) * 60);
+    expect(estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: 10, profile })).toBe(
+      expected,
+    );
   });
 
   it('defaults avgRpe to 8 when null', () => {
-    const withNull = estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: null, profile });
+    const withNull = estimateStrengthWorkoutCaloriesKcal({
+      durationMin: 60,
+      avgRpe: null,
+      profile,
+    });
     const withEight = estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: 8, profile });
     expect(withNull).toBe(withEight);
   });

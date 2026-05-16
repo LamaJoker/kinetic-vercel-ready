@@ -108,7 +108,7 @@ describe('TaskCompletionGuard', () => {
       expect(result.xpAwarded).toBe(0);
     });
 
-    it('n\'octroie pas de XP pour une tâche done', () => {
+    it("n'octroie pas de XP pour une tâche done", () => {
       guard.complete(task); // Première complétion légitime
       // Simuler un reload : task.done est true
       const result2 = guard.complete(task);
@@ -133,7 +133,7 @@ describe('TaskCompletionGuard', () => {
   });
 
   describe('Guard 3 — completed set (one-time tasks)', () => {
-    it('bloque la re-complétion d\'une one-time task', () => {
+    it("bloque la re-complétion d'une one-time task", () => {
       guard.complete(task);
 
       // Simuler un reset de task.done (exploit console)
@@ -173,7 +173,13 @@ describe('TaskCompletionGuard', () => {
       guard.reset();
 
       // Après reset, une nouvelle tâche avec le même ID peut être complétée
-      const freshTask: Task = { id: 'task-1', title: 'Test', xp: 50, done: false, type: 'one-time' };
+      const freshTask: Task = {
+        id: 'task-1',
+        title: 'Test',
+        xp: 50,
+        done: false,
+        type: 'one-time',
+      };
       const result = guard.complete(freshTask);
       expect(result.success).toBe(true);
     });

@@ -41,4 +41,3 @@ export function estimateE1rmKg(weightKg: number, reps: number): number {
   // Epley formula
   return w * (1 + r / 30);
 }
-

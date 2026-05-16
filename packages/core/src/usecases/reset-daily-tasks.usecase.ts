@@ -6,29 +6,27 @@
  */
 
 import type { StoragePort } from '../ports/storage.port.js';
-import type { ClockPort }   from '../ports/clock.port.js';
-import type { Task }        from '../domain/task.domain.js';
+import type { ClockPort } from '../ports/clock.port.js';
+import type { Task } from '../domain/task.domain.js';
 import { resetRecurringTask } from '../domain/task.domain.js';
 import { STORAGE_KEYS } from '../constants/storage-keys.js';
 
 export interface ResetDailyTasksDeps {
   storage: StoragePort;
-  clock:   ClockPort;
+  clock: ClockPort;
 }
 
 export interface ResetDailyTasksResult {
-  reset:      boolean;
+  reset: boolean;
   tasksReset: number;
-  date:       string;
+  date: string;
 }
 
-const KEY_VITALITE_TASKS      = STORAGE_KEYS.VITALITE_TASKS;
+const KEY_VITALITE_TASKS = STORAGE_KEYS.VITALITE_TASKS;
 const KEY_VITALITE_LAST_RESET = STORAGE_KEYS.VITALITE_LAST_RESET;
-const KEY_COMPLETED           = STORAGE_KEYS.COMPLETED_KEYS;
+const KEY_COMPLETED = STORAGE_KEYS.COMPLETED_KEYS;
 
-export async function resetDailyTasks(
-  deps: ResetDailyTasksDeps,
-): Promise<ResetDailyTasksResult> {
+export async function resetDailyTasks(deps: ResetDailyTasksDeps): Promise<ResetDailyTasksResult> {
   const { storage, clock } = deps;
   const today = clock.todayIsoDate();
 
@@ -57,12 +55,12 @@ export async function resetDailyTasks(
 
   // Nettoyer les clés d'idempotence du jour précédent
   // (Garder uniquement les clés non-journalières)
-  const completedKeys = await storage.get<string[]>(KEY_COMPLETED) ?? [];
-  const keysToKeep    = completedKeys.filter((k) => !k.includes(':' + (lastReset ?? '')));
+  const completedKeys = (await storage.get<string[]>(KEY_COMPLETED)) ?? [];
+  const keysToKeep = completedKeys.filter((k) => !k.includes(':' + (lastReset ?? '')));
   await storage.set(KEY_COMPLETED, keysToKeep);
 
   // Persister
-  await storage.set(KEY_VITALITE_TASKS,      resetTasks);
+  await storage.set(KEY_VITALITE_TASKS, resetTasks);
   await storage.set(KEY_VITALITE_LAST_RESET, today);
 
   return { reset: true, tasksReset, date: today };

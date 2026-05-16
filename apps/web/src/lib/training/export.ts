@@ -13,9 +13,9 @@ import { STORAGE_KEYS } from '@kinetic/core';
 import type { WorkoutSession, Exercise } from './types';
 
 export interface ExportBundle {
-  version:   1;
-  exportedAt: string;           // ISO
-  sessions:  readonly WorkoutSession[];
+  version: 1;
+  exportedAt: string; // ISO
+  sessions: readonly WorkoutSession[];
   exercises: readonly Exercise[];
 }
 
@@ -24,7 +24,7 @@ export function buildJsonExport(
   exercises: readonly Exercise[],
 ): string {
   const bundle: ExportBundle = {
-    version:   1,
+    version: 1,
     exportedAt: new Date().toISOString(),
     sessions,
     exercises,
@@ -45,38 +45,50 @@ export function buildCsvExport(
 ): string {
   const exMap = new Map(exercises.map((e) => [e.id, e]));
   const headers = [
-    'session_id', 'session_name', 'started_at', 'ended_at',
-    'exercise_id', 'exercise_name', 'muscles',
-    'set_index', 'reps', 'weight_kg', 'rpe', 'e1rm_kg', 'performed_at',
+    'session_id',
+    'session_name',
+    'started_at',
+    'ended_at',
+    'exercise_id',
+    'exercise_name',
+    'muscles',
+    'set_index',
+    'reps',
+    'weight_kg',
+    'rpe',
+    'e1rm_kg',
+    'performed_at',
   ];
 
   const CRLF = '\r\n';
   // BOM UTF-8 pour compatibilité Excel Windows
   const BOM = '﻿';
-  const rows: string[] = [headers.map(h => `"${h}"`).join(',')];
+  const rows: string[] = [headers.map((h) => `"${h}"`).join(',')];
 
   for (const session of sessions) {
     for (const entry of session.entries) {
-      const ex     = exMap.get(entry.exerciseId);
+      const ex = exMap.get(entry.exerciseId);
       const exName = ex?.name ?? entry.exerciseId;
       const muscles = (ex?.muscles ?? []).join(';');
       for (const set of entry.sets) {
         const e1rm = (set.weightKg * (1 + set.reps / 30)).toFixed(1);
-        rows.push([
-          csvCell(session.id),
-          csvCell(session.name),
-          csvCell(session.startedAt),
-          csvCell(session.endedAt ?? ''),
-          csvCell(entry.exerciseId),
-          csvCell(exName),
-          csvCell(muscles),
-          String(set.setIndex + 1),
-          String(set.reps),
-          String(set.weightKg),
-          String(set.rpe),
-          e1rm,
-          csvCell(set.performedAt),
-        ].join(','));
+        rows.push(
+          [
+            csvCell(session.id),
+            csvCell(session.name),
+            csvCell(session.startedAt),
+            csvCell(session.endedAt ?? ''),
+            csvCell(entry.exerciseId),
+            csvCell(exName),
+            csvCell(muscles),
+            String(set.setIndex + 1),
+            String(set.reps),
+            String(set.weightKg),
+            String(set.rpe),
+            e1rm,
+            csvCell(set.performedAt),
+          ].join(','),
+        );
       }
     }
   }
@@ -94,9 +106,9 @@ export function buildCsvExport(
  * natif obligatoire.
  */
 export async function downloadOrShare(
-  content:  string,
+  content: string,
   filename: string,
-  mime:     string,
+  mime: string,
 ): Promise<void> {
   if (Capacitor.isNativePlatform()) {
     await downloadNative(content, filename, mime);
@@ -109,10 +121,10 @@ async function downloadNative(content: string, filename: string, _mime: string):
   // Écrit dans Documents/ — accessible par tous les explorateurs de fichiers
   // Android. UTF-8 pour préserver le BOM CSV et les accents.
   const result = await Filesystem.writeFile({
-    path:      filename,
-    data:      content,
+    path: filename,
+    data: content,
     directory: Directory.Documents,
-    encoding:  Encoding.UTF8,
+    encoding: Encoding.UTF8,
     recursive: true,
   });
 
@@ -120,9 +132,9 @@ async function downloadNative(content: string, filename: string, _mime: string):
   // sauvegarder vers Drive, mail, etc.). Pas bloquant si échec.
   try {
     await Share.share({
-      title:    'Export Kinetic',
-      text:     `Export de tes données : ${filename}`,
-      url:      result.uri,
+      title: 'Export Kinetic',
+      text: `Export de tes données : ${filename}`,
+      url: result.uri,
       dialogTitle: 'Sauvegarder ton export',
     });
   } catch {
@@ -138,9 +150,9 @@ async function downloadNative(content: string, filename: string, _mime: string):
 function downloadWeb(content: string, filename: string, mime: string): void {
   if (typeof document === 'undefined') return;
   const blob = new Blob([content], { type: mime });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
@@ -153,15 +165,21 @@ export function downloadBlob(content: string, filename: string, mime: string): v
   void downloadOrShare(content, filename, mime);
 }
 
-export async function exportAsJson(sessions: readonly WorkoutSession[], exercises: readonly Exercise[]): Promise<void> {
+export async function exportAsJson(
+  sessions: readonly WorkoutSession[],
+  exercises: readonly Exercise[],
+): Promise<void> {
   const content = buildJsonExport(sessions, exercises);
-  const stamp   = new Date().toISOString().slice(0, 10);
+  const stamp = new Date().toISOString().slice(0, 10);
   await downloadOrShare(content, `kinetic-export-${stamp}.json`, 'application/json');
 }
 
-export async function exportAsCsv(sessions: readonly WorkoutSession[], exercises: readonly Exercise[]): Promise<void> {
+export async function exportAsCsv(
+  sessions: readonly WorkoutSession[],
+  exercises: readonly Exercise[],
+): Promise<void> {
   const content = buildCsvExport(sessions, exercises);
-  const stamp   = new Date().toISOString().slice(0, 10);
+  const stamp = new Date().toISOString().slice(0, 10);
   await downloadOrShare(content, `kinetic-export-${stamp}.csv`, 'text/csv;charset=utf-8;');
 }
 

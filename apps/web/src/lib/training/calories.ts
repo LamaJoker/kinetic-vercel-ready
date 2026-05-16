@@ -25,7 +25,6 @@ export function estimateStrengthWorkoutCaloriesKcal(args: {
   const rpe = args.avgRpe == null ? 8 : clamp(args.avgRpe, 6, 10);
   const met = clamp(3.5 + (rpe - 6) * 0.5, 3.5, 6.0);
 
-  const kcal = met * 3.5 * weightKg / 200 * durationMin;
+  const kcal = ((met * 3.5 * weightKg) / 200) * durationMin;
   return Math.round(kcal);
 }
-

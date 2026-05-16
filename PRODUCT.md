@@ -11,16 +11,16 @@
 
 ### Faiblesses d'une to-do list classique appliquée à la musculation
 
-| # | Problème | Impact utilisateur |
-|---|----------|--------------------|
-| 1 | Une "tâche" ne décrit pas une série (poids × reps × RPE) | Impossible de suivre le progrès réel |
-| 2 | Pas de notion de **surcharge progressive** | Stagnation sans alerte |
-| 3 | Aucune **récupération** modélisée (fatigue, deload) | Plateau, blessures |
-| 4 | Pas d'**agrégats** (volume, tonnage, PR) | Aucun insight à long terme |
-| 5 | Pas de **timer de repos** | UX friction en pleine séance |
-| 6 | Aucun **historique/graphe** par exercice | Pas de feedback motivant |
-| 7 | Checklist = binaire (fait / pas fait) | Nuance perdue (RPE, réserve) |
-| 8 | Pas de **génération automatique** de séance | Charge cognitive haute |
+| #   | Problème                                                 | Impact utilisateur                   |
+| --- | -------------------------------------------------------- | ------------------------------------ |
+| 1   | Une "tâche" ne décrit pas une série (poids × reps × RPE) | Impossible de suivre le progrès réel |
+| 2   | Pas de notion de **surcharge progressive**               | Stagnation sans alerte               |
+| 3   | Aucune **récupération** modélisée (fatigue, deload)      | Plateau, blessures                   |
+| 4   | Pas d'**agrégats** (volume, tonnage, PR)                 | Aucun insight à long terme           |
+| 5   | Pas de **timer de repos**                                | UX friction en pleine séance         |
+| 6   | Aucun **historique/graphe** par exercice                 | Pas de feedback motivant             |
+| 7   | Checklist = binaire (fait / pas fait)                    | Nuance perdue (RPE, réserve)         |
+| 8   | Pas de **génération automatique** de séance              | Charge cognitive haute               |
 
 ### Vision produit
 
@@ -29,92 +29,95 @@
 > à utiliser pieds humides avec une main dans les gants.
 
 **Cible principale**
+
 - 18-40 ans, salle de sport classique ou home gym
 - Niveau intermédiaire (≥ 6 mois d'entraînement)
 - Veut progresser sans y penser → délègue les calculs à l'app
 
 **Cible secondaire**
+
 - Débutants qui sortent d'un programme guidé et veulent autonomie
 - Athlètes qui veulent un carnet propre, exportable, partageable
 
 **Différenciation**
+
 1. **Auto-progression RPE** — charge suivante suggérée à chaque série (pas juste "coche la tâche")
 2. **Offline-first sérieux** — IndexedDB + CRDT + sync Supabase, jamais de perte de donnée
 3. **PWA native-feel** — pas besoin d'installer 200 Mo, tout tourne dans le navigateur
-4. **Gamification honnête** — XP + streak, mais liée à la *qualité* de la séance (pas juste présence)
+4. **Gamification honnête** — XP + streak, mais liée à la _qualité_ de la séance (pas juste présence)
 5. **Data ownership** — export JSON/CSV en 1 clic, pas de lock-in
 
 ---
 
 ## 2. Roadmap fonctionnelle structurée
 
-### 🧠 Suivi intelligent — *partiellement livré dans cette branche*
+### 🧠 Suivi intelligent — _partiellement livré dans cette branche_
 
-| Feature | État | Module |
-|---------|------|--------|
-| Tracking poids / reps / RPE | ✅ existant | `lib/training/types.ts` |
-| Historique par exercice | ✅ existant | stockage IDB |
-| Estimation e1RM (Epley) | ✅ existant | `lib/training/rpe.ts` |
-| **Suggestion automatique de progression** | ✅ **NEW** | `core/domain/progression.domain.ts` |
-| **Détection de deload (fatigue chronique)** | ✅ **NEW** | `needsDeload()` |
-| Suggestion de charge de départ (1er exo) | 🟡 fallback heuristique | à enrichir avec profil |
+| Feature                                     | État                    | Module                              |
+| ------------------------------------------- | ----------------------- | ----------------------------------- |
+| Tracking poids / reps / RPE                 | ✅ existant             | `lib/training/types.ts`             |
+| Historique par exercice                     | ✅ existant             | stockage IDB                        |
+| Estimation e1RM (Epley)                     | ✅ existant             | `lib/training/rpe.ts`               |
+| **Suggestion automatique de progression**   | ✅ **NEW**              | `core/domain/progression.domain.ts` |
+| **Détection de deload (fatigue chronique)** | ✅ **NEW**              | `needsDeload()`                     |
+| Suggestion de charge de départ (1er exo)    | 🟡 fallback heuristique | à enrichir avec profil              |
 
 ### 📅 Planification avancée
 
-| Feature | État |
-|---------|------|
-| Splits PPL / Upper-Lower / Full Body / Bro Split | ✅ existant (`program.domain.ts`) |
-| Génération automatique depuis un split + objectifs | 🟡 à faire (use case) |
-| Adaptation fatigue/récupération (insert deload semaine) | 🟡 lié à `needsDeload()` |
-| Planning par jour de la semaine | ✅ existant (`todayFocus()`) |
+| Feature                                                 | État                              |
+| ------------------------------------------------------- | --------------------------------- |
+| Splits PPL / Upper-Lower / Full Body / Bro Split        | ✅ existant (`program.domain.ts`) |
+| Génération automatique depuis un split + objectifs      | 🟡 à faire (use case)             |
+| Adaptation fatigue/récupération (insert deload semaine) | 🟡 lié à `needsDeload()`          |
+| Planning par jour de la semaine                         | ✅ existant (`todayFocus()`)      |
 
-### 📊 Analytics — *livré dans cette branche*
+### 📊 Analytics — _livré dans cette branche_
 
-| Feature | Module |
-|---------|--------|
-| **Tonnage hebdomadaire** | `weeklyVolume()` |
-| **Stats par exercice** (tonnage, meilleur e1RM) | `perExerciseStats()` |
-| **Heatmap muscles** | `muscleDistribution()` |
-| **Détection PR automatique** | `detectPRs()` |
-| **Score de régularité (N semaines)** | `consistencyScore()` |
+| Feature                                         | Module                 |
+| ----------------------------------------------- | ---------------------- |
+| **Tonnage hebdomadaire**                        | `weeklyVolume()`       |
+| **Stats par exercice** (tonnage, meilleur e1RM) | `perExerciseStats()`   |
+| **Heatmap muscles**                             | `muscleDistribution()` |
+| **Détection PR automatique**                    | `detectPRs()`          |
+| **Score de régularité (N semaines)**            | `consistencyScore()`   |
 
 ### 🔔 Engagement
 
-| Feature | État |
-|---------|------|
-| XP + niveaux (8 paliers) | ✅ existant |
-| Streak quotidien | ✅ existant |
+| Feature                                       | État                                      |
+| --------------------------------------------- | ----------------------------------------- |
+| XP + niveaux (8 paliers)                      | ✅ existant                               |
+| Streak quotidien                              | ✅ existant                               |
 | **Timer de repos (vibration + notification)** | ✅ **NEW** (`lib/training/rest-timer.ts`) |
-| Push Web réelle (Service Worker + VAPID) | 🟡 à faire |
-| Objectifs hebdo (3 séances, X kg tonnage) | 🟡 à faire |
+| Push Web réelle (Service Worker + VAPID)      | 🟡 à faire                                |
+| Objectifs hebdo (3 séances, X kg tonnage)     | 🟡 à faire                                |
 
 ### 👤 UX
 
-| Feature | État |
-|---------|------|
-| Mobile-first, dark, minimal | ✅ existant |
-| Onboarding multi-étapes | ✅ existant |
-| Quick-start séance (dernière ou template du jour) | 🟡 à faire |
-| Raccourci +1 rep / +incrément | 🟡 à faire |
-| Timer plein écran entre séries | 🟡 lié au nouveau module |
+| Feature                                           | État                     |
+| ------------------------------------------------- | ------------------------ |
+| Mobile-first, dark, minimal                       | ✅ existant              |
+| Onboarding multi-étapes                           | ✅ existant              |
+| Quick-start séance (dernière ou template du jour) | 🟡 à faire               |
+| Raccourci +1 rep / +incrément                     | 🟡 à faire               |
+| Timer plein écran entre séries                    | 🟡 lié au nouveau module |
 
-### 🌐 Social *(optionnel, phase 3)*
+### 🌐 Social _(optionnel, phase 3)_
 
-| Feature | Priorité |
-|---------|----------|
-| Profil public (best lifts, streaks) | Basse |
-| Défis entre amis (tonnage hebdo) | Moyenne |
-| Partage de template via lien | Haute (viral, simple) |
+| Feature                             | Priorité              |
+| ----------------------------------- | --------------------- |
+| Profil public (best lifts, streaks) | Basse                 |
+| Défis entre amis (tonnage hebdo)    | Moyenne               |
+| Partage de template via lien        | Haute (viral, simple) |
 
-### 🧩 Extras différenciants — *partiellement livré*
+### 🧩 Extras différenciants — _partiellement livré_
 
-| Feature | État |
-|---------|------|
-| Mode offline complet | ✅ existant |
-| Sync cloud (Supabase + RLS + CRDT) | ✅ existant |
-| **Export JSON / CSV des séances** | ✅ **NEW** (`lib/training/export.ts`) |
-| Import depuis Strong / Hevy | 🟡 à faire (format CSV standardisé) |
-| Wearables (Apple Health, Google Fit) | 🟡 phase 3 |
+| Feature                              | État                                  |
+| ------------------------------------ | ------------------------------------- |
+| Mode offline complet                 | ✅ existant                           |
+| Sync cloud (Supabase + RLS + CRDT)   | ✅ existant                           |
+| **Export JSON / CSV des séances**    | ✅ **NEW** (`lib/training/export.ts`) |
+| Import depuis Strong / Hevy          | 🟡 à faire (format CSV standardisé)   |
+| Wearables (Apple Health, Google Fit) | 🟡 phase 3                            |
 
 ---
 
@@ -238,12 +241,14 @@ create policy "own sets" on workout_sets
 ### Écrans clés
 
 **Dashboard**
+
 - XP bar + niveau (gradient purple → violet)
 - Streak avec flamme animée
 - "Prochaine séance" (bouton primaire plein écran)
 - 3 mini-stats : volume semaine, PR du mois, score régularité
 
 **Séance en cours**
+
 - 1 exercice à la fois (swipe horizontal entre exos)
 - Chaque set = 3 champs XXL : reps / kg / RPE
 - **Suggestion IA** en dessous : "100 kg × 8 @ RPE 8" avec justification
@@ -251,6 +256,7 @@ create policy "own sets" on workout_sets
 - Progress bar : 3 sets sur 4 validés
 
 **Progression**
+
 - Onglets : Force | Volume | Muscles | Records
 - **Force** : courbe e1RM par exo sélectionné
 - **Volume** : bar chart tonnage / semaine
@@ -258,6 +264,7 @@ create policy "own sets" on workout_sets
 - **Records** : timeline des PR avec date + vidéo (phase 2)
 
 **Profil**
+
 - Photo + niveau + titre
 - Objectifs (poids cible, date)
 - **Export de données** (JSON / CSV) — un tap
@@ -287,9 +294,9 @@ const history: PerformedSet[] = [
 ];
 
 const suggestion = suggestProgression({
-  exerciseId:  'squat',
-  targetReps:  8,
-  targetRpe:   8,
+  exerciseId: 'squat',
+  targetReps: 8,
+  targetRpe: 8,
   incrementKg: 2.5,
   history,
 });
@@ -301,6 +308,7 @@ const suggestion = suggestProgression({
 ```
 
 **Règles d'autorégulation** :
+
 1. Historique vide → `first_time`
 2. 3 dernières séances RPE ≥ 9.5 + e1RM plat/négatif → `deload` (-10 %)
 3. Dernier set RPE ≤ cible − 1 et reps atteintes → `increase_weight` (+incrément)
@@ -314,23 +322,23 @@ const suggestion = suggestProgression({
 ```ts
 import { weeklyVolume, perExerciseStats, detectPRs, type AnalyticsSet } from '@kinetic/core';
 
-const sets: AnalyticsSet[] = sessions.flatMap(sess =>
-  sess.entries.flatMap(e =>
-    e.sets.map(s => ({
-      sessionId:   sess.id,
-      exerciseId:  e.exerciseId,
-      muscles:     exerciseCatalog.get(e.exerciseId)?.muscles ?? [],
-      reps:        s.reps,
-      weightKg:    s.weightKg,
-      rpe:         s.rpe,
+const sets: AnalyticsSet[] = sessions.flatMap((sess) =>
+  sess.entries.flatMap((e) =>
+    e.sets.map((s) => ({
+      sessionId: sess.id,
+      exerciseId: e.exerciseId,
+      muscles: exerciseCatalog.get(e.exerciseId)?.muscles ?? [],
+      reps: s.reps,
+      weightKg: s.weightKg,
+      rpe: s.rpe,
       performedAt: s.performedAt,
-    }))
-  )
+    })),
+  ),
 );
 
-const volume = weeklyVolume(sets);      // → [{ isoWeek, tonnageKg, totalSets, totalReps }]
-const byExo  = perExerciseStats(sets);  // → classé par tonnage décroissant
-const prs    = detectPRs(sets);         // → timeline des records e1RM croissants
+const volume = weeklyVolume(sets); // → [{ isoWeek, tonnageKg, totalSets, totalReps }]
+const byExo = perExerciseStats(sets); // → classé par tonnage décroissant
+const prs = detectPRs(sets); // → timeline des records e1RM croissants
 ```
 
 ### 5.3 Rest timer avec vibration + notification
@@ -345,14 +353,17 @@ await requestNotificationPermission();
 
 // 2. Démarrer le timer après validation d'un set
 const timer = startRestTimer({
-  durationSec: suggestedRestSec(lastRpe),  // 60 / 90 / 180 selon RPE
-  onTick: remaining => (document.getElementById('rest')!.textContent = `${remaining}s`),
+  durationSec: suggestedRestSec(lastRpe), // 60 / 90 / 180 selon RPE
+  onTick: (remaining) => (document.getElementById('rest')!.textContent = `${remaining}s`),
   onDone: () => playReadySound(),
-  label:  'Série suivante — go !',
+  label: 'Série suivante — go !',
 });
 
 // 3. Contrôles
-timer.pause(); timer.resume(); timer.skip(); timer.stop();
+timer.pause();
+timer.resume();
+timer.skip();
+timer.stop();
 ```
 
 ### 5.4 Export JSON / CSV
@@ -373,27 +384,27 @@ document.getElementById('btn-export-csv')!.addEventListener('click', () => {
 
 ```ts
 interface WorkoutSession {
-  id:         WorkoutSessionId;
-  name:       string;
+  id: WorkoutSessionId;
+  name: string;
   templateId?: WorkoutTemplateId;
-  startedAt:  IsoDateTime;
-  endedAt?:   IsoDateTime;
-  entries:    readonly SessionExerciseEntry[];
+  startedAt: IsoDateTime;
+  endedAt?: IsoDateTime;
+  entries: readonly SessionExerciseEntry[];
   durationMin?: number;
-  avgRpe?:    number;
+  avgRpe?: number;
   caloriesKcal?: number;
 }
 
 interface SessionExerciseEntry {
   exerciseId: ExerciseId;
-  sets:       readonly SetEntry[];
+  sets: readonly SetEntry[];
 }
 
 interface SetEntry {
-  setIndex:    number;
-  reps:        number;
-  weightKg:    number;
-  rpe:         number;          // 6..10
+  setIndex: number;
+  reps: number;
+  weightKg: number;
+  rpe: number; // 6..10
   performedAt: IsoDateTime;
 }
 ```
@@ -404,15 +415,16 @@ interface SetEntry {
 
 ### Modèle de monétisation — **Freemium + abonnement**
 
-| Tier | Prix | Ce qu'on débloque |
-|------|------|-------------------|
-| **Free** | 0 € | Tracking illimité, XP, streak, 1 programme actif, 30 jours d'historique |
-| **Pro** | 4,99 €/mois ou 39 €/an | Historique illimité, analytics avancées (heatmap, PR timeline), IA auto-progression, export, sync cloud multi-device, programmes illimités |
-| **Coach** | 19 €/mois | Pro + partage de programmes, suivi d'élèves (5 max) — phase 3 |
+| Tier      | Prix                   | Ce qu'on débloque                                                                                                                          |
+| --------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Free**  | 0 €                    | Tracking illimité, XP, streak, 1 programme actif, 30 jours d'historique                                                                    |
+| **Pro**   | 4,99 €/mois ou 39 €/an | Historique illimité, analytics avancées (heatmap, PR timeline), IA auto-progression, export, sync cloud multi-device, programmes illimités |
+| **Coach** | 19 €/mois              | Pro + partage de programmes, suivi d'élèves (5 max) — phase 3                                                                              |
 
 **Gates naturelles** :
+
 - L'historique > 30 j = vrai valeur ajoutée (motivation, analytics)
-- L'auto-progression = la feature qui *remplace un coach* → payant justifié
+- L'auto-progression = la feature qui _remplace un coach_ → payant justifié
 - Export = data ownership → rassure même les non-abonnés
 
 ### Leviers de rétention
@@ -437,7 +449,7 @@ interface SetEntry {
 
 ## 7. Prochaines étapes (priorisées)
 
-### Phase 1 — 2 semaines *(immédiat, bas risque)*
+### Phase 1 — 2 semaines _(immédiat, bas risque)_
 
 - [x] Moteur de progression RPE (`progression.domain.ts`) ← livré
 - [x] Module analytics (`analytics.domain.ts`) ← livré
@@ -480,4 +492,4 @@ interface SetEntry {
 
 ---
 
-*Document vivant — à mettre à jour à chaque merge de phase.*
+_Document vivant — à mettre à jour à chaque merge de phase._

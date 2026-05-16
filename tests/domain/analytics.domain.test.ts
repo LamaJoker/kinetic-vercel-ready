@@ -19,7 +19,7 @@ function s(
   const d = new Date('2025-01-06T12:00:00Z'); // lundi, semaine 2025-W02
   d.setUTCDate(d.getUTCDate() + dayOffset);
   return {
-    sessionId:   `sess-${dayOffset}`,
+    sessionId: `sess-${dayOffset}`,
     exerciseId,
     muscles,
     reps,
@@ -42,9 +42,9 @@ describe('toIsoWeek', () => {
 describe('weeklyVolume', () => {
   it('agrège tonnage, sets et reps par semaine ISO', () => {
     const sets = [
-      s('squat', ['jambes'], 5, 100,  0),  // W02
-      s('squat', ['jambes'], 5, 100,  0),  // W02
-      s('squat', ['jambes'], 5, 100,  7),  // W03
+      s('squat', ['jambes'], 5, 100, 0), // W02
+      s('squat', ['jambes'], 5, 100, 0), // W02
+      s('squat', ['jambes'], 5, 100, 7), // W03
     ];
     const v = weeklyVolume(sets);
     expect(v).toHaveLength(2);
@@ -56,11 +56,7 @@ describe('weeklyVolume', () => {
   });
 
   it('est trié par semaine ascendante', () => {
-    const sets = [
-      s('x', ['a'], 1, 1, 14),
-      s('x', ['a'], 1, 1,  0),
-      s('x', ['a'], 1, 1,  7),
-    ];
+    const sets = [s('x', ['a'], 1, 1, 14), s('x', ['a'], 1, 1, 0), s('x', ['a'], 1, 1, 7)];
     const v = weeklyVolume(sets);
     expect(v.map((b) => b.isoWeek)).toEqual([...v.map((b) => b.isoWeek)].sort());
   });
@@ -69,9 +65,9 @@ describe('weeklyVolume', () => {
 describe('perExerciseStats', () => {
   it('calcule tonnage et meilleur e1RM', () => {
     const sets = [
-      s('bench', ['pecs'], 5, 80,  0),
-      s('bench', ['pecs'], 5, 85,  2),
-      s('bench', ['pecs'], 3, 90,  4),
+      s('bench', ['pecs'], 5, 80, 0),
+      s('bench', ['pecs'], 5, 85, 2),
+      s('bench', ['pecs'], 3, 90, 4),
     ];
     const [stat] = perExerciseStats(sets);
     expect(stat!.exerciseId).toBe('bench');
@@ -80,10 +76,7 @@ describe('perExerciseStats', () => {
   });
 
   it('trie par tonnage décroissant', () => {
-    const sets = [
-      s('a', ['x'], 5, 100, 0),
-      s('b', ['x'], 5, 200, 0),
-    ];
+    const sets = [s('a', ['x'], 5, 100, 0), s('b', ['x'], 5, 200, 0)];
     const stats = perExerciseStats(sets);
     expect(stats[0]!.exerciseId).toBe('b');
     expect(stats[1]!.exerciseId).toBe('a');
@@ -108,10 +101,10 @@ describe('muscleDistribution', () => {
 describe('detectPRs', () => {
   it('ne remonte que les e1RM strictement croissants', () => {
     const sets = [
-      s('squat', ['jambes'], 5, 100, 0),  // e1RM ≈ 116.7
-      s('squat', ['jambes'], 5, 100, 2),  // égal — pas un PR
-      s('squat', ['jambes'], 3, 110, 4),  // e1RM = 121 → PR
-      s('squat', ['jambes'], 5, 100, 6),  // redescend — pas un PR
+      s('squat', ['jambes'], 5, 100, 0), // e1RM ≈ 116.7
+      s('squat', ['jambes'], 5, 100, 2), // égal — pas un PR
+      s('squat', ['jambes'], 3, 110, 4), // e1RM = 121 → PR
+      s('squat', ['jambes'], 5, 100, 6), // redescend — pas un PR
     ];
     const prs = detectPRs(sets);
     expect(prs).toHaveLength(2);

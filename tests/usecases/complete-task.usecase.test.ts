@@ -7,31 +7,31 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { completeTask_usecase } from '@kinetic/core';
-import { createTask }           from '@kinetic/core';
-import { makeTestDeps }         from '@test-helpers/stubs.ts';
-import type { TestDeps }        from '@test-helpers/stubs.ts';
-import type { Task }            from '@kinetic/core';
+import { createTask } from '@kinetic/core';
+import { makeTestDeps } from '@test-helpers/stubs.ts';
+import type { TestDeps } from '@test-helpers/stubs.ts';
+import type { Task } from '@kinetic/core';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
 function makeRecurringTask(): Task {
   return createTask({
-    id:        'vitalite-stretch',
-    title:     'Étirements',
-    type:      'recurring',
-    xp:        50,
-    priority:  'high',
+    id: 'vitalite-stretch',
+    title: 'Étirements',
+    type: 'recurring',
+    xp: 50,
+    priority: 'high',
     createdAt: '2026-04-20',
   });
 }
 
 function makeOneTimeTask(): Task {
   return createTask({
-    id:        'onboarding-done',
-    title:     'Compléter l\'onboarding',
-    type:      'one-time',
-    xp:        100,
-    priority:  'high',
+    id: 'onboarding-done',
+    title: "Compléter l'onboarding",
+    type: 'one-time',
+    xp: 100,
+    priority: 'high',
     createdAt: '2026-04-20',
   });
 }
@@ -49,7 +49,7 @@ describe('completeTask_usecase', () => {
 
   describe('flux nominal', () => {
     it('retourne ok:true avec xpAwarded correct', async () => {
-      const task   = makeRecurringTask();
+      const task = makeRecurringTask();
       const result = await completeTask_usecase(deps, {
         task,
         idempotencyKey: 'vitalite-stretch:2026-04-20',
@@ -73,7 +73,7 @@ describe('completeTask_usecase', () => {
       expect(saved?.xp).toBe(50);
     });
 
-    it('persiste la clé d\'idempotence', async () => {
+    it("persiste la clé d'idempotence", async () => {
       const task = makeRecurringTask();
       await completeTask_usecase(deps, {
         task,
@@ -99,7 +99,7 @@ describe('completeTask_usecase', () => {
       expect(daily?.xp).toBe(50);
     });
 
-    it('le XP du jour s\'accumule sur plusieurs tâches', async () => {
+    it("le XP du jour s'accumule sur plusieurs tâches", async () => {
       const today = deps.clock.todayIsoDate();
       const task = makeRecurringTask(); // 50 XP
 
@@ -133,7 +133,7 @@ describe('completeTask_usecase', () => {
       const done = completeTask(base, '2026-04-20');
 
       const result = await completeTask_usecase(deps, {
-        task:           done,
+        task: done,
         idempotencyKey: 'onboarding-done:2026-04-20',
       });
 
@@ -157,7 +157,7 @@ describe('completeTask_usecase', () => {
   describe('guard : idempotence', () => {
     it('bloque une deuxième complétion avec la même clé', async () => {
       const task = makeRecurringTask();
-      const key  = 'vitalite-stretch:2026-04-20';
+      const key = 'vitalite-stretch:2026-04-20';
 
       await completeTask_usecase(deps, { task, idempotencyKey: key });
       const result2 = await completeTask_usecase(deps, { task, idempotencyKey: key });
@@ -168,7 +168,7 @@ describe('completeTask_usecase', () => {
 
     it('ne double pas le XP', async () => {
       const task = makeRecurringTask();
-      const key  = 'vitalite-stretch:2026-04-20';
+      const key = 'vitalite-stretch:2026-04-20';
 
       await completeTask_usecase(deps, { task, idempotencyKey: key });
       await completeTask_usecase(deps, { task, idempotencyKey: key });
@@ -203,11 +203,11 @@ describe('completeTask_usecase', () => {
   // ── XP et level-up ─────────────────────────────────────────────────────────
 
   describe('level-up', () => {
-    it('détecte le passage de niveau et l\'indique dans le résultat', async () => {
+    it("détecte le passage de niveau et l'indique dans le résultat", async () => {
       // Positionner à 180 XP (proche du niveau 2 à 200)
       await deps.storage.set('kinetic:xp', { xp: 180 });
 
-      const task   = createTask({ id: 't', title: 'Big task', xp: 50, createdAt: '2026-04-20' });
+      const task = createTask({ id: 't', title: 'Big task', xp: 50, createdAt: '2026-04-20' });
       const result = await completeTask_usecase(deps, {
         task,
         idempotencyKey: 't:2026-04-20',

@@ -19,13 +19,13 @@ const KEY_XP = STORAGE_KEYS.XP;
 export function xpStore() {
   const empty = computeXpState(0);
   return {
-    xp:              empty.xp,
-    currentLevel:    empty.currentLevel,
-    title:           empty.title,
+    xp: empty.xp,
+    currentLevel: empty.currentLevel,
+    title: empty.title,
     progressPercent: empty.progressPercent,
-    remaining:       empty.remaining,
-    isMaxLevel:      empty.isMaxLevel,
-    loading:         true,
+    remaining: empty.remaining,
+    isMaxLevel: empty.isMaxLevel,
+    loading: true,
 
     async init(): Promise<void> {
       await this.reload();
@@ -34,7 +34,7 @@ export function xpStore() {
     async reload(): Promise<void> {
       try {
         const deps = await getDeps();
-        const raw  = await deps.storage.get<{ xp: number }>(KEY_XP);
+        const raw = await deps.storage.get<{ xp: number }>(KEY_XP);
         this._applyState(computeXpState(raw?.xp ?? 0));
       } catch (err) {
         console.error('[xp] reload failed:', err);
@@ -44,12 +44,12 @@ export function xpStore() {
     },
 
     _applyState(state: XpState): void {
-      this.xp              = state.xp;
-      this.currentLevel    = state.currentLevel;
-      this.title           = state.title;
+      this.xp = state.xp;
+      this.currentLevel = state.currentLevel;
+      this.title = state.title;
       this.progressPercent = state.progressPercent;
-      this.remaining       = state.remaining;
-      this.isMaxLevel      = state.isMaxLevel;
+      this.remaining = state.remaining;
+      this.isMaxLevel = state.isMaxLevel;
     },
   };
 }

@@ -18,26 +18,35 @@ const KEY = STORAGE_KEYS.SCHEMA_VERSION;
 async function snapshotStorage(storage: StoragePort): Promise<Map<string, unknown>> {
   const snapshot = new Map<string, unknown>();
   const keys = await storage.keys();
-  await Promise.all(keys.map(async (key) => {
-    snapshot.set(key, await storage.get(key));
-  }));
+  await Promise.all(
+    keys.map(async (key) => {
+      snapshot.set(key, await storage.get(key));
+    }),
+  );
   return snapshot;
 }
 
-async function restoreSnapshot(storage: StoragePort, snapshot: Map<string, unknown>): Promise<void> {
+async function restoreSnapshot(
+  storage: StoragePort,
+  snapshot: Map<string, unknown>,
+): Promise<void> {
   const currentKeys = await storage.keys();
-  await Promise.all(currentKeys.map(async (key) => {
-    if (!snapshot.has(key)) {
-      await storage.remove(key);
-    }
-  }));
-  await Promise.all([...snapshot.entries()].map(async ([key, value]) => {
-    if (value === null) {
-      await storage.remove(key);
-      return;
-    }
-    await storage.set(key, value);
-  }));
+  await Promise.all(
+    currentKeys.map(async (key) => {
+      if (!snapshot.has(key)) {
+        await storage.remove(key);
+      }
+    }),
+  );
+  await Promise.all(
+    [...snapshot.entries()].map(async ([key, value]) => {
+      if (value === null) {
+        await storage.remove(key);
+        return;
+      }
+      await storage.set(key, value);
+    }),
+  );
 }
 
 export async function runMigrationsIfNeeded(storage: StoragePort): Promise<void> {
@@ -55,14 +64,19 @@ export async function runMigrationsIfNeeded(storage: StoragePort): Promise<void>
       try {
         await restoreSnapshot(storage, snapshot);
       } catch (restoreErr) {
-        console.error('[migrations] restoreSnapshot échoué — données potentiellement corrompues:', restoreErr);
+        console.error(
+          '[migrations] restoreSnapshot échoué — données potentiellement corrompues:',
+          restoreErr,
+        );
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'error',
-              message: 'Migration échouée. Sauvegardez vos données et rechargez l\'application.',
-            },
-          }));
+          window.dispatchEvent(
+            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+              detail: {
+                kind: 'error',
+                message: "Migration échouée. Sauvegardez vos données et rechargez l'application.",
+              },
+            }),
+          );
         }
       }
       throw err;

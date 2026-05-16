@@ -73,7 +73,6 @@ function isStreakAlive(state: StreakState, todayIso: string): boolean {
 // ─────────────────────────────────────────────────────────────────────────
 
 describe('Streak Engine', () => {
-
   describe('processActivity — premier enregistrement', () => {
     it('initialise le streak à 1 pour la première activité', () => {
       const state = createStreak();
@@ -134,7 +133,7 @@ describe('Streak Engine', () => {
   });
 
   describe('isStreakAlive', () => {
-    it('retourne true si actif aujourd\'hui', () => {
+    it("retourne true si actif aujourd'hui", () => {
       const s: StreakState = { count: 3, best: 3, lastActiveDate: '2026-04-20' };
       expect(isStreakAlive(s, '2026-04-20')).toBe(true);
     });

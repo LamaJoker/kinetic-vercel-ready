@@ -1,8 +1,25 @@
-﻿import { STORAGE_KEYS, suggestProgression, needsDeload, type ProgressionSuggestion, type PerformedSet } from '@kinetic/core';
+﻿import {
+  STORAGE_KEYS,
+  suggestProgression,
+  needsDeload,
+  type ProgressionSuggestion,
+  type PerformedSet,
+} from '@kinetic/core';
 import { UuidGenerator } from '@kinetic/adapters-web';
 import { getDeps } from '../deps';
-import type { Exercise, SessionExerciseEntry, WorkoutSession, WorkoutTemplate } from '../lib/training/types';
-import { loadExercises, loadSessions, loadTemplates, saveSessions, saveTemplates } from '../lib/training/storage';
+import type {
+  Exercise,
+  SessionExerciseEntry,
+  WorkoutSession,
+  WorkoutTemplate,
+} from '../lib/training/types';
+import {
+  loadExercises,
+  loadSessions,
+  loadTemplates,
+  saveSessions,
+  saveTemplates,
+} from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
 import { estimateStrengthWorkoutCaloriesKcal } from '../lib/training/calories';
 import type { UserProfile } from '../lib/user/types';
@@ -35,21 +52,36 @@ function getMuscleCategory(muscles: readonly string[]): MuscleCategory {
 
   // Détection polyarticulaire : exercice impliquant 2+ grands groupes
   const upperPush = ms.has('chest') || ms.has('shoulders') || ms.has('triceps');
-  const upperPull = ms.has('back') || ms.has('upper_back') || ms.has('traps') || ms.has('biceps') || ms.has('rear_delts');
-  const lower     = ms.has('quads') || ms.has('hamstrings') || ms.has('glutes') || ms.has('calves') || ms.has('hip_flexors') || ms.has('legs') || ms.has('adductors') || ms.has('abductors');
-  const coreArea  = ms.has('core') || ms.has('lower_back');
+  const upperPull =
+    ms.has('back') ||
+    ms.has('upper_back') ||
+    ms.has('traps') ||
+    ms.has('biceps') ||
+    ms.has('rear_delts');
+  const lower =
+    ms.has('quads') ||
+    ms.has('hamstrings') ||
+    ms.has('glutes') ||
+    ms.has('calves') ||
+    ms.has('hip_flexors') ||
+    ms.has('legs') ||
+    ms.has('adductors') ||
+    ms.has('abductors');
+  const coreArea = ms.has('core') || ms.has('lower_back');
 
   const majorCount = [upperPush, upperPull, lower, coreArea].filter(Boolean).length;
   if (majorCount >= 2 || ms.has('full_body') || ms.has('posterior')) return 'Polyarticulaires';
 
-  if (ms.has('chest'))                                                          return 'Pectoraux';
-  if (ms.has('upper_back') || ms.has('back') || ms.has('traps') || ms.has('rear_delts')) return 'Dos';
-  if (ms.has('shoulders') || ms.has('rotator_cuff'))                           return 'Épaules';
-  if (ms.has('biceps') || ms.has('brachialis') || ms.has('forearms') || ms.has('grip')) return 'Biceps';
-  if (ms.has('triceps'))                                                        return 'Triceps';
-  if (lower)                                                                    return 'Jambes';
-  if (coreArea)                                                                 return 'Abdos / Core';
-  if (ms.has('conditioning'))                                                   return 'Cardio';
+  if (ms.has('chest')) return 'Pectoraux';
+  if (ms.has('upper_back') || ms.has('back') || ms.has('traps') || ms.has('rear_delts'))
+    return 'Dos';
+  if (ms.has('shoulders') || ms.has('rotator_cuff')) return 'Épaules';
+  if (ms.has('biceps') || ms.has('brachialis') || ms.has('forearms') || ms.has('grip'))
+    return 'Biceps';
+  if (ms.has('triceps')) return 'Triceps';
+  if (lower) return 'Jambes';
+  if (coreArea) return 'Abdos / Core';
+  if (ms.has('conditioning')) return 'Cardio';
   return 'Autre';
 }
 
@@ -59,46 +91,50 @@ export interface ExerciseGroup {
 }
 
 const _idGen = new UuidGenerator();
-function newId(): string { return _idGen.newId(); }
-function nowIso(): string { return new Date().toISOString(); }
+function newId(): string {
+  return _idGen.newId();
+}
+function nowIso(): string {
+  return new Date().toISOString();
+}
 
 // ─── Objectifs Coach IA ──────────────────────────────────────────────────────
 
 type CoachGoal = 'force' | 'hypertrophie' | 'endurance';
 
 interface GoalPreset {
-  label:      string;
-  emoji:      string;
+  label: string;
+  emoji: string;
   targetReps: number;
-  targetRpe:  number;
-  rpeZone:    string;          // description courte de la zone RPE cible
-  science:    string;          // source/référence courte
+  targetRpe: number;
+  rpeZone: string; // description courte de la zone RPE cible
+  science: string; // source/référence courte
 }
 
 const COACH_GOALS: Record<CoachGoal, GoalPreset> = {
   force: {
-    label:      'Force',
-    emoji:      '🏋️',
+    label: 'Force',
+    emoji: '🏋️',
     targetReps: 4,
-    targetRpe:  8.5,
-    rpeZone:    '3–5 reps @ RPE 8–9',
-    science:    'Prilepin (1974) · NSCA Strength Guidelines',
+    targetRpe: 8.5,
+    rpeZone: '3–5 reps @ RPE 8–9',
+    science: 'Prilepin (1974) · NSCA Strength Guidelines',
   },
   hypertrophie: {
-    label:      'Hypertrophie',
-    emoji:      '💪',
+    label: 'Hypertrophie',
+    emoji: '💪',
     targetReps: 9,
-    targetRpe:  8,
-    rpeZone:    '6–12 reps @ RPE 7–9',
-    science:    'Schoenfeld (2010) · Helms et al. (2018)',
+    targetRpe: 8,
+    rpeZone: '6–12 reps @ RPE 7–9',
+    science: 'Schoenfeld (2010) · Helms et al. (2018)',
   },
   endurance: {
-    label:      'Endurance musculaire',
-    emoji:      '🔄',
+    label: 'Endurance musculaire',
+    emoji: '🔄',
     targetReps: 15,
-    targetRpe:  7,
-    rpeZone:    '15–20 reps @ RPE 6–8',
-    science:    'ACSM Position Stand (2009)',
+    targetRpe: 7,
+    rpeZone: '15–20 reps @ RPE 6–8',
+    science: 'ACSM Position Stand (2009)',
   },
 };
 
@@ -162,7 +198,12 @@ export function seances() {
     restPresetSec: 90,
     _restNotifTimer: null as ReturnType<typeof setTimeout> | null,
     // ── PR Celebration ────────────────────────────────────────
-    prCelebration: null as { exerciseName: string; weightKg: number; reps: number; e1rmKg: number } | null,
+    prCelebration: null as {
+      exerciseName: string;
+      weightKg: number;
+      reps: number;
+      e1rmKg: number;
+    } | null,
     _prDismissTimer: null as ReturnType<typeof setTimeout> | null,
 
     // Cache for progressionSuggestion — keyed by exerciseId, invalidated when
@@ -173,7 +214,7 @@ export function seances() {
     _exercisesByGroupVersion: -1,
     restPresets: [
       { label: '1 min', sec: 60 },
-      { label: '90 s',  sec: 90 },
+      { label: '90 s', sec: 90 },
       { label: '2 min', sec: 120 },
       { label: '3 min', sec: 180 },
       { label: '5 min', sec: 300 },
@@ -185,7 +226,10 @@ export function seances() {
 
     /** Exercices regroupés par groupe musculaire, dans l'ordre CATEGORY_ORDER. */
     get exercisesByGroup(): ExerciseGroup[] {
-      if (this._exercisesByGroupCache !== null && this._exercisesByGroupVersion === this.exercises.length) {
+      if (
+        this._exercisesByGroupCache !== null &&
+        this._exercisesByGroupVersion === this.exercises.length
+      ) {
         return this._exercisesByGroupCache;
       }
       const map = new Map<MuscleCategory, Exercise[]>();
@@ -194,9 +238,10 @@ export function seances() {
         const cat = getMuscleCategory(ex.muscles);
         map.get(cat)!.push(ex);
       }
-      const result = CATEGORY_ORDER
-        .filter(cat => map.get(cat)!.length > 0)
-        .map(cat => ({ category: cat, exercises: map.get(cat)! }));
+      const result = CATEGORY_ORDER.filter((cat) => map.get(cat)!.length > 0).map((cat) => ({
+        category: cat,
+        exercises: map.get(cat)!,
+      }));
       this._exercisesByGroupCache = result;
       this._exercisesByGroupVersion = this.exercises.length;
       return result;
@@ -212,7 +257,9 @@ export function seances() {
         this.userProfile = await loadUserProfile(deps.storage);
 
         // Charger le dernier poids corporel
-        const bwEntries = await deps.storage.get<Array<{weight: number}>>(STORAGE_KEYS.BODYWEIGHT_ENTRIES);
+        const bwEntries = await deps.storage.get<Array<{ weight: number }>>(
+          STORAGE_KEYS.BODYWEIGHT_ENTRIES,
+        );
         if (Array.isArray(bwEntries) && bwEntries.length > 0) {
           this.latestBodyweight = bwEntries.at(-1)?.weight ?? null;
         }
@@ -223,15 +270,22 @@ export function seances() {
         try {
           autoTemplateId = sessionStorage.getItem(STORAGE_KEYS.PROGRAM_AUTO_TEMPLATE);
           if (autoTemplateId) sessionStorage.removeItem(STORAGE_KEYS.PROGRAM_AUTO_TEMPLATE);
-        } catch { /* sessionStorage indisponible — on saute silencieusement */ }
+        } catch {
+          /* sessionStorage indisponible — on saute silencieusement */
+        }
 
         if (autoTemplateId) {
-          const t = this.templates.find(x => x.id === autoTemplateId);
+          const t = this.templates.find((x) => x.id === autoTemplateId);
           if (t) {
             this.startFromTemplate(t.id);
-            window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'info', message: `Séance "${t.name}" chargée depuis ton programme 🎯` },
-            }));
+            window.dispatchEvent(
+              new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+                detail: {
+                  kind: 'info',
+                  message: `Séance "${t.name}" chargée depuis ton programme 🎯`,
+                },
+              }),
+            );
           }
         }
       } catch (err) {
@@ -241,7 +295,9 @@ export function seances() {
       }
 
       if (this.tickHandle === null && typeof window !== 'undefined') {
-        this.tickHandle = window.setInterval(() => { this.nowMs = Date.now(); }, 1000) as unknown as number;
+        this.tickHandle = window.setInterval(() => {
+          this.nowMs = Date.now();
+        }, 1000) as unknown as number;
       }
     },
 
@@ -254,7 +310,10 @@ export function seances() {
         this.tickHandle = null;
       }
       this.stopRest();
-      if (this._prDismissTimer) { clearTimeout(this._prDismissTimer); this._prDismissTimer = null; }
+      if (this._prDismissTimer) {
+        clearTimeout(this._prDismissTimer);
+        this._prDismissTimer = null;
+      }
     },
 
     // ─── Records (PR) ────────────────────────────────────────
@@ -268,7 +327,7 @@ export function seances() {
     pr(exerciseId: string): number | null {
       let best = 0;
       for (const s of this.sessions) {
-        const entry = s.entries.find(e => e.exerciseId === exerciseId);
+        const entry = s.entries.find((e) => e.exerciseId === exerciseId);
         if (!entry) continue;
         for (const set of entry.sets) {
           const e1rm = estimateE1rmKg(set.weightKg, set.reps);
@@ -276,7 +335,7 @@ export function seances() {
         }
       }
       // ── Inclure aussi les séries déjà ajoutées à la séance en cours ──
-      const currentEntry = this.currentSession?.entries.find(e => e.exerciseId === exerciseId);
+      const currentEntry = this.currentSession?.entries.find((e) => e.exerciseId === exerciseId);
       if (currentEntry) {
         for (const set of currentEntry.sets) {
           const e1rm = estimateE1rmKg(set.weightKg, set.reps);
@@ -309,13 +368,15 @@ export function seances() {
     // ─── Session helpers ─────────────────────────────────────
 
     exerciseName(id: string): string {
-      return this.exercises.find(e => e.id === id)?.name ?? id;
+      return this.exercises.find((e) => e.id === id)?.name ?? id;
     },
 
     formatDate(iso: string): string {
       try {
         return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-      } catch { return iso; }
+      } catch {
+        return iso;
+      }
     },
 
     startFreeSession(): void {
@@ -329,21 +390,21 @@ export function seances() {
     },
 
     startFromTemplate(templateId: string): void {
-      const t = this.templates.find(x => x.id === templateId);
+      const t = this.templates.find((x) => x.id === templateId);
       if (!t) return;
       this.currentSession = {
         id: newId(),
         name: t.name,
         templateId: t.id,
         startedAt: nowIso(),
-        entries: t.exercises.map(ex => ({ exerciseId: ex.exerciseId, sets: [] })),
+        entries: t.exercises.map((ex) => ({ exerciseId: ex.exerciseId, sets: [] })),
       };
       this.showTemplates = false;
     },
 
     async deleteTemplate(templateId: string): Promise<void> {
       const deps = await getDeps();
-      this.templates = this.templates.filter(t => t.id !== templateId);
+      this.templates = this.templates.filter((t) => t.id !== templateId);
       await saveTemplates(deps.storage, this.templates);
     },
 
@@ -359,7 +420,9 @@ export function seances() {
     },
 
     restRemainingSec(): number {
-      return this.restEndsAtMs ? Math.max(0, Math.ceil((this.restEndsAtMs - this.nowMs) / 1000)) : 0;
+      return this.restEndsAtMs
+        ? Math.max(0, Math.ceil((this.restEndsAtMs - this.nowMs) / 1000))
+        : 0;
     },
 
     restLabel(): string {
@@ -377,7 +440,11 @@ export function seances() {
         if (this._restNotifTimer) clearTimeout(this._restNotifTimer);
         this._restNotifTimer = setTimeout(() => {
           hapticHeavy();
-          new Notification('⏱ Repos terminé !', { body: 'Prêt pour la série suivante', icon: '/icons/icon-96.png', tag: 'rest' });
+          new Notification('⏱ Repos terminé !', {
+            body: 'Prêt pour la série suivante',
+            icon: '/icons/icon-96.png',
+            tag: 'rest',
+          });
         }, sec * 1000);
       } else {
         // Vibration de fin même sans notifications
@@ -390,12 +457,15 @@ export function seances() {
 
     stopRest(): void {
       this.restEndsAtMs = 0;
-      if (this._restNotifTimer) { clearTimeout(this._restNotifTimer); this._restNotifTimer = null; }
+      if (this._restNotifTimer) {
+        clearTimeout(this._restNotifTimer);
+        this._restNotifTimer = null;
+      }
     },
 
     avgRpeOf(session: WorkoutSession | null): number | null {
       if (!session) return null;
-      const rpes: number[] = session.entries.flatMap(e => e.sets.map(s => s.rpe));
+      const rpes: number[] = session.entries.flatMap((e) => e.sets.map((s) => s.rpe));
       if (!rpes.length) return null;
       return Math.round((rpes.reduce((a, b) => a + b, 0) / rpes.length) * 10) / 10;
     },
@@ -411,10 +481,13 @@ export function seances() {
 
     addExerciseToSession(): void {
       if (!this.currentSession || !this.selectedExerciseId) return;
-      if (this.currentSession.entries.some(e => e.exerciseId === this.selectedExerciseId)) return;
+      if (this.currentSession.entries.some((e) => e.exerciseId === this.selectedExerciseId)) return;
       this.currentSession = {
         ...this.currentSession,
-        entries: [...this.currentSession.entries, { exerciseId: this.selectedExerciseId, sets: [] }],
+        entries: [
+          ...this.currentSession.entries,
+          { exerciseId: this.selectedExerciseId, sets: [] },
+        ],
       };
       this.selectedExerciseId = '';
     },
@@ -423,7 +496,7 @@ export function seances() {
       if (!this.currentSession) return;
       this.currentSession = {
         ...this.currentSession,
-        entries: this.currentSession.entries.filter(e => e.exerciseId !== exerciseId),
+        entries: this.currentSession.entries.filter((e) => e.exerciseId !== exerciseId),
       };
     },
 
@@ -433,19 +506,31 @@ export function seances() {
       const weightKg = Number(this.draft.weightKg);
       const rpe = Number(this.draft.rpe);
       if (!Number.isFinite(reps) || reps <= 0) {
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind: 'warning', message: 'Reps invalides (min 1).' } }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'warning', message: 'Reps invalides (min 1).' },
+          }),
+        );
         return;
       }
       if (!Number.isFinite(weightKg) || weightKg < 0) {
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind: 'warning', message: 'Charge invalide (≥ 0 kg).' } }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'warning', message: 'Charge invalide (≥ 0 kg).' },
+          }),
+        );
         return;
       }
       if (!Number.isFinite(rpe) || rpe < 6 || rpe > 10) {
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind: 'warning', message: 'RPE invalide (6–10).' } }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'warning', message: 'RPE invalide (6–10).' },
+          }),
+        );
         return;
       }
 
-      const entry = this.currentSession.entries.find(e => e.exerciseId === exerciseId);
+      const entry = this.currentSession.entries.find((e) => e.exerciseId === exerciseId);
       if (!entry) return;
 
       // ── Détecter PR AVANT d'ajouter la série ─────────────────────────────
@@ -453,9 +538,15 @@ export function seances() {
 
       this.currentSession = {
         ...this.currentSession,
-        entries: this.currentSession.entries.map(e => {
+        entries: this.currentSession.entries.map((e) => {
           if (e.exerciseId !== exerciseId) return e;
-          return { ...e, sets: [...e.sets, { setIndex: e.sets.length, reps, weightKg, rpe, performedAt: nowIso() }] };
+          return {
+            ...e,
+            sets: [
+              ...e.sets,
+              { setIndex: e.sets.length, reps, weightKg, rpe, performedAt: nowIso() },
+            ],
+          };
         }),
       };
 
@@ -470,7 +561,9 @@ export function seances() {
         hapticSuccess();
         // Dismiss automatique après 5 s
         if (this._prDismissTimer) clearTimeout(this._prDismissTimer);
-        this._prDismissTimer = setTimeout(() => { this.prCelebration = null; }, 5000);
+        this._prDismissTimer = setTimeout(() => {
+          this.prCelebration = null;
+        }, 5000);
       } else {
         hapticLight();
       }
@@ -482,19 +575,22 @@ export function seances() {
 
     dismissPrCelebration(): void {
       this.prCelebration = null;
-      if (this._prDismissTimer) { clearTimeout(this._prDismissTimer); this._prDismissTimer = null; }
+      if (this._prDismissTimer) {
+        clearTimeout(this._prDismissTimer);
+        this._prDismissTimer = null;
+      }
     },
 
     /** Historique de sets pour un exercice, toutes séances confondues (du plus ancien au plus récent). */
     _historyForExercise(exerciseId: string): PerformedSet[] {
       const sorted = [...this.sessions].sort((a, b) => a.startedAt.localeCompare(b.startedAt));
-      return sorted.flatMap(s =>
-        (s.entries.find(e => e.exerciseId === exerciseId)?.sets ?? []).map(set => ({
-          reps:     set.reps,
+      return sorted.flatMap((s) =>
+        (s.entries.find((e) => e.exerciseId === exerciseId)?.sets ?? []).map((set) => ({
+          reps: set.reps,
           weightKg: set.weightKg,
-          rpe:      set.rpe,
-          at:       set.performedAt,
-        }))
+          rpe: set.rpe,
+          at: set.performedAt,
+        })),
       );
     },
 
@@ -511,12 +607,12 @@ export function seances() {
       if (this._suggestionCache.has(exerciseId)) {
         return this._suggestionCache.get(exerciseId) ?? null;
       }
-      const ex = this.exercises.find(e => e.id === exerciseId);
+      const ex = this.exercises.find((e) => e.id === exerciseId);
       const history = this._historyForExercise(exerciseId);
       const result = suggestProgression({
         exerciseId,
-        targetReps:  8,
-        targetRpe:   8,
+        targetReps: 8,
+        targetRpe: 8,
         incrementKg: ex?.incrementKg ?? 2.5,
         history,
       });
@@ -543,9 +639,11 @@ export function seances() {
         await exportAsJson(this.sessions, this.exercises);
       } catch (err) {
         console.error('[seances] exportJson failed:', err);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: 'Échec export JSON. Réessaie.' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Échec export JSON. Réessaie.' },
+          }),
+        );
       }
     },
 
@@ -554,17 +652,19 @@ export function seances() {
         await exportAsCsv(this.sessions, this.exercises);
       } catch (err) {
         console.error('[seances] exportCsv failed:', err);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: 'Échec export CSV. Réessaie.' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Échec export CSV. Réessaie.' },
+          }),
+        );
       }
     },
 
     // ─── Détails / suppression d'une séance ─────────────────────────────────
 
     expandedSessionId: null as string | null,
-    confirmDeleteId:   null as string | null,
-    deletingSession:   false,
+    confirmDeleteId: null as string | null,
+    deletingSession: false,
 
     /** Bascule l'affichage détaillé d'une séance dans l'historique. */
     toggleSessionDetail(id: string): void {
@@ -588,17 +688,21 @@ export function seances() {
         const deps = await getDeps();
         const next = this.sessions.filter((s) => s.id !== id);
         await saveSessions(deps.storage, next);
-        this.sessions          = next;
-        this.confirmDeleteId   = null;
+        this.sessions = next;
+        this.confirmDeleteId = null;
         this.expandedSessionId = null;
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'success', message: 'Séance supprimée.' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'success', message: 'Séance supprimée.' },
+          }),
+        );
       } catch (err) {
         console.error('[seances] deleteSession failed:', err);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: 'Échec de la suppression.' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Échec de la suppression.' },
+          }),
+        );
       } finally {
         this.deletingSession = false;
       }
@@ -618,17 +722,24 @@ export function seances() {
     formatDateLong(iso: string): string {
       try {
         return new Date(iso).toLocaleDateString('fr-FR', {
-          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
         });
-      } catch { return iso; }
+      } catch {
+        return iso;
+      }
     },
 
     /** Heure HH:mm. */
     formatTime(iso: string): string {
       try {
         const d = new Date(iso);
-        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-      } catch { return ''; }
+        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      } catch {
+        return '';
+      }
     },
 
     // ─── Coach IA ────────────────────────────────────────────────────────────
@@ -652,32 +763,40 @@ export function seances() {
      *  - Hypertrophie: Schoenfeld (2010), Helms et al. (2018) — 6–12 reps @ RPE 7–9
      *  - Endurance   : ACSM (2009) — 15+ reps @ RPE 6–8
      */
-    coachAdvice(exerciseId: string): { weightKg: number; reps: number; rpe: number; message: string; goalLabel: string; science: string; periodizationNote: string } | null {
+    coachAdvice(exerciseId: string): {
+      weightKg: number;
+      reps: number;
+      rpe: number;
+      message: string;
+      goalLabel: string;
+      science: string;
+      periodizationNote: string;
+    } | null {
       if (!exerciseId) return null;
-      const ex      = this.exercises.find(e => e.id === exerciseId);
+      const ex = this.exercises.find((e) => e.id === exerciseId);
       const history = this._historyForExercise(exerciseId);
-      const preset  = COACH_GOALS[this.coachGoal as CoachGoal];
+      const preset = COACH_GOALS[this.coachGoal as CoachGoal];
 
       if (!history.length) {
         return {
-          weightKg:  0,
-          reps:      preset.targetReps,
-          rpe:       preset.targetRpe,
+          weightKg: 0,
+          reps: preset.targetReps,
+          rpe: preset.targetRpe,
           goalLabel: preset.label,
-          science:   preset.science,
-          message:   `🆕 Première séance. Commence léger (RPE 6–7) pour trouver ta charge, puis vise ${preset.rpeZone}.`,
+          science: preset.science,
+          message: `🆕 Première séance. Commence léger (RPE 6–7) pour trouver ta charge, puis vise ${preset.rpeZone}.`,
           periodizationNote: '',
         };
       }
 
       const last = history[history.length - 1]!;
-      const inc  = ex?.incrementKg ?? 2.5;
+      const inc = ex?.incrementKg ?? 2.5;
 
       // e1RM Epley du dernier set
       const lastE1rm = estimateE1rmKg(last.weightKg, last.reps);
 
       // Poids de travail pour la cible de l'objectif (Epley inverse)
-      const rawWeight       = lastE1rm / (1 + preset.targetReps / 30);
+      const rawWeight = lastE1rm / (1 + preset.targetReps / 30);
       const suggestedWeight = Math.round(rawWeight / inc) * inc;
 
       // Ajustement selon RPE du dernier set vs RPE cible
@@ -704,25 +823,27 @@ export function seances() {
       let periodizationNote = '';
       if (history.length >= 3) {
         const recent3 = history.slice(-3);
-        const avgRpe  = recent3.reduce((s, h) => s + h.rpe, 0) / 3;
-        const e1rms   = recent3.map((h) => estimateE1rmKg(h.weightKg, h.reps));
+        const avgRpe = recent3.reduce((s, h) => s + h.rpe, 0) / 3;
+        const e1rms = recent3.map((h) => estimateE1rmKg(h.weightKg, h.reps));
         const e1rmProgression = e1rms[2]! - e1rms[0]!;
 
         if (avgRpe >= 9.0) {
-          periodizationNote = '📉 Fatigue accumulée détectée (RPE moyen ≥ 9 sur 3 séances). Envisage une semaine de décharge à 60 % du volume habituel.';
+          periodizationNote =
+            '📉 Fatigue accumulée détectée (RPE moyen ≥ 9 sur 3 séances). Envisage une semaine de décharge à 60 % du volume habituel.';
         } else if (e1rmProgression > 0 && avgRpe < preset.targetRpe + 0.5) {
           periodizationNote = `📈 Bonne progression : +${e1rmProgression.toFixed(1)} kg d'e1RM sur les 3 dernières séances. Continue la surcharge progressive.`;
         } else if (Math.abs(e1rmProgression) < 1.5 && history.length >= 4) {
-          periodizationNote = '🔄 Stagnation possible : l\'e1RM évolue peu depuis 3–4 séances. Envisage de changer le schéma de répétitions ou d\'ajouter une série.';
+          periodizationNote =
+            "🔄 Stagnation possible : l'e1RM évolue peu depuis 3–4 séances. Envisage de changer le schéma de répétitions ou d'ajouter une série.";
         }
       }
 
       return {
-        weightKg:  suggestedWeight,
-        reps:      preset.targetReps,
-        rpe:       preset.targetRpe,
+        weightKg: suggestedWeight,
+        reps: preset.targetReps,
+        rpe: preset.targetRpe,
         goalLabel: preset.label,
-        science:   preset.science,
+        science: preset.science,
         message,
         periodizationNote,
       };
@@ -731,7 +852,7 @@ export function seances() {
     /** Calcule le poids de travail recommandé depuis un e1RM entré manuellement. */
     e1rmToWorkingWeight(e1rm: number, reps: number, exerciseId: string): number {
       if (!e1rm || !reps) return 0;
-      const ex  = this.exercises.find(e => e.id === exerciseId);
+      const ex = this.exercises.find((e) => e.id === exerciseId);
       const inc = ex?.incrementKg ?? 2.5;
       const raw = e1rm / (1 + reps / 30);
       return Math.round(raw / inc) * inc;
@@ -744,17 +865,22 @@ export function seances() {
       const points: { x: number; y: number; label: string }[] = [];
 
       for (const session of this.sessions) {
-        const entry = session.entries.find(e => e.exerciseId === this.progressExerciseId);
+        const entry = session.entries.find((e) => e.exerciseId === this.progressExerciseId);
         if (!entry || !entry.sets.length) continue;
         let y = 0;
         if (this.progressMetric === 'weight') {
-          y = Math.max(...entry.sets.map(s => s.weightKg));
+          y = Math.max(...entry.sets.map((s) => s.weightKg));
         } else if (this.progressMetric === 'volume') {
           y = entry.sets.reduce((acc, s) => acc + s.weightKg * s.reps, 0);
         } else {
           for (const s of entry.sets) y = Math.max(y, estimateE1rmKg(s.weightKg, s.reps));
         }
-        if (y > 0) points.push({ x: Date.parse(session.startedAt), y, label: this.formatDate(session.startedAt) });
+        if (y > 0)
+          points.push({
+            x: Date.parse(session.startedAt),
+            y,
+            label: this.formatDate(session.startedAt),
+          });
       }
 
       return points.sort((a, b) => a.x - b.x);
@@ -762,29 +888,45 @@ export function seances() {
 
     progressMin(): number {
       const pts = this.progressPoints();
-      return pts.length ? Math.min(...pts.map(p => p.y)) : 0;
+      return pts.length ? Math.min(...pts.map((p) => p.y)) : 0;
     },
 
     progressMax(): number {
       const pts = this.progressPoints();
-      return pts.length ? Math.max(...pts.map(p => p.y)) : 0;
+      return pts.length ? Math.max(...pts.map((p) => p.y)) : 0;
     },
 
     progressSvg(): string {
       const pts = this.progressPoints();
       if (pts.length < 2) return '';
-      const W = 320, H = 140, padX = 8, padY = 8;
-      const minX = pts[0]!.x, maxX = pts.at(-1)!.x;
-      const minY = this.progressMin(), maxY = this.progressMax();
-      const dx = Math.max(1, maxX - minX), dy = Math.max(0.1, maxY - minY);
+      const W = 320,
+        H = 140,
+        padX = 8,
+        padY = 8;
+      const minX = pts[0]!.x,
+        maxX = pts.at(-1)!.x;
+      const minY = this.progressMin(),
+        maxY = this.progressMax();
+      const dx = Math.max(1, maxX - minX),
+        dy = Math.max(0.1, maxY - minY);
       const sx = (x: number) => padX + ((x - minX) / dx) * (W - padX * 2);
       const sy = (y: number) => H - padY - ((y - minY) / dy) * (H - padY * 2);
-      const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`).join(' ');
+      const line = pts
+        .map((p, i) => `${i === 0 ? 'M' : 'L'} ${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`)
+        .join(' ');
       const area = line + ` L ${sx(pts.at(-1)!.x).toFixed(1)} ${H} L ${padX} ${H} Z`;
-      const circles = pts.map(p =>
-        `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#FFD166' : '#7F77DD'}"><title>${p.label}: ${p.y.toFixed(1)}</title></circle>`
-      ).join('');
-      const metric = this.progressMetric === 'weight' ? 'Charge max (kg)' : this.progressMetric === 'volume' ? 'Volume (kg·reps)' : 'e1RM (kg)';
+      const circles = pts
+        .map(
+          (p) =>
+            `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#FFD166' : '#7F77DD'}"><title>${p.label}: ${p.y.toFixed(1)}</title></circle>`,
+        )
+        .join('');
+      const metric =
+        this.progressMetric === 'weight'
+          ? 'Charge max (kg)'
+          : this.progressMetric === 'volume'
+            ? 'Volume (kg·reps)'
+            : 'e1RM (kg)';
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="${metric}">
         <path d="${area}" fill="#7F77DD" fill-opacity="0.15"/>
         <path d="${line}" fill="none" stroke="#7F77DD" stroke-width="2" stroke-linecap="round"/>
@@ -801,15 +943,22 @@ export function seances() {
       try {
         const deps = await getDeps();
         const endedAt = nowIso();
-        const durationMin = Math.max(0, Math.round((Date.parse(endedAt) - Date.parse(this.currentSession.startedAt)) / 60000));
+        const durationMin = Math.max(
+          0,
+          Math.round((Date.parse(endedAt) - Date.parse(this.currentSession.startedAt)) / 60000),
+        );
         const avgRpe = this.avgRpeOf(this.currentSession);
-        const caloriesKcal = estimateStrengthWorkoutCaloriesKcal({ durationMin, avgRpe, profile: this.userProfile });
+        const caloriesKcal = estimateStrengthWorkoutCaloriesKcal({
+          durationMin,
+          avgRpe,
+          profile: this.userProfile,
+        });
 
         const finalized: WorkoutSession = {
           ...this.currentSession,
           endedAt,
           durationMin,
-          ...(avgRpe != null      ? { avgRpe }      : {}),
+          ...(avgRpe != null ? { avgRpe } : {}),
           ...(caloriesKcal != null ? { caloriesKcal } : {}),
         };
         // Persist FIRST so a write failure doesn't leave the UI in an
@@ -822,22 +971,31 @@ export function seances() {
         this.stopRest();
         this.dismissPrCelebration();
 
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'success', message: `Séance sauvegardée — ${durationMin} min${caloriesKcal ? ` · ~${caloriesKcal} kcal` : ''}` },
-        }));
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_SESSION_SAVED, {
-          detail: { session: finalized },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: {
+              kind: 'success',
+              message: `Séance sauvegardée — ${durationMin} min${caloriesKcal ? ` · ~${caloriesKcal} kcal` : ''}`,
+            },
+          }),
+        );
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_SESSION_SAVED, {
+            detail: { session: finalized },
+          }),
+        );
       } catch (err) {
         console.error('[seances] save failed:', err);
         const name = err instanceof Error ? err.name : 'Error';
         const isQuota = /Quota/i.test(name) || /Quota/i.test((err as Error)?.message ?? '');
         const message = isQuota
-          ? "Stockage plein — va dans Profil → Stockage et appuie sur \"Compacter\" pour libérer de la place."
+          ? 'Stockage plein — va dans Profil → Stockage et appuie sur "Compacter" pour libérer de la place.'
           : `Échec de sauvegarde (${name}). Réessaie ou recharge la page.`;
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message },
+          }),
+        );
       }
     },
 
@@ -848,26 +1006,37 @@ export function seances() {
       try {
         const deps = await getDeps();
         const template: WorkoutTemplate = {
-          id: newId(), name, createdAt: nowIso(),
-          exercises: this.currentSession.entries.map(e => ({
-            exerciseId: e.exerciseId, sets: Math.max(1, e.sets.length || 3), targetReps: 8, targetRpe: 8,
+          id: newId(),
+          name,
+          createdAt: nowIso(),
+          exercises: this.currentSession.entries.map((e) => ({
+            exerciseId: e.exerciseId,
+            sets: Math.max(1, e.sets.length || 3),
+            targetReps: 8,
+            targetRpe: 8,
           })),
         };
         const next = [...this.templates, template];
         await saveTemplates(deps.storage, next);
         this.templates = next;
         this.templateName = '';
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind: 'success', message: `Modèle "${name}" créé` } }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'success', message: `Modèle "${name}" créé` },
+          }),
+        );
       } catch (err) {
         console.error('[seances] saveTemplate failed:', err);
         const name = err instanceof Error ? err.name : 'Error';
         const detail = err instanceof Error && err.message ? err.message.slice(0, 120) : '';
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: {
-            kind: 'error',
-            message: `Échec création du modèle (${name})${detail ? ` — ${detail}` : ''}. Réessaie.`,
-          },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: {
+              kind: 'error',
+              message: `Échec création du modèle (${name})${detail ? ` — ${detail}` : ''}. Réessaie.`,
+            },
+          }),
+        );
       }
     },
   };

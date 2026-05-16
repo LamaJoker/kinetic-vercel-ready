@@ -18,7 +18,7 @@ beforeEach(() => {
   // vi.stubGlobal isole les globals par test — pas de leak entre cas
   vi.stubGlobal('navigator', { onLine: true });
   vi.stubGlobal('window', {
-    addEventListener:    vi.fn(),
+    addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
   });
 });
@@ -65,7 +65,7 @@ describe('HybridStorage', () => {
   let hybrid: HybridStorage;
 
   beforeEach(() => {
-    local  = new InMemoryStorage();
+    local = new InMemoryStorage();
     remote = new InMemoryStorage();
     hybrid = new HybridStorage(local, remote);
   });
@@ -157,7 +157,7 @@ describe('HybridStorage', () => {
   });
 
   describe('syncFromRemote (anti-perte de données)', () => {
-    it("ne ré-écrit PAS les clés déjà présentes en local (mode défaut)", async () => {
+    it('ne ré-écrit PAS les clés déjà présentes en local (mode défaut)', async () => {
       await local.set('kinetic:training:sessions', [{ id: 'fresh', name: 'Nouvelle' }]);
       await remote.set('kinetic:training:sessions', [{ id: 'old', name: 'Ancienne' }]);
 
@@ -177,17 +177,16 @@ describe('HybridStorage', () => {
       expect(await hybrid.get('kinetic:training:sessions')).toEqual([{ id: 's1' }]);
     });
 
-    it("force: true écrase explicitement le local (bouton Restaurer)", async () => {
+    it('force: true écrase explicitement le local (bouton Restaurer)', async () => {
       await local.set('kinetic:training:sessions', [{ id: 'local-only' }]);
       await remote.set('kinetic:training:sessions', [{ id: 'remote-version' }]);
 
       await hybrid.syncFromRemote({ force: true });
 
-      expect(await hybrid.get('kinetic:training:sessions'))
-        .toEqual([{ id: 'remote-version' }]);
+      expect(await hybrid.get('kinetic:training:sessions')).toEqual([{ id: 'remote-version' }]);
     });
 
-    it("ignore les clés internes de sync lors du pull", async () => {
+    it('ignore les clés internes de sync lors du pull', async () => {
       await remote.set('kinetic:training:sessions', [{ id: 's1' }]);
 
       await hybrid.syncFromRemote();
@@ -196,18 +195,17 @@ describe('HybridStorage', () => {
       expect(keys).toContain('kinetic:training:sessions');
     });
 
-    it("est idempotent : 2 appels successifs ne corrompent pas le local", async () => {
+    it('est idempotent : 2 appels successifs ne corrompent pas le local', async () => {
       await local.set('kinetic:training:sessions', [{ id: 'fresh' }]);
       await remote.set('kinetic:training:sessions', [{ id: 'old' }]);
 
       await hybrid.syncFromRemote();
       await hybrid.syncFromRemote();
 
-      expect(await hybrid.get('kinetic:training:sessions'))
-        .toEqual([{ id: 'fresh' }]);
+      expect(await hybrid.get('kinetic:training:sessions')).toEqual([{ id: 'fresh' }]);
     });
 
-    it("ne fait rien si offline", async () => {
+    it('ne fait rien si offline', async () => {
       vi.stubGlobal('navigator', { onLine: false });
       await remote.set('kinetic:training:sessions', [{ id: 's1' }]);
 
@@ -216,7 +214,7 @@ describe('HybridStorage', () => {
       expect(await hybrid.get('kinetic:training:sessions')).toBeNull();
     });
 
-    it("enregistre lastSyncAt après une sync réussie", async () => {
+    it('enregistre lastSyncAt après une sync réussie', async () => {
       await remote.set('kinetic:training:sessions', [{ id: 's1' }]);
 
       await hybrid.syncFromRemote();
@@ -226,16 +224,16 @@ describe('HybridStorage', () => {
       expect(new Date(lastSyncAt!).getFullYear()).toBeGreaterThanOrEqual(2025);
     });
 
-    it("utilise keysSince() si disponible sur le remote (delta sync)", async () => {
+    it('utilise keysSince() si disponible sur le remote (delta sync)', async () => {
       // Remote avec support delta
       const deltaRemote = {
         ...remote,
         keysSince: vi.fn().mockResolvedValue(['kinetic:training:sessions']),
-        get:       vi.fn().mockImplementation((k: string) => remote.get(k)),
-        keys:      vi.fn().mockResolvedValue(['kinetic:training:sessions']),
-        set:       vi.fn().mockImplementation((k: string, v: unknown) => remote.set(k, v)),
-        remove:    vi.fn(),
-        clear:     vi.fn(),
+        get: vi.fn().mockImplementation((k: string) => remote.get(k)),
+        keys: vi.fn().mockResolvedValue(['kinetic:training:sessions']),
+        set: vi.fn().mockImplementation((k: string, v: unknown) => remote.set(k, v)),
+        remove: vi.fn(),
+        clear: vi.fn(),
       };
       await remote.set('kinetic:training:sessions', [{ id: 'delta' }]);
       await local.set('kinetic:sync:last-at', '2025-01-01T00:00:00Z');

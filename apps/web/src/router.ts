@@ -22,24 +22,24 @@ type RouteKey =
   | '/program'
   | '/login'
   | '/profile'
-  | '/auth-callback'   // ← FIX #2 : était '/auth/callback' — aligné avec callbackUrl()
+  | '/auth-callback' // ← FIX #2 : était '/auth/callback' — aligné avec callbackUrl()
   | '/bodyweight'
   | '/progression'
   | '/mensurations';
 
 const ROUTES: Record<RouteKey, string> = {
-  '/':              './pages/dashboard.html',
-  '/onboarding':    './pages/onboarding.html',
-  '/seances':       './pages/seances.html',
-  '/vitalite':      './pages/vitalite.html',
-  '/nutrition':     './pages/nutrition.html',
-  '/program':       './pages/program.html',
-  '/login':         './pages/login.html',
-  '/profile':       './pages/profile.html',
+  '/': './pages/dashboard.html',
+  '/onboarding': './pages/onboarding.html',
+  '/seances': './pages/seances.html',
+  '/vitalite': './pages/vitalite.html',
+  '/nutrition': './pages/nutrition.html',
+  '/program': './pages/program.html',
+  '/login': './pages/login.html',
+  '/profile': './pages/profile.html',
   '/auth-callback': './pages/auth-callback.html', // ← FIX #2
-  '/bodyweight':    './pages/bodyweight.html',
-  '/progression':   './pages/progression.html',
-  '/mensurations':  './pages/mensurations.html',
+  '/bodyweight': './pages/bodyweight.html',
+  '/progression': './pages/progression.html',
+  '/mensurations': './pages/mensurations.html',
 };
 
 const ONBOARDING_EXEMPT: readonly RouteKey[] = ['/onboarding', '/login', '/auth-callback'];
@@ -102,13 +102,17 @@ async function render(path: string): Promise<void> {
 
   const host = outlet();
   host.style.opacity = '0.6';
+  host.setAttribute('aria-busy', 'true');
 
   host.querySelectorAll<HTMLElement>('[x-data]').forEach((el) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = (el as any)._x_dataStack?.[0];
     if (data && typeof data.destroy === 'function') {
-      try { data.destroy(); }
-      catch (err) { console.warn('[router] component destroy failed:', err); }
+      try {
+        data.destroy();
+      } catch (err) {
+        console.warn('[router] component destroy failed:', err);
+      }
     }
   });
 
@@ -130,10 +134,21 @@ async function render(path: string): Promise<void> {
 
   requestAnimationFrame(() => {
     host.style.opacity = '1';
+    host.setAttribute('aria-busy', 'false');
     // FIX #3 : Ne pas remonter en haut de page sur /auth-callback
     // (évite un éventuel flash avant la redirection)
     if (normalizedPath !== '/auth-callback') {
       window.scrollTo({ top: 0, behavior: 'auto' });
+      // A11y: déplacer le focus vers le contenu principal après navigation
+      // pour permettre aux utilisateurs de lecteurs d'écran de suivre la page
+      try {
+        host.focus({ preventScroll: true });
+      } catch {
+        // preventScroll non supporté → fallback silencieux
+      }
+      // Annonce du titre de page aux lecteurs d'écran via document.title
+      const pageTitle = host.querySelector<HTMLElement>('[data-page-title]')?.textContent?.trim();
+      if (pageTitle) document.title = `${pageTitle} — Kinetic`;
     }
   });
 }
@@ -149,26 +164,34 @@ export function navigate(path: string, replace = false): void {
 }
 
 export function initRouter(): void {
-  document.addEventListener('click', (e) => {
-    const link = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;
-    if (!link) return;
-    const href = link.getAttribute('href') ?? '';
-    if (/^(https?:)?\/\//i.test(href)) return;
-    if (href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
-    if (!href.startsWith('/')) return;
-    e.preventDefault();
-    e.stopPropagation();
-    navigate(href);
-  }, { capture: true });
+  document.addEventListener(
+    'click',
+    (e) => {
+      const link = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;
+      if (!link) return;
+      const href = link.getAttribute('href') ?? '';
+      if (/^(https?:)?\/\//i.test(href)) return;
+      if (href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+      if (!href.startsWith('/')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      navigate(href);
+    },
+    { capture: true },
+  );
 
   window.addEventListener('popstate', () => void render(window.location.pathname || '/'));
 
   let _authReadyReceived = false;
 
-  window.addEventListener(STORAGE_KEYS.EVENT_AUTH_READY, () => {
-    _authReadyReceived = true;
-    void render(window.location.pathname || '/');
-  }, { once: true });
+  window.addEventListener(
+    STORAGE_KEYS.EVENT_AUTH_READY,
+    () => {
+      _authReadyReceived = true;
+      void render(window.location.pathname || '/');
+    },
+    { once: true },
+  );
 
   window.addEventListener(STORAGE_KEYS.EVENT_ONBOARDING_COMPLETE, () => {
     _onboardingKnown = true;
@@ -189,7 +212,9 @@ export function initRouter(): void {
     const appOutlet = document.getElementById('app-outlet');
     if (appOutlet && appOutlet.hasChildNodes()) return; // déjà rendu
     type WindowWithAlpine = Window & { Alpine?: { store?: (name: string) => unknown } };
-    const auth = (window as WindowWithAlpine).Alpine?.store?.('auth') as { loading?: boolean } | undefined;
+    const auth = (window as WindowWithAlpine).Alpine?.store?.('auth') as
+      | { loading?: boolean }
+      | undefined;
     if (!auth || auth.loading === false) {
       void render(window.location.pathname || '/');
     }

@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDepsManager } from '../../apps/web/src/deps.factory.js';
-import { FakeClock, InMemoryStorage, SequentialIdGenerator, SpyNotifier } from '@test-helpers/stubs.ts';
+import {
+  FakeClock,
+  InMemoryStorage,
+  SequentialIdGenerator,
+  SpyNotifier,
+} from '@test-helpers/stubs.ts';
 
 describe('createDepsManager', () => {
   beforeEach(() => {
@@ -46,7 +51,9 @@ describe('createDepsManager', () => {
       getAuthUser: async () => ({ id: 'u1' }),
       hasRemoteSync: true,
       syncTimeoutMs: 100,
-      onHybridReady: (storage) => { void storage.syncFromRemote?.(); },
+      onHybridReady: (storage) => {
+        void storage.syncFromRemote?.();
+      },
     });
 
     const deps = await manager.getDeps();

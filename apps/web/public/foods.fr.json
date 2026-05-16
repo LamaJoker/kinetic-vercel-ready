@@ -1,102 +1,902 @@
 [
-  {"id":"poulet_blanc","name":"Blanc de poulet","kcal":110,"protein":23.0,"carbs":0.0,"fat":1.2,"category":"viandes"},
-  {"id":"poulet_cuisse","name":"Cuisse de poulet","kcal":175,"protein":19.0,"carbs":0.0,"fat":10.5,"category":"viandes"},
-  {"id":"boeuf_haché","name":"Bœuf haché 5%","kcal":121,"protein":21.0,"carbs":0.0,"fat":4.0,"category":"viandes"},
-  {"id":"boeuf_steak","name":"Steak de bœuf","kcal":144,"protein":21.4,"carbs":0.0,"fat":6.0,"category":"viandes"},
-  {"id":"dinde","name":"Blanc de dinde","kcal":104,"protein":22.4,"carbs":0.0,"fat":1.0,"category":"viandes"},
-  {"id":"porc_filet","name":"Filet de porc","kcal":143,"protein":21.0,"carbs":0.0,"fat":6.0,"category":"viandes"},
-  {"id":"saumon","name":"Saumon","kcal":208,"protein":20.0,"carbs":0.0,"fat":13.0,"category":"poissons"},
-  {"id":"thon_boite","name":"Thon en boîte (au naturel)","kcal":103,"protein":23.0,"carbs":0.0,"fat":1.0,"category":"poissons"},
-  {"id":"cabillaud","name":"Cabillaud","kcal":82,"protein":18.0,"carbs":0.0,"fat":0.7,"category":"poissons"},
-  {"id":"crevettes","name":"Crevettes cuites","kcal":99,"protein":21.0,"carbs":0.0,"fat":1.1,"category":"poissons"},
-  {"id":"oeufs","name":"Œufs entiers","kcal":155,"protein":12.6,"carbs":1.1,"fat":11.0,"category":"proteines"},
-  {"id":"blancs_oeuf","name":"Blancs d'œufs","kcal":52,"protein":11.0,"carbs":0.7,"fat":0.2,"category":"proteines"},
-  {"id":"fromage_blanc_0","name":"Fromage blanc 0%","kcal":46,"protein":8.0,"carbs":4.0,"fat":0.1,"category":"laitiers"},
-  {"id":"fromage_blanc_3","name":"Fromage blanc 3%","kcal":70,"protein":7.5,"carbs":4.0,"fat":3.0,"category":"laitiers"},
-  {"id":"skyr","name":"Skyr nature","kcal":65,"protein":11.0,"carbs":4.0,"fat":0.2,"category":"laitiers"},
-  {"id":"yaourt_grec","name":"Yaourt grec 0%","kcal":57,"protein":10.0,"carbs":3.6,"fat":0.4,"category":"laitiers"},
-  {"id":"lait_ecreme","name":"Lait écrémé","kcal":34,"protein":3.3,"carbs":5.0,"fat":0.1,"category":"laitiers"},
-  {"id":"lait_entier","name":"Lait entier","kcal":61,"protein":3.2,"carbs":4.8,"fat":3.3,"category":"laitiers"},
-  {"id":"whey","name":"Whey protéine (poudre)","kcal":380,"protein":74.0,"carbs":8.0,"fat":6.0,"category":"supplements"},
-  {"id":"caséine","name":"Caséine (poudre)","kcal":370,"protein":78.0,"carbs":4.0,"fat":3.0,"category":"supplements"},
-  {"id":"riz_blanc","name":"Riz blanc cuit","kcal":130,"protein":2.7,"carbs":28.0,"fat":0.3,"category":"glucides"},
-  {"id":"riz_complet","name":"Riz complet cuit","kcal":112,"protein":2.6,"carbs":23.0,"fat":0.9,"category":"glucides"},
-  {"id":"pates","name":"Pâtes cuites","kcal":131,"protein":5.0,"carbs":25.0,"fat":1.1,"category":"glucides"},
-  {"id":"pates_completes","name":"Pâtes complètes cuites","kcal":124,"protein":5.3,"carbs":23.0,"fat":1.1,"category":"glucides"},
-  {"id":"pomme_de_terre","name":"Pomme de terre bouillie","kcal":77,"protein":1.8,"carbs":17.0,"fat":0.1,"category":"glucides"},
-  {"id":"patate_douce","name":"Patate douce cuite","kcal":86,"protein":1.6,"carbs":20.0,"fat":0.1,"category":"glucides"},
-  {"id":"pain_complet","name":"Pain complet","kcal":247,"protein":9.0,"carbs":43.0,"fat":2.9,"category":"glucides"},
-  {"id":"pain_blanc","name":"Pain blanc","kcal":265,"protein":8.5,"carbs":50.0,"fat":2.7,"category":"glucides"},
-  {"id":"flocons_avoine","name":"Flocons d'avoine","kcal":375,"protein":13.0,"carbs":62.0,"fat":7.0,"category":"glucides"},
-  {"id":"quinoa","name":"Quinoa cuit","kcal":120,"protein":4.4,"carbs":21.0,"fat":1.9,"category":"glucides"},
-  {"id":"lentilles","name":"Lentilles cuites","kcal":116,"protein":9.0,"carbs":20.0,"fat":0.4,"category":"legumineuses"},
-  {"id":"pois_chiches","name":"Pois chiches cuits","kcal":164,"protein":8.9,"carbs":27.0,"fat":2.6,"category":"legumineuses"},
-  {"id":"haricots_rouges","name":"Haricots rouges cuits","kcal":127,"protein":8.7,"carbs":23.0,"fat":0.5,"category":"legumineuses"},
-  {"id":"edamame","name":"Edamame cuit","kcal":121,"protein":11.0,"carbs":9.0,"fat":5.2,"category":"legumineuses"},
-  {"id":"banane","name":"Banane","kcal":89,"protein":1.1,"carbs":23.0,"fat":0.3,"category":"fruits"},
-  {"id":"pomme","name":"Pomme","kcal":52,"protein":0.3,"carbs":14.0,"fat":0.2,"category":"fruits"},
-  {"id":"orange","name":"Orange","kcal":47,"protein":0.9,"carbs":12.0,"fat":0.1,"category":"fruits"},
-  {"id":"fraises","name":"Fraises","kcal":32,"protein":0.7,"carbs":7.7,"fat":0.3,"category":"fruits"},
-  {"id":"myrtilles","name":"Myrtilles","kcal":57,"protein":0.7,"carbs":14.0,"fat":0.3,"category":"fruits"},
-  {"id":"mangue","name":"Mangue","kcal":60,"protein":0.8,"carbs":15.0,"fat":0.4,"category":"fruits"},
-  {"id":"ananas","name":"Ananas","kcal":50,"protein":0.5,"carbs":13.0,"fat":0.1,"category":"fruits"},
-  {"id":"dattes","name":"Dattes séchées","kcal":282,"protein":2.5,"carbs":75.0,"fat":0.4,"category":"fruits"},
-  {"id":"brocoli","name":"Brocoli","kcal":34,"protein":2.8,"carbs":7.0,"fat":0.4,"category":"legumes"},
-  {"id":"epinards","name":"Épinards","kcal":23,"protein":2.9,"carbs":3.6,"fat":0.4,"category":"legumes"},
-  {"id":"courgette","name":"Courgette","kcal":17,"protein":1.2,"carbs":3.1,"fat":0.3,"category":"legumes"},
-  {"id":"tomates","name":"Tomates","kcal":18,"protein":0.9,"carbs":3.9,"fat":0.2,"category":"legumes"},
-  {"id":"carottes","name":"Carottes","kcal":41,"protein":0.9,"carbs":10.0,"fat":0.2,"category":"legumes"},
-  {"id":"concombre","name":"Concombre","kcal":15,"protein":0.7,"carbs":3.6,"fat":0.1,"category":"legumes"},
-  {"id":"poivron","name":"Poivron","kcal":20,"protein":0.9,"carbs":4.6,"fat":0.3,"category":"legumes"},
-  {"id":"haricots_verts","name":"Haricots verts","kcal":31,"protein":1.8,"carbs":7.0,"fat":0.1,"category":"legumes"},
-  {"id":"avocat","name":"Avocat","kcal":160,"protein":2.0,"carbs":9.0,"fat":15.0,"category":"lipides"},
-  {"id":"amandes","name":"Amandes","kcal":579,"protein":21.0,"carbs":22.0,"fat":50.0,"category":"lipides"},
-  {"id":"noix","name":"Noix","kcal":654,"protein":15.0,"carbs":14.0,"fat":65.0,"category":"lipides"},
-  {"id":"beurre_cacahuete","name":"Beurre de cacahuète","kcal":588,"protein":25.0,"carbs":20.0,"fat":50.0,"category":"lipides"},
-  {"id":"huile_olive","name":"Huile d'olive","kcal":884,"protein":0.0,"carbs":0.0,"fat":100.0,"category":"lipides"},
-  {"id":"graines_chia","name":"Graines de chia","kcal":486,"protein":17.0,"carbs":42.0,"fat":31.0,"category":"lipides"},
-  {"id":"emmental","name":"Emmental","kcal":379,"protein":27.0,"carbs":0.4,"fat":29.0,"category":"fromages"},
-  {"id":"mozzarella","name":"Mozzarella","kcal":280,"protein":28.0,"carbs":3.1,"fat":17.0,"category":"fromages"},
-  {"id":"cottage_cheese","name":"Cottage cheese","kcal":98,"protein":11.0,"carbs":3.4,"fat":4.3,"category":"fromages"},
-  {"id":"jambon","name":"Jambon blanc","kcal":101,"protein":17.0,"carbs":1.0,"fat":3.0,"category":"charcuterie"},
-  {"id":"saucisse_dinde","name":"Saucisse de dinde","kcal":149,"protein":14.0,"carbs":3.0,"fat":9.0,"category":"charcuterie"},
-  {"id":"pain_de_mie_complet","name":"Pain de mie complet (tranche)","kcal":234,"protein":8.0,"carbs":41.0,"fat":4.0,"category":"glucides"},
-  {"id":"crepes","name":"Crêpes nature","kcal":197,"protein":6.5,"carbs":30.0,"fat":5.7,"category":"glucides"},
-  {"id":"galettes_riz","name":"Galettes de riz","kcal":381,"protein":7.5,"carbs":82.0,"fat":2.8,"category":"glucides"},
-  {"id":"miel","name":"Miel","kcal":304,"protein":0.3,"carbs":82.0,"fat":0.0,"category":"sucres"},
-  {"id":"confiture","name":"Confiture","kcal":250,"protein":0.5,"carbs":65.0,"fat":0.1,"category":"sucres"},
-  {"id":"chocolat_noir","name":"Chocolat noir 70%","kcal":598,"protein":7.8,"carbs":46.0,"fat":43.0,"category":"sucres"},
-  {"id":"granola","name":"Granola","kcal":471,"protein":10.0,"carbs":64.0,"fat":20.0,"category":"glucides"},
-  {"id":"tofu","name":"Tofu ferme","kcal":76,"protein":8.0,"carbs":1.9,"fat":4.8,"category":"proteines"},
-  {"id":"soja_texturé","name":"Soja texturé réhydraté","kcal":145,"protein":17.0,"carbs":14.0,"fat":1.0,"category":"proteines"},
-  {"id":"sardines","name":"Sardines à l'huile","kcal":208,"protein":24.0,"carbs":0.0,"fat":12.0,"category":"poissons"},
-  {"id":"maquereau","name":"Maquereau","kcal":205,"protein":19.0,"carbs":0.0,"fat":14.0,"category":"poissons"},
-  {"id":"crème_fraiche","name":"Crème fraîche 15%","kcal":162,"protein":3.0,"carbs":3.0,"fat":15.0,"category":"laitiers"},
-  {"id":"lait_soja","name":"Lait de soja","kcal":33,"protein":3.0,"carbs":2.8,"fat":1.8,"category":"laitiers"},
-  {"id":"tempeh","name":"Tempeh","kcal":193,"protein":19.0,"carbs":9.0,"fat":11.0,"category":"proteines"},
-  {"id":"seitan","name":"Seitan","kcal":370,"protein":75.0,"carbs":14.0,"fat":2.0,"category":"proteines"},
-  {"id":"bouillon_cube","name":"Soupe de légumes (portion)","kcal":25,"protein":1.0,"carbs":5.0,"fat":0.2,"category":"autres"},
-  {"id":"cafe","name":"Café noir (200ml)","kcal":4,"protein":0.3,"carbs":0.0,"fat":0.0,"category":"boissons"},
-  {"id":"jus_orange","name":"Jus d'orange frais (200ml)","kcal":88,"protein":1.2,"carbs":21.0,"fat":0.2,"category":"boissons"},
-  {"id":"masse_gainer","name":"Mass Gainer (poudre)","kcal":390,"protein":24.0,"carbs":60.0,"fat":6.0,"category":"supplements"},
-  {"id":"creatine","name":"Créatine monohydrate (5g)","kcal":0,"protein":0.0,"carbs":0.0,"fat":0.0,"category":"supplements"},
-  {"id":"beurre","name":"Beurre","kcal":717,"protein":0.8,"carbs":0.1,"fat":81.0,"category":"lipides"},
-  {"id":"pistaches","name":"Pistaches","kcal":562,"protein":20.0,"carbs":28.0,"fat":45.0,"category":"lipides"},
-  {"id":"gruyere","name":"Gruyère","kcal":413,"protein":29.0,"carbs":0.4,"fat":32.0,"category":"fromages"},
-  {"id":"ricotta","name":"Ricotta","kcal":174,"protein":11.0,"carbs":3.0,"fat":13.0,"category":"fromages"},
-  {"id":"mais","name":"Maïs cuit","kcal":96,"protein":3.4,"carbs":21.0,"fat":1.5,"category":"legumes"},
-  {"id":"pois","name":"Petits pois cuits","kcal":84,"protein":5.4,"carbs":14.0,"fat":0.4,"category":"legumes"},
-  {"id":"artichaut","name":"Artichaut cuit","kcal":53,"protein":2.9,"carbs":11.0,"fat":0.2,"category":"legumes"},
-  {"id":"aubergine","name":"Aubergine","kcal":25,"protein":1.0,"carbs":5.9,"fat":0.2,"category":"legumes"},
-  {"id":"poireaux","name":"Poireaux","kcal":61,"protein":1.5,"carbs":14.0,"fat":0.3,"category":"legumes"},
-  {"id":"champignons","name":"Champignons","kcal":22,"protein":3.1,"carbs":3.3,"fat":0.3,"category":"legumes"},
-  {"id":"asperges","name":"Asperges","kcal":20,"protein":2.2,"carbs":3.9,"fat":0.1,"category":"legumes"},
-  {"id":"kiwi","name":"Kiwi","kcal":61,"protein":1.1,"carbs":15.0,"fat":0.5,"category":"fruits"},
-  {"id":"cerise","name":"Cerises","kcal":63,"protein":1.1,"carbs":16.0,"fat":0.2,"category":"fruits"},
-  {"id":"raisin","name":"Raisin","kcal":69,"protein":0.7,"carbs":18.0,"fat":0.2,"category":"fruits"},
-  {"id":"poire","name":"Poire","kcal":57,"protein":0.4,"carbs":15.0,"fat":0.1,"category":"fruits"},
-  {"id":"pamplemousse","name":"Pamplemousse","kcal":42,"protein":0.8,"carbs":11.0,"fat":0.1,"category":"fruits"},
-  {"id":"noix_cajou","name":"Noix de cajou","kcal":553,"protein":18.0,"carbs":30.0,"fat":44.0,"category":"lipides"},
-  {"id":"graines_lin","name":"Graines de lin","kcal":534,"protein":18.0,"carbs":29.0,"fat":42.0,"category":"lipides"},
-  {"id":"pain_seigle","name":"Pain de seigle","kcal":258,"protein":8.5,"carbs":48.0,"fat":3.3,"category":"glucides"}
+  {
+    "id": "poulet_blanc",
+    "name": "Blanc de poulet",
+    "kcal": 110,
+    "protein": 23.0,
+    "carbs": 0.0,
+    "fat": 1.2,
+    "category": "viandes"
+  },
+  {
+    "id": "poulet_cuisse",
+    "name": "Cuisse de poulet",
+    "kcal": 175,
+    "protein": 19.0,
+    "carbs": 0.0,
+    "fat": 10.5,
+    "category": "viandes"
+  },
+  {
+    "id": "boeuf_haché",
+    "name": "Bœuf haché 5%",
+    "kcal": 121,
+    "protein": 21.0,
+    "carbs": 0.0,
+    "fat": 4.0,
+    "category": "viandes"
+  },
+  {
+    "id": "boeuf_steak",
+    "name": "Steak de bœuf",
+    "kcal": 144,
+    "protein": 21.4,
+    "carbs": 0.0,
+    "fat": 6.0,
+    "category": "viandes"
+  },
+  {
+    "id": "dinde",
+    "name": "Blanc de dinde",
+    "kcal": 104,
+    "protein": 22.4,
+    "carbs": 0.0,
+    "fat": 1.0,
+    "category": "viandes"
+  },
+  {
+    "id": "porc_filet",
+    "name": "Filet de porc",
+    "kcal": 143,
+    "protein": 21.0,
+    "carbs": 0.0,
+    "fat": 6.0,
+    "category": "viandes"
+  },
+  {
+    "id": "saumon",
+    "name": "Saumon",
+    "kcal": 208,
+    "protein": 20.0,
+    "carbs": 0.0,
+    "fat": 13.0,
+    "category": "poissons"
+  },
+  {
+    "id": "thon_boite",
+    "name": "Thon en boîte (au naturel)",
+    "kcal": 103,
+    "protein": 23.0,
+    "carbs": 0.0,
+    "fat": 1.0,
+    "category": "poissons"
+  },
+  {
+    "id": "cabillaud",
+    "name": "Cabillaud",
+    "kcal": 82,
+    "protein": 18.0,
+    "carbs": 0.0,
+    "fat": 0.7,
+    "category": "poissons"
+  },
+  {
+    "id": "crevettes",
+    "name": "Crevettes cuites",
+    "kcal": 99,
+    "protein": 21.0,
+    "carbs": 0.0,
+    "fat": 1.1,
+    "category": "poissons"
+  },
+  {
+    "id": "oeufs",
+    "name": "Œufs entiers",
+    "kcal": 155,
+    "protein": 12.6,
+    "carbs": 1.1,
+    "fat": 11.0,
+    "category": "proteines"
+  },
+  {
+    "id": "blancs_oeuf",
+    "name": "Blancs d'œufs",
+    "kcal": 52,
+    "protein": 11.0,
+    "carbs": 0.7,
+    "fat": 0.2,
+    "category": "proteines"
+  },
+  {
+    "id": "fromage_blanc_0",
+    "name": "Fromage blanc 0%",
+    "kcal": 46,
+    "protein": 8.0,
+    "carbs": 4.0,
+    "fat": 0.1,
+    "category": "laitiers"
+  },
+  {
+    "id": "fromage_blanc_3",
+    "name": "Fromage blanc 3%",
+    "kcal": 70,
+    "protein": 7.5,
+    "carbs": 4.0,
+    "fat": 3.0,
+    "category": "laitiers"
+  },
+  {
+    "id": "skyr",
+    "name": "Skyr nature",
+    "kcal": 65,
+    "protein": 11.0,
+    "carbs": 4.0,
+    "fat": 0.2,
+    "category": "laitiers"
+  },
+  {
+    "id": "yaourt_grec",
+    "name": "Yaourt grec 0%",
+    "kcal": 57,
+    "protein": 10.0,
+    "carbs": 3.6,
+    "fat": 0.4,
+    "category": "laitiers"
+  },
+  {
+    "id": "lait_ecreme",
+    "name": "Lait écrémé",
+    "kcal": 34,
+    "protein": 3.3,
+    "carbs": 5.0,
+    "fat": 0.1,
+    "category": "laitiers"
+  },
+  {
+    "id": "lait_entier",
+    "name": "Lait entier",
+    "kcal": 61,
+    "protein": 3.2,
+    "carbs": 4.8,
+    "fat": 3.3,
+    "category": "laitiers"
+  },
+  {
+    "id": "whey",
+    "name": "Whey protéine (poudre)",
+    "kcal": 380,
+    "protein": 74.0,
+    "carbs": 8.0,
+    "fat": 6.0,
+    "category": "supplements"
+  },
+  {
+    "id": "caséine",
+    "name": "Caséine (poudre)",
+    "kcal": 370,
+    "protein": 78.0,
+    "carbs": 4.0,
+    "fat": 3.0,
+    "category": "supplements"
+  },
+  {
+    "id": "riz_blanc",
+    "name": "Riz blanc cuit",
+    "kcal": 130,
+    "protein": 2.7,
+    "carbs": 28.0,
+    "fat": 0.3,
+    "category": "glucides"
+  },
+  {
+    "id": "riz_complet",
+    "name": "Riz complet cuit",
+    "kcal": 112,
+    "protein": 2.6,
+    "carbs": 23.0,
+    "fat": 0.9,
+    "category": "glucides"
+  },
+  {
+    "id": "pates",
+    "name": "Pâtes cuites",
+    "kcal": 131,
+    "protein": 5.0,
+    "carbs": 25.0,
+    "fat": 1.1,
+    "category": "glucides"
+  },
+  {
+    "id": "pates_completes",
+    "name": "Pâtes complètes cuites",
+    "kcal": 124,
+    "protein": 5.3,
+    "carbs": 23.0,
+    "fat": 1.1,
+    "category": "glucides"
+  },
+  {
+    "id": "pomme_de_terre",
+    "name": "Pomme de terre bouillie",
+    "kcal": 77,
+    "protein": 1.8,
+    "carbs": 17.0,
+    "fat": 0.1,
+    "category": "glucides"
+  },
+  {
+    "id": "patate_douce",
+    "name": "Patate douce cuite",
+    "kcal": 86,
+    "protein": 1.6,
+    "carbs": 20.0,
+    "fat": 0.1,
+    "category": "glucides"
+  },
+  {
+    "id": "pain_complet",
+    "name": "Pain complet",
+    "kcal": 247,
+    "protein": 9.0,
+    "carbs": 43.0,
+    "fat": 2.9,
+    "category": "glucides"
+  },
+  {
+    "id": "pain_blanc",
+    "name": "Pain blanc",
+    "kcal": 265,
+    "protein": 8.5,
+    "carbs": 50.0,
+    "fat": 2.7,
+    "category": "glucides"
+  },
+  {
+    "id": "flocons_avoine",
+    "name": "Flocons d'avoine",
+    "kcal": 375,
+    "protein": 13.0,
+    "carbs": 62.0,
+    "fat": 7.0,
+    "category": "glucides"
+  },
+  {
+    "id": "quinoa",
+    "name": "Quinoa cuit",
+    "kcal": 120,
+    "protein": 4.4,
+    "carbs": 21.0,
+    "fat": 1.9,
+    "category": "glucides"
+  },
+  {
+    "id": "lentilles",
+    "name": "Lentilles cuites",
+    "kcal": 116,
+    "protein": 9.0,
+    "carbs": 20.0,
+    "fat": 0.4,
+    "category": "legumineuses"
+  },
+  {
+    "id": "pois_chiches",
+    "name": "Pois chiches cuits",
+    "kcal": 164,
+    "protein": 8.9,
+    "carbs": 27.0,
+    "fat": 2.6,
+    "category": "legumineuses"
+  },
+  {
+    "id": "haricots_rouges",
+    "name": "Haricots rouges cuits",
+    "kcal": 127,
+    "protein": 8.7,
+    "carbs": 23.0,
+    "fat": 0.5,
+    "category": "legumineuses"
+  },
+  {
+    "id": "edamame",
+    "name": "Edamame cuit",
+    "kcal": 121,
+    "protein": 11.0,
+    "carbs": 9.0,
+    "fat": 5.2,
+    "category": "legumineuses"
+  },
+  {
+    "id": "banane",
+    "name": "Banane",
+    "kcal": 89,
+    "protein": 1.1,
+    "carbs": 23.0,
+    "fat": 0.3,
+    "category": "fruits"
+  },
+  {
+    "id": "pomme",
+    "name": "Pomme",
+    "kcal": 52,
+    "protein": 0.3,
+    "carbs": 14.0,
+    "fat": 0.2,
+    "category": "fruits"
+  },
+  {
+    "id": "orange",
+    "name": "Orange",
+    "kcal": 47,
+    "protein": 0.9,
+    "carbs": 12.0,
+    "fat": 0.1,
+    "category": "fruits"
+  },
+  {
+    "id": "fraises",
+    "name": "Fraises",
+    "kcal": 32,
+    "protein": 0.7,
+    "carbs": 7.7,
+    "fat": 0.3,
+    "category": "fruits"
+  },
+  {
+    "id": "myrtilles",
+    "name": "Myrtilles",
+    "kcal": 57,
+    "protein": 0.7,
+    "carbs": 14.0,
+    "fat": 0.3,
+    "category": "fruits"
+  },
+  {
+    "id": "mangue",
+    "name": "Mangue",
+    "kcal": 60,
+    "protein": 0.8,
+    "carbs": 15.0,
+    "fat": 0.4,
+    "category": "fruits"
+  },
+  {
+    "id": "ananas",
+    "name": "Ananas",
+    "kcal": 50,
+    "protein": 0.5,
+    "carbs": 13.0,
+    "fat": 0.1,
+    "category": "fruits"
+  },
+  {
+    "id": "dattes",
+    "name": "Dattes séchées",
+    "kcal": 282,
+    "protein": 2.5,
+    "carbs": 75.0,
+    "fat": 0.4,
+    "category": "fruits"
+  },
+  {
+    "id": "brocoli",
+    "name": "Brocoli",
+    "kcal": 34,
+    "protein": 2.8,
+    "carbs": 7.0,
+    "fat": 0.4,
+    "category": "legumes"
+  },
+  {
+    "id": "epinards",
+    "name": "Épinards",
+    "kcal": 23,
+    "protein": 2.9,
+    "carbs": 3.6,
+    "fat": 0.4,
+    "category": "legumes"
+  },
+  {
+    "id": "courgette",
+    "name": "Courgette",
+    "kcal": 17,
+    "protein": 1.2,
+    "carbs": 3.1,
+    "fat": 0.3,
+    "category": "legumes"
+  },
+  {
+    "id": "tomates",
+    "name": "Tomates",
+    "kcal": 18,
+    "protein": 0.9,
+    "carbs": 3.9,
+    "fat": 0.2,
+    "category": "legumes"
+  },
+  {
+    "id": "carottes",
+    "name": "Carottes",
+    "kcal": 41,
+    "protein": 0.9,
+    "carbs": 10.0,
+    "fat": 0.2,
+    "category": "legumes"
+  },
+  {
+    "id": "concombre",
+    "name": "Concombre",
+    "kcal": 15,
+    "protein": 0.7,
+    "carbs": 3.6,
+    "fat": 0.1,
+    "category": "legumes"
+  },
+  {
+    "id": "poivron",
+    "name": "Poivron",
+    "kcal": 20,
+    "protein": 0.9,
+    "carbs": 4.6,
+    "fat": 0.3,
+    "category": "legumes"
+  },
+  {
+    "id": "haricots_verts",
+    "name": "Haricots verts",
+    "kcal": 31,
+    "protein": 1.8,
+    "carbs": 7.0,
+    "fat": 0.1,
+    "category": "legumes"
+  },
+  {
+    "id": "avocat",
+    "name": "Avocat",
+    "kcal": 160,
+    "protein": 2.0,
+    "carbs": 9.0,
+    "fat": 15.0,
+    "category": "lipides"
+  },
+  {
+    "id": "amandes",
+    "name": "Amandes",
+    "kcal": 579,
+    "protein": 21.0,
+    "carbs": 22.0,
+    "fat": 50.0,
+    "category": "lipides"
+  },
+  {
+    "id": "noix",
+    "name": "Noix",
+    "kcal": 654,
+    "protein": 15.0,
+    "carbs": 14.0,
+    "fat": 65.0,
+    "category": "lipides"
+  },
+  {
+    "id": "beurre_cacahuete",
+    "name": "Beurre de cacahuète",
+    "kcal": 588,
+    "protein": 25.0,
+    "carbs": 20.0,
+    "fat": 50.0,
+    "category": "lipides"
+  },
+  {
+    "id": "huile_olive",
+    "name": "Huile d'olive",
+    "kcal": 884,
+    "protein": 0.0,
+    "carbs": 0.0,
+    "fat": 100.0,
+    "category": "lipides"
+  },
+  {
+    "id": "graines_chia",
+    "name": "Graines de chia",
+    "kcal": 486,
+    "protein": 17.0,
+    "carbs": 42.0,
+    "fat": 31.0,
+    "category": "lipides"
+  },
+  {
+    "id": "emmental",
+    "name": "Emmental",
+    "kcal": 379,
+    "protein": 27.0,
+    "carbs": 0.4,
+    "fat": 29.0,
+    "category": "fromages"
+  },
+  {
+    "id": "mozzarella",
+    "name": "Mozzarella",
+    "kcal": 280,
+    "protein": 28.0,
+    "carbs": 3.1,
+    "fat": 17.0,
+    "category": "fromages"
+  },
+  {
+    "id": "cottage_cheese",
+    "name": "Cottage cheese",
+    "kcal": 98,
+    "protein": 11.0,
+    "carbs": 3.4,
+    "fat": 4.3,
+    "category": "fromages"
+  },
+  {
+    "id": "jambon",
+    "name": "Jambon blanc",
+    "kcal": 101,
+    "protein": 17.0,
+    "carbs": 1.0,
+    "fat": 3.0,
+    "category": "charcuterie"
+  },
+  {
+    "id": "saucisse_dinde",
+    "name": "Saucisse de dinde",
+    "kcal": 149,
+    "protein": 14.0,
+    "carbs": 3.0,
+    "fat": 9.0,
+    "category": "charcuterie"
+  },
+  {
+    "id": "pain_de_mie_complet",
+    "name": "Pain de mie complet (tranche)",
+    "kcal": 234,
+    "protein": 8.0,
+    "carbs": 41.0,
+    "fat": 4.0,
+    "category": "glucides"
+  },
+  {
+    "id": "crepes",
+    "name": "Crêpes nature",
+    "kcal": 197,
+    "protein": 6.5,
+    "carbs": 30.0,
+    "fat": 5.7,
+    "category": "glucides"
+  },
+  {
+    "id": "galettes_riz",
+    "name": "Galettes de riz",
+    "kcal": 381,
+    "protein": 7.5,
+    "carbs": 82.0,
+    "fat": 2.8,
+    "category": "glucides"
+  },
+  {
+    "id": "miel",
+    "name": "Miel",
+    "kcal": 304,
+    "protein": 0.3,
+    "carbs": 82.0,
+    "fat": 0.0,
+    "category": "sucres"
+  },
+  {
+    "id": "confiture",
+    "name": "Confiture",
+    "kcal": 250,
+    "protein": 0.5,
+    "carbs": 65.0,
+    "fat": 0.1,
+    "category": "sucres"
+  },
+  {
+    "id": "chocolat_noir",
+    "name": "Chocolat noir 70%",
+    "kcal": 598,
+    "protein": 7.8,
+    "carbs": 46.0,
+    "fat": 43.0,
+    "category": "sucres"
+  },
+  {
+    "id": "granola",
+    "name": "Granola",
+    "kcal": 471,
+    "protein": 10.0,
+    "carbs": 64.0,
+    "fat": 20.0,
+    "category": "glucides"
+  },
+  {
+    "id": "tofu",
+    "name": "Tofu ferme",
+    "kcal": 76,
+    "protein": 8.0,
+    "carbs": 1.9,
+    "fat": 4.8,
+    "category": "proteines"
+  },
+  {
+    "id": "soja_texturé",
+    "name": "Soja texturé réhydraté",
+    "kcal": 145,
+    "protein": 17.0,
+    "carbs": 14.0,
+    "fat": 1.0,
+    "category": "proteines"
+  },
+  {
+    "id": "sardines",
+    "name": "Sardines à l'huile",
+    "kcal": 208,
+    "protein": 24.0,
+    "carbs": 0.0,
+    "fat": 12.0,
+    "category": "poissons"
+  },
+  {
+    "id": "maquereau",
+    "name": "Maquereau",
+    "kcal": 205,
+    "protein": 19.0,
+    "carbs": 0.0,
+    "fat": 14.0,
+    "category": "poissons"
+  },
+  {
+    "id": "crème_fraiche",
+    "name": "Crème fraîche 15%",
+    "kcal": 162,
+    "protein": 3.0,
+    "carbs": 3.0,
+    "fat": 15.0,
+    "category": "laitiers"
+  },
+  {
+    "id": "lait_soja",
+    "name": "Lait de soja",
+    "kcal": 33,
+    "protein": 3.0,
+    "carbs": 2.8,
+    "fat": 1.8,
+    "category": "laitiers"
+  },
+  {
+    "id": "tempeh",
+    "name": "Tempeh",
+    "kcal": 193,
+    "protein": 19.0,
+    "carbs": 9.0,
+    "fat": 11.0,
+    "category": "proteines"
+  },
+  {
+    "id": "seitan",
+    "name": "Seitan",
+    "kcal": 370,
+    "protein": 75.0,
+    "carbs": 14.0,
+    "fat": 2.0,
+    "category": "proteines"
+  },
+  {
+    "id": "bouillon_cube",
+    "name": "Soupe de légumes (portion)",
+    "kcal": 25,
+    "protein": 1.0,
+    "carbs": 5.0,
+    "fat": 0.2,
+    "category": "autres"
+  },
+  {
+    "id": "cafe",
+    "name": "Café noir (200ml)",
+    "kcal": 4,
+    "protein": 0.3,
+    "carbs": 0.0,
+    "fat": 0.0,
+    "category": "boissons"
+  },
+  {
+    "id": "jus_orange",
+    "name": "Jus d'orange frais (200ml)",
+    "kcal": 88,
+    "protein": 1.2,
+    "carbs": 21.0,
+    "fat": 0.2,
+    "category": "boissons"
+  },
+  {
+    "id": "masse_gainer",
+    "name": "Mass Gainer (poudre)",
+    "kcal": 390,
+    "protein": 24.0,
+    "carbs": 60.0,
+    "fat": 6.0,
+    "category": "supplements"
+  },
+  {
+    "id": "creatine",
+    "name": "Créatine monohydrate (5g)",
+    "kcal": 0,
+    "protein": 0.0,
+    "carbs": 0.0,
+    "fat": 0.0,
+    "category": "supplements"
+  },
+  {
+    "id": "beurre",
+    "name": "Beurre",
+    "kcal": 717,
+    "protein": 0.8,
+    "carbs": 0.1,
+    "fat": 81.0,
+    "category": "lipides"
+  },
+  {
+    "id": "pistaches",
+    "name": "Pistaches",
+    "kcal": 562,
+    "protein": 20.0,
+    "carbs": 28.0,
+    "fat": 45.0,
+    "category": "lipides"
+  },
+  {
+    "id": "gruyere",
+    "name": "Gruyère",
+    "kcal": 413,
+    "protein": 29.0,
+    "carbs": 0.4,
+    "fat": 32.0,
+    "category": "fromages"
+  },
+  {
+    "id": "ricotta",
+    "name": "Ricotta",
+    "kcal": 174,
+    "protein": 11.0,
+    "carbs": 3.0,
+    "fat": 13.0,
+    "category": "fromages"
+  },
+  {
+    "id": "mais",
+    "name": "Maïs cuit",
+    "kcal": 96,
+    "protein": 3.4,
+    "carbs": 21.0,
+    "fat": 1.5,
+    "category": "legumes"
+  },
+  {
+    "id": "pois",
+    "name": "Petits pois cuits",
+    "kcal": 84,
+    "protein": 5.4,
+    "carbs": 14.0,
+    "fat": 0.4,
+    "category": "legumes"
+  },
+  {
+    "id": "artichaut",
+    "name": "Artichaut cuit",
+    "kcal": 53,
+    "protein": 2.9,
+    "carbs": 11.0,
+    "fat": 0.2,
+    "category": "legumes"
+  },
+  {
+    "id": "aubergine",
+    "name": "Aubergine",
+    "kcal": 25,
+    "protein": 1.0,
+    "carbs": 5.9,
+    "fat": 0.2,
+    "category": "legumes"
+  },
+  {
+    "id": "poireaux",
+    "name": "Poireaux",
+    "kcal": 61,
+    "protein": 1.5,
+    "carbs": 14.0,
+    "fat": 0.3,
+    "category": "legumes"
+  },
+  {
+    "id": "champignons",
+    "name": "Champignons",
+    "kcal": 22,
+    "protein": 3.1,
+    "carbs": 3.3,
+    "fat": 0.3,
+    "category": "legumes"
+  },
+  {
+    "id": "asperges",
+    "name": "Asperges",
+    "kcal": 20,
+    "protein": 2.2,
+    "carbs": 3.9,
+    "fat": 0.1,
+    "category": "legumes"
+  },
+  {
+    "id": "kiwi",
+    "name": "Kiwi",
+    "kcal": 61,
+    "protein": 1.1,
+    "carbs": 15.0,
+    "fat": 0.5,
+    "category": "fruits"
+  },
+  {
+    "id": "cerise",
+    "name": "Cerises",
+    "kcal": 63,
+    "protein": 1.1,
+    "carbs": 16.0,
+    "fat": 0.2,
+    "category": "fruits"
+  },
+  {
+    "id": "raisin",
+    "name": "Raisin",
+    "kcal": 69,
+    "protein": 0.7,
+    "carbs": 18.0,
+    "fat": 0.2,
+    "category": "fruits"
+  },
+  {
+    "id": "poire",
+    "name": "Poire",
+    "kcal": 57,
+    "protein": 0.4,
+    "carbs": 15.0,
+    "fat": 0.1,
+    "category": "fruits"
+  },
+  {
+    "id": "pamplemousse",
+    "name": "Pamplemousse",
+    "kcal": 42,
+    "protein": 0.8,
+    "carbs": 11.0,
+    "fat": 0.1,
+    "category": "fruits"
+  },
+  {
+    "id": "noix_cajou",
+    "name": "Noix de cajou",
+    "kcal": 553,
+    "protein": 18.0,
+    "carbs": 30.0,
+    "fat": 44.0,
+    "category": "lipides"
+  },
+  {
+    "id": "graines_lin",
+    "name": "Graines de lin",
+    "kcal": 534,
+    "protein": 18.0,
+    "carbs": 29.0,
+    "fat": 42.0,
+    "category": "lipides"
+  },
+  {
+    "id": "pain_seigle",
+    "name": "Pain de seigle",
+    "kcal": 258,
+    "protein": 8.5,
+    "carbs": 48.0,
+    "fat": 3.3,
+    "category": "glucides"
+  }
 ]

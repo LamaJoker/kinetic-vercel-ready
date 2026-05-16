@@ -19,8 +19,8 @@ import type { Task } from '@kinetic/core';
 
 function makeTask(overrides: Partial<Parameters<typeof createTask>[0]> = {}): Task {
   return createTask({
-    id:        'task-001',
-    title:     'Test task',
+    id: 'task-001',
+    title: 'Test task',
     createdAt: '2026-04-20',
     ...overrides,
   });
@@ -70,7 +70,9 @@ describe('createTask', () => {
 
 describe('validateTask', () => {
   it('retourne un tableau vide pour une tâche valide', () => {
-    expect(validateTask({ title: 'OK', xp: 50, type: 'recurring', priority: 'med' })).toHaveLength(0);
+    expect(validateTask({ title: 'OK', xp: 50, type: 'recurring', priority: 'med' })).toHaveLength(
+      0,
+    );
   });
 
   it('détecte un titre manquant', () => {
@@ -113,7 +115,7 @@ describe('canComplete', () => {
 
 describe('completeTask', () => {
   it('retourne une tâche done avec la bonne date', () => {
-    const task      = makeTask();
+    const task = makeTask();
     const completed = completeTask(task, '2026-04-20');
     expect(completed.done).toBe(true);
     expect(completed.completedAt).toBe('2026-04-20');
@@ -142,7 +144,7 @@ describe('completeTask', () => {
 
 describe('resetRecurringTask', () => {
   it('remet done à false et completedAt à null', () => {
-    const done  = completeTask(makeTask({ type: 'recurring' }), '2026-04-20');
+    const done = completeTask(makeTask({ type: 'recurring' }), '2026-04-20');
     const reset = resetRecurringTask(done);
     expect(reset.done).toBe(false);
     expect(reset.completedAt).toBeNull();
@@ -176,8 +178,8 @@ describe('sortByPriority', () => {
 
   it('place les non-done avant les done à priorité égale', () => {
     const notDone = makeTask({ id: '1', priority: 'med' });
-    const done    = completeTask(makeTask({ id: '2', priority: 'med' }), '2026-04-20');
-    const sorted  = [done, notDone].sort(sortByPriority);
+    const done = completeTask(makeTask({ id: '2', priority: 'med' }), '2026-04-20');
+    const sorted = [done, notDone].sort(sortByPriority);
     expect(sorted[0]!.id).toBe('1');
   });
 });

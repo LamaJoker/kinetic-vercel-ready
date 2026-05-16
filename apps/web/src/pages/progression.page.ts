@@ -49,10 +49,11 @@ export function progression() {
       this._sessionSavedHandler = (e: Event) => {
         const session = (e as CustomEvent<{ session?: WorkoutSession }>).detail?.session;
         if (session) {
-          const idx = this.sessions.findIndex(s => s.id === session.id);
-          this.sessions = idx >= 0
-            ? this.sessions.map((s, i) => i === idx ? session : s)
-            : [...this.sessions, session];
+          const idx = this.sessions.findIndex((s) => s.id === session.id);
+          this.sessions =
+            idx >= 0
+              ? this.sessions.map((s, i) => (i === idx ? session : s))
+              : [...this.sessions, session];
         }
         this._cachedSets = null; // forcer recalcul au prochain accès getter
       };
@@ -78,18 +79,18 @@ export function progression() {
       if (this._cachedSets !== null) return this._cachedSets;
       const muscleByEx = new Map<string, readonly string[]>();
       for (const ex of this.exercises) muscleByEx.set(ex.id, ex.muscles ?? []);
-      this._cachedSets = this.sessions.flatMap(sess =>
-        sess.entries.flatMap(e =>
-          e.sets.map(s => ({
-            sessionId:   sess.id,
-            exerciseId:  e.exerciseId,
-            muscles:     muscleByEx.get(e.exerciseId) ?? [],
-            reps:        s.reps,
-            weightKg:    s.weightKg,
-            rpe:         s.rpe,
+      this._cachedSets = this.sessions.flatMap((sess) =>
+        sess.entries.flatMap((e) =>
+          e.sets.map((s) => ({
+            sessionId: sess.id,
+            exerciseId: e.exerciseId,
+            muscles: muscleByEx.get(e.exerciseId) ?? [],
+            reps: s.reps,
+            weightKg: s.weightKg,
+            rpe: s.rpe,
             performedAt: s.performedAt,
-          }))
-        )
+          })),
+        ),
       );
       return this._cachedSets;
     },
@@ -101,13 +102,15 @@ export function progression() {
     // ─── Aides UI ─────────────────────────────────────────────
 
     exerciseName(id: string): string {
-      return this.exercises.find(e => e.id === id)?.name ?? id;
+      return this.exercises.find((e) => e.id === id)?.name ?? id;
     },
 
     formatDate(iso: string): string {
       try {
         return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-      } catch { return iso; }
+      } catch {
+        return iso;
+      }
     },
 
     formatWeek(iso: string): string {
@@ -127,14 +130,16 @@ export function progression() {
     },
 
     get totalSets(): number {
-      return this.sessions.reduce((acc, s) => acc + s.entries.reduce((a, e) => a + e.sets.length, 0), 0);
+      return this.sessions.reduce(
+        (acc, s) => acc + s.entries.reduce((a, e) => a + e.sets.length, 0),
+        0,
+      );
     },
 
     get totalTonnage(): number {
       let t = 0;
       for (const s of this.sessions)
-        for (const e of s.entries)
-          for (const set of e.sets) t += set.reps * set.weightKg;
+        for (const e of s.entries) for (const set of e.sets) t += set.reps * set.weightKg;
       return Math.round(t);
     },
 
@@ -152,14 +157,19 @@ export function progression() {
       if (!this.selectedExerciseId) return [];
       const points: { x: number; y: number; label: string }[] = [];
       for (const session of this.sessions) {
-        const entry = session.entries.find(e => e.exerciseId === this.selectedExerciseId);
+        const entry = session.entries.find((e) => e.exerciseId === this.selectedExerciseId);
         if (!entry || entry.sets.length === 0) continue;
         let best = 0;
         for (const s of entry.sets) {
           const e = estimateE1rmKg(s.weightKg, s.reps);
           if (e > best) best = e;
         }
-        if (best > 0) points.push({ x: Date.parse(session.startedAt), y: best, label: this.formatDate(session.startedAt) });
+        if (best > 0)
+          points.push({
+            x: Date.parse(session.startedAt),
+            y: best,
+            label: this.formatDate(session.startedAt),
+          });
       }
       return points.sort((a, b) => a.x - b.x);
     },
@@ -167,18 +177,29 @@ export function progression() {
     forceSvg(): string {
       const pts = this.forcePoints();
       if (pts.length < 2) return '';
-      const W = 320, H = 160, padX = 12, padY = 16;
-      const minX = pts[0]!.x, maxX = pts.at(-1)!.x;
-      const ys = pts.map(p => p.y);
-      const minY = Math.min(...ys), maxY = Math.max(...ys);
-      const dx = Math.max(1, maxX - minX), dy = Math.max(0.1, maxY - minY);
+      const W = 320,
+        H = 160,
+        padX = 12,
+        padY = 16;
+      const minX = pts[0]!.x,
+        maxX = pts.at(-1)!.x;
+      const ys = pts.map((p) => p.y);
+      const minY = Math.min(...ys),
+        maxY = Math.max(...ys);
+      const dx = Math.max(1, maxX - minX),
+        dy = Math.max(0.1, maxY - minY);
       const sx = (x: number) => padX + ((x - minX) / dx) * (W - padX * 2);
       const sy = (y: number) => H - padY - ((y - minY) / dy) * (H - padY * 2);
-      const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`).join(' ');
+      const line = pts
+        .map((p, i) => `${i === 0 ? 'M' : 'L'} ${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`)
+        .join(' ');
       const area = line + ` L ${sx(pts.at(-1)!.x).toFixed(1)} ${H} L ${padX} ${H} Z`;
-      const dots = pts.map(p =>
-        `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#A8FF00' : '#FF6A00'}"><title>${p.label}: ${p.y.toFixed(1)} kg</title></circle>`
-      ).join('');
+      const dots = pts
+        .map(
+          (p) =>
+            `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#A8FF00' : '#FF6A00'}"><title>${p.label}: ${p.y.toFixed(1)} kg</title></circle>`,
+        )
+        .join('');
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe e1RM">
         <path d="${area}" fill="#FF6A00" fill-opacity="0.15"/>
         <path d="${line}" fill="none" stroke="#FF6A00" stroke-width="2" stroke-linecap="round"/>
@@ -201,7 +222,7 @@ export function progression() {
     },
 
     volumeMax(): number {
-      const max = Math.max(0, ...this.weeklyBuckets.map(b => b.tonnageKg));
+      const max = Math.max(0, ...this.weeklyBuckets.map((b) => b.tonnageKg));
       return max || 1;
     },
 
@@ -217,17 +238,17 @@ export function progression() {
 
     muscleLabel(m: string): string {
       const map: Record<string, string> = {
-        chest:    'Pectoraux',
-        back:     'Dos',
-        shoulders:'Épaules',
-        biceps:   'Biceps',
-        triceps:  'Triceps',
-        legs:     'Jambes',
-        quads:    'Quadriceps',
-        hamstrings:'Ischios',
-        glutes:   'Fessiers',
-        calves:   'Mollets',
-        core:     'Abdos',
+        chest: 'Pectoraux',
+        back: 'Dos',
+        shoulders: 'Épaules',
+        biceps: 'Biceps',
+        triceps: 'Triceps',
+        legs: 'Jambes',
+        quads: 'Quadriceps',
+        hamstrings: 'Ischios',
+        glutes: 'Fessiers',
+        calves: 'Mollets',
+        core: 'Abdos',
         forearms: 'Avant-bras',
       };
       return map[m] ?? m.charAt(0).toUpperCase() + m.slice(1);
@@ -277,7 +298,13 @@ export function progression() {
           days.push({
             iso,
             count: isFuture ? -1 : count,
-            label: isFuture ? '' : cell.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }),
+            label: isFuture
+              ? ''
+              : cell.toLocaleDateString('fr-FR', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                }),
             dayIdx: d,
           });
         }
@@ -287,7 +314,7 @@ export function progression() {
     },
 
     heatmapColor(count: number): string {
-      if (count < 0) return 'bg-kinetic-elevated/20';       // futur
+      if (count < 0) return 'bg-kinetic-elevated/20'; // futur
       if (count === 0) return 'bg-kinetic-ink ring-1 ring-white/5';
       if (count === 1) return 'bg-kinetic-neon/30';
       if (count === 2) return 'bg-kinetic-neon/60';
@@ -296,29 +323,36 @@ export function progression() {
 
     get longestStreak(): number {
       if (this.sessions.length === 0) return 0;
-      const dates = [...new Set(this.sessions.map(s => s.startedAt.slice(0, 10)))].sort();
-      let best = 1, cur = 1;
+      const dates = [...new Set(this.sessions.map((s) => s.startedAt.slice(0, 10)))].sort();
+      let best = 1,
+        cur = 1;
       for (let i = 1; i < dates.length; i++) {
         const prev = new Date(dates[i - 1]!);
         const curr = new Date(dates[i]!);
         const diff = (curr.getTime() - prev.getTime()) / 86_400_000;
-        if (diff === 1) { cur++; best = Math.max(best, cur); }
-        else cur = 1;
+        if (diff === 1) {
+          cur++;
+          best = Math.max(best, cur);
+        } else cur = 1;
       }
       return best;
     },
 
     get avgSessionsPerWeek(): number {
       if (this.sessions.length < 2) return this.sessions.length;
-      const dates = this.sessions.map(s => Date.parse(s.startedAt));
+      const dates = this.sessions.map((s) => Date.parse(s.startedAt));
       const span = (Math.max(...dates) - Math.min(...dates)) / (7 * 86_400_000);
-      return span < 0.5 ? this.sessions.length : Math.round((this.sessions.length / span) * 10) / 10;
+      return span < 0.5
+        ? this.sessions.length
+        : Math.round((this.sessions.length / span) * 10) / 10;
     },
 
     get avgDurationMin(): number {
-      const withDuration = this.sessions.filter(s => s.durationMin);
+      const withDuration = this.sessions.filter((s) => s.durationMin);
       if (!withDuration.length) return 0;
-      return Math.round(withDuration.reduce((a, s) => a + (s.durationMin ?? 0), 0) / withDuration.length);
+      return Math.round(
+        withDuration.reduce((a, s) => a + (s.durationMin ?? 0), 0) / withDuration.length,
+      );
     },
   };
 }

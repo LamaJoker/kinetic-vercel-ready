@@ -1,13 +1,13 @@
 // ─── Adapters de base (local-first) ─────────────────────────
-export { IdbStorage }      from './IdbStorage.js';
-export { SystemClock }     from './SystemClock.js';
-export { UuidGenerator }   from './UuidGenerator.js';
-export { ToastNotifier }   from './ToastNotifier.js';
+export { IdbStorage } from './IdbStorage.js';
+export { SystemClock } from './SystemClock.js';
+export { UuidGenerator } from './UuidGenerator.js';
+export { ToastNotifier } from './ToastNotifier.js';
 export { validateStorageKey, validateStorageValue } from './validation.js';
 
 // ─── Couche Supabase (optionnelle) ──────────────────────────
-export { HybridStorage }    from './supabase/HybridStorage.js';
-export { SupabaseStorage }  from './supabase/SupabaseStorage.js';
+export { HybridStorage } from './supabase/HybridStorage.js';
+export { SupabaseStorage } from './supabase/SupabaseStorage.js';
 export { SupabaseDailyLogSync, NoopDailyLogSync } from './supabase/SupabaseDailyLogSync.js';
 export { AuthRateLimiter, authRateLimiter } from './supabase/RateLimiter.js';
 export {
@@ -19,5 +19,5 @@ export {
   signOut,
   callbackUrl,
 } from './supabase/auth.js';
-export type { AuthUser }    from './supabase/auth.js';
+export type { AuthUser } from './supabase/auth.js';
 export type { Database, Json } from './supabase/database.types.js';

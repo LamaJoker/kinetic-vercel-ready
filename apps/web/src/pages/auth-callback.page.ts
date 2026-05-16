@@ -23,8 +23,8 @@
 import { supabase } from '@kinetic/adapters-web';
 
 /** Détecte si on est dans un WebView Capacitor (APK Android/iOS) */
-const _isCapacitor = typeof window !== 'undefined'
-  && !!(window as unknown as Record<string, unknown>)['Capacitor'];
+const _isCapacitor =
+  typeof window !== 'undefined' && !!(window as unknown as Record<string, unknown>)['Capacitor'];
 
 /**
  * Détecte si la page a été ouverte depuis l'APK via OAuth.
@@ -46,7 +46,10 @@ function _shouldHandoffToApk(): boolean {
   }
 }
 
-async function waitForSessionTokens(attempts = 5, delayMs = 150): Promise<{
+async function waitForSessionTokens(
+  attempts = 5,
+  delayMs = 150,
+): Promise<{
   accessToken: string;
   refreshToken: string;
 } | null> {
@@ -54,7 +57,9 @@ async function waitForSessionTokens(attempts = 5, delayMs = 150): Promise<{
 
   for (let i = 0; i < attempts; i++) {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session?.access_token && session?.refresh_token) {
         return {
           accessToken: session.access_token,
@@ -95,23 +100,24 @@ export function authCallback() {
         }
 
         // ─── Parse manuel des tokens dans l'URL ────────────────────────────
-        const hashStr     = window.location.hash.replace(/^#/, '');
-        const hashParams  = new URLSearchParams(hashStr);
+        const hashStr = window.location.hash.replace(/^#/, '');
+        const hashParams = new URLSearchParams(hashStr);
         const queryParams = new URLSearchParams(window.location.search);
 
         // Erreur explicite renvoyée par Supabase ou le provider OAuth
-        const errorDesc = hashParams.get('error_description')
-          ?? queryParams.get('error_description')
-          ?? hashParams.get('error')
-          ?? queryParams.get('error');
+        const errorDesc =
+          hashParams.get('error_description') ??
+          queryParams.get('error_description') ??
+          hashParams.get('error') ??
+          queryParams.get('error');
         if (errorDesc) {
           this.error = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
           return;
         }
 
-        let accessToken  = hashParams.get('access_token')  ?? queryParams.get('access_token');
+        let accessToken = hashParams.get('access_token') ?? queryParams.get('access_token');
         let refreshToken = hashParams.get('refresh_token') ?? queryParams.get('refresh_token');
-        const code       = queryParams.get('code');
+        const code = queryParams.get('code');
         const handoffApk = _shouldHandoffToApk();
 
         // ─── BUG FIX critique (8 mai 2026) ─────────────────────────────────
@@ -170,7 +176,10 @@ export function authCallback() {
         // ─── Pas de tokens NI de session : web flow normal sans tokens ─────
         // Force un getSession() pour récupérer la session si elle existe (cas
         // d'un re-load de la page après auth réussie).
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
         if (error) throw error;
 
         if (session) {
@@ -182,7 +191,9 @@ export function authCallback() {
         }
 
         // ─── Attendre SIGNED_IN au cas où le SDK traite le hash en async ──
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange((event, s) => {
           if (event === 'SIGNED_IN' && s) {
             this._cleanup();
             // Si APK demandé, retenter le handoff avec la session fraîche
@@ -204,9 +215,9 @@ export function authCallback() {
 
         this._timeoutId = setTimeout(() => {
           this._cleanup();
-          this.error = 'Délai dépassé — aucun token reçu. Vérifie la config Supabase (Redirect URLs) ou clique à nouveau sur le lien magique.';
+          this.error =
+            'Délai dépassé — aucun token reçu. Vérifie la config Supabase (Redirect URLs) ou clique à nouveau sur le lien magique.';
         }, 10_000);
-
       } catch (e) {
         this._cleanup();
         this.error = e instanceof Error ? e.message : 'Erreur de connexion';
@@ -236,7 +247,9 @@ export function authCallback() {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
       // Strat 2 : Android intent URL — décode le deep link et reformule
       // au format intent: que Chrome traite spécialement (ouverture native
@@ -253,10 +266,16 @@ export function authCallback() {
             `end`;
           // Petit délai pour laisser strat 1 sa chance avant d'essayer la 2
           setTimeout(() => {
-            try { window.location.href = intentUrl; } catch { /* ignore */ }
+            try {
+              window.location.href = intentUrl;
+            } catch {
+              /* ignore */
+            }
           }, 250);
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     },
 
     /**
@@ -284,9 +303,12 @@ export function authCallback() {
     },
 
     async _setSessionAndNavigate(accessToken: string, refreshToken: string): Promise<void> {
-      if (!supabase) { this._navigateHome(); return; }
+      if (!supabase) {
+        this._navigateHome();
+        return;
+      }
       const { error } = await supabase.auth.setSession({
-        access_token:  accessToken,
+        access_token: accessToken,
         refresh_token: refreshToken,
       });
       if (error) throw error;

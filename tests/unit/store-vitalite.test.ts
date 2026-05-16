@@ -6,7 +6,12 @@ vi.mock('../../apps/web/src/deps.js', () => ({
 
 import { getDeps } from '../../apps/web/src/deps.js';
 import { vitaliteStore } from '../../apps/web/src/stores/vitalite.js';
-import { InMemoryStorage, FakeClock, SequentialIdGenerator, SpyNotifier } from '../helpers/stubs.js';
+import {
+  InMemoryStorage,
+  FakeClock,
+  SequentialIdGenerator,
+  SpyNotifier,
+} from '../helpers/stubs.js';
 
 function makeMockDeps(overrides: Partial<{ storage: unknown; clock: unknown }> = {}) {
   const storage = new InMemoryStorage();
@@ -57,7 +62,7 @@ describe('vitaliteStore.init', () => {
     const store = vitaliteStore();
     await store.init();
     const stretch = store.tasks.find((t) => t.id === 'morning-stretch');
-    const shower  = store.tasks.find((t) => t.id === 'cold-shower');
+    const shower = store.tasks.find((t) => t.id === 'cold-shower');
     expect(stretch?.done).toBe(true);
     expect(shower?.done).toBe(true);
   });
@@ -71,7 +76,9 @@ describe('vitaliteStore.init', () => {
   });
 
   it('loads custom tasks from storage', async () => {
-    const customSpecs = [{ id: 'custom-1', title: 'Custom Task', icon: '🎯', xp: 60, priority: 'high' as const }];
+    const customSpecs = [
+      { id: 'custom-1', title: 'Custom Task', icon: '🎯', xp: 60, priority: 'high' as const },
+    ];
     await storage.set('kinetic:vitalite:custom-tasks', customSpecs);
     const store = vitaliteStore();
     await store.init();
@@ -97,7 +104,7 @@ describe('vitaliteStore.complete', () => {
     const task = store.tasks.find((t) => !t.done);
     if (!task) return; // skip if no undone task (unlikely)
     // Manually mark as done
-    store.tasks = store.tasks.map((t) => t.id === task.id ? { ...t, done: true } : t);
+    store.tasks = store.tasks.map((t) => (t.id === task.id ? { ...t, done: true } : t));
     const getSpy = vi.spyOn(storage, 'set');
     await store.complete(task.id);
     // Should early-return without calling storage.set for the task completion

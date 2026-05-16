@@ -13,7 +13,6 @@ env:
   PNPM_VERSION: '9'
 
 jobs:
-
   # ─── 1. Lint ────────────────────────────────────────────────
   lint:
     name: Lint & Format
@@ -85,9 +84,12 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Audit prod dependencies
-        run: pnpm audit --prod
-        continue-on-error: true   # informatif uniquement, ne bloque pas le merge
+      - name: Audit prod dependencies (critical = blocking)
+        run: pnpm audit --prod --audit-level=critical
+
+      - name: Audit prod dependencies (high = warning)
+        run: pnpm audit --prod --audit-level=high
+        continue-on-error: true # warning seulement, ne bloque pas le merge
 
   # ─── 4. Tests unitaires ─────────────────────────────────────
   unit:
@@ -129,7 +131,7 @@ jobs:
         if: always()
         with:
           json-summary-path: tests/coverage/coverage-summary.json
-          json-final-path:   tests/coverage/coverage-final.json
+          json-final-path: tests/coverage/coverage-final.json
 
   # ─── 5. Tests E2E ───────────────────────────────────────────
   e2e:
@@ -165,7 +167,7 @@ jobs:
       - name: Build app (needed for E2E)
         run: pnpm build
         env:
-          VITE_SUPABASE_URL:      ''
+          VITE_SUPABASE_URL: ''
           VITE_SUPABASE_ANON_KEY: ''
 
       - name: Run E2E tests (${{ matrix.project }})
@@ -208,14 +210,45 @@ jobs:
       - name: Build
         run: pnpm build
         env:
-          VITE_SUPABASE_URL:      ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_APP_VERSION:       ${{ github.sha }}
+          VITE_APP_VERSION: ${{ github.sha }}
 
-      - name: Check bundle size
+      - name: Check bundle size (gzip metrics + threshold)
         run: |
+          set -e
+          echo "::group::Bundle global size"
           du -sh apps/web/dist/
-          find apps/web/dist/static -name "*.js" | xargs ls -la | sort -k5 -rn | head -10
+          echo "::endgroup::"
+
+          echo "::group::Top 10 JS files (raw)"
+          find apps/web/dist/static -name "*.js" -print0 | xargs -0 ls -la | sort -k5 -rn | head -10
+          echo "::endgroup::"
+
+          echo "::group::Per-file gzip & brotli"
+          for f in $(find apps/web/dist/static -name "*.js" -o -name "*.css"); do
+            raw=$(stat -c%s "$f")
+            gz=$(gzip -c "$f" | wc -c)
+            br=$(command -v brotli >/dev/null && brotli -c "$f" | wc -c || echo "n/a")
+            printf "%-60s raw=%8d  gz=%8d  br=%s\n" "$f" "$raw" "$gz" "$br"
+          done
+          echo "::endgroup::"
+
+          # Seuil bloquant: total dist > 2 MiB → fail
+          TOTAL_KB=$(du -sk apps/web/dist/ | awk '{print $1}')
+          echo "Total dist size: ${TOTAL_KB} KiB"
+          if [ "$TOTAL_KB" -gt 2048 ]; then
+            echo "::error::Bundle dépasse 2 MiB ($TOTAL_KB KiB). Optimiser avant merge."
+            exit 1
+          fi
+
+          # Seuil bloquant: aucun JS individuel > 350 KiB raw
+          LARGE_JS=$(find apps/web/dist/static -name "*.js" -size +358400c)
+          if [ -n "$LARGE_JS" ]; then
+            echo "::error::Fichier(s) JS > 350 KiB :"
+            echo "$LARGE_JS"
+            exit 1
+          fi
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -224,12 +257,12 @@ jobs:
           path: apps/web/dist/
           retention-days: 3
 
-  # ─── 7. Lighthouse (PR only) ────────────────────────────────
+  # ─── 7. Lighthouse (PR + push main) ─────────────────────────
   lighthouse:
     name: Lighthouse
     runs-on: ubuntu-latest
     needs: [build]
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 

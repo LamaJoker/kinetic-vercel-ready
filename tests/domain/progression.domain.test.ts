@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  suggestProgression,
-  needsDeload,
-  e1rm,
-  slope,
-  type PerformedSet,
-} from '@kinetic/core';
+import { suggestProgression, needsDeload, e1rm, slope, type PerformedSet } from '@kinetic/core';
 
 /**
  * Crée un PerformedSet avec une date relative à maintenant.
@@ -79,14 +73,10 @@ describe('suggestProgression', () => {
   });
 
   it('déclenche un deload après 3 séances saturées sans progrès d’e1RM', () => {
-    const history = [
-      set(6, 100, 9.5, -6),
-      set(6, 100, 9.5, -3),
-      set(6, 100, 10,  0),
-    ];
+    const history = [set(6, 100, 9.5, -6), set(6, 100, 9.5, -3), set(6, 100, 10, 0)];
     const s = suggestProgression({ ...base, history });
     expect(s.strategy).toBe('deload');
-    expect(s.suggestedWeight).toBe(90);             // -10%, arrondi à l’incrément
+    expect(s.suggestedWeight).toBe(90); // -10%, arrondi à l’incrément
     expect(s.suggestedRpe).toBeLessThanOrEqual(6.5); // allègement du RPE cible
   });
 
@@ -105,22 +95,22 @@ describe('needsDeload', () => {
 
   it('retourne true sur 5 séances RPE >= 9 avec e1RM plat', () => {
     const h = [
-      set(8, 100, 9,   -8),
+      set(8, 100, 9, -8),
       set(8, 100, 9.5, -6),
       set(8, 100, 9.5, -4),
-      set(8, 100, 9,   -2),
-      set(8, 100, 9.5,  0),
+      set(8, 100, 9, -2),
+      set(8, 100, 9.5, 0),
     ];
     expect(needsDeload(h)).toBe(true);
   });
 
   it('retourne false si l’e1RM monte malgré un RPE élevé', () => {
     const h = [
-      set(8,  90, 9, -8),
-      set(8,  95, 9, -6),
+      set(8, 90, 9, -8),
+      set(8, 95, 9, -6),
       set(8, 100, 9, -4),
       set(8, 105, 9, -2),
-      set(8, 110, 9,  0),
+      set(8, 110, 9, 0),
     ];
     expect(needsDeload(h)).toBe(false);
   });

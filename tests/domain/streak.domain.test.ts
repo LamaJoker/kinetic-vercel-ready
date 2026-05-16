@@ -25,7 +25,6 @@ describe('createStreak', () => {
 });
 
 describe('processActivity', () => {
-
   describe('premier enregistrement', () => {
     it('initialise le streak à 1', () => {
       const s = processActivity(createStreak(), '2026-04-20');
@@ -96,7 +95,7 @@ describe('processActivity', () => {
   });
 
   describe('immutabilité', () => {
-    it('ne mute jamais l\'état original', () => {
+    it("ne mute jamais l'état original", () => {
       const original: StreakState = { count: 3, best: 3, lastActiveDate: '2026-04-19' };
       const frozen = Object.freeze({ ...original });
       processActivity(frozen, '2026-04-20');
@@ -106,7 +105,7 @@ describe('processActivity', () => {
 });
 
 describe('isStreakAlive', () => {
-  it('true si actif aujourd\'hui', () => {
+  it("true si actif aujourd'hui", () => {
     const s: StreakState = { count: 3, best: 3, lastActiveDate: '2026-04-20' };
     expect(isStreakAlive(s, '2026-04-20')).toBe(true);
   });
@@ -116,7 +115,7 @@ describe('isStreakAlive', () => {
     expect(isStreakAlive(s, '2026-04-20')).toBe(true);
   });
 
-  it('false si 2+ jours d\'inactivité', () => {
+  it("false si 2+ jours d'inactivité", () => {
     const s: StreakState = { count: 3, best: 3, lastActiveDate: '2026-04-17' };
     expect(isStreakAlive(s, '2026-04-20')).toBe(false);
   });

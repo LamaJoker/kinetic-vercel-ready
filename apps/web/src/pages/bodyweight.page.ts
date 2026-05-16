@@ -9,14 +9,14 @@ interface BodyweightEntry {
 }
 
 const STORAGE_KEY_ENTRIES = STORAGE_KEYS.BODYWEIGHT_ENTRIES;
-const STORAGE_KEY_GOAL    = STORAGE_KEYS.BODYWEIGHT_GOAL;
+const STORAGE_KEY_GOAL = STORAGE_KEYS.BODYWEIGHT_GOAL;
 
 export function bodyweight() {
   return {
     entries: [] as BodyweightEntry[],
     newWeight: null as number | null,
-    newBf:     null as number | null,
-    newNote:   '',
+    newBf: null as number | null,
+    newNote: '',
     goalWeight: null as number | null,
     period: 90,
     _chartSvgCache: '' as string,
@@ -25,19 +25,23 @@ export function bodyweight() {
     get filteredEntries(): BodyweightEntry[] {
       if (this.period >= 9999) return this.entries;
       const cutoff = Date.now() - this.period * 24 * 60 * 60 * 1000;
-      return this.entries.filter(e => Date.parse(e.date) >= cutoff);
+      return this.entries.filter((e) => Date.parse(e.date) >= cutoff);
     },
 
-    get latest(): BodyweightEntry | null   { return this.entries.at(-1) ?? null; },
-    get earliest(): BodyweightEntry | null { return this.filteredEntries[0] ?? null; },
+    get latest(): BodyweightEntry | null {
+      return this.entries.at(-1) ?? null;
+    },
+    get earliest(): BodyweightEntry | null {
+      return this.filteredEntries[0] ?? null;
+    },
 
     get minWeight(): number | null {
       const e = this.filteredEntries;
-      return e.length ? Math.min(...e.map(x => x.weight)) : null;
+      return e.length ? Math.min(...e.map((x) => x.weight)) : null;
     },
     get maxWeight(): number | null {
       const e = this.filteredEntries;
-      return e.length ? Math.max(...e.map(x => x.weight)) : null;
+      return e.length ? Math.max(...e.map((x) => x.weight)) : null;
     },
     get avgWeight(): number | null {
       const e = this.filteredEntries;
@@ -50,7 +54,7 @@ export function bodyweight() {
       return (e.at(-1)?.weight ?? 0) - (e[0]?.weight ?? 0);
     },
     get trend7(): number | null {
-      const recent = this.entries.filter(e => Date.now() - Date.parse(e.date) <= 7 * 86400000);
+      const recent = this.entries.filter((e) => Date.now() - Date.parse(e.date) <= 7 * 86400000);
       if (recent.length < 2) return null;
       return (recent.at(-1)?.weight ?? 0) - (recent[0]?.weight ?? 0);
     },
@@ -58,7 +62,7 @@ export function bodyweight() {
       if (!this.goalWeight || !this.latest) return 0;
       const start = this.entries[0]?.weight ?? this.latest.weight;
       if (Math.abs(this.goalWeight - start) < 0.01) return 100;
-      return Math.abs(this.latest.weight - start) / Math.abs(this.goalWeight - start) * 100;
+      return (Math.abs(this.latest.weight - start) / Math.abs(this.goalWeight - start)) * 100;
     },
 
     /**
@@ -78,7 +82,7 @@ export function bodyweight() {
       // On travaille sur filteredEntries (ordre chronologique asc) pour trouver
       // l'entrée précédente, indépendamment de l'ordre d'affichage inversé du template.
       const list = this.filteredEntries;
-      const idx  = list.findIndex(e => e.date === entry.date);
+      const idx = list.findIndex((e) => e.date === entry.date);
 
       // Première entrée de la période ou date introuvable → pas de delta
       if (idx <= 0) return 0;
@@ -103,16 +107,17 @@ export function bodyweight() {
     async addEntry(): Promise<void> {
       if (!this.newWeight || this.newWeight < 30) return;
       const today = new Date().toISOString().slice(0, 10);
-      const idx = this.entries.findIndex(e => e.date === today);
+      const idx = this.entries.findIndex((e) => e.date === today);
       const entry: BodyweightEntry = {
         date: today,
         weight: +this.newWeight,
         bodyFatPct: this.newBf != null ? +this.newBf : null,
         note: this.newNote.trim() || null,
       };
-      const next = idx >= 0
-        ? this.entries.map((e, i) => i === idx ? entry : e)
-        : [...this.entries, entry].sort((a, b) => a.date.localeCompare(b.date));
+      const next =
+        idx >= 0
+          ? this.entries.map((e, i) => (i === idx ? entry : e))
+          : [...this.entries, entry].sort((a, b) => a.date.localeCompare(b.date));
       try {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEY_ENTRIES, next);
@@ -120,36 +125,50 @@ export function bodyweight() {
           await deps.storage.set(STORAGE_KEY_GOAL, this.goalWeight);
         }
         this.entries = next;
-        this.newWeight = null; this.newBf = null; this.newNote = '';
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'success', message: entry.weight.toFixed(1) + ' kg enregistré' },
-        }));
+        this.newWeight = null;
+        this.newBf = null;
+        this.newNote = '';
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'success', message: entry.weight.toFixed(1) + ' kg enregistré' },
+          }),
+        );
       } catch (err) {
         console.error('[bodyweight] addEntry failed:', err);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: 'Échec enregistrement du poids. Réessaie.' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Échec enregistrement du poids. Réessaie.' },
+          }),
+        );
       }
     },
 
     async removeEntry(date: string): Promise<void> {
-      const next = this.entries.filter(e => e.date !== date);
+      const next = this.entries.filter((e) => e.date !== date);
       try {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEY_ENTRIES, next);
         this.entries = next;
       } catch (err) {
         console.error('[bodyweight] removeEntry failed:', err);
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: 'Échec de suppression. Réessaie.' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Échec de suppression. Réessaie.' },
+          }),
+        );
       }
     },
 
     formatDate(iso: string): string {
       try {
-        return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' });
-      } catch { return iso; }
+        return new Date(iso).toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: 'short',
+          year: '2-digit',
+        });
+      } catch {
+        return iso;
+      }
     },
 
     chartSvg(): string {
@@ -159,8 +178,12 @@ export function bodyweight() {
       const version = `${pts.length}:${pts.at(-1)?.date ?? ''}:${this.goalWeight ?? ''}:${this.period}`;
       if (this._chartSvgVersion === version && this._chartSvgCache) return this._chartSvgCache;
 
-      const W = 320, H = 140, padX = 10, padY = 20, labelH = 14;
-      const weights = pts.map(e => e.weight);
+      const W = 320,
+        H = 140,
+        padX = 10,
+        padY = 20,
+        labelH = 14;
+      const weights = pts.map((e) => e.weight);
       const minY = Math.min(...weights) - 0.5;
       const maxY = Math.max(...weights) + 0.5;
       const minX = Date.parse(pts[0]!.date);
@@ -169,20 +192,26 @@ export function bodyweight() {
       const dy = Math.max(0.1, maxY - minY);
       const chartH = H - labelH;
 
-      const sx = (d: number) => padX + (d - minX) / dx * (W - padX * 2);
-      const sy = (y: number) => chartH - padY - (y - minY) / dy * (chartH - padY * 2);
+      const sx = (d: number) => padX + ((d - minX) / dx) * (W - padX * 2);
+      const sy = (y: number) => chartH - padY - ((y - minY) / dy) * (chartH - padY * 2);
 
-      const linePath = pts.map((e, i) =>
-        `${i === 0 ? 'M' : 'L'} ${sx(Date.parse(e.date)).toFixed(1)} ${sy(e.weight).toFixed(1)}`
-      ).join(' ');
-      const areaPath = linePath
-        + ` L ${sx(Date.parse(pts.at(-1)!.date)).toFixed(1)} ${chartH}`
-        + ` L ${padX} ${chartH} Z`;
+      const linePath = pts
+        .map(
+          (e, i) =>
+            `${i === 0 ? 'M' : 'L'} ${sx(Date.parse(e.date)).toFixed(1)} ${sy(e.weight).toFixed(1)}`,
+        )
+        .join(' ');
+      const areaPath =
+        linePath +
+        ` L ${sx(Date.parse(pts.at(-1)!.date)).toFixed(1)} ${chartH}` +
+        ` L ${padX} ${chartH} Z`;
 
-      const gridLines = [0, 0.5, 1].map(ratio => {
-        const y = padY + ratio * (chartH - padY * 2);
-        return `<line x1="${padX}" y1="${y.toFixed(1)}" x2="${W - padX}" y2="${y.toFixed(1)}" stroke="#ffffff08" stroke-width="1"/>`;
-      }).join('');
+      const gridLines = [0, 0.5, 1]
+        .map((ratio) => {
+          const y = padY + ratio * (chartH - padY * 2);
+          return `<line x1="${padX}" y1="${y.toFixed(1)}" x2="${W - padX}" y2="${y.toFixed(1)}" stroke="#ffffff08" stroke-width="1"/>`;
+        })
+        .join('');
 
       const lastPt = pts.at(-1)!;
       const lastCx = sx(Date.parse(lastPt.date)).toFixed(1);

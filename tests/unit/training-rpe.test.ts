@@ -70,7 +70,13 @@ describe('roundToIncrementKg', () => {
 });
 
 describe('suggestNextWeightKg', () => {
-  const exercise = { id: 'bp', name: 'Bench Press', muscles: ['chest'], equipment: 'barbell' as const, incrementKg: 2.5 };
+  const exercise = {
+    id: 'bp',
+    name: 'Bench Press',
+    muscles: ['chest'],
+    equipment: 'barbell' as const,
+    incrementKg: 2.5,
+  };
 
   it('increases weight when rpe < target (too easy)', () => {
     const next = suggestNextWeightKg({ currentWeightKg: 100, rpe: 6, targetRpe: 8, exercise });

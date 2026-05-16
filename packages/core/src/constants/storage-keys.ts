@@ -60,35 +60,35 @@ export const STORAGE_KEYS = {
 
   // ─── Mesures corporelles ──────────────────────────────────────
   BODYWEIGHT_ENTRIES: 'kinetic:bodyweight:entries' as const,
-  BODYWEIGHT_GOAL:    'kinetic:bodyweight:goal' as const,
+  BODYWEIGHT_GOAL: 'kinetic:bodyweight:goal' as const,
   MEASUREMENTS_ENTRIES: 'kinetic:measurements:entries' as const,
-  MEASUREMENTS_PHOTOS:  'kinetic:measurements:photos' as const,
+  MEASUREMENTS_PHOTOS: 'kinetic:measurements:photos' as const,
 
   // ─── Profil utilisateur ───────────────────────────────────────
   USER_PROFILE: 'kinetic:userProfile' as const,
-  PROFILE: 'kinetic:profile' as const,   // displayName et préférences UI
-  STATS:   'kinetic:stats' as const,     // stats agrégées en cache (totalSessions, etc.)
+  PROFILE: 'kinetic:profile' as const, // displayName et préférences UI
+  STATS: 'kinetic:stats' as const, // stats agrégées en cache (totalSessions, etc.)
 
   // ─── Objectifs ────────────────────────────────────────────────
   GOALS: 'kinetic:goals' as const,
   GOALS_WEEKLY: 'kinetic:goals:weekly' as const,
 
   // ─── Récompenses ──────────────────────────────────────────────
-  REWARDS_UNLOCKED:     'kinetic:rewards:unlocked' as const,
+  REWARDS_UNLOCKED: 'kinetic:rewards:unlocked' as const,
   REWARDS_FREEZE_TOKENS: 'kinetic:rewards:freeze-tokens' as const,
-  REWARDS_FREEZE_WEEK:   'kinetic:rewards:freeze-replenished-week' as const,
-  REWARDS_THEME:         'kinetic:rewards:theme' as const,
+  REWARDS_FREEZE_WEEK: 'kinetic:rewards:freeze-replenished-week' as const,
+  REWARDS_THEME: 'kinetic:rewards:theme' as const,
 
   // ─── Tâches internes (usecases) ───────────────────────────────
-  AWARDED_IDS:          'kinetic:awarded-ids' as const,
-  COMPLETED_KEYS:       'kinetic:completed-keys' as const,
-  VITALITE_LAST_RESET:  'kinetic:vitalite:last-reset' as const,
+  AWARDED_IDS: 'kinetic:awarded-ids' as const,
+  COMPLETED_KEYS: 'kinetic:completed-keys' as const,
+  VITALITE_LAST_RESET: 'kinetic:vitalite:last-reset' as const,
   PENDING_TASK_MUTATION: 'kinetic:pending:task-mutation' as const,
 
   // ─── Sync interne ─────────────────────────────────────────────
-  SYNC_LAST_AT:      'kinetic:sync:last-at' as const,
+  SYNC_LAST_AT: 'kinetic:sync:last-at' as const,
   SYNC_INITIAL_DONE: '_kinetic:initial-sync-done' as const,
-  DEVICE_ID:         'kinetic:deviceId' as const,
+  DEVICE_ID: 'kinetic:deviceId' as const,
 
   // ─── Rappels & Notifications ──────────────────────────────────
   NOTIFICATIONS_ENABLED: 'kinetic:notifications:enabled' as const,
@@ -97,8 +97,8 @@ export const STORAGE_KEYS = {
 
   // ─── Schéma IDB & Diagnostics ─────────────────────────────────
   SCHEMA_VERSION: 'kinetic:schema-version' as const,
-  AUTH_DEBUG: 'kinetic:auth-debug' as const,   // localStorage, diagnostic OAuth APK
-  ERRORS: 'kinetic:errors' as const,           // localStorage, buffer d'erreurs runtime
+  AUTH_DEBUG: 'kinetic:auth-debug' as const, // localStorage, diagnostic OAuth APK
+  ERRORS: 'kinetic:errors' as const, // localStorage, buffer d'erreurs runtime
 
   // ─── Événements DOM (CustomEvent names) ────────────────────────
   EVENT_NOTIFY: 'kinetic:notify' as const,

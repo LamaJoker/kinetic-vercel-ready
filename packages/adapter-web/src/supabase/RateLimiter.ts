@@ -12,11 +12,11 @@ export class AuthRateLimiter {
   private readonly attempts = new Map<string, Attempt[]>();
 
   // Magic link : 3 tentatives / 5 minutes
-  private readonly MAGIC_LINK_MAX       = 3;
+  private readonly MAGIC_LINK_MAX = 3;
   private readonly MAGIC_LINK_WINDOW_MS = 5 * 60 * 1000;
 
   // OAuth : 10 tentatives / minute
-  private readonly OAUTH_MAX       = 10;
+  private readonly OAUTH_MAX = 10;
   private readonly OAUTH_WINDOW_MS = 60 * 1000;
 
   canSendMagicLink(email: string): boolean {
@@ -36,8 +36,8 @@ export class AuthRateLimiter {
   }
 
   getWaitTimeMs(email: string): number {
-    const key      = `magic:${email}`;
-    const now      = Date.now();
+    const key = `magic:${email}`;
+    const now = Date.now();
     const attempts = this.getValidAttempts(key, this.MAGIC_LINK_WINDOW_MS, now);
     if (attempts.length < this.MAGIC_LINK_MAX) return 0;
     const oldest = attempts[0]!;
@@ -45,20 +45,20 @@ export class AuthRateLimiter {
   }
 
   private check(key: string, max: number, windowMs: number): boolean {
-    const now   = Date.now();
+    const now = Date.now();
     const valid = this.getValidAttempts(key, windowMs, now);
     return valid.length < max;
   }
 
   private record(key: string): void {
-    const now  = Date.now();
+    const now = Date.now();
     const list = this.attempts.get(key) ?? [];
     list.push({ timestamp: now });
     this.attempts.set(key, list);
   }
 
   private getValidAttempts(key: string, windowMs: number, now: number): Attempt[] {
-    const list  = this.attempts.get(key) ?? [];
+    const list = this.attempts.get(key) ?? [];
     const valid = list.filter((a) => now - a.timestamp < windowMs);
     this.attempts.set(key, valid);
     return valid;

@@ -11,15 +11,21 @@ import {
 // Réf : mercredi 15 janv. 2025 12:00 UTC
 const NOW = new Date('2025-01-15T12:00:00Z');
 
-function session(dayOffsetFromMonday: number, sets: Array<[number, number]>, ended = true): SessionLike {
-  const start = new Date('2025-01-13T18:00:00Z');     // lundi de la semaine
+function session(
+  dayOffsetFromMonday: number,
+  sets: Array<[number, number]>,
+  ended = true,
+): SessionLike {
+  const start = new Date('2025-01-13T18:00:00Z'); // lundi de la semaine
   start.setUTCDate(start.getUTCDate() + dayOffsetFromMonday);
   return {
     startedAt: start.toISOString(),
-    endedAt:   ended ? new Date(start.getTime() + 60 * 60_000).toISOString() : undefined,
-    entries: [{
-      sets: sets.map(([reps, weightKg]) => ({ reps, weightKg })),
-    }],
+    endedAt: ended ? new Date(start.getTime() + 60 * 60_000).toISOString() : undefined,
+    entries: [
+      {
+        sets: sets.map(([reps, weightKg]) => ({ reps, weightKg })),
+      },
+    ],
   };
 }
 
@@ -57,9 +63,9 @@ describe('evaluateWeeklyGoals', () => {
 
   it('compte uniquement les sessions terminées de la semaine courante', () => {
     const sessions = [
-      session(0, [[10, 50]]),                    // lundi, terminée
+      session(0, [[10, 50]]), // lundi, terminée
       session(1, [[10, 50]], /* ended */ false), // mardi, en cours → exclue
-      session(2, [[10, 50]]),                    // mercredi, terminée
+      session(2, [[10, 50]]), // mercredi, terminée
     ];
     const state = evaluateWeeklyGoals(sessions, { targetSessions: 3, targetTonnageKg: 0 }, NOW);
     expect(state.doneSessions).toBe(2);
@@ -68,8 +74,8 @@ describe('evaluateWeeklyGoals', () => {
   it('exclut les sessions de la semaine précédente', () => {
     const lastWeek: SessionLike = {
       startedAt: '2025-01-06T18:00:00Z',
-      endedAt:   '2025-01-06T19:00:00Z',
-      entries:   [{ sets: [{ reps: 10, weightKg: 50 }] }],
+      endedAt: '2025-01-06T19:00:00Z',
+      entries: [{ sets: [{ reps: 10, weightKg: 50 }] }],
     };
     const state = evaluateWeeklyGoals([lastWeek], { targetSessions: 1, targetTonnageKg: 0 }, NOW);
     expect(state.doneSessions).toBe(0);
@@ -77,8 +83,11 @@ describe('evaluateWeeklyGoals', () => {
 
   it('calcule le tonnage total (Σ reps × weightKg)', () => {
     const sessions = [
-      session(0, [[10, 50], [8, 60]]),    // 500 + 480 = 980
-      session(2, [[5, 100]]),             // 500
+      session(0, [
+        [10, 50],
+        [8, 60],
+      ]), // 500 + 480 = 980
+      session(2, [[5, 100]]), // 500
     ];
     const state = evaluateWeeklyGoals(sessions, { targetSessions: 1, targetTonnageKg: 1000 }, NOW);
     expect(state.doneTonnageKg).toBe(1480);
@@ -120,7 +129,12 @@ describe('evaluateWeeklyGoals', () => {
   });
 
   it('plafonne sessionsPercent à 100 même si on dépasse', () => {
-    const sessions = [session(0, [[5, 50]]), session(1, [[5, 50]]), session(2, [[5, 50]]), session(3, [[5, 50]])];
+    const sessions = [
+      session(0, [[5, 50]]),
+      session(1, [[5, 50]]),
+      session(2, [[5, 50]]),
+      session(3, [[5, 50]]),
+    ];
     const state = evaluateWeeklyGoals(sessions, { targetSessions: 3, targetTonnageKg: 0 }, NOW);
     expect(state.sessionsPercent).toBe(100);
     expect(state.sessionsOk).toBe(true);
@@ -140,11 +154,15 @@ describe('shouldAwardWeeklyBonusXp', () => {
 
   it('true si atteints et pas encore crédité', () => {
     expect(shouldAwardWeeklyBonusXp({ allOk: true, weekKey: '2025-01-13' }, '')).toBe(true);
-    expect(shouldAwardWeeklyBonusXp({ allOk: true, weekKey: '2025-01-13' }, '2025-01-06')).toBe(true);
+    expect(shouldAwardWeeklyBonusXp({ allOk: true, weekKey: '2025-01-13' }, '2025-01-06')).toBe(
+      true,
+    );
   });
 
   it('false (idempotent) si déjà crédité cette semaine', () => {
-    expect(shouldAwardWeeklyBonusXp({ allOk: true, weekKey: '2025-01-13' }, '2025-01-13')).toBe(false);
+    expect(shouldAwardWeeklyBonusXp({ allOk: true, weekKey: '2025-01-13' }, '2025-01-13')).toBe(
+      false,
+    );
   });
 });
 

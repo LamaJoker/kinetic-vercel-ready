@@ -1,9 +1,14 @@
 <div x-data="mensurations" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
-
   <!-- En-tête -->
   <div class="flex items-center gap-3 mb-6">
-    <a href="/" class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface" aria-label="Retour">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    <a
+      href="/"
+      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
+      aria-label="Retour"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
     </a>
     <div class="flex-1">
       <h1 class="text-2xl font-display font-black tracking-tight text-white">Mensurations</h1>
@@ -11,60 +16,84 @@
     </div>
     <div class="text-right">
       <p class="text-[10px] uppercase tracking-widest text-gray-600 font-semibold">Entrées</p>
-      <p class="font-display font-black text-lg text-white leading-none" x-text="entries.length"></p>
+      <p
+        class="font-display font-black text-lg text-white leading-none"
+        x-text="entries.length"
+      ></p>
     </div>
   </div>
 
   <!-- Grille de mensurations actuelles -->
   <div class="grid grid-cols-3 gap-2 mb-4">
     <template x-for="m in metrics" :key="m.key">
-      <button type="button" @click="activeMetric = m.key"
-              class="rounded-2xl p-3 ring-1 transition-all text-left cursor-pointer"
-              :class="activeMetric === m.key
+      <button
+        type="button"
+        @click="activeMetric = m.key"
+        class="rounded-2xl p-3 ring-1 transition-all text-left cursor-pointer"
+        :class="activeMetric === m.key
                 ? 'bg-kinetic-elevated ring-white/20'
-                : 'bg-kinetic-surface ring-white/5 hover:ring-white/10'">
-        <p class="text-[9px] uppercase tracking-widest font-bold mb-1 truncate transition-colors"
-           :style="`color: ${hasData(m.key) ? m.color : '#4B5563'}`"
-           x-text="m.label"></p>
-        <p class="font-display font-black text-base text-white leading-none"
-           x-text="currentValue(m.key) !== null ? currentValue(m.key) : '—'"></p>
-        <p x-show="currentValue(m.key) !== null" class="text-[9px] mt-0.5 font-mono"
-           :class="metricDelta(m.key) > 0 ? 'text-kinetic-electric'
+                : 'bg-kinetic-surface ring-white/5 hover:ring-white/10'"
+      >
+        <p
+          class="text-[9px] uppercase tracking-widest font-bold mb-1 truncate transition-colors"
+          :style="`color: ${hasData(m.key) ? m.color : '#4B5563'}`"
+          x-text="m.label"
+        ></p>
+        <p
+          class="font-display font-black text-base text-white leading-none"
+          x-text="currentValue(m.key) !== null ? currentValue(m.key) : '—'"
+        ></p>
+        <p
+          x-show="currentValue(m.key) !== null"
+          class="text-[9px] mt-0.5 font-mono"
+          :class="metricDelta(m.key) > 0 ? 'text-kinetic-electric'
              : metricDelta(m.key) < 0 ? 'text-kinetic-neon'
              : 'text-gray-600'"
-           x-text="metricDelta(m.key) !== null
+          x-text="metricDelta(m.key) !== null
              ? (metricDelta(m.key) > 0 ? '+' : '') + metricDelta(m.key).toFixed(1)
-             : ''"></p>
-        <p x-show="currentValue(m.key) === null" class="text-[9px] mt-0.5 text-gray-700">non mesuré</p>
+             : ''"
+        ></p>
+        <p x-show="currentValue(m.key) === null" class="text-[9px] mt-0.5 text-gray-700">
+          non mesuré
+        </p>
       </button>
     </template>
   </div>
 
   <!-- Section graphique -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-
     <!-- Titre + sélecteur période -->
     <div class="flex items-start justify-between mb-3">
       <div>
-        <h2 class="font-display font-bold text-white tracking-tight text-sm"
-            x-text="activeMetricDef.label"></h2>
-        <p class="text-xs mt-0.5"
-           :class="metricDelta(activeMetric) > 0 ? 'text-kinetic-electric'
+        <h2
+          class="font-display font-bold text-white tracking-tight text-sm"
+          x-text="activeMetricDef.label"
+        ></h2>
+        <p
+          class="text-xs mt-0.5"
+          :class="metricDelta(activeMetric) > 0 ? 'text-kinetic-electric'
              : metricDelta(activeMetric) < 0 ? 'text-kinetic-neon'
              : 'text-gray-600'"
-           x-show="metricDelta(activeMetric) !== null"
-           x-text="metricDelta(activeMetric) !== null
+          x-show="metricDelta(activeMetric) !== null"
+          x-text="metricDelta(activeMetric) !== null
              ? (metricDelta(activeMetric) > 0 ? '↑ +' : '↓ ')
                + Math.abs(metricDelta(activeMetric)).toFixed(1) + ' cm sur la période'
-             : ''"></p>
+             : ''"
+        ></p>
       </div>
       <div class="flex gap-1 flex-shrink-0 ml-2">
-        <template x-for="p in [{v:30,l:'30j'},{v:90,l:'90j'},{v:365,l:'1an'},{v:9999,l:'Tout'}]" :key="p.v">
-          <button type="button" @click="period = p.v"
-                  class="text-[10px] px-2 py-1 rounded-lg font-semibold transition-all"
-                  :class="period === p.v
+        <template
+          x-for="p in [{v:30,l:'30j'},{v:90,l:'90j'},{v:365,l:'1an'},{v:9999,l:'Tout'}]"
+          :key="p.v"
+        >
+          <button
+            type="button"
+            @click="period = p.v"
+            class="text-[10px] px-2 py-1 rounded-lg font-semibold transition-all"
+            :class="period === p.v
                     ? 'bg-kinetic-electric text-white shadow-[0_0_10px_rgba(255,106,0,0.4)]'
-                    : 'text-gray-500 hover:text-gray-300'">
+                    : 'text-gray-500 hover:text-gray-300'"
+          >
             <span x-text="p.l"></span>
           </button>
         </template>
@@ -77,12 +106,22 @@
     </template>
     <template x-if="chartPoints().length < 2">
       <div class="flex flex-col items-center justify-center py-8 text-center">
-        <svg class="w-10 h-10 text-gray-700 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M3 6h18M3 6l2 14h14L21 6M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M10 11v5M14 11v5"/>
+        <svg
+          class="w-10 h-10 text-gray-700 mb-3"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M3 6h18M3 6l2 14h14L21 6M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M10 11v5M14 11v5"
+          />
         </svg>
         <p class="text-sm text-gray-500">
-          Pas assez de données pour <span class="text-white font-medium" x-text="activeMetricDef.label"></span>
+          Pas assez de données pour
+          <span class="text-white font-medium" x-text="activeMetricDef.label"></span>
         </p>
         <p class="text-xs text-gray-600 mt-1">Enregistre au moins 2 mesures</p>
       </div>
@@ -93,19 +132,25 @@
       <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/5">
         <div class="text-center">
           <p class="text-[9px] uppercase tracking-widest text-gray-600 font-semibold">Départ</p>
-          <p class="font-display font-black text-sm text-white mt-0.5"
-             x-text="chartPoints()[0] ? chartPoints()[0].y.toFixed(1) + ' cm' : '—'"></p>
+          <p
+            class="font-display font-black text-sm text-white mt-0.5"
+            x-text="chartPoints()[0] ? chartPoints()[0].y.toFixed(1) + ' cm' : '—'"
+          ></p>
         </div>
         <div class="text-center">
           <p class="text-[9px] uppercase tracking-widest text-gray-600 font-semibold">Actuel</p>
-          <p class="font-display font-black text-sm mt-0.5"
-             :style="`color: ${activeMetricDef.color}`"
-             x-text="currentValue(activeMetric) !== null ? currentValue(activeMetric).toFixed(1) + ' cm' : '—'"></p>
+          <p
+            class="font-display font-black text-sm mt-0.5"
+            :style="`color: ${activeMetricDef.color}`"
+            x-text="currentValue(activeMetric) !== null ? currentValue(activeMetric).toFixed(1) + ' cm' : '—'"
+          ></p>
         </div>
         <div class="text-center">
           <p class="text-[9px] uppercase tracking-widest text-gray-600 font-semibold">Mesures</p>
-          <p class="font-display font-black text-sm text-white mt-0.5"
-             x-text="chartPoints().length"></p>
+          <p
+            class="font-display font-black text-sm text-white mt-0.5"
+            x-text="chartPoints().length"
+          ></p>
         </div>
       </div>
     </template>
@@ -113,124 +158,191 @@
 
   <!-- Formulaire d'enregistrement -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-4">Enregistrer</p>
+    <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-4">
+      Enregistrer
+    </p>
 
     <!-- Haut du corps -->
-    <p class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5">
+    <p
+      class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"
+    >
       <span class="w-1 h-1 rounded-full bg-kinetic-teal inline-block"></span> Haut du corps
     </p>
     <div class="grid grid-cols-2 gap-3 mb-4">
       <div>
         <label class="text-xs text-gray-500 mb-1 block">Cou (cm)</label>
-        <input type="number" x-model.number="fNeck" min="20" max="70" step="0.5"
-               placeholder="38"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+        <input
+          type="number"
+          x-model.number="fNeck"
+          min="20"
+          max="70"
+          step="0.5"
+          placeholder="38"
+          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+        />
       </div>
       <div>
         <label class="text-xs text-gray-500 mb-1 block">Épaules (cm)</label>
-        <input type="number" x-model.number="fShoulders" min="70" max="170" step="0.5"
-               placeholder="115"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+        <input
+          type="number"
+          x-model.number="fShoulders"
+          min="70"
+          max="170"
+          step="0.5"
+          placeholder="115"
+          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+        />
       </div>
       <div class="col-span-2">
         <label class="text-xs text-gray-500 mb-1 block">Poitrine (cm)</label>
-        <input type="number" x-model.number="fChest" min="50" max="160" step="0.5"
-               placeholder="92"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-neon/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+        <input
+          type="number"
+          x-model.number="fChest"
+          min="50"
+          max="160"
+          step="0.5"
+          placeholder="92"
+          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-neon/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+        />
       </div>
     </div>
 
     <!-- Bras -->
-    <p class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5">
+    <p
+      class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"
+    >
       <span class="w-1 h-1 rounded-full bg-kinetic-gold inline-block"></span> Bras
     </p>
     <div class="grid grid-cols-2 gap-3 mb-4">
       <div>
         <label class="text-xs text-gray-500 mb-1 block">Bras gauche (cm)</label>
-        <input type="number" x-model.number="fLeftBicep" min="15" max="65" step="0.5"
-               placeholder="36"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-gold/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+        <input
+          type="number"
+          x-model.number="fLeftBicep"
+          min="15"
+          max="65"
+          step="0.5"
+          placeholder="36"
+          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-gold/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+        />
       </div>
       <div>
         <label class="text-xs text-gray-500 mb-1 block">Bras droit (cm)</label>
-        <input type="number" x-model.number="fRightBicep" min="15" max="65" step="0.5"
-               placeholder="36"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-gold/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+        <input
+          type="number"
+          x-model.number="fRightBicep"
+          min="15"
+          max="65"
+          step="0.5"
+          placeholder="36"
+          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-gold/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+        />
       </div>
     </div>
 
     <!-- Milieu -->
-    <p class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5">
+    <p
+      class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"
+    >
       <span class="w-1 h-1 rounded-full bg-kinetic-electric inline-block"></span> Milieu
     </p>
     <div class="grid grid-cols-2 gap-3 mb-4">
       <div>
         <label class="text-xs text-gray-500 mb-1 block">Taille (cm)</label>
-        <input type="number" x-model.number="fWaist" min="40" max="160" step="0.5"
-               placeholder="80"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-electric/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+        <input
+          type="number"
+          x-model.number="fWaist"
+          min="40"
+          max="160"
+          step="0.5"
+          placeholder="80"
+          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-electric/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+        />
       </div>
       <div>
         <label class="text-xs text-gray-500 mb-1 block">Hanches (cm)</label>
-        <input type="number" x-model.number="fHips" min="50" max="170" step="0.5"
-               placeholder="96"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-purple/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+        <input
+          type="number"
+          x-model.number="fHips"
+          min="50"
+          max="170"
+          step="0.5"
+          placeholder="96"
+          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-purple/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+        />
       </div>
     </div>
 
     <!-- Jambes -->
-    <p class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5">
+    <p
+      class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"
+    >
       <span class="w-1 h-1 rounded-full bg-kinetic-coral inline-block"></span> Jambes
     </p>
     <div class="grid grid-cols-2 gap-3 mb-4">
       <div>
         <label class="text-xs text-gray-500 mb-1 block">Cuisse gauche (cm)</label>
-        <input type="number" x-model.number="fLeftThigh" min="25" max="100" step="0.5"
-               placeholder="58"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-coral/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+        <input
+          type="number"
+          x-model.number="fLeftThigh"
+          min="25"
+          max="100"
+          step="0.5"
+          placeholder="58"
+          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-coral/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+        />
       </div>
       <div>
         <label class="text-xs text-gray-500 mb-1 block">Cuisse droite (cm)</label>
-        <input type="number" x-model.number="fRightThigh" min="25" max="100" step="0.5"
-               placeholder="58"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-coral/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+        <input
+          type="number"
+          x-model.number="fRightThigh"
+          min="25"
+          max="100"
+          step="0.5"
+          placeholder="58"
+          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-coral/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+        />
       </div>
       <div>
         <label class="text-xs text-gray-500 mb-1 block">Mollet gauche (cm)</label>
-        <input type="number" x-model.number="fLeftCalf" min="15" max="65" step="0.5"
-               placeholder="34"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+        <input
+          type="number"
+          x-model.number="fLeftCalf"
+          min="15"
+          max="65"
+          step="0.5"
+          placeholder="34"
+          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+        />
       </div>
       <div>
         <label class="text-xs text-gray-500 mb-1 block">Mollet droit (cm)</label>
-        <input type="number" x-model.number="fRightCalf" min="15" max="65" step="0.5"
-               placeholder="34"
-               class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60
-                      rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"/>
+        <input
+          type="number"
+          x-model.number="fRightCalf"
+          min="15"
+          max="65"
+          step="0.5"
+          placeholder="34"
+          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+        />
       </div>
     </div>
 
     <!-- Note -->
-    <input x-model="fNote"
-           placeholder="Note (optionnel — ex: matin à jeun)"
-           class="w-full bg-kinetic-ink border border-white/10 focus:border-white/20
-                  rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors mb-4"/>
+    <input
+      x-model="fNote"
+      placeholder="Note (optionnel — ex: matin à jeun)"
+      class="w-full bg-kinetic-ink border border-white/10 focus:border-white/20 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors mb-4"
+    />
 
-    <button type="button" @click="addEntry()"
-            :disabled="!hasFormData"
-            class="w-full py-3 bg-kinetic-neon text-gray-950 font-bold rounded-xl text-sm
-                   shadow-[0_0_20px_rgba(168,255,0,0.3)] hover:shadow-[0_0_28px_rgba(168,255,0,0.5)]
-                   disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all">
+    <button
+      type="button"
+      @click="addEntry()"
+      :disabled="!hasFormData"
+      class="w-full py-3 bg-kinetic-neon text-gray-950 font-bold rounded-xl text-sm shadow-[0_0_20px_rgba(168,255,0,0.3)] hover:shadow-[0_0_28px_rgba(168,255,0,0.5)] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all"
+    >
       Enregistrer les mensurations
     </button>
   </div>
@@ -239,15 +351,26 @@
   <div class="bg-kinetic-surface rounded-2xl ring-1 ring-white/5 overflow-hidden">
     <div class="flex items-center justify-between p-4 border-b border-white/5">
       <h2 class="font-display font-bold text-white tracking-tight text-sm">Historique</h2>
-      <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
-            x-text="entries.length + ' entrée' + (entries.length > 1 ? 's' : '')"></span>
+      <span
+        class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
+        x-text="entries.length + ' entrée' + (entries.length > 1 ? 's' : '')"
+      ></span>
     </div>
 
     <template x-if="entries.length === 0">
       <div class="p-10 text-center">
-        <svg class="w-12 h-12 text-gray-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M3 6h18M3 6l2 14h14L21 6M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M10 11v5M14 11v5"/>
+        <svg
+          class="w-12 h-12 text-gray-700 mx-auto mb-3"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M3 6h18M3 6l2 14h14L21 6M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M10 11v5M14 11v5"
+          />
         </svg>
         <p class="text-sm text-gray-500 font-medium">Aucune mensuration</p>
         <p class="text-xs text-gray-600 mt-1">Commence à te suivre pour voir tes progrès</p>
@@ -259,16 +382,28 @@
         <li class="px-4 py-3.5">
           <div class="flex items-center justify-between mb-1.5">
             <p class="text-sm font-semibold text-white" x-text="formatDate(entry.date)"></p>
-            <button type="button" @click="removeEntry(entry.id)"
-                    class="p-1.5 text-gray-600 hover:text-kinetic-electric rounded-lg hover:bg-kinetic-ink transition-colors"
-                    aria-label="Supprimer">
+            <button
+              type="button"
+              @click="removeEntry(entry.id)"
+              class="p-1.5 text-gray-600 hover:text-kinetic-electric rounded-lg hover:bg-kinetic-ink transition-colors"
+              aria-label="Supprimer"
+            >
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
           <p class="text-[11px] text-gray-500 leading-relaxed" x-text="entrySummary(entry)"></p>
-          <p x-show="entry.note" class="text-[11px] text-gray-600 italic mt-0.5" x-text="entry.note"></p>
+          <p
+            x-show="entry.note"
+            class="text-[11px] text-gray-600 italic mt-0.5"
+            x-text="entry.note"
+          ></p>
         </li>
       </template>
     </ul>
@@ -276,32 +411,46 @@
 
   <!-- ── Photos de progression ────────────────────────────────────────────── -->
   <div class="mt-4 bg-kinetic-surface rounded-2xl ring-1 ring-white/5 overflow-hidden">
-    <button type="button" @click="showPhotos = !showPhotos"
-            class="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
+    <button
+      type="button"
+      @click="showPhotos = !showPhotos"
+      class="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+    >
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-xl bg-kinetic-neon/10 flex items-center justify-center text-base">📸</div>
+        <div
+          class="w-8 h-8 rounded-xl bg-kinetic-neon/10 flex items-center justify-center text-base"
+        >
+          📸
+        </div>
         <div class="text-left">
           <p class="text-sm font-bold text-white">Photos de progression</p>
-          <p class="text-[10px] text-gray-500 mt-0.5" x-text="photos.length + ' photo' + (photos.length > 1 ? 's' : '')"></p>
+          <p
+            class="text-[10px] text-gray-500 mt-0.5"
+            x-text="photos.length + ' photo' + (photos.length > 1 ? 's' : '')"
+          ></p>
         </div>
       </div>
-      <span class="text-gray-500 text-sm transition-transform duration-200"
-            :class="showPhotos ? 'rotate-180' : ''">▾</span>
+      <span
+        class="text-gray-500 text-sm transition-transform duration-200"
+        :class="showPhotos ? 'rotate-180' : ''"
+        >▾</span
+      >
     </button>
 
-    <div x-show="showPhotos"
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0 -translate-y-2"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         class="border-t border-white/5 p-4">
-
+    <div
+      x-show="showPhotos"
+      x-transition:enter="transition ease-out duration-200"
+      x-transition:enter-start="opacity-0 -translate-y-2"
+      x-transition:enter-end="opacity-100 translate-y-0"
+      class="border-t border-white/5 p-4"
+    >
       <!-- Bouton photo -->
-      <button type="button" @click="takePhoto()"
-              :disabled="takingPhoto"
-              class="w-full flex items-center justify-center gap-2 py-3 rounded-xl
-                     bg-kinetic-neon/10 ring-1 ring-kinetic-neon/30 text-kinetic-neon
-                     font-semibold text-sm hover:bg-kinetic-neon/20 transition-all
-                     disabled:opacity-50 disabled:cursor-not-allowed mb-4">
+      <button
+        type="button"
+        @click="takePhoto()"
+        :disabled="takingPhoto"
+        class="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-kinetic-neon/10 ring-1 ring-kinetic-neon/30 text-kinetic-neon font-semibold text-sm hover:bg-kinetic-neon/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+      >
         <span x-show="!takingPhoto">📷 Prendre une photo</span>
         <span x-show="takingPhoto">⏳ Chargement…</span>
       </button>
@@ -315,31 +464,48 @@
 
       <div x-show="photos.length > 0" class="grid grid-cols-3 gap-2">
         <template x-for="photo in photosDesc.slice(0, 12)" :key="photo.id">
-          <button type="button" @click="selectedPhotoId = selectedPhotoId === photo.id ? null : photo.id"
-                  class="relative aspect-square rounded-xl overflow-hidden ring-1 ring-white/10
-                         hover:ring-kinetic-neon/50 transition-all group">
-            <img :src="photo.base64" :alt="formatPhotoDate(photo.takenAt)"
-                 class="w-full h-full object-cover"/>
-            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end">
-              <p class="text-[9px] text-white/70 p-1.5 leading-none opacity-0 group-hover:opacity-100 transition-opacity"
-                 x-text="formatPhotoDate(photo.takenAt)"></p>
+          <button
+            type="button"
+            @click="selectedPhotoId = selectedPhotoId === photo.id ? null : photo.id"
+            class="relative aspect-square rounded-xl overflow-hidden ring-1 ring-white/10 hover:ring-kinetic-neon/50 transition-all group"
+          >
+            <img
+              :src="photo.base64"
+              :alt="formatPhotoDate(photo.takenAt)"
+              class="w-full h-full object-cover"
+            />
+            <div
+              class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end"
+            >
+              <p
+                class="text-[9px] text-white/70 p-1.5 leading-none opacity-0 group-hover:opacity-100 transition-opacity"
+                x-text="formatPhotoDate(photo.takenAt)"
+              ></p>
             </div>
           </button>
         </template>
       </div>
 
       <!-- Photo sélectionnée en grand -->
-      <div x-show="selectedPhotoId !== null"
-           x-transition
-           class="mt-3 rounded-2xl overflow-hidden ring-1 ring-white/10">
+      <div
+        x-show="selectedPhotoId !== null"
+        x-transition
+        class="mt-3 rounded-2xl overflow-hidden ring-1 ring-white/10"
+      >
         <template x-for="photo in photos.filter(p => p.id === selectedPhotoId)" :key="photo.id">
           <div>
-            <img :src="photo.base64" :alt="formatPhotoDate(photo.takenAt)"
-                 class="w-full object-contain max-h-72 bg-black"/>
+            <img
+              :src="photo.base64"
+              :alt="formatPhotoDate(photo.takenAt)"
+              class="w-full object-contain max-h-72 bg-black"
+            />
             <div class="p-3 flex items-center justify-between">
               <p class="text-xs text-gray-400" x-text="formatPhotoDate(photo.takenAt)"></p>
-              <button type="button" @click="deletePhoto(photo.id)"
-                      class="text-xs text-kinetic-electric font-semibold hover:text-red-400 transition-colors px-3 py-1.5 rounded-lg bg-kinetic-electric/10 ring-1 ring-kinetic-electric/20">
+              <button
+                type="button"
+                @click="deletePhoto(photo.id)"
+                class="text-xs text-kinetic-electric font-semibold hover:text-red-400 transition-colors px-3 py-1.5 rounded-lg bg-kinetic-electric/10 ring-1 ring-kinetic-electric/20"
+              >
                 🗑 Supprimer
               </button>
             </div>
@@ -347,9 +513,11 @@
         </template>
       </div>
 
-      <p x-show="photos.length > 12" class="text-[10px] text-gray-600 text-center mt-2"
-         x-text="`+${photos.length - 12} plus ancien(s)`"></p>
+      <p
+        x-show="photos.length > 12"
+        class="text-[10px] text-gray-600 text-center mt-2"
+        x-text="`+${photos.length - 12} plus ancien(s)`"
+      ></p>
     </div>
   </div>
-
 </div>

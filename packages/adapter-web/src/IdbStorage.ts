@@ -30,12 +30,16 @@ export class IdbStorage implements StoragePort {
   async set<T>(key: StorageKey, value: T): Promise<void> {
     // Validate key format before write to catch typos early
     if (!validateStorageKey(key)) {
-      throw new Error(`IdbStorage: invalid key format "${key}" — expected /^[a-zA-Z0-9:_-]{1,200}$/`);
+      throw new Error(
+        `IdbStorage: invalid key format "${key}" — expected /^[a-zA-Z0-9:_-]{1,200}$/`,
+      );
     }
 
     // Validate value size to prevent QuotaExceededError surprises
     if (!validateStorageValue(value)) {
-      throw new Error(`IdbStorage: value for key "${key}" exceeds 1 MB limit or is not serialisable`);
+      throw new Error(
+        `IdbStorage: value for key "${key}" exceeds 1 MB limit or is not serialisable`,
+      );
     }
 
     try {
@@ -48,7 +52,7 @@ export class IdbStorage implements StoragePort {
       //   DataCloneError     → value contains non-serialisable types
       //   InvalidStateError  → DB connection closed / browser bug
       const name = err instanceof Error && err.name ? err.name : 'UnknownError';
-      const msg  = err instanceof Error ? err.message : String(err);
+      const msg = err instanceof Error ? err.message : String(err);
       console.error(`[IdbStorage] set failed for key "${key}" (${name}):`, err);
       const wrapped = new Error(`IdbStorage[${name}]: ${msg || 'failed to write'}`);
       wrapped.name = name;

@@ -11,10 +11,18 @@ class InMemoryStorage implements StoragePort {
   async get<T>(key: string): Promise<T | null> {
     return (this.store.get(key) as T) ?? null;
   }
-  async set<T>(key: string, value: T): Promise<void> { this.store.set(key, value); }
-  async remove(key: string): Promise<void> { this.store.delete(key); }
-  async keys(): Promise<readonly string[]> { return [...this.store.keys()]; }
-  async clear(): Promise<void> { this.store.clear(); }
+  async set<T>(key: string, value: T): Promise<void> {
+    this.store.set(key, value);
+  }
+  async remove(key: string): Promise<void> {
+    this.store.delete(key);
+  }
+  async keys(): Promise<readonly string[]> {
+    return [...this.store.keys()];
+  }
+  async clear(): Promise<void> {
+    this.store.clear();
+  }
 }
 
 function isoDaysAgo(days: number): string {
@@ -78,7 +86,7 @@ describe('compactStorage', () => {
     expect(r2.removedKeys).toBe(0);
   });
 
-  it("ne supprime pas une clé avec date invalide (par sécurité)", async () => {
+  it('ne supprime pas une clé avec date invalide (par sécurité)', async () => {
     await storage.set('kinetic:vitalite:done:not-a-date', ['t']);
     await storage.set('kinetic:vitalite:done:2020', ['t']);
 

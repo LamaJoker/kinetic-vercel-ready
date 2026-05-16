@@ -18,7 +18,9 @@ function debugLog(msg: string): void {
     const prev = localStorage.getItem(DEBUG_KEY) ?? '';
     const stamp = new Date().toISOString().slice(11, 19);
     localStorage.setItem(DEBUG_KEY, `${prev}\n[${stamp}] ${msg}`.slice(-2000));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 /**
@@ -32,12 +34,16 @@ export async function initMobile(): Promise<void> {
     const { StatusBar, Style } = await import('@capacitor/status-bar');
     await StatusBar.setStyle({ style: Style.Dark });
     await StatusBar.setBackgroundColor({ color: '#0b0f1a' });
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   try {
     const { SplashScreen } = await import('@capacitor/splash-screen');
     await SplashScreen.hide({ fadeOutDuration: 300 });
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   try {
     const { App: CapApp } = await import('@capacitor/app');
@@ -74,7 +80,6 @@ export async function initMobile(): Promise<void> {
         CapApp.exitApp();
       }
     });
-
   } catch (err) {
     debugLog(`initMobile error: ${String(err).slice(0, 200)}`);
   }
@@ -86,10 +91,7 @@ export async function initMobile(): Promise<void> {
  * PKCE flow : ?code= → exchangeCodeForSession()
  * M8 FIX : paramètre supabase correctement typé (était `any`)
  */
-export async function handleOAuthCallback(
-  supabase: SupabaseClient,
-  url: string,
-): Promise<void> {
+export async function handleOAuthCallback(supabase: SupabaseClient, url: string): Promise<void> {
   try {
     debugLog(`handleOAuthCallback start: ${url.slice(0, 150)}`);
 
@@ -98,8 +100,9 @@ export async function handleOAuthCallback(
 
     // Hash params : #access_token=XXX (implicit flow)
     const hashParams = new URLSearchParams(parsed.hash.replace(/^#/, ''));
-    const accessToken  = hashParams.get('access_token')  ?? parsed.searchParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token') ?? parsed.searchParams.get('refresh_token');
+    const accessToken = hashParams.get('access_token') ?? parsed.searchParams.get('access_token');
+    const refreshToken =
+      hashParams.get('refresh_token') ?? parsed.searchParams.get('refresh_token');
 
     // Query params : ?code=XXX (PKCE flow)
     const code = parsed.searchParams.get('code');
@@ -107,32 +110,39 @@ export async function handleOAuthCallback(
     // Erreurs Supabase éventuelles : on les notifie à l'utilisateur via le
     // store toast, sinon le retour de Chrome Custom Tabs ferme et on reste
     // sur le dashboard sans aucun feedback (utilisateur pense que ça marche).
-    const errorDesc = hashParams.get('error_description') ?? parsed.searchParams.get('error_description');
+    const errorDesc =
+      hashParams.get('error_description') ?? parsed.searchParams.get('error_description');
     if (errorDesc) {
       const decoded = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
       debugLog(`OAuth error from provider: ${decoded}`);
       try {
-        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'error', message: `Connexion refusée : ${decoded}` },
-        }));
-      } catch { /* ignore */ }
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: `Connexion refusée : ${decoded}` },
+          }),
+        );
+      } catch {
+        /* ignore */
+      }
     }
 
     if (accessToken && refreshToken) {
       debugLog(`setSession (tokenLen=${accessToken.length}/${refreshToken.length})`);
       const { data, error } = await supabase.auth.setSession({
-        access_token:  accessToken,
+        access_token: accessToken,
         refresh_token: refreshToken,
       });
       if (error) debugLog(`setSession err: ${error.message}`);
-      else debugLog(`setSession OK uid=${data?.user?.id?.slice(0,8) ?? 'none'}`);
+      else debugLog(`setSession OK uid=${data?.user?.id?.slice(0, 8) ?? 'none'}`);
 
       // Vérification : la session est-elle bien persistée et lisible immédiatement ?
       // Si non, le redirect /  échouera silencieusement (auth store ne trouve rien
       // dans localStorage à la réinitialisation post-reload).
       try {
-        const { data: { session: verify } } = await supabase.auth.getSession();
-        debugLog(`verify session: ${verify ? `uid=${verify.user.id.slice(0,8)}` : 'NULL!'}`);
+        const {
+          data: { session: verify },
+        } = await supabase.auth.getSession();
+        debugLog(`verify session: ${verify ? `uid=${verify.user.id.slice(0, 8)}` : 'NULL!'}`);
       } catch (e) {
         debugLog(`verify err: ${String(e).slice(0, 100)}`);
       }
@@ -146,16 +156,17 @@ export async function handleOAuthCallback(
       if (error) debugLog(`exchange err final: ${error.message}`);
       else debugLog(`exchange OK`);
     } else {
-      debugLog(`no token/code in URL — hash="${parsed.hash.slice(0,80)}"`);
+      debugLog(`no token/code in URL — hash="${parsed.hash.slice(0, 80)}"`);
     }
-
   } catch (err) {
     debugLog(`callback exception: ${String(err).slice(0, 200)}`);
   } finally {
     try {
       const { Browser } = await import('@capacitor/browser');
       await Browser.close();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     // BUG FIX (8 mai 2026) : on PRÉFÈRE la navigation SPA au reload complet.
     //   `window.location.href = '/'` recharge toute la page et reset le JS
@@ -176,7 +187,7 @@ export async function handleOAuthCallback(
       // mode HybridStorage maintenant que l'utilisateur est authentifié).
       window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_AUTH_CHANGED));
     } catch (e) {
-      debugLog(`SPA-nav err, fallback hard reload: ${String(e).slice(0,80)}`);
+      debugLog(`SPA-nav err, fallback hard reload: ${String(e).slice(0, 80)}`);
       window.location.href = '/';
     }
   }

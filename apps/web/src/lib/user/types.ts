@@ -1,11 +1,6 @@
 export type UserGoal = 'lose_fat' | 'gain_muscle' | 'recomp' | 'performance';
 
-export type ActivityLevel =
-  | 'sedentary'
-  | 'light'
-  | 'moderate'
-  | 'active'
-  | 'very_active';
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
 
 export interface UserProfile {
   version: 1;
@@ -20,4 +15,3 @@ export interface UserProfile {
   activity: ActivityLevel;
   goal: UserGoal;
 }
-

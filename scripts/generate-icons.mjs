@@ -17,7 +17,7 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
-const OUT   = resolve(__dir, '../apps/web/public/icons');
+const OUT = resolve(__dir, '../apps/web/public/icons');
 
 // ─── CRC32 ────────────────────────────────────────────────────────────────────
 
@@ -25,7 +25,7 @@ const CRC_TABLE = (() => {
   const t = new Uint32Array(256);
   for (let i = 0; i < 256; i++) {
     let c = i;
-    for (let j = 0; j < 8; j++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+    for (let j = 0; j < 8; j++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
     t[i] = c;
   }
   return t;
@@ -42,8 +42,10 @@ function crc32(buf) {
 function pngChunk(type, data) {
   const t = Buffer.from(type, 'ascii');
   const d = Buffer.isBuffer(data) ? data : Buffer.from(data);
-  const len = Buffer.alloc(4); len.writeUInt32BE(d.length, 0);
-  const crcBuf = Buffer.alloc(4); crcBuf.writeUInt32BE(crc32(Buffer.concat([t, d])), 0);
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(d.length, 0);
+  const crcBuf = Buffer.alloc(4);
+  crcBuf.writeUInt32BE(crc32(Buffer.concat([t, d])), 0);
   return Buffer.concat([len, t, d, crcBuf]);
 }
 
@@ -60,7 +62,8 @@ function lerp(a, b, t) {
 
 /** Distance signée d'un point à un segment — pour dessiner des traits */
 function distToSegment(px, py, ax, ay, bx, by) {
-  const dx = bx - ax, dy = by - ay;
+  const dx = bx - ax,
+    dy = by - ay;
   const len2 = dx * dx + dy * dy;
   if (len2 === 0) return Math.hypot(px - ax, py - ay);
   const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
@@ -72,10 +75,10 @@ function distToSegment(px, py, ax, ay, bx, by) {
  * La lettre est centrée et occupe ~50% de l'icône.
  */
 function kAlpha(px, py, size) {
-  const s  = size * 0.28;   // demi-hauteur du K
+  const s = size * 0.28; // demi-hauteur du K
   const cx = size / 2;
   const cy = size / 2;
-  const thick = size * 0.065;   // épaisseur du trait
+  const thick = size * 0.065; // épaisseur du trait
 
   // Tige verticale : de (cx - s*0.32, cy - s) à (cx - s*0.32, cy + s)
   const stemX = cx - s * 0.32;
@@ -98,9 +101,9 @@ function kAlpha(px, py, size) {
 // ─── PNG generator ────────────────────────────────────────────────────────────
 
 function generateIcon(size) {
-  const BG     = [17,  24,  39 ]; // #111827
+  const BG = [17, 24, 39]; // #111827
   const PURPLE = [127, 119, 221]; // #7F77DD
-  const WHITE  = [255, 255, 255];
+  const WHITE = [255, 255, 255];
 
   // PNG raw data: filter byte per row + RGBA pixels
   const raw = [];
@@ -132,8 +135,8 @@ function generateIcon(size) {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(size, 0);
   ihdr.writeUInt32BE(size, 4);
-  ihdr[8] = 8;  // bit depth
-  ihdr[9] = 6;  // color type: RGBA
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 6; // color type: RGBA
 
   const idat = deflateSync(Buffer.from(raw), { level: 7 });
 
