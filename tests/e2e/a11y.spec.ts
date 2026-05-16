@@ -73,7 +73,11 @@ async function setupApp(page: Page, path = '/'): Promise<void> {
     },
     { timeout: 10_000 },
   );
+  // Dispatch onboarding-complete first to bypass IDB onboarding check
+  // (can hang on mobile-safari CI), then auth-ready as belt-and-suspenders.
+  // See kinetic.spec.ts gotoApp() for the full rationale.
   await page.evaluate(() => {
+    window.dispatchEvent(new CustomEvent('kinetic:onboarding-complete'));
     window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
   });
   await page.waitForFunction(

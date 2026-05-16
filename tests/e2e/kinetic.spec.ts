@@ -100,10 +100,19 @@ async function gotoApp(page: Page, path = '/'): Promise<void> {
     },
     { timeout: 10_000 },
   );
-  // Belt-and-suspenders : si le listener du router est déjà enregistré (réseau lent
-  // mais Supabase configuré), ce dispatch le déclenche. En mode guest le fallback
-  // setTimeout(0) de initRouter() prend le relais (voir router.ts).
+  // Dispatcher kinetic:onboarding-complete EN PREMIER : ce listener met
+  // `_onboardingKnown = true` dans le router (court-circuite la lecture IDB
+  // hasCompletedOnboarding) ET déclenche un render(). Sur mobile-safari CI,
+  // la lecture IDB du USER_PROFILE peut hang (timing avec la write IDB
+  // de l'étape 2 — WebKit gère mal la fermeture de connexion vs ouverture
+  // immédiate dans la nouvelle page). En court-circuitant ce check, le
+  // render() injecte directement le HTML de la route cible et le skeleton
+  // est remplacé.
+  // Puis kinetic:auth-ready comme belt-and-suspenders (déclenche le listener
+  // { once } d'initRouter s'il est déjà enregistré ; sinon le setTimeout(0)
+  // fallback prend le relais).
   await page.evaluate(() => {
+    window.dispatchEvent(new CustomEvent('kinetic:onboarding-complete'));
     window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
   });
   // Attendre que #app-outlet contienne vraiment du DOM rendu
@@ -155,9 +164,10 @@ test.describe('Kinetic App — Complétion de tâches', () => {
   test.beforeEach(async ({ page }) => {
     await gotoApp(page, '/vitalite');
     // Attendre que les boutons "+N XP" soient visibles dans le DOM.
-    // gotoApp attend maintenant que le skeleton soit remplacé par la page vitalite,
-    // mais le store vitalite doit encore lire l'IDB et Alpine doit re-render x-for.
-    // On poll directement le DOM avec un timeout généreux pour CI WebKit.
+    // gotoApp retourne dès que #app-outlet a des enfants (le skeleton initial suffit),
+    // donc le router n'a pas encore injecté le vrai contenu de la page. Le store
+    // vitalite doit ensuite lire l'IDB et Alpine doit re-render x-for. On poll
+    // directement le DOM avec un timeout généreux pour les runners CI WebKit lents.
     await page.waitForFunction(
       () => {
         const buttons = Array.from(
