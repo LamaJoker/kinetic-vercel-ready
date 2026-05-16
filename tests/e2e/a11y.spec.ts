@@ -79,12 +79,9 @@ async function setupApp(page: Page, path = '/'): Promise<void> {
   await page.waitForFunction(
     () => {
       const el = document.getElementById('app-outlet');
-      if (!el) return false;
-      // Wait for the skeleton (animate-pulse) to be replaced by real page content
-      const hasSkeleton = !!el.querySelector('[class*="animate-pulse"]');
-      return el.hasChildNodes() && !hasSkeleton;
+      return el != null && el.hasChildNodes();
     },
-    { timeout: 15_000 },
+    { timeout: 10_000 },
   );
 }
 

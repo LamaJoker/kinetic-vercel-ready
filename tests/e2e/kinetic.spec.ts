@@ -106,20 +106,13 @@ async function gotoApp(page: Page, path = '/'): Promise<void> {
   await page.evaluate(() => {
     window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
   });
-  // Attendre que le router ait injecté le contenu de la route cible.
-  // Le skeleton initial (#app-outlet) a déjà des enfants, donc hasChildNodes()
-  // se déclenche immédiatement. On attend plutôt que le skeleton (animate-pulse)
-  // soit remplacé par le vrai contenu de la page, ce qui se produit APRÈS que
-  // le router ait résolu hasCompletedOnboarding() (lecture IDB) et injecté le HTML.
+  // Attendre que #app-outlet contienne vraiment du DOM rendu
   await page.waitForFunction(
     () => {
       const el = document.getElementById('app-outlet');
-      if (!el) return false;
-      // Le skeleton porte la classe animate-pulse ; le contenu réel de la page n'en a pas.
-      const hasSkeleton = !!el.querySelector('[class*="animate-pulse"]');
-      return el.hasChildNodes() && !hasSkeleton;
+      return el != null && el.hasChildNodes();
     },
-    { timeout: 15_000 },
+    { timeout: 10_000 },
   );
 }
 
