@@ -104,6 +104,20 @@ Alpine.data('profile', profile);
 Alpine.data('authCallback', authCallback);
 Alpine.data('mensurations', mensurations);
 
+// ─── Shell de la page (body x-data) ─────────────────────────────────────────
+// Remplace x-data="{ currentPath: location.pathname }" dans index.html.
+// Le build CSP ne peut pas évaluer les globaux (location) en inline x-data ;
+// tout doit être pré-enregistré ici.
+Alpine.data('navShell', () => ({
+  currentPath: typeof window !== 'undefined' ? window.location.pathname : '/',
+  setPath(this: { currentPath: string }, path: string) {
+    this.currentPath = path;
+  },
+  isBodyPage(this: { currentPath: string }) {
+    return this.currentPath === '/bodyweight' || this.currentPath === '/mensurations';
+  },
+}));
+
 // ─── Composants inline → Alpine.data (requis par @alpinejs/csp) ─────────────
 // Ces composants remplacent les expressions x-data="{ ... }" inline dans
 // les templates HTML. Le build CSP interdit eval() / new Function() ; toute

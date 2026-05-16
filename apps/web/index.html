@@ -22,8 +22,8 @@
 
   <body
     class="h-full bg-kinetic-ink text-gray-100 antialiased"
-    x-data="{ currentPath: location.pathname }"
-    @kinetic:route-changed.window="currentPath = $event.detail.path"
+    x-data="navShell"
+    @kinetic:route-changed.window="setPath($event.detail.path)"
   >
     <!-- Skip to main content (accessibility) -->
     <a
@@ -168,15 +168,15 @@
 
         <a
           href="/bodyweight"
-          :aria-current="['/bodyweight','/mensurations'].includes(currentPath) ? 'page' : null"
+          :aria-current="isBodyPage() ? 'page' : null"
           class="relative flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-2xl transition-all min-w-0"
-          :class="['/bodyweight','/mensurations'].includes(currentPath) ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
+          :class="isBodyPage() ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
         >
           <svg
             aria-hidden="true"
             focusable="false"
             class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="['/bodyweight','/mensurations'].includes(currentPath) ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
+            :class="isBodyPage() ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -189,13 +189,9 @@
             <line x1="12" y1="12" x2="12" y2="16" />
             <line x1="10" y1="14" x2="14" y2="14" />
           </svg>
+          <span class="text-[10px]" :class="isBodyPage() ? 'font-bold' : 'font-medium'">Corps</span>
           <span
-            class="text-[10px]"
-            :class="['/bodyweight','/mensurations'].includes(currentPath) ? 'font-bold' : 'font-medium'"
-            >Corps</span
-          >
-          <span
-            x-show="['/bodyweight','/mensurations'].includes(currentPath)"
+            x-show="isBodyPage()"
             class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"
           ></span>
         </a>
