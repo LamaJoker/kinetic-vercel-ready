@@ -106,13 +106,20 @@ async function gotoApp(page: Page, path = '/'): Promise<void> {
   await page.evaluate(() => {
     window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
   });
-  // Attendre que #app-outlet contienne vraiment du DOM rendu
+  // Attendre que le router ait injecté le contenu de la route cible.
+  // Le skeleton initial (#app-outlet) a déjà des enfants, donc hasChildNodes()
+  // se déclenche immédiatement. On attend plutôt que le skeleton (animate-pulse)
+  // soit remplacé par le vrai contenu de la page, ce qui se produit APRÈS que
+  // le router ait résolu hasCompletedOnboarding() (lecture IDB) et injecté le HTML.
   await page.waitForFunction(
     () => {
       const el = document.getElementById('app-outlet');
-      return el != null && el.hasChildNodes();
+      if (!el) return false;
+      // Le skeleton porte la classe animate-pulse ; le contenu réel de la page n'en a pas.
+      const hasSkeleton = !!el.querySelector('[class*="animate-pulse"]');
+      return el.hasChildNodes() && !hasSkeleton;
     },
-    { timeout: 10_000 },
+    { timeout: 15_000 },
   );
 }
 
@@ -147,14 +154,17 @@ test.describe('Kinetic App — Navigation', () => {
 });
 
 test.describe('Kinetic App — Complétion de tâches', () => {
+  // CI WebKit (mobile-safari) est lent : gotoApp (3 navigations + IDB) peut prendre
+  // 15-20 s, et le store vitalite + le rendu Alpine x-for prennent 10-20 s de plus.
+  // On donne 90 s au beforeEach + test body pour éviter le timeout de 30 s par défaut.
+  test.describe.configure({ timeout: 90_000 });
+
   test.beforeEach(async ({ page }) => {
     await gotoApp(page, '/vitalite');
-    // Sur mobile-safari (WebKit) en CI, deux délais s'accumulent :
-    //   1) Les opérations IDB du store vitalite (2 lectures séquentielles)
-    //   2) La mise à jour DOM d'Alpine (x-for sur $store.vitalite.tasks)
-    // Vérifier le store JS ne suffit pas : Alpine peut avoir les données mais
-    // ne pas encore avoir rendu le DOM. On interroge directement le DOM avec
-    // un timeout généreux (30 s) pour les runners CI WebKit lents.
+    // Attendre que les boutons "+N XP" soient visibles dans le DOM.
+    // gotoApp attend maintenant que le skeleton soit remplacé par la page vitalite,
+    // mais le store vitalite doit encore lire l'IDB et Alpine doit re-render x-for.
+    // On poll directement le DOM avec un timeout généreux pour CI WebKit.
     await page.waitForFunction(
       () => {
         const buttons = Array.from(
@@ -162,7 +172,7 @@ test.describe('Kinetic App — Complétion de tâches', () => {
         );
         return buttons.some((btn) => /\+\d+ XP/.test(btn.textContent?.trim() ?? ''));
       },
-      { timeout: 30_000 },
+      { timeout: 60_000 },
     );
   });
 
