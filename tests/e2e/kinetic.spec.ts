@@ -100,20 +100,17 @@ async function gotoApp(page: Page, path = '/'): Promise<void> {
     },
     { timeout: 10_000 },
   );
-  // Dispatcher kinetic:onboarding-complete EN PREMIER : ce listener met
+  // Dispatcher kinetic:onboarding-complete : ce listener met
   // `_onboardingKnown = true` dans le router (court-circuite la lecture IDB
-  // hasCompletedOnboarding) ET déclenche un render(). Sur mobile-safari CI,
-  // la lecture IDB du USER_PROFILE peut hang (timing avec la write IDB
-  // de l'étape 2 — WebKit gère mal la fermeture de connexion vs ouverture
-  // immédiate dans la nouvelle page). En court-circuitant ce check, le
-  // render() injecte directement le HTML de la route cible et le skeleton
+  // hasCompletedOnboarding qui hang sur mobile-safari CI à cause d'un timing
+  // de connexion IDB après la write de l'étape 2) ET déclenche un render().
+  // Le render() injecte directement le HTML de la route cible et le skeleton
   // est remplacé.
-  // Puis kinetic:auth-ready comme belt-and-suspenders (déclenche le listener
-  // { once } d'initRouter s'il est déjà enregistré ; sinon le setTimeout(0)
-  // fallback prend le relais).
+  // On NE dispatche PAS kinetic:auth-ready en plus : sinon le listener { once }
+  // de initRouter() déclenche un SECOND render(), dont le rIC final fait
+  // host.focus() APRÈS le focus du test sur le skip-link → casse le test a11y.
   await page.evaluate(() => {
     window.dispatchEvent(new CustomEvent('kinetic:onboarding-complete'));
-    window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
   });
   // Attendre que #app-outlet contienne vraiment du DOM rendu
   await page.waitForFunction(

@@ -73,12 +73,13 @@ async function setupApp(page: Page, path = '/'): Promise<void> {
     },
     { timeout: 10_000 },
   );
-  // Dispatch onboarding-complete first to bypass IDB onboarding check
-  // (can hang on mobile-safari CI), then auth-ready as belt-and-suspenders.
+  // Dispatch onboarding-complete only — it bypasses the IDB onboarding check
+  // (hangs on mobile-safari CI) AND triggers a render(). Dispatching auth-ready
+  // in addition would cause a second render whose rIC re-focuses host AFTER
+  // the test's skipLink.focus() → breaks the Skip-link a11y test.
   // See kinetic.spec.ts gotoApp() for the full rationale.
   await page.evaluate(() => {
     window.dispatchEvent(new CustomEvent('kinetic:onboarding-complete'));
-    window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
   });
   await page.waitForFunction(
     () => {
