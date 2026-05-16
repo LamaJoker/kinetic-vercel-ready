@@ -12,10 +12,14 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 async function setupApp(page: Page, path = '/'): Promise<void> {
+  // Set test override before any app code runs. Bypasses router's IDB
+  // onboarding check. See kinetic.spec.ts gotoApp() for full rationale.
+  await page.addInitScript(() => {
+    (window as Window & { __kineticSkipOnboarding?: boolean }).__kineticSkipOnboarding = true;
+  });
+
   await page.goto('http://localhost:3000/manifest.json');
 
-  // Avoid IDB writes from test context — causes WebKit IDB connection
-  // hang on subsequent app navigation. See kinetic.spec.ts gotoApp() comment.
   await page.evaluate(() => {
     try {
       localStorage.clear();
@@ -34,14 +38,11 @@ async function setupApp(page: Page, path = '/'): Promise<void> {
     },
     { timeout: 10_000 },
   );
-  // Dispatch onboarding-complete only — it bypasses the IDB onboarding check
-  // (hangs on mobile-safari CI) AND triggers a render(). Dispatching auth-ready
-  // in addition would cause a second render whose rIC re-focuses host AFTER
-  // the test's skipLink.focus() → breaks the Skip-link a11y test.
-  // See kinetic.spec.ts gotoApp() for the full rationale.
+
   await page.evaluate(() => {
-    window.dispatchEvent(new CustomEvent('kinetic:onboarding-complete'));
+    window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
   });
+
   await page.waitForFunction(
     () => {
       const el = document.getElementById('app-outlet');

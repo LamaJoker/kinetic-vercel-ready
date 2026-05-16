@@ -28,17 +28,19 @@ async function waitForAlpineInit(page: Page): Promise<void> {
  * aucun code Alpine ne tourne et l'IDB est libre.
  */
 async function gotoApp(page: Page, path = '/'): Promise<void> {
+  // Set test override BEFORE any app code loads. This makes the router's
+  // hasCompletedOnboarding() return true synchronously without touching IDB.
+  // Avoids both (a) onboarding redirect when no profile is in IDB and (b) the
+  // WebKit IDB connection hang we observed when seeding IDB from a test
+  // context. addInitScript runs in every navigated frame before app scripts.
+  await page.addInitScript(() => {
+    (window as Window & { __kineticSkipOnboarding?: boolean }).__kineticSkipOnboarding = true;
+  });
+
   // 1. Asset statique = même origine, zéro JS d'app
   await page.goto('http://localhost:3000/manifest.json');
 
-  // 2. Clear localStorage uniquement. On NE touche PAS à l'IDB depuis ici :
-  //    sur mobile-safari (WebKit) en CI, ouvrir l'IDB depuis ce contexte de
-  //    test puis naviguer immédiatement vers l'app cause un hang persistant
-  //    de la connexion IDB côté app — toutes les lectures (vitalite.init,
-  //    hasCompletedOnboarding) restent pendantes. Le bypass de l'onboarding
-  //    se fait via le dispatch kinetic:onboarding-complete plus bas.
-  //    Vitalite : sans profil en IDB, le store tombe sur buildTasks([])
-  //    (10 tâches DEFAULT_TASKS_SPEC) → les boutons +N XP apparaissent.
+  // 2. Clear localStorage (avoid stale state between tests)
   await page.evaluate(() => {
     try {
       localStorage.clear();
@@ -52,11 +54,6 @@ async function gotoApp(page: Page, path = '/'): Promise<void> {
   await waitForAlpineInit(page);
 
   // 4. Attendre que l'auth soit terminée (loading === false).
-  //    En mode guest (pas de Supabase en CI), authStore.init() retourne
-  //    SYNCHRONEMENT pendant Alpine.start(), avant que le rAF de initRouter()
-  //    ait pu enregistrer son listener kinetic:auth-ready.
-  //    → on attend explicitement loading=false, puis on dispatche l'event
-  //    (utile si le listener est déjà en place), puis on attend le rendu.
   await page.waitForFunction(
     () => {
       const a = (window as any).Alpine;
@@ -66,19 +63,16 @@ async function gotoApp(page: Page, path = '/'): Promise<void> {
     },
     { timeout: 10_000 },
   );
-  // Dispatcher kinetic:onboarding-complete : ce listener met
-  // `_onboardingKnown = true` dans le router (court-circuite la lecture IDB
-  // hasCompletedOnboarding qui hang sur mobile-safari CI à cause d'un timing
-  // de connexion IDB après la write de l'étape 2) ET déclenche un render().
-  // Le render() injecte directement le HTML de la route cible et le skeleton
-  // est remplacé.
-  // On NE dispatche PAS kinetic:auth-ready en plus : sinon le listener { once }
-  // de initRouter() déclenche un SECOND render(), dont le rIC final fait
-  // host.focus() APRÈS le focus du test sur le skip-link → casse le test a11y.
+
+  // 5. Dispatch kinetic:auth-ready to trigger initial render. The
+  //    __kineticSkipOnboarding flag (set via addInitScript above) ensures
+  //    the router's hasCompletedOnboarding() check short-circuits regardless
+  //    of whether our event listener was registered by then.
   await page.evaluate(() => {
-    window.dispatchEvent(new CustomEvent('kinetic:onboarding-complete'));
+    window.dispatchEvent(new CustomEvent('kinetic:auth-ready'));
   });
-  // Attendre que #app-outlet contienne vraiment du DOM rendu
+
+  // 6. Attendre que #app-outlet contienne vraiment du DOM rendu
   await page.waitForFunction(
     () => {
       const el = document.getElementById('app-outlet');

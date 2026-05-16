@@ -69,6 +69,17 @@ function resolveHtml(path: string): string {
 let _onboardingKnown: boolean | null = null;
 
 async function hasCompletedOnboarding(): Promise<boolean> {
+  // E2E test override: allow tests to skip the IDB onboarding check without
+  // having to write USER_PROFILE to IDB (which causes a persistent IDB
+  // connection hang on mobile-safari/WebKit CI when set from a test context).
+  // Set via page.addInitScript() before app code runs.
+  if (
+    typeof window !== 'undefined' &&
+    (window as Window & { __kineticSkipOnboarding?: boolean }).__kineticSkipOnboarding === true
+  ) {
+    _onboardingKnown = true;
+    return true;
+  }
   if (_onboardingKnown !== null) return _onboardingKnown;
   try {
     const deps = await getDeps();
