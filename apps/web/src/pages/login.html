@@ -1,7 +1,4 @@
-<div
-  class="min-h-screen flex items-center justify-center px-4 bg-kinetic-ink"
-  x-data="{ emailMode: false }"
->
+<div class="min-h-screen flex items-center justify-center px-4 bg-kinetic-ink" x-data="loginPage">
   <div class="w-full max-w-sm">
     <!-- Logo area -->
     <div class="text-center mb-10">
@@ -140,7 +137,7 @@
     <!-- localStorage est wrappé : iOS privé / quota plein lèvent une exception
          et casseraient toute la page de login si accédé sans garde -->
     <div
-      x-data="{ log: (() => { try { return localStorage.getItem('kinetic:auth-debug') ?? ''; } catch { return ''; } })(), show: false }"
+      x-data="authDebugPanel"
       x-show="log"
       class="mt-6 p-3 bg-black/40 border border-white/10 rounded-xl text-[10px] font-mono text-gray-400"
     >
@@ -148,29 +145,14 @@
         <button @click="show = !show" class="text-kinetic-neon underline">
           <span x-text="show ? 'Masquer' : 'Voir log auth'"></span>
         </button>
-        <button
-          @click="try { localStorage.removeItem('kinetic:auth-debug') } catch(e){}; log = ''"
-          class="text-red-400 underline"
-        >
-          Effacer
-        </button>
+        <button @click="clearLog()" class="text-red-400 underline">Effacer</button>
       </div>
       <pre x-show="show" x-text="log" class="whitespace-pre-wrap mt-2 break-all"></pre>
     </div>
 
     <!-- Diagnostic config auth (toujours visible) -->
     <div
-      x-data="{
-           show: false,
-           origin: window.location.origin,
-           href: window.location.href,
-           callbackUrl: '',
-           supabaseUrl: '',
-         }"
-      x-init="
-           callbackUrl = $store.auth?._diagCallbackUrl?.() || '(non disponible)';
-           supabaseUrl = ($store.auth?._diagSupabaseUrl?.()) || '(non configuré)';
-         "
+      x-data="authDiagPanel"
       class="mt-4 p-3 bg-kinetic-surface/50 border border-white/5 rounded-xl text-[10px] font-mono text-gray-500"
     >
       <button @click="show = !show" class="text-gray-400 hover:text-white underline">

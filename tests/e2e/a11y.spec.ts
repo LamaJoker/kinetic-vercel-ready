@@ -133,6 +133,36 @@ test.describe('A11y — Smoke (axe-core)', () => {
     await runAxe(page, 'profile');
   });
 
+  test('Séances /seances', async ({ page }) => {
+    await setupApp(page, '/seances');
+    await runAxe(page, 'seances');
+  });
+
+  test('Poids corporel /bodyweight', async ({ page }) => {
+    await setupApp(page, '/bodyweight');
+    await runAxe(page, 'bodyweight');
+  });
+
+  test('Mensurations /mensurations', async ({ page }) => {
+    await setupApp(page, '/mensurations');
+    await runAxe(page, 'mensurations');
+  });
+
+  test('Nutrition /nutrition', async ({ page }) => {
+    await setupApp(page, '/nutrition');
+    await runAxe(page, 'nutrition');
+  });
+
+  test('Programme /program', async ({ page }) => {
+    await setupApp(page, '/program');
+    await runAxe(page, 'program');
+  });
+
+  test('Progression /progression', async ({ page }) => {
+    await setupApp(page, '/progression');
+    await runAxe(page, 'progression');
+  });
+
   test('Skip-link visible au focus', async ({ page }) => {
     await setupApp(page, '/');
     // Tab → le skip-link doit prendre le focus en premier

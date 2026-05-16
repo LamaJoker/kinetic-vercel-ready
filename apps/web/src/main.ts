@@ -104,6 +104,79 @@ Alpine.data('profile', profile);
 Alpine.data('authCallback', authCallback);
 Alpine.data('mensurations', mensurations);
 
+// ─── Composants inline → Alpine.data (requis par @alpinejs/csp) ─────────────
+// Ces composants remplacent les expressions x-data="{ ... }" inline dans
+// les templates HTML. Le build CSP interdit eval() / new Function() ; toute
+// logique JS doit être pré-enregistrée ici.
+
+Alpine.data('loginPage', () => ({
+  emailMode: false,
+}));
+
+Alpine.data('authDebugPanel', () => {
+  let log = '';
+  try {
+    log = localStorage.getItem(STORAGE_KEYS.AUTH_DEBUG) ?? '';
+  } catch {
+    /* localStorage indisponible (iOS privé) */
+  }
+  return {
+    log,
+    show: false,
+    clearLog(this: { log: string }) {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.AUTH_DEBUG);
+      } catch {
+        /* ignore */
+      }
+      this.log = '';
+    },
+  };
+});
+
+Alpine.data('authDiagPanel', () => ({
+  show: false,
+  origin: '',
+  href: '',
+  callbackUrl: '' as string,
+  supabaseUrl: '' as string,
+  init(this: Record<string, unknown>) {
+    if (typeof window !== 'undefined') {
+      (this as { origin: string }).origin = window.location.origin;
+      (this as { href: string }).href = window.location.href;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const auth = (this as any).$store?.auth;
+    (this as { callbackUrl: string }).callbackUrl =
+      auth?._diagCallbackUrl?.() ?? '(non disponible)';
+    (this as { supabaseUrl: string }).supabaseUrl = auth?._diagSupabaseUrl?.() ?? '(non configuré)';
+  },
+}));
+
+Alpine.data('levelUpOverlay', () => ({
+  show: false,
+  level: 0,
+  title: '',
+  _timer: null as ReturnType<typeof setTimeout> | null,
+  init(this: {
+    show: boolean;
+    level: number;
+    title: string;
+    _timer: ReturnType<typeof setTimeout> | null;
+  }) {
+    window.addEventListener(STORAGE_KEYS.EVENT_LEVELUP, (e) => {
+      const detail = (e as CustomEvent<{ level: number; title: string }>).detail;
+      this.level = detail.level;
+      this.title = detail.title;
+      this.show = true;
+      if (this._timer !== null) clearTimeout(this._timer);
+      this._timer = setTimeout(() => {
+        this.show = false;
+      }, 4500);
+    });
+  },
+}));
+
 // ─── Service Worker (prod) ───────────────────────────────────
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {

@@ -344,8 +344,7 @@
 
 <!-- Level-up overlay -->
 <div
-  x-data="{ show: false, level: 0, title: '' }"
-  @kinetic:levelup.window="level = $event.detail.level; title = $event.detail.title; show = true; setTimeout(() => show = false, 4500)"
+  x-data="levelUpOverlay"
   x-show="show"
   x-transition:enter="transition ease-out duration-300"
   x-transition:enter-start="opacity-0 scale-90"

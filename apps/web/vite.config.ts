@@ -1,4 +1,4 @@
-import { defineConfig, splitVendorChunkPlugin, type Plugin } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import { resolve } from 'path';
 import { readFileSync, writeFileSync } from 'fs';
 
@@ -25,10 +25,13 @@ function injectSwVersion(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [splitVendorChunkPlugin(), injectSwVersion()],
+  plugins: [injectSwVersion()],
 
   resolve: {
     alias: {
+      // Use the CSP-safe Alpine build at runtime (removes 'unsafe-eval' from CSP).
+      // TypeScript still resolves types from 'alpinejs' (kept in devDependencies).
+      alpinejs: '@alpinejs/csp',
       '@kinetic/core': resolve(__dirname, '../../packages/core/src/index.ts'),
       '@kinetic/adapters-web': resolve(__dirname, '../../packages/adapter-web/src/index.ts'),
     },
@@ -51,7 +54,7 @@ export default defineConfig({
         manualChunks(id) {
           // Vendors séparés pour caching long
           if (id.includes('node_modules')) {
-            if (id.includes('alpinejs')) return 'alpine';
+            if (id.includes('alpinejs') || id.includes('@alpinejs')) return 'alpine';
             if (id.includes('@supabase/supabase-js')) return 'supabase';
             if (id.includes('idb-keyval')) return 'idb';
             if (id.includes('@capacitor')) return 'capacitor';
@@ -84,7 +87,7 @@ export default defineConfig({
   },
 
   optimizeDeps: {
-    include: ['alpinejs', 'idb-keyval'],
+    include: ['@alpinejs/csp', 'idb-keyval'],
   },
 
   esbuild: {
