@@ -133,11 +133,22 @@ export function vitaliteStore() {
     ],
 
     async init(): Promise<void> {
+      // Helper: race a storage read against a timeout so a hung IDB connection
+      // doesn't block the UI indefinitely. We observed WebKit (mobile-safari)
+      // CI sporadically leaving IDB reads pending for >90 s. With this fallback
+      // the store renders default tasks after 3 s, keeping the page usable.
+      const withTimeout = <T>(p: Promise<T>): Promise<T | null> =>
+        Promise.race([
+          p.then((v) => v ?? null),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+        ]);
       try {
         const deps = await getDeps();
         const today = todayIso();
-        this.customSpecs = (await deps.storage.get<CustomTaskSpec[]>(KEY_CUSTOM_TASKS)) ?? [];
-        const doneIds = (await deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(today))) ?? [];
+        this.customSpecs =
+          (await withTimeout(deps.storage.get<CustomTaskSpec[]>(KEY_CUSTOM_TASKS))) ?? [];
+        const doneIds =
+          (await withTimeout(deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(today)))) ?? [];
         this.tasks = buildTasks(this.customSpecs).map((task) =>
           doneIds.includes(task.id)
             ? { ...task, done: true, completedAt: today, completionCount: 1 }
