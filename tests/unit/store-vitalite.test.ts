@@ -299,15 +299,26 @@ describe('vitaliteStore.hideTask / unhideTask', () => {
     expect(store.tasks.some((t) => t.id === 'morning-stretch')).toBe(true);
   });
 
-  it('hiddenSpecs returns full specs of currently hidden default tasks', async () => {
+  it('hiddenSpecsList contains full specs of currently hidden default tasks', async () => {
     const store = vitaliteStore();
     await store.init();
     await store.hideTask('morning-stretch');
     await store.hideTask('cold-shower');
-    const specs = store.hiddenSpecs();
+    const specs = store.hiddenSpecsList;
     expect(specs).toHaveLength(2);
     expect(specs.map((s) => s.id).sort()).toEqual(['cold-shower', 'morning-stretch']);
     expect(specs.find((s) => s.id === 'morning-stretch')?.icon).toBe('🧘');
     expect(specs.find((s) => s.id === 'morning-stretch')?.xp).toBeGreaterThan(0);
+  });
+
+  it('hiddenSpecsList shrinks when a task is unhidden', async () => {
+    const store = vitaliteStore();
+    await store.init();
+    await store.hideTask('morning-stretch');
+    await store.hideTask('cold-shower');
+    expect(store.hiddenSpecsList).toHaveLength(2);
+    await store.unhideTask('morning-stretch');
+    expect(store.hiddenSpecsList).toHaveLength(1);
+    expect(store.hiddenSpecsList[0]?.id).toBe('cold-shower');
   });
 });

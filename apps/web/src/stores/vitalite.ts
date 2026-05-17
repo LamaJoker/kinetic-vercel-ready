@@ -117,6 +117,10 @@ export function vitaliteStore() {
     // Les tâches custom ne sont JAMAIS dans cette liste (elles sont supprimées
     // via deleteCustomTask). Persisté dans IDB sous KEY_HIDDEN_TASKS.
     hiddenIds: [] as string[],
+    // Pré-calculé à chaque mutation de hiddenIds. Évite un appel de méthode
+    // dans le x-for du panel "Masquées" — Alpine CSP préfère les properties
+    // directes plutôt que les invocations dans les expressions de boucle.
+    hiddenSpecsList: [] as { id: string; title: string; icon: string; xp: number }[],
     showHidden: false,
 
     emojiSuggestions: [
@@ -160,6 +164,7 @@ export function vitaliteStore() {
         const doneIds =
           (await withTimeout(deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(today)))) ?? [];
         this.hiddenIds = (await withTimeout(deps.storage.get<string[]>(KEY_HIDDEN_TASKS))) ?? [];
+        this._recomputeHiddenSpecsList();
         this.tasks = buildTasks(this.customSpecs)
           .filter((task) => !this.hiddenIds.includes(task.id))
           .map((task) =>
@@ -403,11 +408,13 @@ export function vitaliteStore() {
         this.hiddenIds = [...this.hiddenIds, id];
         await deps.storage.set(KEY_HIDDEN_TASKS, this.hiddenIds);
         this.tasks = this.tasks.filter((task) => task.id !== id);
+        this._recomputeHiddenSpecsList();
         notify('info', 'Tache masquee');
       } catch (err) {
         console.error('[vitalite] hideTask failed:', err);
         // Rollback in-memory state to match persisted state
         this.hiddenIds = this.hiddenIds.filter((entry) => entry !== id);
+        this._recomputeHiddenSpecsList();
         notify('error', 'Impossible de masquer la tache.');
       }
     },
@@ -433,6 +440,7 @@ export function vitaliteStore() {
               ? { ...task, done: true, completedAt: today, completionCount: 1 }
               : task,
           );
+        this._recomputeHiddenSpecsList();
         notify('success', 'Tache restauree');
       } catch (err) {
         console.error('[vitalite] unhideTask failed:', err);
@@ -441,11 +449,13 @@ export function vitaliteStore() {
     },
 
     /**
-     * Renvoie les specs des tâches par défaut actuellement masquées,
-     * pour les afficher dans le panel "Masquées" (titre + icône + xp).
+     * Met à jour la liste pré-calculée des tâches masquées (avec leurs specs
+     * complètes) pour le panel UI. À appeler après toute mutation de hiddenIds.
      */
-    hiddenSpecs(): { id: string; title: string; icon: string; xp: number }[] {
-      return DEFAULT_TASKS_SPEC.filter((spec) => this.hiddenIds.includes(spec.id)).map((spec) => ({
+    _recomputeHiddenSpecsList(): void {
+      this.hiddenSpecsList = DEFAULT_TASKS_SPEC.filter((spec) =>
+        this.hiddenIds.includes(spec.id),
+      ).map((spec) => ({
         id: spec.id,
         title: spec.title,
         icon: spec.icon,

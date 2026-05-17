@@ -105,7 +105,7 @@
       Tape "Restaurer" pour les remettre dans ta liste du jour.
     </p>
     <div class="space-y-2">
-      <template x-for="spec in $store.vitalite.hiddenSpecs()" :key="spec.id">
+      <template x-for="spec in $store.vitalite.hiddenSpecsList" :key="spec.id">
         <div
           class="flex items-center gap-3 p-3 rounded-xl bg-kinetic-elevated/60 ring-1 ring-white/5"
         >
@@ -168,7 +168,6 @@
         id="vit-new-title"
         type="text"
         x-model="$store.vitalite.newTaskTitle"
-        @keydown.enter.prevent="$store.vitalite.addCustomTask()"
         placeholder="Ex: Faire 10 pompes"
         maxlength="60"
         autocomplete="off"
