@@ -35,6 +35,8 @@ export const STORAGE_KEYS = {
   VITALITE_TASKS: 'kinetic:vitalite:tasks' as const,
   // Tâches personnalisées créées par l'utilisateur
   VITALITE_CUSTOM_TASKS: 'kinetic:vitalite:custom-tasks' as const,
+  // IDs des tâches par défaut masquées par l'utilisateur (réversible)
+  VITALITE_HIDDEN_TASKS: 'kinetic:vitalite:hiddenIds' as const,
 
   // ─── Nutrition ────────────────────────────────────────────────
   NUTRITION_LOG: (date: string) => `kinetic:nutrition:log:${date}` as const,

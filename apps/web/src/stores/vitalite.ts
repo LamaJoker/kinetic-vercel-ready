@@ -46,6 +46,7 @@ export interface HistoryDay {
 }
 
 const KEY_CUSTOM_TASKS = STORAGE_KEYS.VITALITE_CUSTOM_TASKS;
+const KEY_HIDDEN_TASKS = STORAGE_KEYS.VITALITE_HIDDEN_TASKS;
 
 function todayIso(): string {
   const d = new Date();
@@ -86,6 +87,9 @@ function buildTasks(customSpecs: CustomTaskSpec[]): Task[] {
 }
 
 function notify(kind: 'success' | 'error' | 'warning' | 'info', message: string): void {
+  // Defensive: notifications are UI-only side effects. In non-browser contexts
+  // (node tests, SSR), silently skip rather than throwing on missing `window`.
+  if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
 }
 
@@ -108,6 +112,12 @@ export function vitaliteStore() {
     historyDays: [] as HistoryDay[],
     historyLoading: false,
     detailDay: null as HistoryDay | null,
+
+    // Liste des IDs de tâches par défaut que l'utilisateur a choisi de masquer.
+    // Les tâches custom ne sont JAMAIS dans cette liste (elles sont supprimées
+    // via deleteCustomTask). Persisté dans IDB sous KEY_HIDDEN_TASKS.
+    hiddenIds: [] as string[],
+    showHidden: false,
 
     emojiSuggestions: [
       '⭐',
@@ -149,11 +159,14 @@ export function vitaliteStore() {
           (await withTimeout(deps.storage.get<CustomTaskSpec[]>(KEY_CUSTOM_TASKS))) ?? [];
         const doneIds =
           (await withTimeout(deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(today)))) ?? [];
-        this.tasks = buildTasks(this.customSpecs).map((task) =>
-          doneIds.includes(task.id)
-            ? { ...task, done: true, completedAt: today, completionCount: 1 }
-            : task,
-        );
+        this.hiddenIds = (await withTimeout(deps.storage.get<string[]>(KEY_HIDDEN_TASKS))) ?? [];
+        this.tasks = buildTasks(this.customSpecs)
+          .filter((task) => !this.hiddenIds.includes(task.id))
+          .map((task) =>
+            doneIds.includes(task.id)
+              ? { ...task, done: true, completedAt: today, completionCount: 1 }
+              : task,
+          );
       } catch (err) {
         console.error('[vitalite] init failed:', err);
         this.tasks = buildTasks([]);
@@ -373,6 +386,71 @@ export function vitaliteStore() {
 
     isCustom(id: string): boolean {
       return this.customSpecs.some((entry) => entry.id === id);
+    },
+
+    /**
+     * Masque une tâche par défaut. Les tâches custom doivent être supprimées
+     * via deleteCustomTask (action irréversible) ; les défauts sont masquables
+     * (réversible via unhideTask). Retire la tâche de this.tasks immédiatement
+     * et persiste hiddenIds en IDB.
+     */
+    async hideTask(id: string): Promise<void> {
+      // Sécurité : refuser de masquer une tâche custom (devrait passer par delete)
+      if (this.isCustom(id)) return;
+      if (this.hiddenIds.includes(id)) return;
+      try {
+        const deps = await getDeps();
+        this.hiddenIds = [...this.hiddenIds, id];
+        await deps.storage.set(KEY_HIDDEN_TASKS, this.hiddenIds);
+        this.tasks = this.tasks.filter((task) => task.id !== id);
+        notify('info', 'Tache masquee');
+      } catch (err) {
+        console.error('[vitalite] hideTask failed:', err);
+        // Rollback in-memory state to match persisted state
+        this.hiddenIds = this.hiddenIds.filter((entry) => entry !== id);
+        notify('error', 'Impossible de masquer la tache.');
+      }
+    },
+
+    /**
+     * Restaure une tâche par défaut précédemment masquée. La remet dans
+     * this.tasks à sa position d'origine (selon DEFAULT_TASKS_SPEC) et
+     * recharge son état done depuis IDB.
+     */
+    async unhideTask(id: string): Promise<void> {
+      if (!this.hiddenIds.includes(id)) return;
+      try {
+        const deps = await getDeps();
+        this.hiddenIds = this.hiddenIds.filter((entry) => entry !== id);
+        await deps.storage.set(KEY_HIDDEN_TASKS, this.hiddenIds);
+        const today = todayIso();
+        const doneIds = (await deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(today))) ?? [];
+        // Rebuild tasks list to insert the restored task at its canonical position
+        this.tasks = buildTasks(this.customSpecs)
+          .filter((task) => !this.hiddenIds.includes(task.id))
+          .map((task) =>
+            doneIds.includes(task.id)
+              ? { ...task, done: true, completedAt: today, completionCount: 1 }
+              : task,
+          );
+        notify('success', 'Tache restauree');
+      } catch (err) {
+        console.error('[vitalite] unhideTask failed:', err);
+        notify('error', 'Impossible de restaurer la tache.');
+      }
+    },
+
+    /**
+     * Renvoie les specs des tâches par défaut actuellement masquées,
+     * pour les afficher dans le panel "Masquées" (titre + icône + xp).
+     */
+    hiddenSpecs(): { id: string; title: string; icon: string; xp: number }[] {
+      return DEFAULT_TASKS_SPEC.filter((spec) => this.hiddenIds.includes(spec.id)).map((spec) => ({
+        id: spec.id,
+        title: spec.title,
+        icon: spec.icon,
+        xp: spec.xp,
+      }));
     },
 
     async loadHistory(): Promise<void> {

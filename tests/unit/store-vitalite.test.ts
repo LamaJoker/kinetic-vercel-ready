@@ -206,3 +206,108 @@ describe('vitaliteStore computed getters', () => {
     expect(store.completingId).toBeNull();
   });
 });
+
+describe('vitaliteStore.hideTask / unhideTask', () => {
+  let storage: InMemoryStorage;
+
+  beforeEach(() => {
+    storage = new InMemoryStorage();
+    vi.mocked(getDeps).mockResolvedValue(makeMockDeps({ storage }) as any);
+  });
+
+  afterEach(() => vi.clearAllMocks());
+
+  it('hideTask removes a default task from the active list and persists hiddenIds', async () => {
+    const store = vitaliteStore();
+    await store.init();
+    const initialCount = store.tasks.length;
+    expect(store.tasks.some((t) => t.id === 'morning-stretch')).toBe(true);
+
+    await store.hideTask('morning-stretch');
+
+    expect(store.tasks.some((t) => t.id === 'morning-stretch')).toBe(false);
+    expect(store.tasks.length).toBe(initialCount - 1);
+    expect(store.hiddenIds).toContain('morning-stretch');
+    const persisted = await storage.get<string[]>('kinetic:vitalite:hiddenIds');
+    expect(persisted).toEqual(['morning-stretch']);
+  });
+
+  it('hideTask refuses to hide a custom task (use deleteCustomTask instead)', async () => {
+    const customSpecs = [
+      { id: 'custom-1', title: 'My task', icon: '🎯', xp: 60, priority: 'high' as const },
+    ];
+    await storage.set('kinetic:vitalite:custom-tasks', customSpecs);
+    const store = vitaliteStore();
+    await store.init();
+    expect(store.tasks.some((t) => t.id === 'custom-1')).toBe(true);
+
+    await store.hideTask('custom-1');
+
+    // Custom tâche reste visible, hiddenIds inchangé
+    expect(store.tasks.some((t) => t.id === 'custom-1')).toBe(true);
+    expect(store.hiddenIds).not.toContain('custom-1');
+  });
+
+  it('hideTask is idempotent (hiding twice is a no-op)', async () => {
+    const store = vitaliteStore();
+    await store.init();
+    await store.hideTask('morning-stretch');
+    await store.hideTask('morning-stretch');
+    expect(store.hiddenIds.filter((id) => id === 'morning-stretch')).toHaveLength(1);
+  });
+
+  it('init() filters out previously hidden default tasks', async () => {
+    await storage.set('kinetic:vitalite:hiddenIds', ['morning-stretch', 'cold-shower']);
+    const store = vitaliteStore();
+    await store.init();
+    expect(store.tasks.some((t) => t.id === 'morning-stretch')).toBe(false);
+    expect(store.tasks.some((t) => t.id === 'cold-shower')).toBe(false);
+    expect(store.hiddenIds).toEqual(['morning-stretch', 'cold-shower']);
+  });
+
+  it('unhideTask restores a previously hidden task and persists', async () => {
+    const store = vitaliteStore();
+    await store.init();
+    await store.hideTask('morning-stretch');
+    expect(store.tasks.some((t) => t.id === 'morning-stretch')).toBe(false);
+
+    await store.unhideTask('morning-stretch');
+
+    expect(store.tasks.some((t) => t.id === 'morning-stretch')).toBe(true);
+    expect(store.hiddenIds).not.toContain('morning-stretch');
+    const persisted = await storage.get<string[]>('kinetic:vitalite:hiddenIds');
+    expect(persisted).toEqual([]);
+  });
+
+  it('unhideTask preserves the done state of the restored task', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    await storage.set(`kinetic:vitalite:done:${today}`, ['morning-stretch']);
+    const store = vitaliteStore();
+    await store.init();
+    // Tâche cochée, on la masque puis on la restaure
+    await store.hideTask('morning-stretch');
+    await store.unhideTask('morning-stretch');
+    const restored = store.tasks.find((t) => t.id === 'morning-stretch');
+    expect(restored?.done).toBe(true);
+  });
+
+  it('unhideTask is a no-op when the task is not hidden', async () => {
+    const store = vitaliteStore();
+    await store.init();
+    await store.unhideTask('morning-stretch'); // pas masquée
+    expect(store.hiddenIds).toHaveLength(0);
+    expect(store.tasks.some((t) => t.id === 'morning-stretch')).toBe(true);
+  });
+
+  it('hiddenSpecs returns full specs of currently hidden default tasks', async () => {
+    const store = vitaliteStore();
+    await store.init();
+    await store.hideTask('morning-stretch');
+    await store.hideTask('cold-shower');
+    const specs = store.hiddenSpecs();
+    expect(specs).toHaveLength(2);
+    expect(specs.map((s) => s.id).sort()).toEqual(['cold-shower', 'morning-stretch']);
+    expect(specs.find((s) => s.id === 'morning-stretch')?.icon).toBe('🧘');
+    expect(specs.find((s) => s.id === 'morning-stretch')?.xp).toBeGreaterThan(0);
+  });
+});

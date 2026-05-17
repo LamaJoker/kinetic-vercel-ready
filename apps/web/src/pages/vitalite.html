@@ -60,18 +60,69 @@
   <div class="flex gap-2 mb-4">
     <button
       @click="$store.vitalite.showAddForm = !$store.vitalite.showAddForm"
-      class="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-kinetic-surface ring-1 ring-white/10 text-sm text-gray-300 hover:text-white hover:bg-kinetic-elevated transition-colors"
+      aria-label="Ajouter une tâche personnalisée"
+      class="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-kinetic-neon/15 ring-1 ring-kinetic-neon/40 text-sm font-semibold text-kinetic-neon hover:bg-kinetic-neon/25 hover:ring-kinetic-neon/60 active:scale-[0.98] transition-all"
     >
-      <span class="text-base">＋</span>
-      <span>Ajouter une tâche</span>
+      <span class="text-base font-black">＋</span>
+      <span>Ajouter</span>
+    </button>
+    <button
+      x-show="$store.vitalite.hiddenIds.length > 0"
+      @click="$store.vitalite.showHidden = !$store.vitalite.showHidden"
+      :aria-label="'Voir les ' + $store.vitalite.hiddenIds.length + ' tâches masquées'"
+      class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-kinetic-surface ring-1 ring-white/10 text-sm text-gray-300 hover:text-white hover:bg-kinetic-elevated transition-colors"
+    >
+      <span>🙈</span>
+      <span x-text="$store.vitalite.hiddenIds.length"></span>
     </button>
     <button
       @click="$store.vitalite.toggleHistory()"
+      aria-label="Voir l'historique des 7 derniers jours"
       class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-kinetic-surface ring-1 ring-white/10 text-sm text-gray-300 hover:text-white hover:bg-kinetic-elevated transition-colors"
     >
       <span>📅</span>
       <span>Historique</span>
     </button>
+  </div>
+
+  <!-- ── Tâches masquées (collapse) ─────────────────────────────────────────── -->
+  <div
+    x-show="$store.vitalite.showHidden && $store.vitalite.hiddenIds.length > 0"
+    x-transition
+    class="bg-kinetic-surface ring-1 ring-white/10 rounded-2xl p-4 mb-4"
+  >
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold text-white">Tâches masquées</h2>
+      <button
+        @click="$store.vitalite.showHidden = false"
+        class="text-xs text-gray-400 hover:text-white"
+        aria-label="Fermer le panel des tâches masquées"
+      >
+        Fermer
+      </button>
+    </div>
+    <p class="text-xs text-gray-500 mb-3">
+      Tape "Restaurer" pour les remettre dans ta liste du jour.
+    </p>
+    <div class="space-y-2">
+      <template x-for="spec in $store.vitalite.hiddenSpecs()" :key="spec.id">
+        <div
+          class="flex items-center gap-3 p-3 rounded-xl bg-kinetic-elevated/60 ring-1 ring-white/5"
+        >
+          <span class="text-xl flex-shrink-0" x-text="spec.icon"></span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-300 truncate" x-text="spec.title"></p>
+            <p class="text-xs text-gray-500">+<span x-text="spec.xp"></span> XP</p>
+          </div>
+          <button
+            @click="$store.vitalite.unhideTask(spec.id)"
+            class="text-xs px-3 py-1.5 rounded-lg bg-kinetic-neon/15 ring-1 ring-kinetic-neon/40 text-kinetic-neon font-semibold hover:bg-kinetic-neon/25 transition-colors flex-shrink-0"
+          >
+            ↺ Restaurer
+          </button>
+        </div>
+      </template>
+    </div>
   </div>
 
   <!-- ── Formulaire tâche personnalisée ────────────────────────────────────── -->
@@ -110,19 +161,23 @@
 
     <!-- Titre -->
     <div class="mb-3">
-      <label class="text-xs text-gray-500 mb-1 block"
+      <label for="vit-new-title" class="text-xs text-gray-500 mb-1 block"
         >Titre <span class="text-kinetic-electric">*</span></label
       >
       <input
+        id="vit-new-title"
         type="text"
         x-model="$store.vitalite.newTaskTitle"
+        @keydown.enter.prevent="$store.vitalite.addCustomTask()"
         placeholder="Ex: Faire 10 pompes"
         maxlength="60"
-        class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-white text-sm"
+        autocomplete="off"
+        class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:border-kinetic-neon/60 focus:outline-none transition-colors"
       />
       <p
         x-show="$store.vitalite.addFormError"
         class="text-xs text-kinetic-electric mt-1"
+        role="alert"
         x-text="$store.vitalite.addFormError"
       ></p>
     </div>
@@ -334,28 +389,37 @@
           ></div>
         </button>
 
-        <!-- Boutons secondaires : Annuler (si cochée) + Supprimer (si custom) -->
-        <div
-          class="absolute right-2 -bottom-2.5 flex gap-1"
-          x-show="task.done || $store.vitalite.isCustom(task.id)"
-        >
-          <!-- Annuler (undo) -->
+        <!-- Boutons secondaires : Annuler (cochée) / Supprimer (custom) / Masquer (défaut) -->
+        <div class="absolute right-2 -bottom-2.5 flex gap-1">
+          <!-- Annuler (undo) — quand la tâche est cochée -->
           <button
             x-show="task.done && !$store.vitalite.isLocked(task.id)"
             @click.stop="$store.vitalite.undo(task.id)"
             title="Annuler cette tâche"
+            aria-label="Annuler la complétion de cette tâche"
             class="text-[10px] px-2 py-0.5 rounded-full bg-kinetic-ink ring-1 ring-white/10 text-gray-400 hover:text-kinetic-electric hover:ring-kinetic-electric/40 transition-colors"
           >
             ↩ Annuler
           </button>
-          <!-- Supprimer (custom seulement) -->
+          <!-- Supprimer (custom seulement, irréversible) -->
           <button
             x-show="$store.vitalite.isCustom(task.id)"
             @click.stop="$store.vitalite.deleteCustomTask(task.id)"
-            title="Supprimer cette tâche"
+            title="Supprimer cette tâche personnalisée"
+            aria-label="Supprimer cette tâche personnalisée"
             class="text-[10px] px-2 py-0.5 rounded-full bg-kinetic-ink ring-1 ring-white/10 text-gray-400 hover:text-kinetic-electric hover:ring-kinetic-electric/40 transition-colors"
           >
             ✕ Suppr.
+          </button>
+          <!-- Masquer (défaut seulement, réversible via panel "Masquées") -->
+          <button
+            x-show="!task.done && !$store.vitalite.isCustom(task.id)"
+            @click.stop="$store.vitalite.hideTask(task.id)"
+            title="Masquer cette tâche (réversible)"
+            aria-label="Masquer cette tâche par défaut"
+            class="text-[10px] px-2 py-0.5 rounded-full bg-kinetic-ink ring-1 ring-white/10 text-gray-400 hover:text-white hover:ring-white/30 transition-colors"
+          >
+            🙈 Masquer
           </button>
         </div>
       </div>
