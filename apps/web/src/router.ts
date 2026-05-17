@@ -230,7 +230,11 @@ export function initRouter(): void {
   setTimeout(() => {
     if (_authReadyReceived) return; // listener déjà consommé, render en cours
     const appOutlet = document.getElementById('app-outlet');
-    if (appOutlet && appOutlet.hasChildNodes()) return; // déjà rendu
+    // Le skeleton initial dans index.html occupe #app-outlet (donc hasChildNodes()
+    // est true) mais N'A PAS d'éléments [x-data] — seules les pages rendues par le
+    // router en ont. Tester `[x-data]` distingue fiablement "skeleton seul" de
+    // "router a déjà rendu", peu importe que la page ait ses propres animate-pulse.
+    if (appOutlet && appOutlet.querySelector('[x-data]')) return; // déjà rendu
     type WindowWithAlpine = Window & { Alpine?: { store?: (name: string) => unknown } };
     const auth = (window as WindowWithAlpine).Alpine?.store?.('auth') as
       | { loading?: boolean }
