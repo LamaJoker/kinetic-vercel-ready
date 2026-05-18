@@ -122,22 +122,22 @@ export function nutritionStore() {
         // Mutation via spread, sans push() sur le proxy Alpine — évite que
         // IDB voie un Proxy non-clonable (DataCloneError sur Safari/Firefox).
         const existing = this.todayLog.find((m) => m.mealName === mealName);
-        if (existing) {
-          this.todayLog = this.todayLog.map((m) =>
-            m.mealName !== mealName ? m : { ...m, items: [...m.items, { food, grams }] },
-          );
-        } else {
-          this.todayLog = [
-            ...this.todayLog,
-            {
-              id: crypto.randomUUID(),
-              mealName,
-              items: [{ food, grams }],
-              loggedAt: new Date().toISOString(),
-            },
-          ];
-        }
-        await deps.storage.set(KEY_LOG(today), this.todayLog);
+        const nextLog = existing
+          ? this.todayLog.map((m) =>
+              m.mealName !== mealName ? m : { ...m, items: [...m.items, { food, grams }] },
+            )
+          : [
+              ...this.todayLog,
+              {
+                id: crypto.randomUUID(),
+                mealName,
+                items: [{ food, grams }],
+                loggedAt: new Date().toISOString(),
+              },
+            ];
+        await deps.storage.set(KEY_LOG(today), nextLog);
+        // Mutate in-memory only after storage succeeds to keep state consistent
+        this.todayLog = nextLog;
       } catch (err) {
         console.error('[nutrition] addMealItem failed:', err);
         window.dispatchEvent(
@@ -154,10 +154,12 @@ export function nutritionStore() {
       try {
         const deps = await getDeps();
         const today = todayIso();
-        this.todayLog = this.todayLog.map((m) =>
+        const nextLog = this.todayLog.map((m) =>
           m.mealName !== mealName ? m : { ...m, items: m.items.filter((_, i) => i !== idx) },
         );
-        await deps.storage.set(KEY_LOG(today), this.todayLog);
+        await deps.storage.set(KEY_LOG(today), nextLog);
+        // Mutate in-memory only after storage succeeds
+        this.todayLog = nextLog;
       } catch (err) {
         console.error('[nutrition] removeMealItem failed:', err);
         window.dispatchEvent(
