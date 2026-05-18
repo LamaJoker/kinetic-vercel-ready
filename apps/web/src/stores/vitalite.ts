@@ -341,7 +341,7 @@ export function vitaliteStore() {
       }
 
       const spec: CustomTaskSpec = {
-        id: `custom-${Date.now()}`,
+        id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         title,
         icon: this.newTaskIcon || '⭐',
         xp: Math.max(10, Math.min(200, Number(this.newTaskXp) || 40)),
@@ -350,8 +350,10 @@ export function vitaliteStore() {
 
       try {
         const deps = await getDeps();
-        this.customSpecs = [...this.customSpecs, spec];
-        await deps.storage.set(KEY_CUSTOM_TASKS, this.customSpecs);
+        const updatedSpecs = [...this.customSpecs, spec];
+        await deps.storage.set(KEY_CUSTOM_TASKS, updatedSpecs);
+        // Mutate in-memory only after storage succeeds to keep state consistent
+        this.customSpecs = updatedSpecs;
 
         const newTask = createTask({
           id: spec.id,
@@ -377,15 +379,21 @@ export function vitaliteStore() {
     },
 
     async deleteCustomTask(id: string): Promise<void> {
+      if (this._pendingIds.includes(id)) return;
+      this._pendingIds = [...this._pendingIds, id];
       try {
         const deps = await getDeps();
-        this.customSpecs = this.customSpecs.filter((entry) => entry.id !== id);
-        await deps.storage.set(KEY_CUSTOM_TASKS, this.customSpecs);
+        const updatedSpecs = this.customSpecs.filter((entry) => entry.id !== id);
+        await deps.storage.set(KEY_CUSTOM_TASKS, updatedSpecs);
+        // Mutate in-memory only after storage succeeds
+        this.customSpecs = updatedSpecs;
         this.tasks = this.tasks.filter((entry) => entry.id !== id);
         notify('info', 'Tache supprimee');
       } catch (err) {
         console.error('[vitalite] deleteCustomTask failed:', err);
         notify('error', 'Impossible de supprimer la tache.');
+      } finally {
+        this._pendingIds = this._pendingIds.filter((pendingId) => pendingId !== id);
       }
     },
 
@@ -405,16 +413,15 @@ export function vitaliteStore() {
       if (this.hiddenIds.includes(id)) return;
       try {
         const deps = await getDeps();
-        this.hiddenIds = [...this.hiddenIds, id];
-        await deps.storage.set(KEY_HIDDEN_TASKS, this.hiddenIds);
+        const updatedHiddenIds = [...this.hiddenIds, id];
+        await deps.storage.set(KEY_HIDDEN_TASKS, updatedHiddenIds);
+        // Mutate in-memory only after storage succeeds
+        this.hiddenIds = updatedHiddenIds;
         this.tasks = this.tasks.filter((task) => task.id !== id);
         this._recomputeHiddenSpecsList();
         notify('info', 'Tache masquee');
       } catch (err) {
         console.error('[vitalite] hideTask failed:', err);
-        // Rollback in-memory state to match persisted state
-        this.hiddenIds = this.hiddenIds.filter((entry) => entry !== id);
-        this._recomputeHiddenSpecsList();
         notify('error', 'Impossible de masquer la tache.');
       }
     },
@@ -428,8 +435,10 @@ export function vitaliteStore() {
       if (!this.hiddenIds.includes(id)) return;
       try {
         const deps = await getDeps();
-        this.hiddenIds = this.hiddenIds.filter((entry) => entry !== id);
-        await deps.storage.set(KEY_HIDDEN_TASKS, this.hiddenIds);
+        const updatedHiddenIds = this.hiddenIds.filter((entry) => entry !== id);
+        await deps.storage.set(KEY_HIDDEN_TASKS, updatedHiddenIds);
+        // Mutate in-memory only after storage succeeds
+        this.hiddenIds = updatedHiddenIds;
         const today = todayIso();
         const doneIds = (await deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(today))) ?? [];
         // Rebuild tasks list to insert the restored task at its canonical position

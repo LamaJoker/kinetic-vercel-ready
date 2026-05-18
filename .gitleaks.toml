@@ -1,0 +1,9 @@
+title = "Kinetic gitleaks config"
+
+[allowlist]
+  description = "Claude Code session URLs in commit messages are public links, not credentials"
+  stopWords = ["claude.ai", "session_01"]
+  regexes = [
+    '''session_01[A-Za-z0-9]{5,}''',
+    '''claude\.ai''',
+  ]

@@ -93,6 +93,15 @@ export function nutrition() {
     async logFood(): Promise<void> {
       const { name, grams, kcal, protein, carbs, fat, mealName } = this.newMeal;
       if (!name || grams <= 0) return;
+      const macros = [kcal, protein, carbs, fat];
+      if (macros.some((v) => !Number.isFinite(v) || v < 0)) {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'warning', message: 'Valeurs invalides (doivent être ≥ 0).' },
+          }),
+        );
+        return;
+      }
       const food = {
         name,
         kcalPer100: kcal,

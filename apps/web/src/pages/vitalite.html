@@ -389,7 +389,7 @@
         </button>
 
         <!-- Boutons secondaires : Annuler (cochée) / Supprimer (custom) / Masquer (défaut) -->
-        <div class="absolute right-2 -bottom-2.5 flex gap-1">
+        <div class="absolute right-2 -bottom-2.5 flex gap-1 z-10">
           <!-- Annuler (undo) — quand la tâche est cochée -->
           <button
             x-show="task.done && !$store.vitalite.isLocked(task.id)"
@@ -412,7 +412,7 @@
           </button>
           <!-- Masquer (défaut seulement, réversible via panel "Masquées") -->
           <button
-            x-show="!task.done && !$store.vitalite.isCustom(task.id)"
+            x-show="!$store.vitalite.isCustom(task.id) && !$store.vitalite.isLocked(task.id)"
             @click.stop="$store.vitalite.hideTask(task.id)"
             title="Masquer cette tâche (réversible)"
             aria-label="Masquer cette tâche par défaut"
