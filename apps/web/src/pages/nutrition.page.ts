@@ -5,7 +5,7 @@ interface NutritionStoreShape {
   plan: NutritionPlan | null;
   init(): Promise<void>;
   recalculatePlan(): Promise<void>;
-  addMealItem(mealName: string, food: unknown, grams: number): Promise<void>;
+  addMealItem(mealName: string, food: unknown, grams: number): Promise<boolean>;
 }
 
 interface LocalFood {
@@ -110,7 +110,8 @@ export function nutrition() {
         fatPer100: fat,
       };
       const store = Alpine.store('nutrition') as NutritionStoreShape;
-      await store.addMealItem(mealName, food, grams);
+      const added = await store.addMealItem(mealName, food, grams);
+      if (!added) return;
 
       // Reset
       this.newMeal = {
