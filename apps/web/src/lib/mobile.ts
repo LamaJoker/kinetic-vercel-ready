@@ -1,6 +1,18 @@
 import { Capacitor } from '@capacitor/core';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { STORAGE_KEYS } from '@kinetic/core';
+
+// Structural type — avoids SupabaseClient generic-mismatch errors when
+// supabase-js adds new class generics (e.g. ClientOptions in 2.105+).
+interface SupabaseAuthLike {
+  auth: {
+    setSession(tokens: { access_token: string; refresh_token: string }): Promise<{
+      data: { user?: { id: string } | null; session?: unknown | null };
+      error: { message: string } | null;
+    }>;
+    getSession(): Promise<{ data: { session: { user: { id: string } } | null }; error?: unknown }>;
+    exchangeCodeForSession(codeOrUrl: string): Promise<{ error: { message: string } | null }>;
+  };
+}
 
 const DEBUG_KEY = STORAGE_KEYS.AUTH_DEBUG;
 
@@ -91,7 +103,7 @@ export async function initMobile(): Promise<void> {
  * PKCE flow : ?code= → exchangeCodeForSession()
  * M8 FIX : paramètre supabase correctement typé (était `any`)
  */
-export async function handleOAuthCallback(supabase: SupabaseClient, url: string): Promise<void> {
+export async function handleOAuthCallback(supabase: SupabaseAuthLike, url: string): Promise<void> {
   try {
     debugLog(`handleOAuthCallback start: ${url.slice(0, 150)}`);
 
