@@ -15,6 +15,7 @@
     "android:run": "cap run android"
   },
   "dependencies": {
+    "@alpinejs/csp": "^3.15.12",
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",
     "@capacitor/camera": "^8.2.0",
@@ -29,8 +30,7 @@
     "@fontsource/space-grotesk": "^5.2.8",
     "@kinetic/adapters-web": "workspace:*",
     "@kinetic/core": "workspace:*",
-    "@supabase/supabase-js": "^2.43.4",
-    "@alpinejs/csp": "^3.15.12",
+    "@supabase/supabase-js": "^2.105.4",
     "alpinejs": "^3.14.1",
     "idb-keyval": "^6.2.1"
   },
