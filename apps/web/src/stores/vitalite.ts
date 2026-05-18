@@ -341,7 +341,7 @@ export function vitaliteStore() {
       }
 
       const spec: CustomTaskSpec = {
-        id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        id: `custom-${crypto.randomUUID()}`,
         title,
         icon: this.newTaskIcon || '⭐',
         xp: Math.max(10, Math.min(200, Number(this.newTaskXp) || 40)),
