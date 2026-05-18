@@ -413,16 +413,15 @@ export function vitaliteStore() {
       if (this.hiddenIds.includes(id)) return;
       try {
         const deps = await getDeps();
-        this.hiddenIds = [...this.hiddenIds, id];
-        await deps.storage.set(KEY_HIDDEN_TASKS, this.hiddenIds);
+        const updatedHiddenIds = [...this.hiddenIds, id];
+        await deps.storage.set(KEY_HIDDEN_TASKS, updatedHiddenIds);
+        // Mutate in-memory only after storage succeeds
+        this.hiddenIds = updatedHiddenIds;
         this.tasks = this.tasks.filter((task) => task.id !== id);
         this._recomputeHiddenSpecsList();
         notify('info', 'Tache masquee');
       } catch (err) {
         console.error('[vitalite] hideTask failed:', err);
-        // Rollback in-memory state to match persisted state
-        this.hiddenIds = this.hiddenIds.filter((entry) => entry !== id);
-        this._recomputeHiddenSpecsList();
         notify('error', 'Impossible de masquer la tache.');
       }
     },
@@ -436,8 +435,10 @@ export function vitaliteStore() {
       if (!this.hiddenIds.includes(id)) return;
       try {
         const deps = await getDeps();
-        this.hiddenIds = this.hiddenIds.filter((entry) => entry !== id);
-        await deps.storage.set(KEY_HIDDEN_TASKS, this.hiddenIds);
+        const updatedHiddenIds = this.hiddenIds.filter((entry) => entry !== id);
+        await deps.storage.set(KEY_HIDDEN_TASKS, updatedHiddenIds);
+        // Mutate in-memory only after storage succeeds
+        this.hiddenIds = updatedHiddenIds;
         const today = todayIso();
         const doneIds = (await deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(today))) ?? [];
         // Rebuild tasks list to insert the restored task at its canonical position

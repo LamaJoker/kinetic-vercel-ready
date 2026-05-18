@@ -389,7 +389,7 @@
         </button>
 
         <!-- Boutons secondaires : Annuler (cochée) / Supprimer (custom) / Masquer (défaut) -->
-        <div class="absolute right-2 -bottom-2.5 flex gap-1">
+        <div class="absolute right-2 -bottom-2.5 flex gap-1 z-10">
           <!-- Annuler (undo) — quand la tâche est cochée -->
           <button
             x-show="task.done && !$store.vitalite.isLocked(task.id)"
