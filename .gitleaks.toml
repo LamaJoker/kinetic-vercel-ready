@@ -1,9 +1,9 @@
 title = "Kinetic gitleaks config"
 
 [allowlist]
-  description = "Allow Claude Code session URLs in commit messages"
-  regexTarget = "line"
+  description = "Claude Code session URLs in commit messages are public links, not credentials"
+  stopWords = ["claude.ai", "session_01"]
   regexes = [
-    # Claude Code appends a session URL to every commit message — not a secret.
-    '''https://claude\.ai/code/session_[\w-]+''',
+    '''session_01[A-Za-z0-9]{5,}''',
+    '''claude\.ai''',
   ]
