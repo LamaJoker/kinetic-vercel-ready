@@ -35,7 +35,7 @@ export function nutritionStore() {
     plan: null as NutritionPlan | null,
     todayLog: [] as LoggedMeal[],
     loading: true,
-    _addMealInflightNames: new Set<string>(),
+    _pendingMealNames: [] as string[],
 
     get consumed() {
       let kcal = 0,
@@ -105,17 +105,17 @@ export function nutritionStore() {
       }
     },
 
-    async addMealItem(mealName: string, food: FoodEntry, grams: number): Promise<void> {
+    async addMealItem(mealName: string, food: FoodEntry, grams: number): Promise<boolean> {
       if (!Number.isFinite(grams) || grams <= 0) {
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
             detail: { kind: 'warning', message: 'Quantité invalide (doit être > 0 g).' },
           }),
         );
-        return;
+        return false;
       }
-      if (this._addMealInflightNames.has(mealName)) return;
-      this._addMealInflightNames.add(mealName);
+      if (this._pendingMealNames.includes(mealName)) return false;
+      this._pendingMealNames = [...this._pendingMealNames, mealName];
       try {
         const deps = await getDeps();
         const today = todayIso();
@@ -138,6 +138,7 @@ export function nutritionStore() {
         await deps.storage.set(KEY_LOG(today), nextLog);
         // Mutate in-memory only after storage succeeds to keep state consistent
         this.todayLog = nextLog;
+        return true;
       } catch (err) {
         console.error('[nutrition] addMealItem failed:', err);
         window.dispatchEvent(
@@ -145,8 +146,9 @@ export function nutritionStore() {
             detail: { kind: 'error', message: "Impossible d'ajouter cet aliment. Réessaie." },
           }),
         );
+        return false;
       } finally {
-        this._addMealInflightNames.delete(mealName);
+        this._pendingMealNames = this._pendingMealNames.filter((n) => n !== mealName);
       }
     },
 
