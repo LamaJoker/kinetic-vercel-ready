@@ -11,7 +11,17 @@ import type { Task } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { sanitizeUserInput } from '../lib/security';
 
-const DEFAULT_TASKS_SPEC = [
+interface DefaultTaskSpec {
+  id: string;
+  title: string;
+  icon: string;
+  xp: number;
+  priority: 'high' | 'med' | 'low';
+  /** If set, the task only appears every N days (not daily). */
+  intervalDays?: number;
+}
+
+const DEFAULT_TASKS_SPEC: DefaultTaskSpec[] = [
   {
     id: 'morning-stretch',
     title: 'Etirements matin',
@@ -21,13 +31,18 @@ const DEFAULT_TASKS_SPEC = [
   },
   { id: 'cold-shower', title: 'Douche froide', icon: '🚿', xp: 50, priority: 'high' as const },
   { id: 'breakfast', title: 'Petit-dejeuner sain', icon: '🥗', xp: 50, priority: 'med' as const },
-  { id: 'meditation', title: 'Meditation 5 min', icon: '🧠', xp: 50, priority: 'med' as const },
   { id: 'hydration', title: "Boire 2L d'eau", icon: '💧', xp: 50, priority: 'low' as const },
   { id: 'evening-walk', title: 'Promenade du soir', icon: '🚶', xp: 40, priority: 'low' as const },
-  { id: 'reading', title: 'Lecture 20 min', icon: '📚', xp: 40, priority: 'low' as const },
   { id: 'journaling', title: 'Journaling', icon: '📝', xp: 40, priority: 'med' as const },
-  { id: 'gratitude', title: '3 gratitudes', icon: '🙏', xp: 40, priority: 'med' as const },
   { id: 'sleep-routine', title: 'Routine sommeil', icon: '🌙', xp: 50, priority: 'high' as const },
+  {
+    id: 'coiffeur',
+    title: 'Aller chez le coiffeur',
+    icon: '✂️',
+    xp: 30,
+    priority: 'low' as const,
+    intervalDays: 20,
+  },
 ];
 
 export interface CustomTaskSpec {
@@ -47,6 +62,13 @@ export interface HistoryDay {
 
 const KEY_CUSTOM_TASKS = STORAGE_KEYS.VITALITE_CUSTOM_TASKS;
 const KEY_HIDDEN_TASKS = STORAGE_KEYS.VITALITE_HIDDEN_TASKS;
+const KEY_INTERVAL_LAST_DONE = STORAGE_KEYS.VITALITE_INTERVAL_LAST_DONE;
+
+function daysBetween(isoA: string, isoB: string): number {
+  return Math.floor(
+    Math.abs(new Date(isoB).getTime() - new Date(isoA).getTime()) / (1000 * 60 * 60 * 24),
+  );
+}
 
 function todayIso(): string {
   const d = new Date();
@@ -98,6 +120,7 @@ export function vitaliteStore() {
     tasks: [] as Task[],
     customSpecs: [] as CustomTaskSpec[],
     loading: true,
+    _intervalLastDone: {} as Record<string, string>,
     completingId: null as string | null,
     _pendingIds: [] as string[],
 
@@ -164,9 +187,20 @@ export function vitaliteStore() {
         const doneIds =
           (await withTimeout(deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(today)))) ?? [];
         this.hiddenIds = (await withTimeout(deps.storage.get<string[]>(KEY_HIDDEN_TASKS))) ?? [];
+        this._intervalLastDone =
+          (await withTimeout(deps.storage.get<Record<string, string>>(KEY_INTERVAL_LAST_DONE))) ??
+          {};
         this._recomputeHiddenSpecsList();
         this.tasks = buildTasks(this.customSpecs)
-          .filter((task) => !this.hiddenIds.includes(task.id))
+          .filter((task) => {
+            if (this.hiddenIds.includes(task.id)) return false;
+            const spec = DEFAULT_TASKS_SPEC.find((s) => s.id === task.id);
+            if (spec?.intervalDays) {
+              const lastDone = this._intervalLastDone[task.id];
+              return !lastDone || daysBetween(lastDone, today) >= spec.intervalDays;
+            }
+            return true;
+          })
           .map((task) =>
             doneIds.includes(task.id)
               ? { ...task, done: true, completedAt: today, completionCount: 1 }
@@ -227,6 +261,13 @@ export function vitaliteStore() {
         const doneIds = (await deps.storage.get<string[]>(doneKey)) ?? [];
         if (!doneIds.includes(taskId)) {
           await deps.storage.set(doneKey, [...doneIds, taskId]);
+        }
+
+        const defaultSpec = DEFAULT_TASKS_SPEC.find((s) => s.id === taskId);
+        if (defaultSpec?.intervalDays) {
+          const updated = { ...this._intervalLastDone, [taskId]: today };
+          await deps.storage.set(KEY_INTERVAL_LAST_DONE, updated);
+          this._intervalLastDone = updated;
         }
 
         if (this._hasXpBonus()) {
@@ -443,7 +484,15 @@ export function vitaliteStore() {
         const doneIds = (await deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(today))) ?? [];
         // Rebuild tasks list to insert the restored task at its canonical position
         this.tasks = buildTasks(this.customSpecs)
-          .filter((task) => !this.hiddenIds.includes(task.id))
+          .filter((task) => {
+            if (this.hiddenIds.includes(task.id)) return false;
+            const spec = DEFAULT_TASKS_SPEC.find((s) => s.id === task.id);
+            if (spec?.intervalDays) {
+              const lastDone = this._intervalLastDone[task.id];
+              return !lastDone || daysBetween(lastDone, today) >= spec.intervalDays;
+            }
+            return true;
+          })
           .map((task) =>
             doneIds.includes(task.id)
               ? { ...task, done: true, completedAt: today, completionCount: 1 }
