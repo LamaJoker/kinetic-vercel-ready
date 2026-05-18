@@ -412,7 +412,7 @@
           </button>
           <!-- Masquer (défaut seulement, réversible via panel "Masquées") -->
           <button
-            x-show="!task.done && !$store.vitalite.isCustom(task.id)"
+            x-show="!$store.vitalite.isCustom(task.id) && !$store.vitalite.isLocked(task.id)"
             @click.stop="$store.vitalite.hideTask(task.id)"
             title="Masquer cette tâche (réversible)"
             aria-label="Masquer cette tâche par défaut"
