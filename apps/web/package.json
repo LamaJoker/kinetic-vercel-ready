@@ -29,7 +29,7 @@
     "@fontsource/space-grotesk": "^5.2.8",
     "@kinetic/adapters-web": "workspace:*",
     "@kinetic/core": "workspace:*",
-    "@supabase/supabase-js": "^2.43.4",
+    "@supabase/supabase-js": "^2.105.4",
     "@alpinejs/csp": "^3.15.12",
     "alpinejs": "^3.14.1",
     "idb-keyval": "^6.2.1"
