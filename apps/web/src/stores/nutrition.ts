@@ -119,15 +119,19 @@ export function nutritionStore() {
       try {
         const deps = await getDeps();
         const today = todayIso();
-        // Mutation via spread, sans push() sur le proxy Alpine — évite que
-        // IDB voie un Proxy non-clonable (DataCloneError sur Safari/Firefox).
-        const existing = this.todayLog.find((m) => m.mealName === mealName);
+        // Lit depuis IDB plutôt que depuis this.todayLog (proxy Alpine) pour
+        // éviter le DataCloneError : après le 1er ajout, Alpine réactivifie
+        // todayLog et ses sous-objets deviennent des Proxy non-clonables par
+        // l'algorithme structured-clone d'IDB. Les données IDB sont toujours
+        // des objets JS bruts, sans Proxy.
+        const rawLog = (await deps.storage.get<LoggedMeal[]>(KEY_LOG(today))) ?? [];
+        const existing = rawLog.find((m) => m.mealName === mealName);
         const nextLog = existing
-          ? this.todayLog.map((m) =>
+          ? rawLog.map((m) =>
               m.mealName !== mealName ? m : { ...m, items: [...m.items, { food, grams }] },
             )
           : [
-              ...this.todayLog,
+              ...rawLog,
               {
                 id: crypto.randomUUID(),
                 mealName,
@@ -156,7 +160,8 @@ export function nutritionStore() {
       try {
         const deps = await getDeps();
         const today = todayIso();
-        const nextLog = this.todayLog.map((m) =>
+        const rawLog = (await deps.storage.get<LoggedMeal[]>(KEY_LOG(today))) ?? [];
+        const nextLog = rawLog.map((m) =>
           m.mealName !== mealName ? m : { ...m, items: m.items.filter((_, i) => i !== idx) },
         );
         await deps.storage.set(KEY_LOG(today), nextLog);
