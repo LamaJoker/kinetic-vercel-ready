@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.lamajoker.kinetic',
-  appName: 'Kinetic',
+  appName: 'Kinetic V8',
   webDir: 'dist',
   android: {
     allowMixedContent: false,
