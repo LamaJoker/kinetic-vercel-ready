@@ -1,0 +1,88 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9.15.9'
+  JAVA_VERSION: '21'
+
+jobs:
+  build-apk:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v6
+        with: { version: '${{ env.PNPM_VERSION }}' }
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '${{ env.NODE_VERSION }}'
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '${{ env.JAVA_VERSION }}'
+          distribution: temurin
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build packages/core
+        run: pnpm --filter @kinetic/core build
+
+      - name: Build packages/adapter-web
+        run: pnpm --filter @kinetic/adapters-web build
+
+      - name: Build web app
+        run: pnpm --filter @kinetic/web build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_APP_VERSION: '8.0.0'
+
+      - name: Sync Capacitor
+        working-directory: apps/web
+        run: pnpm exec cap sync android
+
+      - name: Make gradlew executable
+        working-directory: apps/web/android
+        run: chmod +x gradlew
+
+      - name: Build debug APK
+        working-directory: apps/web/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: kinetic-v8-debug
+          path: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Create / update release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v8.0.0
+          name: Kinetic V8
+          draft: false
+          prerelease: false
+          files: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+          body: |
+            ## Kinetic V8
+
+            ### Nouveautés
+            - Tâches vitalité mises à jour (suppression méditation/lecture/gratitude)
+            - Ajout "Aller chez le coiffeur" avec rappel toutes les 20 jours
+
+            ### Correctifs
+            - Nutrition : impossible d'ajouter un 2e aliment au même repas (DataCloneError IDB / Proxy Alpine)
+            - Nutrition : l'inflight guard (Set natif) bloquait silencieusement les ajouts successifs
