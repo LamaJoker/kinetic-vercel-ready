@@ -44,9 +44,9 @@ export default defineConfig({
         'packages/core/src/ports/**',
         // Infrastructure adapters require real browser/IDB — covered by integration tests
         'packages/adapter-web/src/IdbStorage.ts',
-        'packages/adapter-web/src/SupabaseStorage.ts',
-        'packages/adapter-web/src/SupabaseDailyLogSync.ts',
-        'packages/adapter-web/src/auth.ts',
+        'packages/adapter-web/src/supabase/SupabaseStorage.ts',
+        'packages/adapter-web/src/supabase/SupabaseDailyLogSync.ts',
+        'packages/adapter-web/src/supabase/auth.ts',
         'packages/adapter-web/src/supabase.ts',
         // Pages are UI components best covered by E2E tests (Playwright)
         'apps/web/src/pages/**',

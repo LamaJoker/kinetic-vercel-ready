@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('../../apps/web/src/deps.js', () => ({
   getDeps: vi.fn().mockResolvedValue({
@@ -13,7 +13,7 @@ vi.mock('../../apps/web/src/deps.js', () => ({
 }));
 
 import { rewardsStore, THEMES } from '../../apps/web/src/stores/rewards.js';
-import { REWARDS } from '@kinetic/core';
+import { REWARDS, STORAGE_KEYS } from '@kinetic/core';
 
 function makeStoreWithLevel(level: number) {
   const store = rewardsStore();
@@ -153,5 +153,135 @@ describe('rewardsStore._assertLevel', () => {
   it('does not throw when level is sufficient', () => {
     const store = makeStoreWithLevel(6);
     expect(() => (store as any)._assertLevel(6)).not.toThrow();
+  });
+});
+
+// ─── init / destroy ───────────────────────────────────────────────────────────
+
+describe('rewardsStore.init / destroy', () => {
+  const listeners = new Map<string, Set<(e: Event) => void>>();
+
+  beforeEach(() => {
+    listeners.clear();
+    vi.stubGlobal('window', {
+      addEventListener: (type: string, fn: (e: Event) => void) => {
+        if (!listeners.has(type)) listeners.set(type, new Set());
+        listeners.get(type)!.add(fn);
+      },
+      removeEventListener: (type: string, fn: (e: Event) => void) => {
+        listeners.get(type)?.delete(fn);
+      },
+      dispatchEvent: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('registers a listener for EVENT_LEVELUP on init', () => {
+    const store = rewardsStore();
+    store.init();
+    expect(listeners.has(STORAGE_KEYS.EVENT_LEVELUP)).toBe(true);
+    expect(listeners.get(STORAGE_KEYS.EVENT_LEVELUP)!.size).toBe(1);
+  });
+
+  it('removes the EVENT_LEVELUP listener on destroy', () => {
+    const store = rewardsStore();
+    store.init();
+    store.destroy();
+    expect(listeners.get(STORAGE_KEYS.EVENT_LEVELUP)?.size ?? 0).toBe(0);
+  });
+
+  it('destroy is idempotent (no-op when called without init)', () => {
+    const store = rewardsStore();
+    expect(() => store.destroy()).not.toThrow();
+  });
+
+  it('shows modal for a non-base reward on LEVELUP event', () => {
+    const store = makeStoreWithLevel(3);
+    store.init();
+    const nonBase = REWARDS.find((r) => r.kind !== 'base');
+    if (!nonBase) return;
+    const event = new CustomEvent(STORAGE_KEYS.EVENT_LEVELUP, {
+      detail: { level: nonBase.level, title: nonBase.title },
+    });
+    listeners.get(STORAGE_KEYS.EVENT_LEVELUP)?.forEach((fn) => fn(event));
+    expect(store.showRewardModal).toBe(true);
+    expect(store.pendingLevel).toBe(nonBase.level);
+    expect(store.pendingReward).toBe(nonBase);
+  });
+
+  it('does NOT show modal for a base reward (no physical unlock)', () => {
+    const store = makeStoreWithLevel(1);
+    store.init();
+    const base = REWARDS.find((r) => r.kind === 'base');
+    if (!base) return;
+    const event = new CustomEvent(STORAGE_KEYS.EVENT_LEVELUP, {
+      detail: { level: base.level, title: base.title },
+    });
+    listeners.get(STORAGE_KEYS.EVENT_LEVELUP)?.forEach((fn) => fn(event));
+    expect(store.showRewardModal).toBe(false);
+  });
+
+  it('ignores LEVELUP events with no detail', () => {
+    const store = rewardsStore();
+    store.init();
+    const event = new CustomEvent(STORAGE_KEYS.EVENT_LEVELUP); // no detail
+    expect(() =>
+      listeners.get(STORAGE_KEYS.EVENT_LEVELUP)?.forEach((fn) => fn(event)),
+    ).not.toThrow();
+    expect(store.showRewardModal).toBe(false);
+  });
+});
+
+// ─── applyTheme ───────────────────────────────────────────────────────────────
+
+describe('rewardsStore.applyTheme', () => {
+  beforeEach(() => {
+    vi.stubGlobal('document', { documentElement: { dataset: {} as Record<string, string> } });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('updates currentTheme for a valid theme id', async () => {
+    const store = rewardsStore();
+    await store.applyTheme('cyber');
+    expect(store.currentTheme).toBe('cyber');
+  });
+
+  it('ignores an unknown theme id', async () => {
+    const store = rewardsStore();
+    await store.applyTheme('nonexistent-theme');
+    expect(store.currentTheme).toBe('electrique');
+  });
+
+  it('sets document.documentElement.dataset.theme', async () => {
+    const store = rewardsStore();
+    await store.applyTheme('violet');
+    const doc = document as unknown as { documentElement: { dataset: Record<string, string> } };
+    expect(doc.documentElement.dataset['theme']).toBe('violet');
+  });
+
+  it('persists the theme to storage via getDeps', async () => {
+    const { getDeps } = await import('../../apps/web/src/deps.js');
+    const mockSet = vi.fn();
+    vi.mocked(getDeps).mockResolvedValueOnce({
+      storage: {
+        get: vi.fn().mockResolvedValue(null),
+        set: mockSet,
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    const store = rewardsStore();
+    await store.applyTheme('phoenix');
+    expect(mockSet).toHaveBeenCalledWith(expect.any(String), 'phoenix');
   });
 });
