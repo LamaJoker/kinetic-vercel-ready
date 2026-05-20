@@ -26,6 +26,7 @@ import {
 } from '@kinetic/adapters-web';
 import type { AuthUser } from '@kinetic/adapters-web';
 import { STORAGE_KEYS } from '@kinetic/core';
+import { isValidEmail } from '../lib/security.js';
 import { flushAndResetDeps, resetDeps } from '../deps';
 
 // FIX #4 : Log explicite plutôt que dégradation silencieuse
@@ -138,7 +139,7 @@ export function authStore() {
       this.error = null;
       const email = this.emailInput.trim().toLowerCase();
 
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (!email || !isValidEmail(email)) {
         this.error = 'Adresse email invalide';
         return;
       }
