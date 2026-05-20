@@ -156,4 +156,49 @@ describe('startRestTimer', () => {
     startRestTimer({ durationSec: 0, onTick: (r) => ticks.push(r), vibrate: false, notify: false });
     expect(ticks[0]).toBe(1); // Math.max(1, 0) = 1
   });
+
+  it('handles navigator.vibrate throwing (catch noop path)', () => {
+    vi.stubGlobal('navigator', {
+      vibrate: () => {
+        throw new Error('not supported');
+      },
+    });
+    // Should not throw — catch block swallows error
+    expect(() => {
+      startRestTimer({ durationSec: 1 });
+      vi.advanceTimersByTime(1000);
+    }).not.toThrow();
+  });
+
+  it('creates a Notification when permission is granted', () => {
+    const NotifCtor = vi.fn();
+    class MockNotification {
+      static permission = 'granted';
+      constructor(title: string, opts?: unknown) {
+        NotifCtor(title, opts);
+      }
+    }
+    vi.stubGlobal('Notification', MockNotification);
+
+    startRestTimer({ durationSec: 1, vibrate: false });
+    vi.advanceTimersByTime(1000);
+
+    expect(NotifCtor).toHaveBeenCalledOnce();
+  });
+
+  it('handles Notification constructor throwing (catch noop path)', () => {
+    class ThrowingNotification {
+      static permission = 'granted';
+      constructor() {
+        throw new Error('blocked by browser');
+      }
+    }
+    vi.stubGlobal('Notification', ThrowingNotification);
+
+    // Should not throw — catch block swallows error
+    expect(() => {
+      startRestTimer({ durationSec: 1, vibrate: false });
+      vi.advanceTimersByTime(1000);
+    }).not.toThrow();
+  });
 });

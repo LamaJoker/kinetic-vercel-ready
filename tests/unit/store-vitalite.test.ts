@@ -299,6 +299,29 @@ describe('vitaliteStore.hideTask / unhideTask', () => {
     expect(store.tasks.some((t) => t.id === 'morning-stretch')).toBe(true);
   });
 
+  it('unhideTask dispatches error notification when storage.set throws', async () => {
+    const dispatchFn = vi.fn();
+    vi.stubGlobal('window', { dispatchEvent: dispatchFn });
+
+    const failStorage = new InMemoryStorage();
+    vi.mocked(getDeps).mockResolvedValueOnce({
+      storage: failStorage,
+    } as any);
+    const store = vitaliteStore();
+    await store.init();
+
+    // Pre-hide in state without persisting (to avoid the first set call)
+    store.hiddenIds = ['morning-stretch'];
+    store.tasks = store.tasks.filter((t) => t.id !== 'morning-stretch');
+
+    // Make storage.set throw on the unhide persist call
+    vi.spyOn(failStorage, 'set').mockRejectedValueOnce(new Error('disk full'));
+
+    await store.unhideTask('morning-stretch');
+
+    expect(dispatchFn).toHaveBeenCalledOnce();
+  });
+
   it('hiddenSpecsList contains full specs of currently hidden default tasks', async () => {
     const store = vitaliteStore();
     await store.init();
@@ -563,6 +586,23 @@ describe('vitaliteStore.loadHistory / toggleHistory', () => {
     await store.toggleHistory(); // close
     expect(store.showHistory).toBe(false);
     expect(store.historyDays.length).toBe(loadedDays); // unchanged
+  });
+
+  it('loadHistory handles storage.get throwing gracefully', async () => {
+    const failStorage = new InMemoryStorage();
+    vi.mocked(getDeps)
+      .mockResolvedValueOnce({ storage: failStorage } as any) // for init
+      .mockResolvedValueOnce({ storage: failStorage } as any); // for loadHistory
+
+    const store = vitaliteStore();
+    await store.init();
+
+    // Make get throw during loadHistory
+    vi.spyOn(failStorage, 'get').mockRejectedValueOnce(new Error('IDB error'));
+
+    await store.loadHistory(); // Should not throw
+
+    expect(store.historyLoading).toBe(false); // finally block still runs
   });
 });
 

@@ -107,4 +107,53 @@ describe('runMigrationsIfNeeded', () => {
     expect(await storage.get('kinetic:xp')).toEqual({ xp: 500 });
     expect(await storage.get('kinetic:streak')).toEqual({ count: 7 });
   });
+
+  it('removes null-valued keys during snapshot restore (null entry cleanup path)', async () => {
+    const storage = new InMemoryStorage();
+    // Store a key with null value — restoreSnapshot should remove it, not re-set it
+    await storage.set('kinetic:xp', null as unknown as object);
+
+    const originalSet = storage.set.bind(storage);
+    vi.spyOn(storage, 'set').mockImplementation((key: string, value: unknown) => {
+      if (key === SCHEMA_VERSION_KEY) return Promise.reject(new Error('disk full'));
+      return originalSet(key, value);
+    });
+
+    await expect(runMigrationsIfNeeded(storage)).rejects.toThrow('disk full');
+
+    // After restore, the null-valued key must have been removed (not re-written as null)
+    const keys = await storage.keys();
+    expect(keys).not.toContain('kinetic:xp');
+  });
+
+  it('removes keys added during migration that were not in the original snapshot', async () => {
+    const storage = new InMemoryStorage();
+    await storage.set('kinetic:xp', { xp: 100 });
+
+    // Simulate a key appearing in storage between snapshot and restore (e.g. added by migration)
+    let keysCallCount = 0;
+    const origKeys = storage.keys.bind(storage);
+    vi.spyOn(storage, 'keys').mockImplementation(async () => {
+      keysCallCount++;
+      const keys = await origKeys();
+      // 2nd call is inside restoreSnapshot — inject an extra key
+      if (keysCallCount >= 2) {
+        return [...keys, 'kinetic:temp-migration-key'] as readonly string[];
+      }
+      return keys;
+    });
+
+    const removeSpy = vi.spyOn(storage, 'remove');
+
+    const originalSet = storage.set.bind(storage);
+    vi.spyOn(storage, 'set').mockImplementation((key: string, value: unknown) => {
+      if (key === SCHEMA_VERSION_KEY) return Promise.reject(new Error('disk full'));
+      return originalSet(key, value);
+    });
+
+    await expect(runMigrationsIfNeeded(storage)).rejects.toThrow('disk full');
+
+    // The extra key that appeared after the snapshot must have been removed
+    expect(removeSpy).toHaveBeenCalledWith('kinetic:temp-migration-key');
+  });
 });

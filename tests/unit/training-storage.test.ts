@@ -66,6 +66,13 @@ describe('loadExercises', () => {
     const result = await loadExercises(storage);
     expect(result.length).toBe(DEFAULT_EXERCISES.length);
   });
+
+  it('falls back to defaults when fetch throws (catch noop path)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network error')));
+    const result = await loadExercises(storage);
+    expect(result).toHaveLength(DEFAULT_EXERCISES.length);
+    expect(result[0]!.id).toBe(DEFAULT_EXERCISES[0]!.id);
+  });
 });
 
 describe('saveExercises', () => {
