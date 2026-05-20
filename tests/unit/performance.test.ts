@@ -2,6 +2,84 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getSkeletonHtml, debounce, throttle, ric } from '../../apps/web/src/lib/performance.js';
 import type { SkeletonType } from '../../apps/web/src/lib/performance.js';
 
+// ─── Lazy images ─────────────────────────────────────────────────────────────
+// _imageObserver is module-level state. We reset modules so each describe block
+// starts with a fresh null observer, ensuring IntersectionObserver is re-created
+// with our mock rather than the real (or previous mock) browser instance.
+
+describe('lazyLoadImage', () => {
+  const mockObserve = vi.fn();
+
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubGlobal(
+      'IntersectionObserver',
+      vi.fn(() => ({ observe: mockObserve, unobserve: vi.fn() })),
+    );
+    mockObserve.mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('calls observer.observe with the image element', async () => {
+    const { lazyLoadImage } = await import('../../apps/web/src/lib/performance.js');
+    const img = {} as HTMLImageElement;
+    lazyLoadImage(img);
+    expect(mockObserve).toHaveBeenCalledWith(img);
+  });
+
+  it('reuses the same IntersectionObserver instance across calls', async () => {
+    const { lazyLoadImage } = await import('../../apps/web/src/lib/performance.js');
+    const img1 = { id: 1 } as unknown as HTMLImageElement;
+    const img2 = { id: 2 } as unknown as HTMLImageElement;
+    lazyLoadImage(img1);
+    lazyLoadImage(img2);
+    // IntersectionObserver should only be constructed once
+    expect(IntersectionObserver).toHaveBeenCalledTimes(1);
+    expect(mockObserve).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('initLazyImages', () => {
+  const mockObserve = vi.fn();
+
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubGlobal(
+      'IntersectionObserver',
+      vi.fn(() => ({ observe: mockObserve, unobserve: vi.fn() })),
+    );
+    mockObserve.mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('calls lazyLoadImage for every [data-lazy-src] image', async () => {
+    const fakeImgs = [{}, {}, {}] as HTMLImageElement[];
+    vi.stubGlobal('document', {
+      querySelectorAll: vi
+        .fn()
+        .mockReturnValue({ forEach: (fn: Function) => fakeImgs.forEach(fn) }),
+    });
+    const { initLazyImages } = await import('../../apps/web/src/lib/performance.js');
+    initLazyImages();
+    expect(mockObserve).toHaveBeenCalledTimes(3);
+  });
+
+  it('does nothing when there are no lazy-src images', async () => {
+    vi.stubGlobal('document', {
+      querySelectorAll: vi.fn().mockReturnValue({ forEach: (fn: Function) => [].forEach(fn) }),
+    });
+    const { initLazyImages } = await import('../../apps/web/src/lib/performance.js');
+    initLazyImages();
+    expect(mockObserve).not.toHaveBeenCalled();
+  });
+});
+
 describe('getSkeletonHtml', () => {
   const types: SkeletonType[] = ['task-list', 'dashboard', 'profile', 'xp-bar'];
 
