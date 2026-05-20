@@ -160,11 +160,6 @@ function downloadWeb(content: string, filename: string, mime: string): void {
   URL.revokeObjectURL(url);
 }
 
-/** Compatibilité descendante — anciens appels. */
-export function downloadBlob(content: string, filename: string, mime: string): void {
-  void downloadOrShare(content, filename, mime);
-}
-
 export async function exportAsJson(
   sessions: readonly WorkoutSession[],
   exercises: readonly Exercise[],

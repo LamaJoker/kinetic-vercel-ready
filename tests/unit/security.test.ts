@@ -12,6 +12,7 @@ import {
   sanitizeEmail,
   sanitizeNumber,
   checkRateLimit,
+  isValidEmail,
   _clearRateLimitStoreForTesting,
 } from '../../apps/web/src/lib/security.js';
 
@@ -63,22 +64,55 @@ describe('Security Module', () => {
     });
   });
 
+  describe('isValidEmail', () => {
+    it('accepts a standard email', () => {
+      expect(isValidEmail('user@example.com')).toBe(true);
+    });
+
+    it('accepts email with subdomains and plus-tag', () => {
+      expect(isValidEmail('user+tag@sub.domain.co')).toBe(true);
+    });
+
+    it('rejects email without @', () => {
+      expect(isValidEmail('notanemail')).toBe(false);
+    });
+
+    it('rejects email without domain extension', () => {
+      expect(isValidEmail('user@domain')).toBe(false);
+    });
+
+    it('rejects empty string', () => {
+      expect(isValidEmail('')).toBe(false);
+    });
+
+    it('is case-insensitive (trims + lowercases before checking)', () => {
+      expect(isValidEmail('  User@EXAMPLE.COM  ')).toBe(true);
+    });
+  });
+
   describe('sanitizeEmail', () => {
-    it('met en minuscule et trim', () => {
+    it('normalises to lowercase and trims, returns valid email', () => {
       expect(sanitizeEmail('  Test@EMAIL.com  ')).toBe('test@email.com');
     });
 
-    it('supprime les caractères non autorisés', () => {
-      expect(sanitizeEmail('test"@"email.com')).not.toContain('"');
+    it('returns empty string for invalid format after stripping', () => {
+      expect(sanitizeEmail('notanemail')).toBe('');
     });
 
-    it('accepte les emails valides complexes', () => {
+    it('accepts complex valid email', () => {
       expect(sanitizeEmail('test+tag@sub.domain.co')).toBe('test+tag@sub.domain.co');
     });
 
-    it("supprime les tentatives d'injection", () => {
+    it('strips illegal characters AND rejects if result is invalid', () => {
+      // After stripping `;` the result is `evil@test.comdrop table users`
+      // which is not a valid email format
       const injected = sanitizeEmail('evil@test.com;DROP TABLE users;');
       expect(injected).not.toContain(';');
+    });
+
+    it('returns empty string for input that has no valid local-part after strip', () => {
+      // Stripping '"' from '"@email.com' leaves '@email.com' → invalid
+      expect(sanitizeEmail('"@email.com')).toBe('');
     });
   });
 

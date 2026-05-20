@@ -54,11 +54,18 @@ export function sanitizeUserInput(input: unknown, maxLength = 500): string {
     .replace(/'/g, '&#x27;');
 }
 
+const EMAIL_RE = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+export function isValidEmail(email: string): boolean {
+  return EMAIL_RE.test(email.trim().toLowerCase());
+}
+
 export function sanitizeEmail(email: string): string {
-  return email
+  const normalized = email
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9@._+-]/g, '');
+  return isValidEmail(normalized) ? normalized : '';
 }
 
 export function sanitizeNumber(value: unknown, min: number, max: number): number | null {
