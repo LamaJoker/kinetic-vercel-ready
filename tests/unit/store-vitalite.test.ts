@@ -322,3 +322,293 @@ describe('vitaliteStore.hideTask / unhideTask', () => {
     expect(store.hiddenSpecsList[0]?.id).toBe('cold-shower');
   });
 });
+
+describe('vitaliteStore.complete (success path)', () => {
+  let storage: InMemoryStorage;
+
+  beforeEach(() => {
+    storage = new InMemoryStorage();
+    vi.mocked(getDeps).mockResolvedValue(makeMockDeps({ storage }) as any);
+    vi.stubGlobal('window', { dispatchEvent: vi.fn(), Alpine: undefined });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('marks the task done and persists the done-ID', async () => {
+    const store = vitaliteStore();
+    await store.init();
+    const task = store.tasks.find((t) => !t.done);
+    if (!task) throw new Error('no undone task found');
+
+    await store.complete(task.id);
+
+    const updated = store.tasks.find((t) => t.id === task.id);
+    expect(updated?.done).toBe(true);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const doneIds = await storage.get<string[]>(`kinetic:vitalite:done:${today}`);
+    expect(doneIds).toContain(task.id);
+  });
+
+  it('is idempotent when completing an already-pending task', async () => {
+    const store = vitaliteStore();
+    await store.init();
+    const task = store.tasks.find((t) => !t.done);
+    if (!task) throw new Error('no undone task found');
+
+    store._pendingIds = [task.id];
+    const setSpy = vi.spyOn(storage, 'set');
+    await store.complete(task.id);
+    expect(setSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('vitaliteStore.undo (success path)', () => {
+  let storage: InMemoryStorage;
+
+  beforeEach(() => {
+    storage = new InMemoryStorage();
+    vi.mocked(getDeps).mockResolvedValue(makeMockDeps({ storage }) as any);
+    vi.stubGlobal('window', { dispatchEvent: vi.fn(), Alpine: undefined });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('unmarks a completed task and updates state', async () => {
+    const store = vitaliteStore();
+    await store.init();
+
+    const task = store.tasks.find((t) => !t.done);
+    if (!task) throw new Error('no undone task found');
+
+    await store.complete(task.id);
+    expect(store.tasks.find((t) => t.id === task.id)?.done).toBe(true);
+
+    await store.undo(task.id);
+    expect(store.tasks.find((t) => t.id === task.id)?.done).toBe(false);
+  });
+});
+
+describe('vitaliteStore.addCustomTask', () => {
+  let storage: InMemoryStorage;
+
+  beforeEach(() => {
+    storage = new InMemoryStorage();
+    vi.mocked(getDeps).mockResolvedValue(makeMockDeps({ storage }) as any);
+    vi.stubGlobal('window', { dispatchEvent: vi.fn() });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('adds a new custom task and persists it', async () => {
+    const store = vitaliteStore();
+    await store.init();
+    const initialCount = store.tasks.length;
+
+    store.newTaskTitle = 'Read every day';
+    store.newTaskIcon = '📖';
+    store.newTaskXp = 60;
+    store.newTaskPriority = 'high';
+
+    await store.addCustomTask();
+
+    expect(store.tasks.length).toBe(initialCount + 1);
+    expect(store.tasks.some((t) => t.title === 'Read every day')).toBe(true);
+    expect(store.showAddForm).toBe(false);
+    expect(store.newTaskTitle).toBe('');
+
+    const persisted = await storage.get<unknown[]>('kinetic:vitalite:custom-tasks');
+    expect(Array.isArray(persisted)).toBe(true);
+    expect((persisted as any[]).some((s: any) => s.title === 'Read every day')).toBe(true);
+  });
+
+  it('sets addFormError when title is empty', async () => {
+    const store = vitaliteStore();
+    await store.init();
+
+    store.newTaskTitle = '';
+    await store.addCustomTask();
+
+    expect(store.addFormError).toBeTruthy();
+    expect(store.tasks.some((t) => t.title === '')).toBe(false);
+  });
+
+  it('resets the form after successful add', async () => {
+    const store = vitaliteStore();
+    await store.init();
+
+    store.newTaskTitle = 'My task';
+    store.newTaskIcon = '🎯';
+    store.newTaskXp = 80;
+    store.newTaskPriority = 'low';
+    store.showAddForm = true;
+
+    await store.addCustomTask();
+
+    expect(store.newTaskTitle).toBe('');
+    expect(store.newTaskIcon).toBe('⭐');
+    expect(store.newTaskXp).toBe(40);
+    expect(store.newTaskPriority).toBe('med');
+    expect(store.showAddForm).toBe(false);
+  });
+});
+
+describe('vitaliteStore.deleteCustomTask', () => {
+  let storage: InMemoryStorage;
+
+  beforeEach(() => {
+    storage = new InMemoryStorage();
+    vi.mocked(getDeps).mockResolvedValue(makeMockDeps({ storage }) as any);
+    vi.stubGlobal('window', { dispatchEvent: vi.fn() });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('removes a custom task from state and storage', async () => {
+    const customSpecs = [
+      { id: 'custom-1', title: 'My task', icon: '🎯', xp: 60, priority: 'high' as const },
+    ];
+    await storage.set('kinetic:vitalite:custom-tasks', customSpecs);
+
+    const store = vitaliteStore();
+    await store.init();
+    expect(store.tasks.some((t) => t.id === 'custom-1')).toBe(true);
+
+    await store.deleteCustomTask('custom-1');
+
+    expect(store.tasks.some((t) => t.id === 'custom-1')).toBe(false);
+    expect(store.customSpecs.some((s) => s.id === 'custom-1')).toBe(false);
+
+    const persisted = await storage.get<unknown[]>('kinetic:vitalite:custom-tasks');
+    expect((persisted as any[]).some((s: any) => s.id === 'custom-1')).toBe(false);
+  });
+
+  it('is a no-op when task ID is currently pending', async () => {
+    const store = vitaliteStore();
+    await store.init();
+    store._pendingIds = ['custom-1'];
+    const setSpy = vi.spyOn(storage, 'set');
+    await store.deleteCustomTask('custom-1');
+    expect(setSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('vitaliteStore.loadHistory / toggleHistory', () => {
+  let storage: InMemoryStorage;
+
+  beforeEach(() => {
+    storage = new InMemoryStorage();
+    vi.mocked(getDeps).mockResolvedValue(makeMockDeps({ storage }) as any);
+    vi.stubGlobal('window', {
+      dispatchEvent: vi.fn(),
+      Alpine: { store: () => ({ historyDays: 7 }) },
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('loadHistory populates historyDays with the last 7 days', async () => {
+    const store = vitaliteStore();
+    await store.init();
+    await store.loadHistory();
+
+    expect(store.historyDays.length).toBeGreaterThan(0);
+    expect(store.historyLoading).toBe(false);
+    expect(store.historyDays[0]).toHaveProperty('date');
+    expect(store.historyDays[0]).toHaveProperty('doneIds');
+  });
+
+  it('loadHistory is idempotent when historyLoading is already true', async () => {
+    const store = vitaliteStore();
+    await store.init();
+    store.historyLoading = true;
+    const getSpy = vi.spyOn(storage, 'get');
+    await store.loadHistory();
+    expect(getSpy).not.toHaveBeenCalled();
+  });
+
+  it('toggleHistory sets showHistory and loads when first opened', async () => {
+    const store = vitaliteStore();
+    await store.init();
+    expect(store.showHistory).toBe(false);
+
+    await store.toggleHistory();
+
+    expect(store.showHistory).toBe(true);
+    expect(store.historyDays.length).toBeGreaterThan(0);
+  });
+
+  it('toggleHistory hides panel on second call without reloading', async () => {
+    const store = vitaliteStore();
+    await store.init();
+
+    await store.toggleHistory(); // open + load
+    const loadedDays = store.historyDays.length;
+
+    await store.toggleHistory(); // close
+    expect(store.showHistory).toBe(false);
+    expect(store.historyDays.length).toBe(loadedDays); // unchanged
+  });
+});
+
+describe('vitaliteStore._hasXpBonus / _rewardsHistoryDays', () => {
+  beforeEach(() => {
+    vi.mocked(getDeps).mockResolvedValue(makeMockDeps() as any);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('_hasXpBonus returns false when Alpine is not available', () => {
+    vi.stubGlobal('window', {});
+    const store = vitaliteStore();
+    expect(store._hasXpBonus()).toBe(false);
+  });
+
+  it('_hasXpBonus returns false when xp level < 5', () => {
+    vi.stubGlobal('window', {
+      Alpine: { store: () => ({ currentLevel: 3 }) },
+    });
+    const store = vitaliteStore();
+    expect(store._hasXpBonus()).toBe(false);
+  });
+
+  it('_hasXpBonus returns true when xp level >= 5', () => {
+    vi.stubGlobal('window', {
+      Alpine: { store: () => ({ currentLevel: 5 }) },
+    });
+    const store = vitaliteStore();
+    expect(store._hasXpBonus()).toBe(true);
+  });
+
+  it('_rewardsHistoryDays returns the rewards store historyDays value', () => {
+    vi.stubGlobal('window', {
+      Alpine: { store: () => ({ historyDays: 30 }) },
+    });
+    const store = vitaliteStore();
+    expect(store._rewardsHistoryDays()).toBe(30);
+  });
+
+  it('_rewardsHistoryDays returns 7 as fallback when Alpine is unavailable', () => {
+    vi.stubGlobal('window', {});
+    const store = vitaliteStore();
+    expect(store._rewardsHistoryDays()).toBe(7);
+  });
+});

@@ -2,9 +2,13 @@
  * tests/unit/storage-maintenance.test.ts
  * Couvre la purge des clés journalières > 90 jours.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { StoragePort } from '@kinetic/core';
-import { compactStorage, formatBytes } from '../../apps/web/src/lib/storage-maintenance';
+import {
+  compactStorage,
+  formatBytes,
+  getStorageUsage,
+} from '../../apps/web/src/lib/storage-maintenance';
 
 class InMemoryStorage implements StoragePort {
   private store = new Map<string, unknown>();
@@ -104,5 +108,114 @@ describe('formatBytes', () => {
     expect(formatBytes(5 * 1024 * 1024)).toBe('5.0 Mo');
     expect(formatBytes(2 * 1024 * 1024 * 1024)).toBe('2.00 Go');
     expect(formatBytes(null)).toBe('—');
+  });
+});
+
+describe('getStorageUsage', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('returns null fields when navigator is undefined', async () => {
+    vi.stubGlobal('navigator', undefined);
+    const result = await getStorageUsage();
+    expect(result).toEqual({ usedBytes: null, quotaBytes: null, percent: null });
+  });
+
+  it('returns null fields when navigator.storage is missing', async () => {
+    vi.stubGlobal('navigator', {});
+    const result = await getStorageUsage();
+    expect(result).toEqual({ usedBytes: null, quotaBytes: null, percent: null });
+  });
+
+  it('returns usage data from navigator.storage.estimate()', async () => {
+    vi.stubGlobal('navigator', {
+      storage: {
+        estimate: vi.fn().mockResolvedValue({ usage: 1024 * 1024, quota: 10 * 1024 * 1024 }),
+      },
+    });
+    const result = await getStorageUsage();
+    expect(result.usedBytes).toBe(1024 * 1024);
+    expect(result.quotaBytes).toBe(10 * 1024 * 1024);
+    expect(result.percent).toBe(10);
+  });
+
+  it('returns null percent when quota is zero (division guard)', async () => {
+    vi.stubGlobal('navigator', {
+      storage: { estimate: vi.fn().mockResolvedValue({ usage: 0, quota: 0 }) },
+    });
+    const result = await getStorageUsage();
+    expect(result.percent).toBeNull();
+  });
+
+  it('returns null fields when estimate() throws', async () => {
+    vi.stubGlobal('navigator', {
+      storage: { estimate: vi.fn().mockRejectedValue(new Error('permission denied')) },
+    });
+    const result = await getStorageUsage();
+    expect(result).toEqual({ usedBytes: null, quotaBytes: null, percent: null });
+  });
+});
+
+describe('autoCompactOnStartup', () => {
+  beforeEach(() => vi.resetModules());
+  afterEach(() => vi.resetModules());
+
+  it('runs compactStorage and logs when keys are removed', async () => {
+    const { autoCompactOnStartup } = await import('../../apps/web/src/lib/storage-maintenance.js');
+
+    const storage = new InMemoryStorage();
+    const old = isoDaysAgo(120);
+    await storage.set(`kinetic:vitalite:done:${old}`, ['t1']);
+
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    await autoCompactOnStartup(storage);
+    expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('auto-compact removed 1'));
+    infoSpy.mockRestore();
+  });
+
+  it('runs silently when no keys are removed', async () => {
+    const { autoCompactOnStartup } = await import('../../apps/web/src/lib/storage-maintenance.js');
+
+    const storage = new InMemoryStorage();
+    await storage.set('kinetic:xp', { xp: 100 }); // non-daily key, never removed
+
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    await autoCompactOnStartup(storage);
+    expect(infoSpy).not.toHaveBeenCalled();
+    infoSpy.mockRestore();
+  });
+
+  it('is idempotent — second call within same module instance is a no-op', async () => {
+    const { autoCompactOnStartup } = await import('../../apps/web/src/lib/storage-maintenance.js');
+
+    const storage = new InMemoryStorage();
+    const old = isoDaysAgo(120);
+    await storage.set(`kinetic:vitalite:done:${old}`, ['t']);
+
+    await autoCompactOnStartup(storage); // first call — removes key
+    await storage.set(`kinetic:vitalite:done:${old}`, ['t']); // restore
+    await autoCompactOnStartup(storage); // second call — flag is set, does nothing
+
+    // Key still present because second call was skipped
+    expect(await storage.get(`kinetic:vitalite:done:${old}`)).not.toBeNull();
+  });
+
+  it('catches errors and logs a warning instead of throwing', async () => {
+    const { autoCompactOnStartup } = await import('../../apps/web/src/lib/storage-maintenance.js');
+
+    const badStorage = {
+      get: vi.fn(),
+      set: vi.fn(),
+      remove: vi.fn(),
+      keys: vi.fn().mockRejectedValue(new Error('IDB error')),
+      clear: vi.fn(),
+    };
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await expect(autoCompactOnStartup(badStorage as any)).resolves.toBeUndefined();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('auto-compact failed'),
+      expect.any(Error),
+    );
+    warnSpy.mockRestore();
   });
 });

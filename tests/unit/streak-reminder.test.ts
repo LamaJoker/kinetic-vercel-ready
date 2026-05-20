@@ -17,6 +17,7 @@ vi.mock('@capacitor/local-notifications', () => ({
 
 import { getDeps } from '../../apps/web/src/deps.js';
 import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import {
   InMemoryStorage,
   FakeClock,
@@ -156,5 +157,52 @@ describe('scheduleStreakReminder', () => {
 
     const stored = await storage.get<string>('kinetic:reminder:lastDate');
     expect(stored).toBe('2026-05-16');
+  });
+
+  it('does not send notification when daily log already has >= 5 completed entries', async () => {
+    vi.setSystemTime(new Date('2026-05-16T12:00:00'));
+    const today = '2026-05-16';
+    const storage = new InMemoryStorage();
+    const log: Record<string, unknown> = {};
+    for (let i = 0; i < 5; i++) log[`task-${i}`] = true;
+    await storage.set(`kinetic:dailyLog:${today}`, log);
+    vi.mocked(getDeps).mockResolvedValue(makeDeps(storage) as ReturnType<typeof getDeps>);
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
+
+    const { scheduleStreakReminder } = await import('../../apps/web/src/lib/streak-reminder.js');
+    const notifSpy = vi.fn();
+    vi.stubGlobal('Notification', Object.assign(notifSpy, { permission: 'granted' }));
+
+    scheduleStreakReminder();
+    await vi.runAllTimersAsync();
+
+    expect(notifSpy).not.toHaveBeenCalled();
+  });
+
+  it('calls LocalNotifications.schedule when on native platform with permission granted', async () => {
+    vi.setSystemTime(new Date('2026-05-16T12:00:00'));
+    vi.mocked(getDeps).mockResolvedValue(makeDeps() as ReturnType<typeof getDeps>);
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+    vi.mocked(LocalNotifications.checkPermissions).mockResolvedValue({ display: 'granted' } as any);
+    vi.mocked(LocalNotifications.schedule).mockResolvedValue({ notifications: [] });
+
+    const { scheduleStreakReminder } = await import('../../apps/web/src/lib/streak-reminder.js');
+    scheduleStreakReminder();
+    await vi.runAllTimersAsync();
+
+    expect(LocalNotifications.schedule).toHaveBeenCalledOnce();
+  });
+
+  it('skips LocalNotifications.schedule when native permission is not granted', async () => {
+    vi.setSystemTime(new Date('2026-05-16T12:00:00'));
+    vi.mocked(getDeps).mockResolvedValue(makeDeps() as ReturnType<typeof getDeps>);
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+    vi.mocked(LocalNotifications.checkPermissions).mockResolvedValue({ display: 'denied' } as any);
+
+    const { scheduleStreakReminder } = await import('../../apps/web/src/lib/streak-reminder.js');
+    scheduleStreakReminder();
+    await vi.runAllTimersAsync();
+
+    expect(LocalNotifications.schedule).not.toHaveBeenCalled();
   });
 });

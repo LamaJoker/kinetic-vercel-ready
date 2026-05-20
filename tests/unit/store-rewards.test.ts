@@ -284,4 +284,40 @@ describe('rewardsStore.applyTheme', () => {
     await store.applyTheme('phoenix');
     expect(mockSet).toHaveBeenCalledWith(expect.any(String), 'phoenix');
   });
+
+  it('logs error and does not throw when storage.set fails', async () => {
+    const { getDeps } = await import('../../apps/web/src/deps.js');
+    vi.mocked(getDeps).mockResolvedValueOnce({
+      storage: {
+        get: vi.fn().mockResolvedValue(null),
+        set: vi.fn().mockRejectedValue(new Error('disk full')),
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const store = rewardsStore();
+    await expect(store.applyTheme('cyber')).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('applyTheme save failed'),
+      expect.any(Error),
+    );
+    errorSpy.mockRestore();
+  });
+});
+
+describe('rewardsStore._currentLevel', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('returns 1 when Alpine throws', () => {
+    vi.stubGlobal('window', {
+      get Alpine() {
+        throw new Error('Alpine not ready');
+      },
+    });
+    const store = rewardsStore();
+    expect((store as any)._currentLevel()).toBe(1);
+  });
 });
