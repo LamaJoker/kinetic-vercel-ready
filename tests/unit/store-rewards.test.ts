@@ -14,6 +14,7 @@ vi.mock('../../apps/web/src/deps.js', () => ({
 
 import { rewardsStore, THEMES } from '../../apps/web/src/stores/rewards.js';
 import { REWARDS, STORAGE_KEYS } from '@kinetic/core';
+import { getDeps } from '../../apps/web/src/deps.js';
 
 function makeStoreWithLevel(level: number) {
   const store = rewardsStore();
@@ -319,5 +320,188 @@ describe('rewardsStore._currentLevel', () => {
     });
     const store = rewardsStore();
     expect((store as any)._currentLevel()).toBe(1);
+  });
+});
+
+// ─── _initFreezeTokens ────────────────────────────────────────────────────────
+
+describe('rewardsStore._initFreezeTokens', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('does not renew tokens when the stored week matches the current week', async () => {
+    // Compute the current ISO week key the same way the source does
+    const now = new Date();
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const day = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - day);
+    const jan1 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const week = Math.ceil(((d.getTime() - jan1.getTime()) / 86_400_000 + 1) / 7);
+    const currentWeek = `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+
+    const mockSet = vi.fn();
+    vi.mocked(getDeps).mockResolvedValueOnce({
+      storage: {
+        get: vi
+          .fn()
+          .mockResolvedValueOnce(currentWeek) // KEY_FREEZE_WEEK → same as current
+          .mockResolvedValueOnce(2), // final read for this.freezeTokens
+        set: mockSet,
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    const store = rewardsStore();
+    await (store as any)._initFreezeTokens();
+
+    expect(store.freezeTokens).toBe(2);
+    expect(mockSet).not.toHaveBeenCalled();
+  });
+
+  it('renews tokens by +1 (max 2) on a new week when level >= 6', async () => {
+    const mockSet = vi.fn();
+    vi.mocked(getDeps).mockResolvedValueOnce({
+      storage: {
+        get: vi
+          .fn()
+          .mockResolvedValueOnce('2020-W01') // old week → triggers renewal
+          .mockResolvedValueOnce(0) // current FREEZE_TOKENS count
+          .mockResolvedValueOnce(1), // final read after renewal
+        set: mockSet,
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    const store = makeStoreWithLevel(6);
+    await (store as any)._initFreezeTokens();
+
+    expect(store.freezeTokens).toBe(1);
+    // set called twice: FREEZE_TOKENS and FREEZE_WEEK
+    expect(mockSet).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not renew tokens when level is below 6 even on a new week', async () => {
+    const mockSet = vi.fn();
+    vi.mocked(getDeps).mockResolvedValueOnce({
+      storage: {
+        get: vi
+          .fn()
+          .mockResolvedValueOnce('2020-W01') // old week
+          .mockResolvedValueOnce(1), // final read
+        set: mockSet,
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    const store = makeStoreWithLevel(3); // level < 6
+    await (store as any)._initFreezeTokens();
+
+    expect(mockSet).not.toHaveBeenCalled();
+    expect(store.freezeTokens).toBe(1);
+  });
+
+  it('catches errors silently and does not propagate', async () => {
+    vi.mocked(getDeps).mockRejectedValueOnce(new Error('IDB unavailable'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const store = rewardsStore();
+    await expect((store as any)._initFreezeTokens()).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('_initFreezeTokens failed'),
+      expect.any(Error),
+    );
+    errorSpy.mockRestore();
+  });
+});
+
+// ─── useStreakFreeze ──────────────────────────────────────────────────────────
+
+describe('rewardsStore.useStreakFreeze', () => {
+  let dispatchSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    dispatchSpy = vi.fn();
+    vi.stubGlobal('window', { dispatchEvent: dispatchSpy });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('returns without action when freezeTokens is 0', async () => {
+    const store = makeStoreWithLevel(6);
+    store.freezeTokens = 0;
+    await store.useStreakFreeze();
+    expect(dispatchSpy).not.toHaveBeenCalled();
+  });
+
+  it('returns without action when freezeLoading is already true', async () => {
+    const store = makeStoreWithLevel(6);
+    store.freezeTokens = 1;
+    store.freezeLoading = true;
+    await store.useStreakFreeze();
+    expect(dispatchSpy).not.toHaveBeenCalled();
+  });
+
+  it('throws when level is below 6 even with tokens available', async () => {
+    const store = makeStoreWithLevel(3);
+    store.freezeTokens = 2;
+    await expect(store.useStreakFreeze()).rejects.toThrow('niveau 6');
+  });
+
+  it('decrements freezeTokens and dispatches EVENT_STREAK_UPDATED on success', async () => {
+    // Default mock: get returns null (no streak), set is a no-op
+    const store = makeStoreWithLevel(6);
+    store.freezeTokens = 2;
+
+    await store.useStreakFreeze();
+
+    expect(store.freezeTokens).toBe(1);
+    expect(store.freezeLoading).toBe(false); // released in finally
+    // At minimum EVENT_STREAK_UPDATED + EVENT_NOTIFY
+    expect(dispatchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('dispatches error notification and resets freezeLoading when storage.set throws', async () => {
+    vi.mocked(getDeps).mockResolvedValueOnce({
+      storage: {
+        get: vi.fn().mockResolvedValue(null),
+        set: vi.fn().mockRejectedValue(new Error('storage full')),
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    const store = makeStoreWithLevel(6);
+    store.freezeTokens = 1;
+
+    await store.useStreakFreeze();
+
+    expect(store.freezeLoading).toBe(false);
+    // Error notification dispatched
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ type: STORAGE_KEYS.EVENT_NOTIFY }),
+    );
+  });
+});
+
+// ─── _loadTheme catch branch ──────────────────────────────────────────────────
+
+describe('rewardsStore._loadTheme', () => {
+  afterEach(() => vi.clearAllMocks());
+
+  it('does not throw when getDeps fails (silent catch)', async () => {
+    vi.mocked(getDeps).mockRejectedValueOnce(new Error('storage unavailable'));
+    const store = rewardsStore();
+    await expect((store as any)._loadTheme()).resolves.toBeUndefined();
   });
 });

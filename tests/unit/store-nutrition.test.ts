@@ -128,6 +128,15 @@ describe('nutritionStore.progress', () => {
     store.plan = null;
     expect(store.progress).toBeNull();
   });
+
+  it('returns a non-null progress object when plan has macros', () => {
+    const store = nutritionStore();
+    store.plan = {
+      macros: { kcal: 2000, proteinG: 150, carbsG: 250, fatG: 65, fiberG: 30, waterMl: 2500 },
+    } as NutritionPlan;
+    store.todayLog = [];
+    expect(store.progress).not.toBeNull();
+  });
 });
 
 describe('nutritionStore initial state', () => {
@@ -353,5 +362,126 @@ describe('nutritionStore.removeMealItem', () => {
   it('handles removal gracefully when meal is not found in storage', async () => {
     // storage returns null → rawLog = [] → mapping produces []
     await expect(store.removeMealItem('Nonexistent', 0)).resolves.not.toThrow();
+  });
+});
+
+// ─── recalculatePlan ─────────────────────────────────────────────────────────
+
+describe('nutritionStore.recalculatePlan', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('is a no-op when no user profile is stored', async () => {
+    // Default mock: storage.get returns null → profile is null → early return
+    const store = nutritionStore();
+    await store.recalculatePlan();
+    expect(store.plan).toBeNull(); // unchanged
+  });
+
+  it('builds a plan and persists it when profile is available', async () => {
+    const mockSet = vi.fn();
+    vi.mocked(getDeps).mockResolvedValueOnce({
+      storage: {
+        get: vi.fn().mockResolvedValue({
+          sex: 'male',
+          ageYears: 30,
+          heightCm: 180,
+          weightKg: 80,
+          bodyFatPct: null,
+          activity: 'moderate',
+          goal: 'maintain',
+        }),
+        set: mockSet,
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    const store = nutritionStore();
+    await store.recalculatePlan();
+
+    expect(store.plan).not.toBeNull();
+    expect(store.plan?.macros.kcal).toBeGreaterThan(0);
+    expect(mockSet).toHaveBeenCalledOnce();
+  });
+
+  it('catches errors without throwing when getDeps fails', async () => {
+    vi.mocked(getDeps).mockRejectedValueOnce(new Error('IDB unavailable'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const store = nutritionStore();
+    await expect(store.recalculatePlan()).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('recalculate failed'),
+      expect.any(Error),
+    );
+    errorSpy.mockRestore();
+  });
+});
+
+// ─── addMealItem error path ───────────────────────────────────────────────────
+
+describe('nutritionStore.addMealItem — storage.set failure', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('returns false and dispatches error notification when storage.set throws', async () => {
+    const dispatchFn = vi.fn();
+    vi.stubGlobal('window', { dispatchEvent: dispatchFn });
+
+    vi.mocked(getDeps).mockResolvedValueOnce({
+      storage: {
+        get: vi.fn().mockResolvedValue(null),
+        set: vi.fn().mockRejectedValue(new Error('IDB write error')),
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    const store = nutritionStore();
+    const result = await store.addMealItem('Breakfast', egg, 100);
+
+    expect(result).toBe(false);
+    expect(dispatchFn).toHaveBeenCalledOnce();
+    // Pending name must be released even on failure
+    expect(store._pendingMealNames).not.toContain('Breakfast');
+  });
+});
+
+// ─── removeMealItem error path ────────────────────────────────────────────────
+
+describe('nutritionStore.removeMealItem — storage.set failure', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('dispatches error notification when storage.set throws', async () => {
+    const dispatchFn = vi.fn();
+    vi.stubGlobal('window', { dispatchEvent: dispatchFn });
+
+    vi.mocked(getDeps).mockResolvedValueOnce({
+      storage: {
+        get: vi.fn().mockResolvedValue([makeMeal()]),
+        set: vi.fn().mockRejectedValue(new Error('disk full')),
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    const store = nutritionStore();
+    store.todayLog = [makeMeal()];
+    await store.removeMealItem('Breakfast', 0);
+
+    expect(dispatchFn).toHaveBeenCalledOnce();
+    // In-memory state must not be mutated when storage failed
+    expect(store.todayLog).toHaveLength(1);
   });
 });

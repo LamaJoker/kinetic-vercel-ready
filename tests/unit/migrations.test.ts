@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { InMemoryStorage } from '../helpers/stubs.js';
 import { runMigrationsIfNeeded } from '../../apps/web/src/lib/migrations.js';
+import { STORAGE_KEYS } from '@kinetic/core';
 
 const SCHEMA_VERSION_KEY = 'kinetic:schema-version';
 
@@ -65,6 +66,25 @@ describe('runMigrationsIfNeeded', () => {
     expect(lockRequest).toHaveBeenCalledWith(
       expect.stringContaining('migration'),
       expect.any(Function),
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it('dispatches error notification when restoreSnapshot itself fails during rollback', async () => {
+    const storage = new InMemoryStorage();
+    await storage.set('kinetic:xp', { xp: 100 });
+
+    // ALL set operations fail → migration fails AND restore-snapshot also fails
+    vi.spyOn(storage, 'set').mockRejectedValue(new Error('no space left'));
+
+    const dispatchSpy = vi.fn();
+    vi.stubGlobal('window', { dispatchEvent: dispatchSpy });
+
+    await expect(runMigrationsIfNeeded(storage)).rejects.toThrow('no space left');
+
+    // The inner catch must have dispatched the corruption-warning notification
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ type: STORAGE_KEYS.EVENT_NOTIFY }),
     );
     vi.unstubAllGlobals();
   });

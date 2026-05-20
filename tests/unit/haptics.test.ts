@@ -88,6 +88,18 @@ describe('Haptics (native platform)', () => {
     expect(Haptics.impact).toHaveBeenCalled();
   });
 
+  it('hapticMedium calls Haptics.impact', async () => {
+    hapticMedium();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(Haptics.impact).toHaveBeenCalled();
+  });
+
+  it('hapticHeavy calls Haptics.impact', async () => {
+    hapticHeavy();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(Haptics.impact).toHaveBeenCalled();
+  });
+
   it('hapticSuccess calls Haptics.notification', async () => {
     hapticSuccess();
     await new Promise((r) => setTimeout(r, 0));
@@ -98,5 +110,52 @@ describe('Haptics (native platform)', () => {
     hapticError();
     await new Promise((r) => setTimeout(r, 0));
     expect(Haptics.notification).toHaveBeenCalled();
+  });
+});
+
+describe('Haptics (native platform — API throws)', () => {
+  beforeEach(() => {
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+    vi.stubGlobal('navigator', {});
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('hapticLight swallows Haptics.impact errors silently', async () => {
+    vi.mocked(Haptics.impact).mockRejectedValueOnce(new Error('not supported'));
+    hapticLight();
+    await new Promise((r) => setTimeout(r, 0));
+    // No error propagated — catch block executed
+  });
+
+  it('hapticMedium swallows Haptics.impact errors silently', async () => {
+    vi.mocked(Haptics.impact).mockRejectedValueOnce(new Error('not supported'));
+    hapticMedium();
+    await new Promise((r) => setTimeout(r, 0));
+    // No error propagated — catch block executed
+  });
+
+  it('hapticHeavy swallows Haptics.impact errors silently', async () => {
+    vi.mocked(Haptics.impact).mockRejectedValueOnce(new Error('not supported'));
+    hapticHeavy();
+    await new Promise((r) => setTimeout(r, 0));
+    // No error propagated — catch block executed
+  });
+
+  it('hapticSuccess swallows Haptics.notification errors silently', async () => {
+    vi.mocked(Haptics.notification).mockRejectedValueOnce(new Error('not supported'));
+    hapticSuccess();
+    await new Promise((r) => setTimeout(r, 0));
+    // No error propagated — catch block executed
+  });
+
+  it('hapticError swallows Haptics.notification errors silently', async () => {
+    vi.mocked(Haptics.notification).mockRejectedValueOnce(new Error('not supported'));
+    hapticError();
+    await new Promise((r) => setTimeout(r, 0));
+    // No error propagated — catch block executed
   });
 });
