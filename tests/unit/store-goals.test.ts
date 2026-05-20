@@ -240,6 +240,18 @@ describe('goalsStore.init', () => {
     expect(fakeWindow._listeners.get('kinetic:session-saved')?.size).toBe(0);
     expect(fakeWindow._listeners.get('kinetic:deps-ready')?.size).toBe(0);
   });
+
+  it('triggers reload when kinetic:deps-ready is dispatched', async () => {
+    const store = goalsStore();
+    await store.init();
+
+    const reloadSpy = vi.spyOn(store, 'reload');
+    fakeWindow.dispatchEvent(new Event('kinetic:deps-ready'));
+
+    // reload is fired asynchronously (void), so wait a tick
+    await new Promise((r) => setTimeout(r, 0));
+    expect(reloadSpy).toHaveBeenCalledOnce();
+  });
 });
 
 describe('goalsStore.save', () => {
@@ -270,6 +282,227 @@ describe('goalsStore.save', () => {
     );
     expect(saved?.targetSessions).toBe(4);
     expect(saved?.targetTonnageKg).toBe(1500);
+  });
+});
+
+describe('goalsStore._maybeAwardBonus and _awardBonus', () => {
+  let fakeWindow: ReturnType<typeof makeFakeWindow> & { dispatchEvent: ReturnType<typeof vi.fn> };
+  let deps: ReturnType<typeof makeDeps>;
+  let goalsStore: Awaited<typeof import('../../apps/web/src/stores/goals.js')>['goalsStore'];
+  let dispatchSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
+    dispatchSpy = vi.fn();
+    const base = makeFakeWindow();
+    fakeWindow = { ...base, dispatchEvent: dispatchSpy };
+    vi.stubGlobal('window', fakeWindow);
+    vi.stubGlobal(
+      'CustomEvent',
+      class extends Event {
+        detail: unknown;
+        constructor(type: string, init?: CustomEventInit) {
+          super(type);
+          this.detail = init?.detail;
+        }
+      },
+    );
+    vi.resetModules();
+    deps = makeDeps();
+    vi.mocked(getDeps).mockResolvedValue(deps as ReturnType<typeof getDeps>);
+    vi.mocked(loadSessions).mockResolvedValue([]);
+    ({ goalsStore } = await import('../../apps/web/src/stores/goals.js'));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('_maybeAwardBonus returns immediately when _awardingBonus mutex is already set', async () => {
+    const store = goalsStore();
+    store._awardingBonus = true;
+    store.allOk = true;
+    store.weekKey = '2026-05-18';
+    store.xpAwardedWeek = '';
+
+    await store._maybeAwardBonus();
+
+    // xpAwardedWeek unchanged — the mutex short-circuited execution
+    expect(store.xpAwardedWeek).toBe('');
+    // _awardingBonus still true because we set it before calling and the early return didn't touch it
+    expect(store._awardingBonus).toBe(true);
+  });
+
+  it('_maybeAwardBonus is a no-op when allOk is false', async () => {
+    const store = goalsStore();
+    store.allOk = false;
+    store.weekKey = '2026-05-18';
+    store.xpAwardedWeek = '';
+
+    await store._maybeAwardBonus();
+
+    expect(store.xpAwardedWeek).toBe('');
+    expect(dispatchSpy).not.toHaveBeenCalled();
+  });
+
+  it('_maybeAwardBonus skips when xpAwardedWeek already matches weekKey (idempotent)', async () => {
+    const store = goalsStore();
+    store.allOk = true;
+    store.weekKey = '2026-05-18';
+    store.xpAwardedWeek = '2026-05-18'; // already awarded this week
+
+    await store._maybeAwardBonus();
+
+    expect(dispatchSpy).not.toHaveBeenCalled();
+  });
+
+  it('_maybeAwardBonus awards XP and updates xpAwardedWeek when conditions are met', async () => {
+    const store = goalsStore();
+    store.allOk = true;
+    store.weekKey = '2026-05-18';
+    store.xpAwardedWeek = ''; // not yet awarded
+
+    await store._maybeAwardBonus();
+
+    expect(store.xpAwardedWeek).toBe('2026-05-18');
+    expect(store._awardingBonus).toBe(false); // mutex released in finally
+  });
+
+  it('_maybeAwardBonus releases the mutex even when _awardBonus throws', async () => {
+    vi.mocked(getDeps).mockRejectedValueOnce(new Error('storage unavailable'));
+    const store = goalsStore();
+    store.allOk = true;
+    store.weekKey = '2026-05-18';
+    store.xpAwardedWeek = '';
+
+    await store._maybeAwardBonus();
+
+    expect(store._awardingBonus).toBe(false);
+  });
+
+  it('_awardBonus updates xpAwardedWeek and dispatches EVENT_NOTIFY + EVENT_XP_UPDATED', async () => {
+    const store = goalsStore();
+    store.weekKey = '2026-05-18';
+
+    await store._awardBonus(deps as any);
+
+    expect(store.xpAwardedWeek).toBe('2026-05-18');
+    // Two CustomEvent dispatches: EVENT_NOTIFY and EVENT_XP_UPDATED
+    expect(dispatchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('_awardBonus credits XP into storage via awardXp', async () => {
+    const store = goalsStore();
+    store.weekKey = '2026-05-18';
+
+    await store._awardBonus(deps as any);
+
+    const xpData = await deps.storage.get<{ xp: number }>('kinetic:xp');
+    expect(xpData).not.toBeNull();
+    expect(xpData!.xp).toBeGreaterThan(0);
+  });
+});
+
+describe('goalsStore.save — error catch', () => {
+  let fakeWindow: ReturnType<typeof makeFakeWindow>;
+  let goalsStore: Awaited<typeof import('../../apps/web/src/stores/goals.js')>['goalsStore'];
+
+  beforeEach(async () => {
+    fakeWindow = makeFakeWindow();
+    vi.stubGlobal('window', fakeWindow);
+    vi.stubGlobal(
+      'CustomEvent',
+      class extends Event {
+        detail: unknown;
+        constructor(type: string, init?: CustomEventInit) {
+          super(type);
+          this.detail = init?.detail;
+        }
+      },
+    );
+    vi.resetModules();
+    vi.mocked(getDeps).mockResolvedValue({
+      storage: {
+        get: vi.fn().mockResolvedValue(null),
+        set: vi.fn().mockRejectedValue(new Error('disk full')),
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps>);
+    vi.mocked(loadSessions).mockResolvedValue([]);
+    ({ goalsStore } = await import('../../apps/web/src/stores/goals.js'));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('dispatches error notification when storage.set throws during save', async () => {
+    const dispatchSpy = vi.spyOn(fakeWindow, 'dispatchEvent');
+    const store = goalsStore();
+    await store.save();
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ type: expect.stringContaining('notify') }),
+    );
+  });
+});
+
+describe('goalsStore.reload — awards bonus when weekly goal met at load time', () => {
+  let fakeWindow: ReturnType<typeof makeFakeWindow>;
+  let deps: ReturnType<typeof makeDeps>;
+  let goalsStore: Awaited<typeof import('../../apps/web/src/stores/goals.js')>['goalsStore'];
+
+  beforeEach(async () => {
+    fakeWindow = makeFakeWindow();
+    vi.stubGlobal('window', fakeWindow);
+    vi.stubGlobal(
+      'CustomEvent',
+      class extends Event {
+        detail: unknown;
+        constructor(type: string, init?: CustomEventInit) {
+          super(type);
+          this.detail = init?.detail;
+        }
+      },
+    );
+    vi.resetModules();
+    deps = makeDeps();
+    vi.mocked(getDeps).mockResolvedValue(deps as ReturnType<typeof getDeps>);
+    ({ goalsStore } = await import('../../apps/web/src/stores/goals.js'));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('calls _awardBonus during reload when sessions meet the weekly target', async () => {
+    // Store targetSessions = 1, xpAwardedWeek = '' → bonus not yet awarded
+    await deps.storage.set('kinetic:goals:weekly', {
+      targetSessions: 1,
+      targetTonnageKg: 0,
+      xpAwardedWeek: '',
+    });
+
+    // One session from this week (current Monday or later)
+    const monday = new Date();
+    const dayOffset = (monday.getDay() + 6) % 7;
+    monday.setDate(monday.getDate() - dayOffset);
+    monday.setHours(12, 0, 0, 0);
+    const sessionDate = monday.toISOString();
+
+    vi.mocked(loadSessions).mockResolvedValue([
+      { startedAt: sessionDate, endedAt: sessionDate, entries: [] },
+    ]);
+
+    const store = goalsStore();
+    await store.reload();
+
+    // xpAwardedWeek should now be set to the current weekKey (bonus awarded)
+    expect(store.xpAwardedWeek).not.toBe('');
+    expect(store.xpAwardedWeek.length).toBeGreaterThan(0);
   });
 });
 

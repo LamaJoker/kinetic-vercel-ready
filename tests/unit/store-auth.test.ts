@@ -41,6 +41,7 @@ import {
   signInWithGoogle,
   signOut,
   authRateLimiter,
+  callbackUrl,
 } from '@kinetic/adapters-web';
 import { flushAndResetDeps } from '../../apps/web/src/deps.js';
 
@@ -48,6 +49,7 @@ import { flushAndResetDeps } from '../../apps/web/src/deps.js';
 const mockSignInWithEmail = vi.mocked(signInWithEmail);
 const mockSignInWithGitHub = vi.mocked(signInWithGitHub);
 const mockSignInWithGoogle = vi.mocked(signInWithGoogle);
+const mockCallbackUrl = vi.mocked(callbackUrl);
 const mockSignOut = vi.mocked(signOut);
 const mockFlushAndResetDeps = vi.mocked(flushAndResetDeps);
 const rl = authRateLimiter as {
@@ -300,6 +302,39 @@ describe('authStore', () => {
         avatar_url: null,
       };
       expect(store.initials).toHaveLength(2);
+    });
+  });
+
+  // ── _diagCallbackUrl ────────────────────────────────────────────────────
+
+  describe('_diagCallbackUrl', () => {
+    it('returns the callbackUrl result when window has no Capacitor property', () => {
+      // window stub from beforeEach has no Capacitor key → isCap = false
+      expect(store._diagCallbackUrl()).toBe('https://example.com/callback');
+    });
+
+    it('passes capacitor=true when window.Capacitor is present', () => {
+      (window as unknown as Record<string, unknown>)['Capacitor'] = {};
+      const result = store._diagCallbackUrl();
+      delete (window as unknown as Record<string, unknown>)['Capacitor'];
+      expect(result).toBe('https://example.com/callback');
+      expect(mockCallbackUrl).toHaveBeenCalledWith({ capacitor: true });
+    });
+
+    it('returns "(erreur)" when callbackUrl throws', () => {
+      mockCallbackUrl.mockImplementationOnce(() => {
+        throw new Error('config missing');
+      });
+      expect(store._diagCallbackUrl()).toBe('(erreur)');
+    });
+  });
+
+  // ── _diagSupabaseUrl ────────────────────────────────────────────────────
+
+  describe('_diagSupabaseUrl', () => {
+    it('returns "(non definie)" when VITE_SUPABASE_URL is not set in test env', () => {
+      // import.meta.env.VITE_SUPABASE_URL is undefined in the Vitest Node environment
+      expect(store._diagSupabaseUrl()).toBe('(non définie)');
     });
   });
 });

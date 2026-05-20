@@ -6,7 +6,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { computeXpState, addXp, didLevelUp, getNewLevel, LEVELS } from '@kinetic/core';
+import {
+  computeXpState,
+  addXp,
+  didLevelUp,
+  getNewLevel,
+  LEVELS,
+  getRewardForLevel,
+} from '@kinetic/core';
 
 describe('computeXpState', () => {
   describe('niveau 1 (Rookie)', () => {
@@ -141,5 +148,23 @@ describe('getNewLevel', () => {
 
   it('retourne null si XP identique', () => {
     expect(getNewLevel(300, 300)).toBeNull();
+  });
+});
+
+describe('getRewardForLevel', () => {
+  it('returns the reward for a known level', () => {
+    const reward = getRewardForLevel(1);
+    expect(reward).toBeDefined();
+    expect(reward?.level).toBe(1);
+  });
+
+  it('returns undefined for an unknown level', () => {
+    expect(getRewardForLevel(999)).toBeUndefined();
+  });
+
+  it('returns correct reward for level 8 (legend badge)', () => {
+    const reward = getRewardForLevel(8);
+    expect(reward).toBeDefined();
+    expect(reward?.kind).toBe('badge');
   });
 });

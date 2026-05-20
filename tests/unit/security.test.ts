@@ -13,8 +13,32 @@ import {
   sanitizeNumber,
   checkRateLimit,
   isValidEmail,
+  buildCSPString,
   _clearRateLimitStoreForTesting,
 } from '../../apps/web/src/lib/security.js';
+
+describe('buildCSPString', () => {
+  it('returns a non-empty string', () => {
+    const csp = buildCSPString();
+    expect(typeof csp).toBe('string');
+    expect(csp.length).toBeGreaterThan(0);
+  });
+
+  it("includes default-src 'self'", () => {
+    expect(buildCSPString()).toContain("default-src 'self'");
+  });
+
+  it('emits directives that have no sources as bare names (upgrade-insecure-requests)', () => {
+    // upgrade-insecure-requests has an empty sources array — should appear without trailing value
+    const csp = buildCSPString();
+    expect(csp).toContain('upgrade-insecure-requests');
+    expect(csp).not.toMatch(/upgrade-insecure-requests\s+\S/);
+  });
+
+  it('separates directives with semicolons', () => {
+    expect(buildCSPString()).toContain(';');
+  });
+});
 
 describe('Security Module', () => {
   describe('sanitizeUserInput', () => {

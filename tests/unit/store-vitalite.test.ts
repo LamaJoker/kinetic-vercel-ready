@@ -611,4 +611,28 @@ describe('vitaliteStore._hasXpBonus / _rewardsHistoryDays', () => {
     const store = vitaliteStore();
     expect(store._rewardsHistoryDays()).toBe(7);
   });
+
+  it('_hasXpBonus returns false when Alpine.store throws', () => {
+    vi.stubGlobal('window', {
+      Alpine: {
+        store: () => {
+          throw new Error('store not registered');
+        },
+      },
+    });
+    const store = vitaliteStore();
+    expect(store._hasXpBonus()).toBe(false);
+  });
+
+  it('_rewardsHistoryDays returns 7 when Alpine.store throws', () => {
+    vi.stubGlobal('window', {
+      Alpine: {
+        store: () => {
+          throw new Error('store not registered');
+        },
+      },
+    });
+    const store = vitaliteStore();
+    expect(store._rewardsHistoryDays()).toBe(7);
+  });
 });
