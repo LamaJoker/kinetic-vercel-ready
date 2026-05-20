@@ -45,6 +45,13 @@ describe('CRDT Vector Clock', () => {
       incrementClock(c1, 'A');
       expect(c1['A']).toBe(0);
     });
+
+    it("initialise à 1 si le deviceId est nouveau dans l'horloge (couvre ?? 0)", () => {
+      const c: VectorClock = { A: 3 };
+      const c2 = incrementClock(c, 'B'); // B absent → (undefined ?? 0) + 1 = 1
+      expect(c2['B']).toBe(1);
+      expect(c2['A']).toBe(3); // inchangé
+    });
   });
 
   describe('mergeClock', () => {
@@ -88,6 +95,14 @@ describe('CRDT Vector Clock', () => {
       const b: VectorClock = { A: 1, B: 3 };
       expect(compareClocks(a, b)).toBe('concurrent');
     });
+
+    it('gère les clés manquantes de chaque côté (couvre ?? 0 lignes 45-46)', () => {
+      // a has A=2 but no B; b has B=2 but no A
+      // key A: av=2, bv=0 → isAfter=true; key B: av=0, bv=2 → isBefore=true → concurrent
+      const a: VectorClock = { A: 2 };
+      const b: VectorClock = { B: 2 };
+      expect(compareClocks(a, b)).toBe('concurrent');
+    });
   });
 
   describe('resolveConflict', () => {
@@ -110,20 +125,34 @@ describe('CRDT Vector Clock', () => {
       expect(resolveConflict(local, remote).value).toBe('remote');
     });
 
-    it('tiebreak par wallTime en cas de concurrence', () => {
-      const clocks = { A: 2, B: 2 };
+    it('tiebreak par wallTime en cas de concurrence (remote plus récent)', () => {
       const local = makeValue('local', { A: 3, B: 1 }, 'A', 1000);
       const remote = makeValue('remote', { A: 1, B: 3 }, 'B', 2000);
       // concurrent, remote a un wallTime plus récent → remote gagne
       expect(resolveConflict(local, remote).value).toBe('remote');
     });
 
-    it('tiebreak par deviceId si même wallTime (déterministe)', () => {
+    it('tiebreak par wallTime en cas de concurrence (local plus récent — couvre ligne 67)', () => {
+      const local = makeValue('local', { A: 3, B: 1 }, 'A', 2000);
+      const remote = makeValue('remote', { A: 1, B: 3 }, 'B', 1000);
+      // concurrent, local a un wallTime plus récent → local gagne
+      expect(resolveConflict(local, remote).value).toBe('local');
+    });
+
+    it('tiebreak par deviceId si même wallTime (local gagne — couvre ligne 70)', () => {
       const sameTime = 1000;
       const local = makeValue('local', { A: 1, B: 0 }, 'device-Z', sameTime);
       const remote = makeValue('remote', { A: 0, B: 1 }, 'device-A', sameTime);
       // device-Z > device-A lexicographiquement → local gagne
       expect(resolveConflict(local, remote).value).toBe('local');
+    });
+
+    it('tiebreak par deviceId si même wallTime (remote gagne — couvre branche false ligne 70)', () => {
+      const sameTime = 1000;
+      const local = makeValue('local', { A: 1, B: 0 }, 'device-A', sameTime);
+      const remote = makeValue('remote', { A: 0, B: 1 }, 'device-Z', sameTime);
+      // device-Z > device-A → remote gagne
+      expect(resolveConflict(local, remote).value).toBe('remote');
     });
   });
 });
