@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getSkeletonHtml, debounce, throttle, ric } from '../../apps/web/src/lib/performance.js';
+import {
+  getSkeletonHtml,
+  showSkeleton,
+  debounce,
+  throttle,
+  ric,
+} from '../../apps/web/src/lib/performance.js';
 import type { SkeletonType } from '../../apps/web/src/lib/performance.js';
 
 // ─── Lazy images ─────────────────────────────────────────────────────────────
@@ -77,6 +83,126 @@ describe('initLazyImages', () => {
     const { initLazyImages } = await import('../../apps/web/src/lib/performance.js');
     initLazyImages();
     expect(mockObserve).not.toHaveBeenCalled();
+  });
+});
+
+describe('showSkeleton', () => {
+  it('appends a skeleton child to the container and returns a remove function', () => {
+    const children: HTMLElement[] = [];
+    const container = {
+      appendChild: (node: HTMLElement) => children.push(node),
+    } as unknown as HTMLElement;
+
+    const fakeNode = {
+      setAttribute: vi.fn(),
+      innerHTML: '',
+      style: {} as CSSStyleDeclaration,
+      remove: vi.fn(),
+    } as unknown as HTMLElement;
+
+    vi.stubGlobal('document', {
+      createElement: vi.fn(() => fakeNode),
+    });
+
+    const cleanup = showSkeleton(container, 'task-list');
+
+    expect(children).toHaveLength(1);
+    expect(typeof cleanup).toBe('function');
+
+    vi.unstubAllGlobals();
+  });
+
+  it('cleanup function transitions opacity to 0 and removes the node after 200ms', () => {
+    vi.useFakeTimers();
+
+    const children: HTMLElement[] = [];
+    const container = {
+      appendChild: (node: HTMLElement) => children.push(node),
+    } as unknown as HTMLElement;
+
+    const fakeNode = {
+      setAttribute: vi.fn(),
+      innerHTML: '',
+      style: { transition: '', opacity: '' },
+      remove: vi.fn(),
+    } as unknown as HTMLElement;
+
+    vi.stubGlobal('document', { createElement: vi.fn(() => fakeNode) });
+
+    const cleanup = showSkeleton(container, 'dashboard');
+    cleanup();
+
+    expect((fakeNode as any).style.opacity).toBe('0');
+    expect(fakeNode.remove).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(200);
+    expect(fakeNode.remove).toHaveBeenCalledOnce();
+
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('lazyLoadImage (IntersectionObserver callback)', () => {
+  let observerCallback: ((entries: IntersectionObserverEntry[]) => void) | null = null;
+  const mockObserve = vi.fn();
+  const mockUnobserve = vi.fn();
+
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubGlobal(
+      'IntersectionObserver',
+      vi.fn((cb: (entries: IntersectionObserverEntry[]) => void) => {
+        observerCallback = cb;
+        return { observe: mockObserve, unobserve: mockUnobserve };
+      }),
+    );
+    mockObserve.mockClear();
+    mockUnobserve.mockClear();
+    observerCallback = null;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('loads src from data-lazy-src and unobserves when image intersects', async () => {
+    const { lazyLoadImage } = await import('../../apps/web/src/lib/performance.js');
+
+    const img = {
+      src: '',
+      dataset: { lazySrc: '/photo.jpg' },
+      removeAttribute: vi.fn(),
+    } as unknown as HTMLImageElement;
+
+    lazyLoadImage(img);
+
+    expect(observerCallback).not.toBeNull();
+    observerCallback!([
+      { isIntersecting: true, target: img } as unknown as IntersectionObserverEntry,
+    ]);
+
+    expect((img as any).src).toBe('/photo.jpg');
+    expect(img.removeAttribute).toHaveBeenCalledWith('data-lazy-src');
+    expect(mockUnobserve).toHaveBeenCalledWith(img);
+  });
+
+  it('does nothing when entry is not intersecting', async () => {
+    const { lazyLoadImage } = await import('../../apps/web/src/lib/performance.js');
+
+    const img = {
+      src: '',
+      dataset: { lazySrc: '/photo.jpg' },
+      removeAttribute: vi.fn(),
+    } as unknown as HTMLImageElement;
+    lazyLoadImage(img);
+
+    observerCallback!([
+      { isIntersecting: false, target: img } as unknown as IntersectionObserverEntry,
+    ]);
+
+    expect((img as any).src).toBe('');
+    expect(mockUnobserve).not.toHaveBeenCalled();
   });
 });
 

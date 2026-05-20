@@ -10,7 +10,12 @@ vi.stubGlobal(
   vi.fn(() => mockObserver),
 );
 
-import { collectWebVitals, markStart, markEnd } from '../../apps/web/src/lib/analytics.js';
+import {
+  collectWebVitals,
+  initAnalytics,
+  markStart,
+  markEnd,
+} from '../../apps/web/src/lib/analytics.js';
 
 describe('collectWebVitals', () => {
   it('calls onMetric from observe callbacks', () => {
@@ -26,6 +31,38 @@ describe('collectWebVitals', () => {
     });
     const onMetric = vi.fn();
     expect(() => collectWebVitals(onMetric)).not.toThrow();
+  });
+});
+
+describe('initAnalytics', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('registers a visibilitychange listener on document', () => {
+    const addListenerSpy = vi.fn();
+    vi.stubGlobal('document', { addEventListener: addListenerSpy });
+
+    initAnalytics();
+
+    expect(addListenerSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
+  });
+
+  it('does not throw when called', () => {
+    vi.stubGlobal('document', { addEventListener: vi.fn() });
+    expect(() => initAnalytics()).not.toThrow();
+  });
+
+  it('calls the visibilitychange handler without throwing when document is hidden', () => {
+    let handler: (() => void) | null = null;
+    vi.stubGlobal('document', {
+      addEventListener: (_: string, fn: () => void) => {
+        handler = fn;
+      },
+      visibilityState: 'hidden',
+    });
+
+    initAnalytics();
+    // Trigger the handler — flushMetrics exits early when buffer is empty
+    expect(() => handler?.()).not.toThrow();
   });
 });
 

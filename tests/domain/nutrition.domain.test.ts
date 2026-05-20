@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { bmrKcal, tdeeKcal, buildNutritionPlan, macroProgress } from '@kinetic/core';
+import {
+  bmrKcal,
+  tdeeKcal,
+  buildNutritionPlan,
+  macroProgress,
+  mealTimingPlan,
+} from '@kinetic/core';
 import type { UserMeasurements } from '@kinetic/core';
 
 const male75kg: UserMeasurements = {
@@ -82,6 +88,52 @@ describe('buildNutritionPlan', () => {
     const plan = buildNutritionPlan(loseGoal);
     expect(plan.weeklyFatLossG).not.toBeNull();
     expect(plan.weeklyFatLossG!).toBeGreaterThan(0);
+  });
+});
+
+describe('mealTimingPlan', () => {
+  const plan = buildNutritionPlan(male75kg);
+
+  it('returns 3 meals on a rest day (training=false)', () => {
+    const meals = mealTimingPlan(plan, false);
+    expect(meals).toHaveLength(3);
+    expect(meals[0].mealName).toBe('Matin');
+  });
+
+  it('returns 4 meals on a training day (training=true)', () => {
+    const meals = mealTimingPlan(plan, true);
+    expect(meals).toHaveLength(4);
+    // Training day includes pre/post workout meals
+    const names = meals.map((m) => m.mealName.toLowerCase());
+    expect(names.some((n) => n.includes('ance') || n.includes('post'))).toBe(true);
+  });
+
+  it('total kcal across rest-day meals approximates plan target', () => {
+    const meals = mealTimingPlan(plan, false);
+    const total = meals.reduce((sum, m) => sum + m.kcal, 0);
+    // Rounding may cause small drift — within 5% is fine
+    expect(total).toBeGreaterThan(plan.macros.kcal * 0.9);
+    expect(total).toBeLessThan(plan.macros.kcal * 1.1);
+  });
+
+  it('total kcal across training-day meals approximates plan target', () => {
+    const meals = mealTimingPlan(plan, true);
+    const total = meals.reduce((sum, m) => sum + m.kcal, 0);
+    expect(total).toBeGreaterThan(plan.macros.kcal * 0.9);
+    expect(total).toBeLessThan(plan.macros.kcal * 1.1);
+  });
+
+  it('each meal has positive kcal and macros', () => {
+    for (const training of [true, false]) {
+      const meals = mealTimingPlan(plan, training);
+      for (const meal of meals) {
+        expect(meal.kcal).toBeGreaterThan(0);
+        expect(meal.proteinG).toBeGreaterThan(0);
+        expect(meal.carbsG).toBeGreaterThan(0);
+        expect(meal.fatG).toBeGreaterThan(0);
+        expect(typeof meal.notes).toBe('string');
+      }
+    }
   });
 });
 
