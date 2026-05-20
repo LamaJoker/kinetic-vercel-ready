@@ -224,6 +224,12 @@ describe('authStore', () => {
       await store.loginWithGoogle();
       expect(store.error).toBe('Google error');
     });
+
+    it('sets fallback error message when signInWithGoogle throws a non-Error value (covers line 186 right branch)', async () => {
+      mockSignInWithGoogle.mockRejectedValueOnce('unexpected string thrown');
+      await store.loginWithGoogle();
+      expect(store.error).toBe('Erreur Google');
+    });
   });
 
   // ── logout ──────────────────────────────────────────────────────────────
