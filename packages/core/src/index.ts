@@ -1,3 +1,6 @@
+// ─── Validation (shared pure helpers) ────────────────────────
+export { validateStorageKey, validateStorageValue } from './validation.js';
+
 // ─── Constants ────────────────────────────────────────────────
 export { STORAGE_KEYS } from './constants/storage-keys.js';
 export type { StaticStorageKey } from './constants/storage-keys.js';

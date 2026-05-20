@@ -11,6 +11,7 @@ const RUNTIME_CACHE = `${VERSION}-runtime`;
 // Les assets hashés (/static/*) sont cachés runtime au fur et à mesure.
 const PRECACHE_URLS = [
   '/',
+  '/index.html',
   '/offline.html',
   '/manifest.json',
 ];
