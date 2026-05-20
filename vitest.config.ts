@@ -11,12 +11,25 @@ export default defineConfig({
       },
       { find: /^@test-helpers\/(.*)$/, replacement: resolve(__dirname, 'tests/helpers') + '/$1' },
       { find: '@test-helpers', replacement: resolve(__dirname, 'tests/helpers') },
+      // idb-keyval is a browser-only package — replace with in-memory stub for Node tests.
+      // The real IdbStorage adapter is excluded from coverage and tested via E2E.
+      {
+        find: 'idb-keyval',
+        replacement: resolve(__dirname, 'tests/helpers/idb-keyval.mock.ts'),
+      },
     ],
   },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
     exclude: ['tests/e2e/**', 'node_modules/**'],
+    // Global mocks for Capacitor (mobile-only, not available in Node test env).
+    // Tests that need finer control can override with their own vi.mock() calls.
+    server: {
+      deps: {
+        inline: ['@capacitor/core', '@capacitor/filesystem', '@capacitor/share'],
+      },
+    },
     coverage: {
       provider: 'v8',
       reportsDirectory: 'tests/coverage',
@@ -45,10 +58,10 @@ export default defineConfig({
       ],
 
       thresholds: {
-        lines: 63,
-        statements: 63,
-        functions: 65,
-        branches: 82,
+        lines: 70,
+        statements: 70,
+        functions: 72,
+        branches: 84,
       },
     },
   },

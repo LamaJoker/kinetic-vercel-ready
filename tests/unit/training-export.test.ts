@@ -1,4 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// Capacitor is mobile-only — stub it so the pure export functions can be tested in Node.
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
+vi.mock('@capacitor/filesystem', () => ({
+  Filesystem: { writeFile: vi.fn() },
+  Directory: { Documents: 'DOCUMENTS' },
+  Encoding: { UTF8: 'utf8' },
+}));
+vi.mock('@capacitor/share', () => ({ Share: { share: vi.fn() } }));
+
 import { buildJsonExport, buildCsvExport } from '../../apps/web/src/lib/training/export.js';
 import type { WorkoutSession, Exercise } from '../../apps/web/src/lib/training/types.js';
 

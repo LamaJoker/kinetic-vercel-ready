@@ -1,4 +1,4 @@
-export { validateStorageKey, validateStorageValue } from '@kinetic/adapters-web';
+export { validateStorageKey, validateStorageValue } from '@kinetic/core';
 
 /**
  * apps/web/src/lib/security.ts
@@ -9,7 +9,7 @@ export { validateStorageKey, validateStorageValue } from '@kinetic/adapters-web'
 
 export const CSP_DIRECTIVES = {
   'default-src': ["'self'"],
-  'script-src': ["'self'", "'unsafe-eval'"],
+  'script-src': ["'self'"],
   'style-src': ["'self'", "'unsafe-inline'"],
   'img-src': ["'self'", 'data:', 'https:'],
   'font-src': ["'self'", 'data:'],
