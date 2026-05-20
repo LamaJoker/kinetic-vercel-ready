@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { suggestProgression, needsDeload, e1rm, slope, type PerformedSet } from '@kinetic/core';
 
 /**
- * Crée un PerformedSet avec une date relative à maintenant.
- * dayOffset négatif = N jours dans le passé.
- * Par défaut les sets sont récents (dans la fenêtre de 14j utilisée par deload).
+ * Cree un PerformedSet avec une date relative a maintenant.
+ * dayOffset negatif = N jours dans le passe.
+ * Par defaut les sets sont recents (dans la fenetre de 14j utilisee par deload).
  */
 function set(reps: number, weightKg: number, rpe: number, dayOffset = 0): PerformedSet {
   const d = new Date();
@@ -13,7 +13,7 @@ function set(reps: number, weightKg: number, rpe: number, dayOffset = 0): Perfor
 }
 
 describe('e1rm (Epley)', () => {
-  it('retourne le poids soulevé pour 1 rep', () => {
+  it('retourne le poids souleve pour 1 rep', () => {
     expect(e1rm(100, 1)).toBeCloseTo(100 * (1 + 1 / 30));
   });
 
@@ -28,15 +28,15 @@ describe('slope', () => {
     expect(slope([42])).toBe(0);
   });
 
-  it('est positif pour une série croissante', () => {
+  it('est positif pour une serie croissante', () => {
     expect(slope([1, 2, 3, 4])).toBeGreaterThan(0);
   });
 
-  it('est négatif pour une série décroissante', () => {
+  it('est negatif pour une serie decroissante', () => {
     expect(slope([4, 3, 2, 1])).toBeLessThan(0);
   });
 
-  it('est nul pour une série plate', () => {
+  it('est nul pour une serie plate', () => {
     expect(slope([5, 5, 5, 5])).toBe(0);
   });
 });
@@ -72,28 +72,43 @@ describe('suggestProgression', () => {
     expect(s.suggestedWeight).toBe(100);
   });
 
-  it('déclenche un deload après 3 séances saturées sans progrès d’e1RM', () => {
+  it("declenche un deload apres 3 seances saturees sans progres d'e1RM", () => {
     const history = [set(6, 100, 9.5, -6), set(6, 100, 9.5, -3), set(6, 100, 10, 0)];
     const s = suggestProgression({ ...base, history });
     expect(s.strategy).toBe('deload');
-    expect(s.suggestedWeight).toBe(90); // -10%, arrondi à l’incrément
-    expect(s.suggestedRpe).toBeLessThanOrEqual(6.5); // allègement du RPE cible
+    expect(s.suggestedWeight).toBe(90); // -10%, arrondi a l'increment
+    expect(s.suggestedRpe).toBeLessThanOrEqual(6.5);
   });
 
-  it('respecte l’increment fourni (machine avec pas de 5)', () => {
+  it("respecte l'increment fourni (machine avec pas de 5)", () => {
     const history = [set(10, 70, 7, 0)];
     const s = suggestProgression({ ...base, incrementKg: 5, history });
     expect(s.strategy).toBe('increase_weight');
     expect(s.suggestedWeight).toBe(75);
   });
+
+  it('retourne hold quand RPE proche de la cible ET reps deja atteintes', () => {
+    // RPE=8.3 -> |8.3-8| = 0.3 <= 0.5, mais reps=8 >= targetReps=8 -> fallback hold
+    const history = [set(8, 100, 8.3, 0)];
+    const s = suggestProgression({ ...base, history });
+    expect(s.strategy).toBe('hold');
+    expect(s.suggestedWeight).toBe(100);
+  });
+
+  it('ne declenche pas de deload si les sets sont hors de la fenetre 14j', () => {
+    // 3 sets satures mais > 14 jours dans le passe -> pas dans recentSets
+    const history = [set(6, 100, 9.5, -20), set(6, 100, 9.5, -18), set(6, 100, 10, -16)];
+    const s = suggestProgression({ ...base, history });
+    expect(s.strategy).not.toBe('deload');
+  });
 });
 
 describe('needsDeload', () => {
-  it('retourne false avec moins de 5 séances', () => {
+  it('retourne false avec moins de 5 seances', () => {
     expect(needsDeload([set(8, 100, 9, 0)])).toBe(false);
   });
 
-  it('retourne true sur 5 séances RPE >= 9 avec e1RM plat', () => {
+  it('retourne true sur 5 seances RPE >= 9 avec e1RM plat', () => {
     const h = [
       set(8, 100, 9, -8),
       set(8, 100, 9.5, -6),
@@ -104,7 +119,7 @@ describe('needsDeload', () => {
     expect(needsDeload(h)).toBe(true);
   });
 
-  it('retourne false si l’e1RM monte malgré un RPE élevé', () => {
+  it("retourne false si l'e1RM monte malgre un RPE eleve", () => {
     const h = [
       set(8, 90, 9, -8),
       set(8, 95, 9, -6),

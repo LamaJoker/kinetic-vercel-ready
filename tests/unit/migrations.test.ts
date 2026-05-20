@@ -54,4 +54,37 @@ describe('runMigrationsIfNeeded', () => {
     await runMigrationsIfNeeded(storage);
     expect(await storage.get<number>(SCHEMA_VERSION_KEY)).toBe(1);
   });
+
+  it('uses navigator.locks when available to prevent concurrent runs', async () => {
+    const storage = new InMemoryStorage();
+    const lockRequest = vi.fn((key: string, fn: () => Promise<void>) => fn());
+    vi.stubGlobal('navigator', { locks: { request: lockRequest } });
+
+    await runMigrationsIfNeeded(storage);
+
+    expect(lockRequest).toHaveBeenCalledWith(
+      expect.stringContaining('migration'),
+      expect.any(Function),
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it('restores data snapshot and re-throws when persisting schema version fails', async () => {
+    const storage = new InMemoryStorage();
+    await storage.set('kinetic:xp', { xp: 500 });
+    await storage.set('kinetic:streak', { count: 7 });
+
+    // Make storage.set fail only when writing the schema-version key
+    const original = storage.set.bind(storage);
+    vi.spyOn(storage, 'set').mockImplementation((key: string, value: unknown) => {
+      if (key === SCHEMA_VERSION_KEY) return Promise.reject(new Error('disk full'));
+      return original(key, value);
+    });
+
+    await expect(runMigrationsIfNeeded(storage)).rejects.toThrow('disk full');
+
+    // Original data must still be intact after rollback
+    expect(await storage.get('kinetic:xp')).toEqual({ xp: 500 });
+    expect(await storage.get('kinetic:streak')).toEqual({ count: 7 });
+  });
 });
