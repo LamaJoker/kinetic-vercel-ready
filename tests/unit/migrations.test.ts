@@ -126,6 +126,24 @@ describe('runMigrationsIfNeeded', () => {
     expect(keys).not.toContain('kinetic:xp');
   });
 
+  it('logs a warning for unknown migration versions (covers default case at line 106)', async () => {
+    const storage = new InMemoryStorage();
+    // Pre-seed schema version to -1 so the loop starts at v=0, which hits default:
+    // for (v = 0; v <= 1; v++): v=0 → runMigration(0) → default → console.warn
+    await storage.set(SCHEMA_VERSION_KEY, -1 as any);
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await runMigrationsIfNeeded(storage);
+    const warnArgs = warnSpy.mock.calls.flat().join(' ');
+    expect(warnArgs).toContain('[migrations]');
+    expect(warnArgs).toContain('unknown version');
+    warnSpy.mockRestore();
+
+    // Schema version should be set to SCHEMA_VERSION (1) after all migrations
+    const version = await storage.get<number>(SCHEMA_VERSION_KEY);
+    expect(version).toBe(1);
+  });
+
   it('removes keys added during migration that were not in the original snapshot', async () => {
     const storage = new InMemoryStorage();
     await storage.set('kinetic:xp', { xp: 100 });
