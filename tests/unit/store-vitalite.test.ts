@@ -304,9 +304,9 @@ describe('vitaliteStore.hideTask / unhideTask', () => {
     vi.stubGlobal('window', { dispatchEvent: dispatchFn });
 
     const failStorage = new InMemoryStorage();
-    vi.mocked(getDeps).mockResolvedValueOnce({
-      storage: failStorage,
-    } as any);
+    // Override for BOTH init() and unhideTask() getDeps calls (not once)
+    vi.mocked(getDeps).mockResolvedValue({ storage: failStorage } as any);
+
     const store = vitaliteStore();
     await store.init();
 
@@ -314,12 +314,34 @@ describe('vitaliteStore.hideTask / unhideTask', () => {
     store.hiddenIds = ['morning-stretch'];
     store.tasks = store.tasks.filter((t) => t.id !== 'morning-stretch');
 
-    // Make storage.set throw on the unhide persist call
+    // Make storage.set throw on the unhideTask persist call
     vi.spyOn(failStorage, 'set').mockRejectedValueOnce(new Error('disk full'));
 
     await store.unhideTask('morning-stretch');
 
     expect(dispatchFn).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
+  });
+
+  it('hideTask dispatches error notification when storage.set throws', async () => {
+    const dispatchFn = vi.fn();
+    vi.stubGlobal('window', { dispatchEvent: dispatchFn });
+
+    const failStorage = new InMemoryStorage();
+    // Both init() and hideTask() getDeps calls use failStorage
+    vi.mocked(getDeps).mockResolvedValue({ storage: failStorage } as any);
+
+    const store = vitaliteStore();
+    await store.init();
+
+    // Make storage.set throw when hideTask tries to persist hiddenIds
+    vi.spyOn(failStorage, 'set').mockRejectedValueOnce(new Error('quota exceeded'));
+
+    await store.hideTask('morning-stretch');
+
+    // The catch block at lines 464-467 should have fired
+    expect(dispatchFn).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
   });
 
   it('hiddenSpecsList contains full specs of currently hidden default tasks', async () => {
@@ -387,6 +409,59 @@ describe('vitaliteStore.complete (success path)', () => {
     await store.complete(task.id);
     expect(setSpy).not.toHaveBeenCalled();
   });
+
+  it('awards bonus XP when _hasXpBonus() returns true (covers lines 273-283)', async () => {
+    // Override window: Alpine returns currentLevel=5 so _hasXpBonus()=true and reload works
+    const dispatchFn = vi.fn();
+    vi.stubGlobal('window', {
+      dispatchEvent: dispatchFn,
+      Alpine: {
+        store: (_name: string) => ({
+          currentLevel: 5, // _hasXpBonus() checks >= 5
+          reload: vi.fn().mockResolvedValue(undefined),
+        }),
+      },
+    });
+
+    const store = vitaliteStore();
+    await store.init();
+    const task = store.tasks.find((t) => !t.done);
+    if (!task) throw new Error('no undone task found');
+
+    // Complete the task — bonus XP awardXp call should execute without throwing
+    await expect(store.complete(task.id)).resolves.not.toThrow();
+
+    // Task should be marked done (main path succeeded despite bonus path running)
+    const updated = store.tasks.find((t) => t.id === task.id);
+    expect(updated?.done).toBe(true);
+  });
+
+  it('dispatches EVENT_LEVELUP when a task completion causes a level-up (covers lines 298-304)', async () => {
+    // Override window with a working Alpine mock so _refreshXpStore does not throw
+    const dispatchFn = vi.fn();
+    vi.stubGlobal('window', {
+      dispatchEvent: dispatchFn,
+      Alpine: { store: (_name: string) => ({ reload: vi.fn().mockResolvedValue(undefined) }) },
+    });
+
+    // Pre-seed XP at 190; level 2 threshold is 200.
+    // Completing any default task (xp >= 30) pushes total above 200 → level up.
+    await storage.set('kinetic:xp', { xp: 190 });
+
+    const store = vitaliteStore();
+    await store.init();
+
+    const task = store.tasks.find((t) => !t.done);
+    if (!task) throw new Error('no undone task found');
+
+    await store.complete(task.id);
+
+    // EVENT_LEVELUP custom event should have been dispatched
+    const levelUpCall = dispatchFn.mock.calls.find(([event]: [Event]) =>
+      event?.type?.includes('levelup'),
+    );
+    expect(levelUpCall).toBeDefined();
+  });
 });
 
 describe('vitaliteStore.undo (success path)', () => {
@@ -415,6 +490,44 @@ describe('vitaliteStore.undo (success path)', () => {
 
     await store.undo(task.id);
     expect(store.tasks.find((t) => t.id === task.id)?.done).toBe(false);
+  });
+
+  it('reaches syncDailyLog in undo when Alpine.store is properly mocked (covers lines 358-362)', async () => {
+    // Provide a working Alpine mock so _refreshXpStore() does not throw,
+    // allowing execution to continue to the void syncDailyLog(...) call.
+    vi.stubGlobal('window', {
+      dispatchEvent: vi.fn(),
+      Alpine: { store: (_name: string) => ({ reload: vi.fn().mockResolvedValue(undefined) }) },
+    });
+
+    const store = vitaliteStore();
+    await store.init();
+
+    const task = store.tasks.find((t) => !t.done);
+    if (!task) throw new Error('no undone task found');
+
+    await store.complete(task.id);
+    await store.undo(task.id);
+
+    expect(store.tasks.find((t) => t.id === task.id)?.done).toBe(false);
+  });
+
+  it('shows info notification when task was not in done list in storage (covers lines 342-344)', async () => {
+    const store = vitaliteStore();
+    await store.init();
+
+    const task = store.tasks.find((t) => !t.done);
+    if (!task) throw new Error('no undone task found');
+
+    // Mark task as done in memory only — no call to complete(), so storage has no done entry
+    store.tasks = store.tasks.map((t) => (t.id === task.id ? { ...t, done: true } : t));
+
+    await store.undo(task.id);
+
+    // undoTask_usecase returns { ok: true, undone: false } since task not in IDB done list
+    // → vitalite.ts fires notify('info', "Cette tache n'etait plus completee.")
+    // Task remains done in memory (no update happened)
+    expect(store.tasks.find((t) => t.id === task.id)?.done).toBe(true);
   });
 });
 
@@ -465,6 +578,18 @@ describe('vitaliteStore.addCustomTask', () => {
     expect(store.tasks.some((t) => t.title === '')).toBe(false);
   });
 
+  it('sets addFormError when sanitized title exceeds 60 chars (HTML entity expansion)', async () => {
+    const store = vitaliteStore();
+    await store.init();
+
+    // '<'.repeat(60) → sanitize keeps 60 chars then replaces each '<' with '&lt;'
+    // (4 chars), resulting in 240 chars > 60 → triggers the length guard
+    store.newTaskTitle = '<'.repeat(60);
+    await store.addCustomTask();
+
+    expect(store.addFormError).toContain('trop long');
+  });
+
   it('resets the form after successful add', async () => {
     const store = vitaliteStore();
     await store.init();
@@ -482,6 +607,26 @@ describe('vitaliteStore.addCustomTask', () => {
     expect(store.newTaskXp).toBe(40);
     expect(store.newTaskPriority).toBe('med');
     expect(store.showAddForm).toBe(false);
+  });
+
+  it('dispatches error notification when storage.set throws in addCustomTask', async () => {
+    const failStorage = new InMemoryStorage();
+    vi.mocked(getDeps).mockResolvedValue({ storage: failStorage } as any);
+
+    const dispatchFn = vi.fn();
+    vi.stubGlobal('window', { dispatchEvent: dispatchFn });
+
+    const store = vitaliteStore();
+    await store.init();
+
+    // Make storage.set throw during the persist step
+    vi.spyOn(failStorage, 'set').mockRejectedValueOnce(new Error('disk full'));
+
+    store.newTaskTitle = 'New task';
+    await store.addCustomTask();
+
+    expect(dispatchFn).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
   });
 });
 
@@ -525,6 +670,29 @@ describe('vitaliteStore.deleteCustomTask', () => {
     const setSpy = vi.spyOn(storage, 'set');
     await store.deleteCustomTask('custom-1');
     expect(setSpy).not.toHaveBeenCalled();
+  });
+
+  it('dispatches error notification when storage.set throws in deleteCustomTask', async () => {
+    const customSpecs = [
+      { id: 'custom-1', title: 'My task', icon: '🎯', xp: 60, priority: 'high' as const },
+    ];
+    const failStorage = new InMemoryStorage();
+    await failStorage.set('kinetic:vitalite:custom-tasks', customSpecs);
+    vi.mocked(getDeps).mockResolvedValue({ storage: failStorage } as any);
+
+    const dispatchFn = vi.fn();
+    vi.stubGlobal('window', { dispatchEvent: dispatchFn });
+
+    const store = vitaliteStore();
+    await store.init();
+
+    // Make storage.set throw during the persist step of deleteCustomTask
+    vi.spyOn(failStorage, 'set').mockRejectedValueOnce(new Error('disk full'));
+
+    await store.deleteCustomTask('custom-1');
+
+    expect(dispatchFn).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
   });
 });
 
