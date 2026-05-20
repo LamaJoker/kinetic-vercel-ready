@@ -89,6 +89,11 @@ describe('validateTask', () => {
     const errors = validateTask({ type: 'invalid' as never });
     expect(errors.some((e) => e.field === 'type')).toBe(true);
   });
+
+  it('détecte une priorité invalide', () => {
+    const errors = validateTask({ priority: 'extreme' as never });
+    expect(errors.some((e) => e.field === 'priority')).toBe(true);
+  });
 });
 
 describe('canComplete', () => {
@@ -181,5 +186,13 @@ describe('sortByPriority', () => {
     const done = completeTask(makeTask({ id: '2', priority: 'med' }), '2026-04-20');
     const sorted = [done, notDone].sort(sortByPriority);
     expect(sorted[0]!.id).toBe('1');
+  });
+
+  it('trie par titre alphabétique quand priorité et done sont identiques', () => {
+    const a = makeTask({ id: '1', title: 'Zumba', priority: 'med' });
+    const b = makeTask({ id: '2', title: 'Aerobique', priority: 'med' });
+    const sorted = [a, b].sort(sortByPriority);
+    expect(sorted[0]!.title).toBe('Aerobique');
+    expect(sorted[1]!.title).toBe('Zumba');
   });
 });

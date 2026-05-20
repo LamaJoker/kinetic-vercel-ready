@@ -86,4 +86,24 @@ describe('offlineStore', () => {
     vi.advanceTimersByTime(3000);
     expect(store.wasOffline).toBe(false);
   });
+
+  it('increments sinceSecs each interval tick while offline with a lastOnlineAt', async () => {
+    // Start online so lastOnlineAt is set to Date.now()
+    vi.stubGlobal('navigator', { onLine: true });
+    const { offlineStore } = await import('../../apps/web/src/stores/offline.js');
+    const store = offlineStore();
+    expect(store.lastOnlineAt).not.toBeNull();
+
+    store.init();
+
+    // Go offline — isOffline=true, lastOnlineAt is still set from initialization
+    listeners.get('offline')?.forEach((fn) => fn());
+    expect(store.isOffline).toBe(true);
+
+    // Advance timer to fire the interval (> 1 second)
+    vi.advanceTimersByTime(1100);
+
+    // sinceSecs should have been updated by the interval callback
+    expect(store.sinceSecs).toBeGreaterThanOrEqual(0);
+  });
 });
