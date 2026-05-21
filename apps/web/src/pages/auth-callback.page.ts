@@ -160,13 +160,20 @@ export function authCallback() {
 
         // PKCE flow : ?code= → échange contre une session
         if (code) {
-          if (handoffApk) {
+          if (handoffApk && !_isCapacitor) {
+            // On est dans Chrome Custom Tabs (pas dans la WebView APK).
+            // Le verifier PKCE est dans la WebView APK, pas ici → on NE peut PAS
+            // appeler exchangeCodeForSession ici (→ "PKCE code verifier not found").
+            // Solution : passer le ?code à l'APK via deep link ; c'est la WebView
+            // qui échangera elle-même avec son propre verifier.
             const deepLink = `com.lamajoker.kinetic://auth-callback?code=${encodeURIComponent(code)}`;
             this.apkDeepLink = deepLink;
             this._pendingCode = code;
             this._tryAutoOpenApk(deepLink);
             return;
           }
+          // Web normal OU WebView APK recevant le deep link → le verifier est
+          // présent dans ce localStorage → échange direct.
           const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;
           this._navigateHome();

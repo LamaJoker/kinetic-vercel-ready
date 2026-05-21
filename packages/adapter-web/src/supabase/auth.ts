@@ -74,10 +74,17 @@ export function callbackUrl(opts: { capacitor?: boolean } = {}): string {
  * Client Supabase singleton.
  * null si les variables d'env sont absentes ou invalides (mode guest).
  */
-// Sur Capacitor mobile : flow implicit (tokens directs dans l'URL hash, pas de PKCE verifier).
-// Le verifier PKCE peut être perdu entre le call signInWithOtp et le retour du deep link
-// si le WebView est rechargé. Implicit est plus fiable pour le mobile.
-const flowType: 'pkce' | 'implicit' = isCapacitor ? 'implicit' : 'pkce';
+// PKCE partout — y compris sur Capacitor.
+// Pourquoi : Google a déprécié l'implicit flow ; Supabase retourne toujours ?code=
+// (même si on demande implicit). Le verifier PKCE est généré par signInWithOAuth()
+// dans la WebView APK et stocké dans son localStorage (clé "kinetic-auth-code-verifier").
+// Chrome Custom Tabs n'y a pas accès — c'est pourquoi auth-callback.page.ts passe
+// le ?code= à l'APK via deep link (com.lamajoker.kinetic://auth-callback?code=...) et
+// c'est la WebView APK qui appelle exchangeCodeForSession() avec son propre verifier.
+//
+// detectSessionInUrl: false — on parse l'URL manuellement dans auth-callback.page.ts.
+// Évite la double-tentative d'échange (Supabase auto + notre code) qui produirait
+// "PKCE code verifier not found" dans Chrome Custom Tabs ou "code already used" dans APK.
 
 export const supabase =
   isValidUrl && isValidKey && SUPABASE_URL && SUPABASE_ANON_KEY
@@ -85,9 +92,9 @@ export const supabase =
         auth: {
           persistSession: true,
           autoRefreshToken: true,
-          detectSessionInUrl: true,
+          detectSessionInUrl: false, // géré manuellement dans auth-callback.page.ts
           storageKey: 'kinetic-auth',
-          flowType,
+          flowType: 'pkce', // toujours pkce ; verifier stocké dans la WebView APK
         },
       })
     : null;
