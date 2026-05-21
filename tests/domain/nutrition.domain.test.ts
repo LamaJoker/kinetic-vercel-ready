@@ -68,6 +68,26 @@ describe('buildNutritionPlan', () => {
     expect(plan.macros.fiberG).toBe(38);
   });
 
+  it('fibres selon DRI (femme=25g)', () => {
+    const female = { ...male75kg, sex: 'female' as const };
+    const plan = buildNutritionPlan(female);
+    expect(plan.macros.fiberG).toBe(25);
+  });
+
+  it('hydratation majoree de 500 ml pour activite elevee (active)', () => {
+    const active = { ...male75kg, activity: 'active' as const };
+    const plan = buildNutritionPlan(active);
+    const baseMl = Math.round(male75kg.weightKg * 35);
+    expect(plan.macros.waterMl).toBe(baseMl + 500);
+  });
+
+  it('hydratation majoree de 500 ml pour activite tres elevee (very_active)', () => {
+    const veryActive = { ...male75kg, activity: 'very_active' as const };
+    const plan = buildNutritionPlan(veryActive);
+    const baseMl = Math.round(male75kg.weightKg * 35);
+    expect(plan.macros.waterMl).toBe(baseMl + 500);
+  });
+
   it('lipides minimum 0.5 g/kg', () => {
     const plan = buildNutritionPlan(male75kg);
     expect(plan.macros.fatG).toBeGreaterThanOrEqual(male75kg.weightKg * 0.5);

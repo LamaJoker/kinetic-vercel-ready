@@ -317,6 +317,18 @@ describe('ric (requestIdleCallback polyfill)', () => {
     expect(typeof deadline.timeRemaining()).toBe('number');
   });
 
+  it('passes opts.timeout to setTimeout when opts is provided (covers line 149 opts?.timeout branch)', () => {
+    vi.useFakeTimers();
+    const cb = vi.fn();
+    // opts.timeout = 500 → setTimeout(..., 500) instead of ?? 1
+    ric(cb, { timeout: 500 });
+    vi.advanceTimersByTime(499);
+    expect(cb).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(cb).toHaveBeenCalledOnce();
+    vi.useRealTimers();
+  });
+
   it('uses native requestIdleCallback when available', () => {
     const mockRic = vi.fn((cb: Function) => {
       cb({ didTimeout: false, timeRemaining: () => 50 });

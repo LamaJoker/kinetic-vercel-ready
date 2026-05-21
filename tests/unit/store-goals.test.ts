@@ -219,6 +219,20 @@ describe('goalsStore.init', () => {
     expect(store.targetTonnageKg).toBe(2000);
   });
 
+  it('uses fallback defaults when saved fields are null (covers ?? branches lines 106-108)', async () => {
+    // Store a saved object with null values → triggers the ?? fallback branches
+    await deps.storage.set('kinetic:goals:weekly', {
+      targetSessions: null,
+      targetTonnageKg: null,
+      xpAwardedWeek: null,
+    });
+    const store = goalsStore();
+    await store.init();
+    expect(store.targetSessions).toBe(3); // null ?? 3
+    expect(store.targetTonnageKg).toBe(0); // null ?? 0
+    expect(store.xpAwardedWeek).toBe(''); // null ?? ''
+  });
+
   it('handles getDeps failure gracefully', async () => {
     vi.mocked(getDeps).mockRejectedValue(new Error('storage unavailable'));
     const store = goalsStore();

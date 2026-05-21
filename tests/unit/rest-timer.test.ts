@@ -96,6 +96,16 @@ describe('startRestTimer', () => {
     expect(onDone).toHaveBeenCalledOnce();
   });
 
+  it('tryNotify returns early when Notification is undefined (covers rest-timer.ts line 95)', () => {
+    // Override beforeEach Notification stub with undefined so typeof Notification === 'undefined'
+    vi.stubGlobal('Notification', undefined);
+    const onDone = vi.fn();
+    // notify: true (default) — tryNotify fires but returns early due to undefined Notification
+    startRestTimer({ durationSec: 1, onDone, vibrate: false });
+    vi.advanceTimersByTime(1000);
+    expect(onDone).toHaveBeenCalledOnce(); // timer still completes normally
+  });
+
   it('pause stops the countdown', () => {
     const ticks: number[] = [];
     const handle = startRestTimer({ durationSec: 5, onTick: (r) => ticks.push(r) });

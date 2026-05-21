@@ -155,6 +155,43 @@ describe('completeTask_usecase', () => {
   // ── Guard : idempotence ─────────────────────────────────────────────────────
 
   describe('guard : idempotence', () => {
+    it('keys without trailing date are kept by pruneCompletedKeys (covers parseTrailingIsoDate null branch at line 48)', async () => {
+      // A key that does NOT end with a date pattern → parseTrailingIsoDate returns null → kept forever
+      const task = makeRecurringTask();
+      const noDateKey = 'vitalite-stretch-nodatekey';
+
+      // Seed a stale non-dated key to force the pruning code path
+      await deps.storage.set('kinetic:completed-keys', [noDateKey]);
+      const result = await completeTask_usecase(deps, {
+        task,
+        idempotencyKey: 'vitalite-stretch:2026-04-20',
+      });
+
+      // Should succeed — the no-date key is preserved but doesn't block the new key
+      expect(result.ok).toBe(true);
+      const keys = await deps.storage.get<string[]>('kinetic:completed-keys');
+      expect(keys).toContain(noDateKey);
+      expect(keys).toContain('vitalite-stretch:2026-04-20');
+    });
+
+    it('pruneCompletedKeys keeps key with regex-matching but invalid date (covers parseTrailingIsoDate !isFinite branch)', async () => {
+      // '2099-13-45' matches /(\d{4}-\d{2}-\d{2})$/ but Date.parse returns NaN (month 13 invalid)
+      // → !Number.isFinite(parsed) → returns null → key is kept forever
+      const task = makeRecurringTask();
+      const invalidDateKey = 'task:2099-13-45';
+
+      await deps.storage.set('kinetic:completed-keys', [invalidDateKey]);
+      const result = await completeTask_usecase(deps, {
+        task,
+        idempotencyKey: 'vitalite-stretch:2026-04-20',
+      });
+
+      expect(result.ok).toBe(true);
+      const keys = await deps.storage.get<string[]>('kinetic:completed-keys');
+      expect(keys).toContain(invalidDateKey);
+      expect(keys).toContain('vitalite-stretch:2026-04-20');
+    });
+
     it('bloque une deuxième complétion avec la même clé', async () => {
       const task = makeRecurringTask();
       const key = 'vitalite-stretch:2026-04-20';

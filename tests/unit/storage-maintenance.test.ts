@@ -146,6 +146,16 @@ describe('getStorageUsage', () => {
     expect(result.percent).toBeNull();
   });
 
+  it('returns null for usedBytes/quotaBytes when estimate returns non-numeric values (covers lines 50-51)', async () => {
+    vi.stubGlobal('navigator', {
+      storage: { estimate: vi.fn().mockResolvedValue({ usage: undefined, quota: 'unknown' }) },
+    });
+    const result = await getStorageUsage();
+    expect(result.usedBytes).toBeNull(); // typeof undefined !== 'number' → null
+    expect(result.quotaBytes).toBeNull(); // typeof 'unknown' !== 'number' → null
+    expect(result.percent).toBeNull();
+  });
+
   it('returns null fields when estimate() throws', async () => {
     vi.stubGlobal('navigator', {
       storage: { estimate: vi.fn().mockRejectedValue(new Error('permission denied')) },

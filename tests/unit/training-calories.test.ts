@@ -66,6 +66,13 @@ describe('estimateStrengthWorkoutCaloriesKcal', () => {
     expect(at600).toBe(at999);
   });
 
+  it('returns 0 when durationMin is non-finite (covers clamp !isFinite branch line 4)', () => {
+    // clamp(Infinity, 0, 600) → !isFinite → 0; then durationMin <= 0 → return 0
+    expect(estimateStrengthWorkoutCaloriesKcal({ durationMin: Infinity, avgRpe: 8, profile })).toBe(
+      0,
+    );
+  });
+
   it('scales linearly with duration', () => {
     const at30 = estimateStrengthWorkoutCaloriesKcal({ durationMin: 30, avgRpe: 8, profile })!;
     const at60 = estimateStrengthWorkoutCaloriesKcal({ durationMin: 60, avgRpe: 8, profile })!;

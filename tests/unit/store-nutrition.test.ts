@@ -319,6 +319,34 @@ describe('nutritionStore.addMealItem', () => {
     expect(store.todayLog[0]!.items).toHaveLength(2);
     expect(store.todayLog[0]!.items[1]!.food.name).toBe('Toast');
   });
+
+  it('passes other meals through unchanged when updating one meal (covers line 131 : m branch)', async () => {
+    // Two distinct meals in storage; updating Lunch causes Breakfast to hit the `: m` pass-through
+    const stored = new Map<string, unknown>();
+    vi.mocked(getDeps).mockResolvedValue({
+      storage: {
+        get: vi.fn().mockImplementation((k: string) => Promise.resolve(stored.get(k) ?? null)),
+        set: vi.fn().mockImplementation((k: string, v: unknown) => {
+          stored.set(k, v);
+          return Promise.resolve();
+        }),
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    await store.addMealItem('Breakfast', egg, 100); // creates Breakfast meal
+    await store.addMealItem('Lunch', toast, 50); // creates Lunch meal
+    // Adding another item to Lunch → map processes Breakfast (? m) and Lunch (update)
+    await store.addMealItem('Lunch', egg, 30);
+
+    expect(store.todayLog).toHaveLength(2);
+    const breakfast = store.todayLog.find((m) => m.mealName === 'Breakfast');
+    const lunch = store.todayLog.find((m) => m.mealName === 'Lunch');
+    expect(breakfast?.items).toHaveLength(1);
+    expect(lunch?.items).toHaveLength(2);
+  });
 });
 
 // ─── removeMealItem ───────────────────────────────────────────────────────────
@@ -362,6 +390,36 @@ describe('nutritionStore.removeMealItem', () => {
   it('handles removal gracefully when meal is not found in storage', async () => {
     // storage returns null → rawLog = [] → mapping produces []
     await expect(store.removeMealItem('Nonexistent', 0)).resolves.not.toThrow();
+  });
+
+  it('passes other meals through unchanged when removing from one meal (covers line 165 : m branch)', async () => {
+    const stored = new Map<string, unknown>();
+    vi.mocked(getDeps).mockResolvedValue({
+      storage: {
+        get: vi.fn().mockImplementation((k: string) => Promise.resolve(stored.get(k) ?? null)),
+        set: vi.fn().mockImplementation((k: string, v: unknown) => {
+          stored.set(k, v);
+          return Promise.resolve();
+        }),
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    await store.addMealItem('Breakfast', egg, 100);
+    await store.addMealItem('Breakfast', toast, 50);
+    await store.addMealItem('Lunch', egg, 80);
+
+    // Remove first item from Breakfast → Lunch hits the `: m` pass-through branch
+    await store.removeMealItem('Breakfast', 0);
+
+    expect(store.todayLog).toHaveLength(2);
+    const breakfast = store.todayLog.find((m) => m.mealName === 'Breakfast');
+    const lunch = store.todayLog.find((m) => m.mealName === 'Lunch');
+    expect(breakfast?.items).toHaveLength(1);
+    expect(breakfast?.items[0]!.food.name).toBe('Toast');
+    expect(lunch?.items).toHaveLength(1);
   });
 });
 

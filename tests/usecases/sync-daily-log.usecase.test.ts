@@ -95,6 +95,28 @@ describe('syncDailyLog use-case', () => {
     if (!result.ok) expect(result.error).toContain('network down');
   });
 
+  it('utilise String(err) quand une valeur non-Error est lancee (couvre branche line 64)', async () => {
+    const today = deps.clock.todayIsoDate();
+    await deps.storage.set(`kinetic:xp:earned:${today}`, { xp: 50 });
+    await deps.storage.set(`kinetic:vitalite:done:${today}`, ['t1']);
+
+    const stringSpy: DailyLogSyncPort = {
+      async upsert() {
+        // eslint-disable-next-line no-throw-literal
+        throw 'backend_string_error';
+      },
+    };
+
+    const result = await syncDailyLog({
+      storage: deps.storage,
+      clock: deps.clock,
+      dailyLogSync: stringSpy,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('backend_string_error');
+  });
+
   it('utilise bien la date du clock (pas Date.now)', async () => {
     const today = deps.clock.todayIsoDate();
     await deps.storage.set(`kinetic:xp:earned:${today}`, { xp: 10 });
