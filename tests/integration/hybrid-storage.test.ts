@@ -460,6 +460,88 @@ describe('HybridStorage', () => {
     });
   });
 
+  describe('_applyKeys sync-key guard', () => {
+    it('skips SYNC_LAST_AT_KEY from remote during _applyKeys (covers line 182 || branch)', async () => {
+      // Put both a sync key and a regular key in remote.
+      // syncFromRemote must skip the sync key (not overwrite local's current timestamp).
+      await remote.set('kinetic:sync:last-at', '2000-01-01T00:00:00.000Z'); // stale value
+      await remote.set('kinetic:training:sessions', [{ id: 's1' }]);
+
+      await hybrid.syncFromRemote();
+
+      // Regular key should be pulled
+      const sessions = await hybrid.get('kinetic:training:sessions');
+      expect(sessions).toBeDefined();
+
+      // The stale '2000-01-01' from remote must NOT have overwritten the fresh timestamp
+      // written by syncFromRemote itself at the end
+      const lastAt = await local.get<string>('kinetic:sync:last-at');
+      expect(lastAt).not.toBe('2000-01-01T00:00:00.000Z');
+      expect(new Date(lastAt!).getFullYear()).toBeGreaterThanOrEqual(2025);
+    });
+  });
+
+  describe('flushPendingWrites — offline guard', () => {
+    it('returns immediately when offline even with pending writes (covers line 205 !isOnline branch)', async () => {
+      vi.stubGlobal('navigator', { onLine: false });
+      const offlineHybrid = new HybridStorage(local, remote);
+      await offlineHybrid.set('kinetic:xp' as Parameters<typeof offlineHybrid.set>[0], {
+        xp: 100,
+      });
+
+      const remoteSpy = vi.spyOn(remote, 'set');
+
+      // Still offline — flushPendingWrites should early-return without touching remote
+      await offlineHybrid.flushPendingWrites();
+      expect(remoteSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('flushPendingWrites — concurrent-deletion guard', () => {
+    it('skips keys deleted from pendingWrites mid-flush (covers line 213 continue branch)', async () => {
+      vi.stubGlobal('navigator', { onLine: false });
+      const h = new HybridStorage(local, remote);
+      const KEY1 = 'kinetic:key1' as Parameters<typeof h.set>[0];
+      const KEY2 = 'kinetic:key2' as Parameters<typeof h.set>[0];
+      await h.set(KEY1, 'val1');
+      await h.set(KEY2, 'val2');
+      vi.stubGlobal('navigator', { onLine: true });
+
+      // Access private pendingWrites via cast
+      const pendingWrites = (h as unknown as { pendingWrites: Map<string, unknown> }).pendingWrites;
+
+      // When key1 is synced to remote, delete key2 from pendingWrites before the loop reaches it
+      const originalSet = remote.set.bind(remote);
+      vi.spyOn(remote, 'set').mockImplementation(async (k, v) => {
+        await originalSet(k, v);
+        if (k === KEY1) pendingWrites.delete(KEY2);
+      });
+
+      await h.flushPendingWrites();
+
+      // key1 was synced; key2 was deleted mid-loop → skipped via continue
+      expect(await remote.get(KEY1)).toBe('val1');
+      expect(await remote.get(KEY2)).toBeNull();
+    });
+  });
+
+  describe('queueWrite — prev.attempts preservation', () => {
+    it('uses existing attempts count when same key is re-queued (covers line 250 prev?.attempts branch)', async () => {
+      vi.stubGlobal('navigator', { onLine: false });
+      const h = new HybridStorage(local, remote);
+      const KEY = 'kinetic:xp' as Parameters<typeof h.set>[0];
+
+      await h.set(KEY, { xp: 100 }); // first write → prev undefined → ?? 0 (right branch)
+      await h.set(KEY, { xp: 200 }); // second write → prev.attempts = 0 → left branch of ??
+
+      const pendingWrites = (h as unknown as { pendingWrites: Map<string, unknown> }).pendingWrites;
+      const entry = pendingWrites.get(KEY) as { value: unknown; attempts: number };
+
+      expect(entry.value).toEqual({ xp: 200 }); // updated to latest value
+      expect(entry.attempts).toBe(0); // preserved via prev.attempts (left branch)
+    });
+  });
+
   describe('queueWrite eviction', () => {
     it('evince la plus ancienne cle quand la queue est pleine', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});

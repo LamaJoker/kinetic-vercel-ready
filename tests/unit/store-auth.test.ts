@@ -168,6 +168,13 @@ describe('authStore', () => {
       expect(store.magicLinkSent).toBe(false);
     });
 
+    it('sets fallback "Erreur inconnue" when signInWithEmail throws a non-Error value (covers line 158 right branch)', async () => {
+      mockSignInWithEmail.mockRejectedValueOnce('not-an-error-object');
+      store.emailInput = 'user@example.com';
+      await store.loginWithEmail();
+      expect(store.error).toBe('Erreur inconnue');
+    });
+
     it('normalises email to lowercase before sending', async () => {
       store.emailInput = '  User@Example.COM  ';
       await store.loginWithEmail();
@@ -200,6 +207,12 @@ describe('authStore', () => {
       mockSignInWithGitHub.mockRejectedValueOnce(new Error('GitHub error'));
       await store.loginWithGitHub();
       expect(store.error).toBe('GitHub error');
+    });
+
+    it('sets fallback "Erreur GitHub" when signInWithGitHub throws a non-Error value (covers line 172 right branch)', async () => {
+      mockSignInWithGitHub.mockRejectedValueOnce(42);
+      await store.loginWithGitHub();
+      expect(store.error).toBe('Erreur GitHub');
     });
   });
 
@@ -308,6 +321,12 @@ describe('authStore', () => {
         avatar_url: null,
       };
       expect(store.initials).toHaveLength(2);
+    });
+
+    it('returns "?" when full_name is empty string and produces no initials (covers line 231 || "?" fallback)', () => {
+      // '' split on /\s+|@/ → [''] → filter(Boolean) → [] → join → '' → '' || '?' → '?'
+      store.user = { id: 'u1', email: null, full_name: '', avatar_url: null };
+      expect(store.initials).toBe('?');
     });
   });
 

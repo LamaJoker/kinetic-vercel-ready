@@ -6,6 +6,7 @@ vi.mock('../../apps/web/src/deps.js', () => ({
 
 import { getDeps } from '../../apps/web/src/deps.js';
 import { vitaliteStore } from '../../apps/web/src/stores/vitalite.js';
+import * as kineticCore from '@kinetic/core';
 import {
   InMemoryStorage,
   FakeClock,
@@ -118,6 +119,39 @@ describe('vitaliteStore.complete', () => {
     await store.complete('non-existent-id');
     expect(setSpy).not.toHaveBeenCalled();
   });
+
+  it('silently catches bonus XP failure (covers lines 286-287 catch bonusErr block)', async () => {
+    // _hasXpBonus() reads window.Alpine.store('xp').currentLevel — stub >= 5 to enable bonus
+    vi.stubGlobal('window', {
+      Alpine: {
+        store: (name: string) =>
+          name === 'xp' ? { currentLevel: 6, reload: vi.fn().mockResolvedValue(undefined) } : {},
+      },
+      dispatchEvent: vi.fn(),
+    });
+
+    // awardXp is called once for bonus XP (completeTask_usecase does NOT call awardXp)
+    const awardXpSpy = vi
+      .spyOn(kineticCore, 'awardXp')
+      .mockRejectedValueOnce(new Error('XP service down'));
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    vi.mocked(getDeps).mockResolvedValue(makeMockDeps({ storage }) as any);
+    const store = vitaliteStore();
+    await store.init();
+
+    const task = store.tasks.find((t) => !t.done)!;
+    await store.complete(task.id);
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[vitalite] bonus XP failed'),
+      expect.any(Error),
+    );
+
+    awardXpSpy.mockRestore();
+    warnSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('vitaliteStore.undo', () => {
@@ -138,6 +172,34 @@ describe('vitaliteStore.undo', () => {
     const setSpy = vi.spyOn(storage, 'set');
     await store.undo(task.id);
     expect(setSpy).not.toHaveBeenCalled();
+  });
+
+  it('dispatches error notification when undoTask_usecase returns !ok (covers lines 338-340)', async () => {
+    const dispatchFn = vi.fn();
+    vi.stubGlobal('window', {
+      Alpine: undefined,
+      dispatchEvent: dispatchFn,
+    });
+
+    const undoSpy = vi
+      .spyOn(kineticCore, 'undoTask_usecase')
+      .mockResolvedValueOnce({ ok: false, error: 'task not found' } as any);
+
+    vi.mocked(getDeps).mockResolvedValue(makeMockDeps({ storage }) as any);
+    const store = vitaliteStore();
+    await store.init();
+
+    // Mark first task as done so the guard `if (!task || !task.done) return;` passes
+    const task = store.tasks[0]!;
+    store.tasks = store.tasks.map((t) => (t.id === task.id ? { ...t, done: true } : t));
+
+    await store.undo(task.id);
+
+    // notify('error', ...) should have been called → window.dispatchEvent was called
+    expect(dispatchFn).toHaveBeenCalled();
+
+    undoSpy.mockRestore();
+    vi.unstubAllGlobals();
   });
 });
 

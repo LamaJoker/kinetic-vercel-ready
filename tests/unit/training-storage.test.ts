@@ -91,6 +91,22 @@ describe('loadExercises', () => {
     expect(ex.equipment).toBe('other'); // ?? 'other' fallback
     expect(ex.incrementKg).toBe(2.5); // !isFinite fallback
   });
+
+  it('uses empty-string fallback when id and name are null (covers lines 31-32 ?? "" branches)', async () => {
+    // null id/name hit the `?? ''` branches → both become '' → filtered out by x.id && x.name
+    // A valid exercise in the same response must survive so normalized.length > 0
+    const mixedExercises = [
+      { id: null, name: null }, // ?? '' on lines 31-32 → filtered
+      { id: 'valid', name: 'Valid Ex' }, // passes filter → returned
+    ];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => mixedExercises }),
+    );
+    const result = await loadExercises(storage);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.id).toBe('valid');
+  });
 });
 
 describe('saveExercises', () => {
