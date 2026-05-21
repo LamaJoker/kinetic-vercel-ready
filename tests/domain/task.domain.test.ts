@@ -195,4 +195,23 @@ describe('sortByPriority', () => {
     expect(sorted[0]!.title).toBe('Aerobique');
     expect(sorted[1]!.title).toBe('Zumba');
   });
+
+  it('retourne -1 quand a est non-done et b est done (branche ternaire : -1)', () => {
+    const notDone = makeTask({ id: '1', priority: 'med' });
+    const done = completeTask(makeTask({ id: '2', priority: 'med' }), '2026-04-20');
+    // Appel direct du comparateur avec (notDone, done) → a.done=false → -1
+    expect(sortByPriority(notDone, done)).toBe(-1);
+  });
+});
+
+describe('createTask description', () => {
+  it('trim la description quand elle est fournie', () => {
+    const task = createTask({
+      id: 'x',
+      title: 'Task',
+      description: '  Desc with spaces  ',
+      createdAt: '2026-04-20',
+    });
+    expect(task.description).toBe('Desc with spaces');
+  });
 });

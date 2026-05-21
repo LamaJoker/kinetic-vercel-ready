@@ -321,6 +321,15 @@ describe('rewardsStore._currentLevel', () => {
     const store = rewardsStore();
     expect((store as any)._currentLevel()).toBe(1);
   });
+
+  it('returns 1 when Alpine.store("xp").currentLevel is undefined (covers ?? 1 at line 267)', () => {
+    vi.stubGlobal('window', {
+      Alpine: { store: () => ({}) }, // returns object without currentLevel
+    });
+    const store = rewardsStore();
+    // Alpine.store('xp')?.currentLevel → undefined → ?? 1 → 1
+    expect((store as any)._currentLevel()).toBe(1);
+  });
 });
 
 // ─── _initFreezeTokens ────────────────────────────────────────────────────────
@@ -407,6 +416,48 @@ describe('rewardsStore._initFreezeTokens', () => {
     expect(store.freezeTokens).toBe(1);
   });
 
+  it('isoWeekKey covers Sunday branch (day || 7) via _initFreezeTokens on a Sunday (covers line 51)', async () => {
+    // 2026-05-17 is a Sunday (getUTCDay() = 0 → 0 || 7 = 7)
+    vi.setSystemTime(new Date('2026-05-17T12:00:00Z'));
+    vi.mocked(getDeps).mockResolvedValueOnce({
+      storage: {
+        get: vi.fn().mockResolvedValue(null), // same week or null
+        set: vi.fn(),
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    const store = makeStoreWithLevel(1); // level < 6, no renewal
+    await (store as any)._initFreezeTokens();
+    expect(store.freezeTokens).toBe(0); // null ?? 0 = 0
+    vi.setSystemTime(new Date()); // restore to real time
+  });
+
+  it('uses 0 as fallback when KEY_FREEZE_TOKENS is null in storage (covers ?? 0 at line 125)', async () => {
+    const mockSet = vi.fn();
+    vi.mocked(getDeps).mockResolvedValueOnce({
+      storage: {
+        get: vi
+          .fn()
+          .mockResolvedValueOnce('2020-W01') // old week → triggers renewal
+          .mockResolvedValueOnce(null) // KEY_FREEZE_TOKENS null → ?? 0
+          .mockResolvedValueOnce(1), // final read for this.freezeTokens
+        set: mockSet,
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    const store = makeStoreWithLevel(6); // level >= 6 to enter renewal
+    await (store as any)._initFreezeTokens();
+    // null ?? 0 = 0, renewed = min(0+1, 2) = 1
+    expect(store.freezeTokens).toBe(1);
+    expect(mockSet).toHaveBeenCalledTimes(2);
+  });
+
   it('catches errors silently and does not propagate', async () => {
     vi.mocked(getDeps).mockRejectedValueOnce(new Error('IDB unavailable'));
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -468,6 +519,20 @@ describe('rewardsStore.useStreakFreeze', () => {
     expect(store.freezeLoading).toBe(false); // released in finally
     // At minimum EVENT_STREAK_UPDATED + EVENT_NOTIFY
     expect(dispatchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses plural "jetons" in notification when newCount is not 1 (covers line 172 : "s" branch)', async () => {
+    const store = makeStoreWithLevel(6);
+    store.freezeTokens = 3; // newCount = 3 - 1 = 2; 2 !== 1 → 's'
+
+    await store.useStreakFreeze();
+
+    // Find the EVENT_NOTIFY dispatch call
+    const notifyCall = dispatchSpy.mock.calls.find(
+      ([event]) => (event as Event).type === STORAGE_KEYS.EVENT_NOTIFY,
+    );
+    const detail = (notifyCall?.[0] as CustomEvent)?.detail as { message?: string } | undefined;
+    expect(detail?.message).toContain('jetons');
   });
 
   it('dispatches error notification and resets freezeLoading when storage.set throws', async () => {

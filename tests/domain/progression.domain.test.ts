@@ -95,6 +95,14 @@ describe('suggestProgression', () => {
     expect(s.suggestedWeight).toBe(100);
   });
 
+  it('utilise 2.5 kg comme increment par defaut quand incrementKg vaut 0 (couvre roundTo step<=0)', () => {
+    const history = [set(10, 70, 7, 0)];
+    const s = suggestProgression({ ...base, incrementKg: 0, history });
+    expect(s.strategy).toBe('increase_weight');
+    // roundTo(70 + 0, 0) → step = 2.5 → Math.round(70/2.5)*2.5 = 28*2.5 = 70
+    expect(s.suggestedWeight).toBe(70);
+  });
+
   it('ne declenche pas de deload si les sets sont hors de la fenetre 14j', () => {
     // 3 sets satures mais > 14 jours dans le passe -> pas dans recentSets
     const history = [set(6, 100, 9.5, -20), set(6, 100, 9.5, -18), set(6, 100, 10, -16)];

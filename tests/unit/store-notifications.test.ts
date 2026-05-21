@@ -96,4 +96,23 @@ describe('notificationsStore', () => {
     const ids = store.toasts.map((t) => t.id);
     expect(new Set(ids).size).toBe(2);
   });
+
+  it('auto-hide only hides the targeted toast when multiple toasts exist (covers line 43 : t branch)', () => {
+    store.push({ kind: 'success', message: 'First', duration: 1000 });
+    store.push({ kind: 'info', message: 'Second', duration: 5000 });
+    // Advance past First's duration — map processes both, Second hits the `: t` branch
+    vi.advanceTimersByTime(1000);
+    expect(store.toasts.find((t) => t.message === 'First')?.visible).toBe(false);
+    expect(store.toasts.find((t) => t.message === 'Second')?.visible).toBe(true);
+  });
+
+  it('dismiss only hides the targeted toast when multiple exist (covers line 51 : t branch)', () => {
+    store.push({ kind: 'success', message: 'First' });
+    store.push({ kind: 'info', message: 'Second' });
+    const firstId = store.toasts[0]!.id;
+    // dismiss maps over both toasts — Second toast hits the `: t` branch
+    store.dismiss(firstId);
+    expect(store.toasts[0]!.visible).toBe(false);
+    expect(store.toasts[1]!.visible).toBe(true);
+  });
 });

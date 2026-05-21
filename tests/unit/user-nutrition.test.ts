@@ -67,6 +67,13 @@ describe('estimateBmrKcal (Mifflin-St Jeor)', () => {
     const age12 = estimateBmrKcal({ ...baseProfile, ageYears: 12 });
     expect(baby).toBe(age12);
   });
+
+  it('clampInt returns min for non-finite age (covers user/nutrition.ts line 4)', () => {
+    // clampInt(Infinity, 12, 90) → !isFinite → returns 12
+    const resultInf = estimateBmrKcal({ ...baseProfile, ageYears: Infinity });
+    const resultMin = estimateBmrKcal({ ...baseProfile, ageYears: 12 });
+    expect(resultInf).toBe(resultMin);
+  });
 });
 
 describe('estimateTdeeKcal', () => {

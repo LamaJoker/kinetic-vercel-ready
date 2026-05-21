@@ -4,6 +4,7 @@ import {
   perExerciseStats,
   muscleDistribution,
   detectPRs,
+  consistencyScore,
   toIsoWeek,
   type AnalyticsSet,
 } from '@kinetic/core';
@@ -110,5 +111,57 @@ describe('detectPRs', () => {
     expect(prs).toHaveLength(2);
     expect(prs[0]!.weightKg).toBe(100);
     expect(prs[1]!.weightKg).toBe(110);
+  });
+});
+
+describe('consistencyScore', () => {
+  /** Creates a set with performedAt set to `weeksAgo` weeks before now. */
+  function recentSet(weeksAgo: number): AnalyticsSet {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - weeksAgo * 7);
+    return {
+      sessionId: `recent-${weeksAgo}`,
+      exerciseId: 'bench',
+      muscles: ['pecs'],
+      reps: 5,
+      weightKg: 80,
+      rpe: 8,
+      performedAt: d.toISOString(),
+    };
+  }
+
+  it('returns 0 for empty set array', () => {
+    expect(consistencyScore([], 4)).toBe(0);
+  });
+
+  it('returns 0 when weeks parameter is 0', () => {
+    expect(consistencyScore([recentSet(0)], 0)).toBe(0);
+  });
+
+  it('returns 0 when weeks parameter is negative', () => {
+    expect(consistencyScore([recentSet(0)], -1)).toBe(0);
+  });
+
+  it('returns 100 when every week in the window has at least one set', () => {
+    const sets = [0, 1, 2, 3].map(recentSet);
+    expect(consistencyScore(sets, 4)).toBe(100);
+  });
+
+  it('returns 50 when half the window weeks have activity', () => {
+    // Activity only in weeks 0 and 2 (not 1 or 3)
+    const sets = [recentSet(0), recentSet(2)];
+    expect(consistencyScore(sets, 4)).toBe(50);
+  });
+
+  it('returns 0 when all activity is older than the window', () => {
+    // All sets are 5+ weeks ago but window is only 4 weeks
+    const sets = [recentSet(5), recentSet(6)];
+    expect(consistencyScore(sets, 4)).toBe(0);
+  });
+
+  it('uses default window of 8 weeks', () => {
+    // All 8 weeks covered → score should be 100
+    const sets = [0, 1, 2, 3, 4, 5, 6, 7].map(recentSet);
+    expect(consistencyScore(sets)).toBe(100);
   });
 });

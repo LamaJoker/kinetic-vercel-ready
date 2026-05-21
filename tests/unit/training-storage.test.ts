@@ -73,6 +73,24 @@ describe('loadExercises', () => {
     expect(result).toHaveLength(DEFAULT_EXERCISES.length);
     expect(result[0]!.id).toBe(DEFAULT_EXERCISES[0]!.id);
   });
+
+  it('uses fallback values for exercise fields missing in fetch response (covers lines 31-35)', async () => {
+    // An exercise with missing optional fields: no muscles, no equipment, non-numeric incrementKg
+    const sparseExercises = [{ id: 'sparse', name: 'Sparse Ex' }];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => sparseExercises,
+      }),
+    );
+    const result = await loadExercises(storage);
+    expect(result).toHaveLength(1);
+    const ex = result[0]!;
+    expect(ex.muscles).toEqual([]); // Array.isArray false → []
+    expect(ex.equipment).toBe('other'); // ?? 'other' fallback
+    expect(ex.incrementKg).toBe(2.5); // !isFinite fallback
+  });
 });
 
 describe('saveExercises', () => {

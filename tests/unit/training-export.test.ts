@@ -164,6 +164,29 @@ describe('buildCsvExport', () => {
     const expectedE1rm = (100 * (1 + 8 / 30)).toFixed(1);
     expect(csv).toContain(expectedE1rm);
   });
+
+  it('uses empty string for ended_at when session.endedAt is undefined (covers line 80 ?? branch)', () => {
+    const sessionWithoutEnd: WorkoutSession = {
+      id: 's-noend',
+      name: 'Unfinished',
+      startedAt: '2026-01-01T10:00:00.000Z',
+      // endedAt intentionally omitted → undefined → ?? '' → csvCell('') → '""'
+      entries: [
+        {
+          exerciseId: 'bp',
+          sets: [
+            { setIndex: 0, reps: 5, weightKg: 50, rpe: 7, performedAt: '2026-01-01T10:05:00.000Z' },
+          ],
+        },
+      ],
+    };
+    const csv = buildCsvExport([sessionWithoutEnd], exercises);
+    // BOM + header + 1 data row
+    const lines = csv.slice(1).split('\r\n').filter(Boolean);
+    expect(lines.length).toBe(2);
+    // The ended_at cell must be an empty quoted string — csvCell('') = '""'
+    expect(lines[1]).toContain('""');
+  });
 });
 
 // ─── downloadOrShare / downloadWeb ────────────────────────────────────────────
@@ -275,5 +298,36 @@ describe('downloadOrShare — native path (Capacitor.isNativePlatform = true)', 
     expect(dispatchFn).toHaveBeenCalledOnce();
     const event = dispatchFn.mock.calls[0][0] as CustomEvent;
     expect(event.detail).toMatchObject({ kind: 'success' });
+  });
+});
+
+// ─── notify() window guard ─────────────────────────────────────────────────────
+
+describe('notify skips dispatch when window is undefined (covers export.ts line 189)', () => {
+  beforeEach(() => {
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+    // Do NOT stub window — in Node environment typeof window === 'undefined'
+  });
+
+  afterEach(() => {
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('does not throw when window is undefined and Share.share is cancelled', async () => {
+    vi.mocked(Filesystem.writeFile).mockResolvedValueOnce({ uri: 'file://test.txt' });
+    vi.mocked(Share.share).mockRejectedValueOnce(new Error('cancelled'));
+
+    // notify() is called inside the catch — typeof window === 'undefined' → returns early
+    await expect(downloadOrShare('data', 'test.txt', 'text/plain')).resolves.toBeUndefined();
+  });
+
+  it('does not throw when window is undefined and Share.share succeeds', async () => {
+    vi.mocked(Filesystem.writeFile).mockResolvedValueOnce({ uri: 'file://test.txt' });
+    vi.mocked(Share.share).mockResolvedValueOnce(undefined as never);
+
+    // notify() is called after Share.share — typeof window === 'undefined' → returns early
+    await expect(downloadOrShare('data', 'test.txt', 'text/plain')).resolves.toBeUndefined();
   });
 });

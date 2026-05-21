@@ -68,4 +68,35 @@ describe('undoTask_usecase', () => {
 
     expect(result).toEqual({ ok: true, undone: false, reason: 'not_completed' });
   });
+
+  it('uses 0 as default XP when xpData and dailyXpData are null (covers lines 75-76 ?? 0 branches)', async () => {
+    const today = deps.clock.todayIsoDate();
+    const task = createTask({ id: 'stretch', title: 'Stretch', xp: 50, createdAt: today });
+
+    // Task is in doneIds but no XP stored → currentXp = 0 and currentDailyXp = 0 (via ?? 0)
+    await deps.storage.set(`kinetic:vitalite:done:${today}`, ['stretch']);
+    // kinetic:xp NOT set → null → xpData?.xp = undefined → ?? 0
+    // kinetic:xp:earned:today NOT set → null → dailyXpData?.xp = undefined → ?? 0
+
+    const result = await undoTask_usecase(
+      { storage: deps.storage, clock: deps.clock, notifier: deps.notifier },
+      { task, idempotencyKey: `vitalite:stretch:${today}` },
+    );
+
+    // xpRemoved = task.xp + 0 = 50; max(0, 0 - 50) = 0
+    expect(result).toEqual({ ok: true, undone: true, xpRemoved: 50 });
+    expect(await deps.storage.get('kinetic:xp')).toEqual({ xp: 0 });
+  });
+
+  it('retourne ok:false / invalid_bonus quand bonusXp est negatif (covers lines 52-53)', async () => {
+    const today = deps.clock.todayIsoDate();
+    const task = createTask({ id: 'stretch', title: 'Stretch', xp: 50, createdAt: today });
+
+    const result = await undoTask_usecase(
+      { storage: deps.storage, clock: deps.clock, notifier: deps.notifier },
+      { task, idempotencyKey: `vitalite:stretch:${today}`, bonusXp: -1 },
+    );
+
+    expect(result).toEqual({ ok: false, reason: 'invalid_bonus' });
+  });
 });
