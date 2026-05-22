@@ -5,6 +5,26 @@
 import Alpine from 'alpinejs';
 import { STORAGE_KEYS, resetDailyTasks } from '@kinetic/core';
 
+// ─── Redirect vers le domaine canonique ─────────────────────────────────────
+// Vercel génère une URL preview unique par déploiement (kinetic-prod-XXX-...).
+// Si l'utilisateur arrive sur une de ces URLs (lien direct, partage, etc.),
+// son localStorage est isolé de la prod → la session ne persiste pas quand il
+// revient ensuite sur kinetic-prod.vercel.app. On force la redirection EN
+// PREMIER, avant tout import lourd ou init Alpine, en préservant le path/hash.
+if (
+  typeof window !== 'undefined' &&
+  /^kinetic-prod-[a-z0-9-]+\.vercel\.app$/.test(window.location.hostname) &&
+  window.location.hostname !== 'kinetic-prod.vercel.app'
+) {
+  window.location.replace(
+    'https://kinetic-prod.vercel.app' +
+      window.location.pathname +
+      window.location.search +
+      window.location.hash,
+  );
+  throw new Error('[kinetic] redirecting to canonical domain'); // empêche l'init en double
+}
+
 // ─── Filets globaux : aucun crash silencieux ────────────────────────────────
 // Sans ces listeners, une promesse rejetée non capturée (fetch → throw,
 // Supabase → throw, plugin Capacitor → throw) reste dans la console DevTools
