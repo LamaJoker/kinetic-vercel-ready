@@ -73,10 +73,27 @@ export function authStore() {
           return;
         }
 
-        // FIX #5 : Timeout porté à 8s pour les connexions lentes
-        const userPromise = getAuthUser();
-        const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000));
-        const user = await Promise.race([userPromise, timeout]);
+        // CRITIQUE : sur /auth-callback?code=..., NE PAS appeler getAuthUser ici.
+        // getAuthUser → getUser → getSession dans Supabase auth-js, et getSession
+        // wipe le code-verifier PKCE si elle trouve UN truc invalide sous
+        // `kinetic-auth` dans localStorage (data corrompue, ancienne version, etc.).
+        // Si on wipe le verifier AVANT que auth-callback.page.ts appelle
+        // exchangeCodeForSession, l'échange échoue avec "PKCE code verifier not
+        // found in storage". On laisse auth-callback faire l'échange en premier,
+        // puis onAuthStateChange ci-dessous capture le SIGNED_IN et set this.user.
+        const isAuthCallbackWithCode =
+          typeof window !== 'undefined' &&
+          typeof window.location?.pathname === 'string' &&
+          window.location.pathname.startsWith('/auth-callback') &&
+          new URLSearchParams(window.location.search ?? '').has('code');
+
+        let user: AuthUser | null = null;
+        if (!isAuthCallbackWithCode) {
+          // FIX #5 : Timeout porté à 8s pour les connexions lentes
+          const userPromise = getAuthUser();
+          const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000));
+          user = await Promise.race([userPromise, timeout]);
+        }
         this.user = user;
         this._initDone = true;
 

@@ -174,7 +174,17 @@ export function authCallback() {
           }
           // Web normal OU WebView APK recevant le deep link → le verifier est
           // présent dans ce localStorage → échange direct.
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          // Timeout 15s : si exchangeCodeForSession hang (réseau, lock interne
+          // Supabase), on remonte une erreur explicite au lieu de laisser le
+          // user bloqué indéfiniment sur "Connexion en cours".
+          const exchangePromise = supabase.auth.exchangeCodeForSession(code);
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(
+              () => reject(new Error("Délai dépassé pendant l'échange du code (15s).")),
+              15_000,
+            ),
+          );
+          const { error } = await Promise.race([exchangePromise, timeoutPromise]);
           if (error) throw error;
           this._navigateHome();
           return;
@@ -227,6 +237,10 @@ export function authCallback() {
         }, 10_000);
       } catch (e) {
         this._cleanup();
+        // Log explicite pour DevTools : sans ça, certaines erreurs disparaissent
+        // dans le silence du try/catch et le user voit juste "Connexion en cours"
+        // figé sans aucun indice.
+        console.error('[auth-callback] init() failed:', e);
         this.error = e instanceof Error ? e.message : 'Erreur de connexion';
       }
     },
