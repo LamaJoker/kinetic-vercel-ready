@@ -65,7 +65,14 @@ const PUBLIC_SITE_URL = (import.meta.env['VITE_PUBLIC_SITE_URL'] as string | und
  * l'URL est le seul moyen fiable de savoir qu'il faut faire le hand-off.
  */
 export function callbackUrl(opts: { capacitor?: boolean } = {}): string {
-  const base = PUBLIC_SITE_URL ?? window.location.origin;
+  // CRITIQUE : sur web on DOIT utiliser window.location.origin (pas PUBLIC_SITE_URL),
+  // sinon le verifier PKCE est stocké sur le domaine A, l'OAuth redirige vers le
+  // domaine B, et le localStorage cross-origin n'est pas partagé → "PKCE code
+  // verifier not found in storage". PUBLIC_SITE_URL n'est utilisé QUE pour Capacitor
+  // (APK Android), où window.location est `https://localhost` (inutilisable).
+  const base = opts.capacitor
+    ? (PUBLIC_SITE_URL ?? window.location.origin)
+    : window.location.origin;
   const url = `${base}/auth-callback`;
   return opts.capacitor ? `${url}?from=apk` : url;
 }
