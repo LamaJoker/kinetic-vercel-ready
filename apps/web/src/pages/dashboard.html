@@ -61,7 +61,7 @@
   </div>
 
   <!-- Quick actions -->
-  <div class="grid grid-cols-4 gap-2 mb-3">
+  <div class="grid grid-cols-5 gap-2 mb-3">
     <a
       href="/seances"
       class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-electric/40 transition-all group"
@@ -99,6 +99,20 @@
         />
       </svg>
       <span class="text-[10px] text-gray-400 font-semibold">Progrès</span>
+    </a>
+    <a
+      href="/records"
+      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-neon/40 transition-all group"
+    >
+      <svg class="w-5 h-5 text-kinetic-neon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M5 3v4a7 7 0 0014 0V3M9 21h6M12 17v4"
+        />
+      </svg>
+      <span class="text-[10px] text-gray-400 font-semibold">Records</span>
     </a>
     <a
       href="/nutrition"
@@ -184,6 +198,26 @@
       ></p>
     </div>
   </div>
+
+  <!-- Équilibre musculaire (4 semaines) -->
+  <template x-if="balanceWarning">
+    <div
+      class="bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30 rounded-2xl p-4 mb-3 flex items-start gap-3"
+    >
+      <span class="text-xl shrink-0">⚠️</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs uppercase tracking-widest text-kinetic-electric font-bold mb-0.5">
+          Équilibre musculaire
+        </p>
+        <p class="text-xs text-gray-300 leading-snug" x-text="balanceWarning"></p>
+        <p class="text-[10px] text-gray-500 mt-1">
+          <span x-text="'Push ' + balance.push"></span> ·
+          <span x-text="'Pull ' + balance.pull"></span> ·
+          <span x-text="'Legs ' + balance.legs"></span> sets sur 4 semaines
+        </p>
+      </div>
+    </div>
+  </template>
 
   <!-- Objectifs semaine -->
   <div

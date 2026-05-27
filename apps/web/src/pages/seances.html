@@ -82,24 +82,96 @@
   </div>
 
   <!-- Quick actions -->
-  <div class="grid grid-cols-2 gap-3 mb-4">
+  <div class="grid grid-cols-3 gap-2 mb-4">
     <button
       @click="startFreeSession()"
-      class="bg-kinetic-surface rounded-2xl p-4 text-left hover:bg-kinetic-elevated transition-colors active:scale-95"
+      class="bg-kinetic-surface rounded-2xl p-3 text-left hover:bg-kinetic-elevated transition-colors active:scale-95"
     >
       <p class="text-xs text-gray-500 mb-1">Séance</p>
-      <p class="text-white font-semibold">Libre</p>
-      <p class="text-xs text-gray-500 mt-1">Commencer maintenant</p>
+      <p class="text-white font-semibold text-sm">Libre</p>
+      <p class="text-[10px] text-gray-500 mt-1">Commencer</p>
     </button>
 
     <button
-      @click="showTemplates = !showTemplates"
-      class="bg-kinetic-surface rounded-2xl p-4 text-left hover:bg-kinetic-elevated transition-colors active:scale-95"
+      @click="showTemplates = !showTemplates; showAutoGen = false"
+      class="bg-kinetic-surface rounded-2xl p-3 text-left hover:bg-kinetic-elevated transition-colors active:scale-95"
     >
-      <p class="text-xs text-gray-500 mb-1">Séances</p>
-      <p class="text-white font-semibold">Prédéfinies</p>
-      <p class="text-xs text-gray-500 mt-1" x-text="templates.length + ' modèle(s)'"></p>
+      <p class="text-xs text-gray-500 mb-1">Modèles</p>
+      <p class="text-white font-semibold text-sm">Prédéfinies</p>
+      <p class="text-[10px] text-gray-500 mt-1" x-text="templates.length + ' modèle(s)'"></p>
     </button>
+
+    <button
+      @click="showAutoGen = !showAutoGen; showTemplates = false"
+      class="bg-gradient-to-br from-kinetic-neon/15 to-kinetic-neon/5 ring-1 ring-kinetic-neon/30 rounded-2xl p-3 text-left hover:ring-kinetic-neon/60 transition-all active:scale-95"
+    >
+      <p class="text-xs text-kinetic-neon mb-1 font-bold">✨ Auto</p>
+      <p class="text-white font-semibold text-sm">Générer</p>
+      <p class="text-[10px] text-gray-500 mt-1">Push/Pull/Legs…</p>
+    </button>
+  </div>
+
+  <!-- Auto-générateur -->
+  <div
+    x-show="showAutoGen"
+    x-transition
+    class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-kinetic-neon/20"
+  >
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <h2 class="font-semibold text-white">Génération automatique</h2>
+        <p class="text-[10px] text-gray-500 mt-0.5">
+          5 exercices selon ton objectif courant · compound first
+        </p>
+      </div>
+      <button class="text-xs text-gray-400 hover:text-white" @click="showAutoGen = false">
+        Fermer
+      </button>
+    </div>
+    <div class="grid grid-cols-3 gap-2">
+      <button
+        @click="startAutoWorkout('push')"
+        class="bg-kinetic-elevated ring-1 ring-white/10 rounded-xl p-3 text-center hover:ring-kinetic-neon/40 transition-all active:scale-95"
+      >
+        <p class="text-xl mb-0.5">💪</p>
+        <p class="text-xs text-white font-semibold">Push</p>
+      </button>
+      <button
+        @click="startAutoWorkout('pull')"
+        class="bg-kinetic-elevated ring-1 ring-white/10 rounded-xl p-3 text-center hover:ring-kinetic-neon/40 transition-all active:scale-95"
+      >
+        <p class="text-xl mb-0.5">🪝</p>
+        <p class="text-xs text-white font-semibold">Pull</p>
+      </button>
+      <button
+        @click="startAutoWorkout('legs')"
+        class="bg-kinetic-elevated ring-1 ring-white/10 rounded-xl p-3 text-center hover:ring-kinetic-neon/40 transition-all active:scale-95"
+      >
+        <p class="text-xl mb-0.5">🦵</p>
+        <p class="text-xs text-white font-semibold">Jambes</p>
+      </button>
+      <button
+        @click="startAutoWorkout('upper')"
+        class="bg-kinetic-elevated ring-1 ring-white/10 rounded-xl p-3 text-center hover:ring-kinetic-neon/40 transition-all active:scale-95"
+      >
+        <p class="text-xl mb-0.5">⬆️</p>
+        <p class="text-xs text-white font-semibold">Upper</p>
+      </button>
+      <button
+        @click="startAutoWorkout('lower')"
+        class="bg-kinetic-elevated ring-1 ring-white/10 rounded-xl p-3 text-center hover:ring-kinetic-neon/40 transition-all active:scale-95"
+      >
+        <p class="text-xl mb-0.5">⬇️</p>
+        <p class="text-xs text-white font-semibold">Lower</p>
+      </button>
+      <button
+        @click="startAutoWorkout('full')"
+        class="bg-kinetic-elevated ring-1 ring-white/10 rounded-xl p-3 text-center hover:ring-kinetic-neon/40 transition-all active:scale-95"
+      >
+        <p class="text-xl mb-0.5">🔥</p>
+        <p class="text-xs text-white font-semibold">Full body</p>
+      </button>
+    </div>
   </div>
 
   <!-- Templates -->

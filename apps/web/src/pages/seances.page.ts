@@ -2,8 +2,10 @@
   STORAGE_KEYS,
   suggestProgression,
   needsDeload,
+  generateWorkout,
   type ProgressionSuggestion,
   type PerformedSet,
+  type WorkoutFocus,
 } from '@kinetic/core';
 import { UuidGenerator } from '@kinetic/adapters-web';
 import { getDeps } from '../deps';
@@ -387,6 +389,53 @@ export function seances() {
         entries: [],
       };
       this.selectedExerciseId = '';
+    },
+
+    showAutoGen: false,
+    autoGenFocus: 'push' as WorkoutFocus,
+
+    /**
+     * Démarre une séance auto-générée pour le focus choisi, en utilisant
+     * l'objectif coach courant (force/hypertrophie/endurance).
+     */
+    startAutoWorkout(focus: WorkoutFocus): void {
+      const generated = generateWorkout({
+        goal: this.coachGoal,
+        focus,
+        exercises: this.exercises.map((ex) => ({
+          id: ex.id,
+          name: ex.name,
+          muscles: ex.muscles,
+          equipment: ex.equipment,
+        })),
+      });
+      if (generated.exercises.length === 0) {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: {
+              kind: 'warning',
+              message: 'Aucun exercice adapté trouvé pour ce focus. Ajoute-en dans ton catalogue.',
+            },
+          }),
+        );
+        return;
+      }
+      this.currentSession = {
+        id: newId(),
+        name: generated.name,
+        startedAt: nowIso(),
+        entries: generated.exercises.map((ex) => ({ exerciseId: ex.exerciseId, sets: [] })),
+      };
+      this.showAutoGen = false;
+      this.showTemplates = false;
+      window.dispatchEvent(
+        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+          detail: {
+            kind: 'success',
+            message: `Séance auto-générée : ${generated.exercises.length} exercices`,
+          },
+        }),
+      );
     },
 
     startFromTemplate(templateId: string): void {

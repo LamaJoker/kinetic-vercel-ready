@@ -1,0 +1,129 @@
+<div x-data="records" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
+  <!-- En-tête -->
+  <div class="flex items-center gap-3 mb-6">
+    <a
+      href="/"
+      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
+      aria-label="Retour"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </a>
+    <div class="flex-1">
+      <h1 class="font-display font-black text-2xl tracking-tight text-white">Records</h1>
+      <p class="text-xs text-gray-500" x-text="subtitleLabel"></p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div x-show="loading" class="text-center py-8 text-gray-500 text-sm">Chargement…</div>
+
+  <!-- Empty state -->
+  <template x-if="!loading && records.length === 0">
+    <div class="bg-kinetic-surface rounded-2xl p-6 text-center ring-1 ring-white/5">
+      <p class="text-3xl mb-2">🏆</p>
+      <p class="font-display font-bold text-white">Aucun record encore</p>
+      <p class="text-xs text-gray-500 mt-1">
+        Termine ta première séance pour débloquer des records personnels.
+      </p>
+      <a
+        href="/seances"
+        class="inline-block mt-4 bg-kinetic-neon text-gray-950 rounded-xl px-4 py-2 text-sm font-bold hover:brightness-105 transition-all"
+      >
+        Démarrer une séance
+      </a>
+    </div>
+  </template>
+
+  <!-- Stats agrégées -->
+  <template x-if="!loading && records.length > 0">
+    <div class="grid grid-cols-3 gap-3 mb-4">
+      <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
+        <p class="font-display font-black text-2xl text-kinetic-neon" x-text="records.length"></p>
+        <p class="text-[10px] uppercase tracking-widest text-gray-500 mt-0.5">PR actifs</p>
+      </div>
+      <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
+        <p class="font-display font-black text-2xl text-kinetic-electric" x-text="recentCount"></p>
+        <p class="text-[10px] uppercase tracking-widest text-gray-500 mt-0.5">7 derniers j</p>
+      </div>
+      <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
+        <p class="font-display font-black text-2xl text-white" x-text="topE1rm + ' kg'"></p>
+        <p class="text-[10px] uppercase tracking-widest text-gray-500 mt-0.5">Top e1RM</p>
+      </div>
+    </div>
+  </template>
+
+  <!-- Tri -->
+  <template x-if="!loading && records.length > 0">
+    <div class="flex gap-2 mb-3 text-xs">
+      <button
+        @click="sort = 'e1rm'"
+        :class="sort === 'e1rm'
+              ? 'bg-kinetic-neon text-gray-950 font-bold'
+              : 'bg-kinetic-surface ring-1 ring-white/10 text-gray-400'"
+        class="px-3 py-1.5 rounded-lg transition-all"
+      >
+        Top e1RM
+      </button>
+      <button
+        @click="sort = 'recent'"
+        :class="sort === 'recent'
+              ? 'bg-kinetic-neon text-gray-950 font-bold'
+              : 'bg-kinetic-surface ring-1 ring-white/10 text-gray-400'"
+        class="px-3 py-1.5 rounded-lg transition-all"
+      >
+        Récents
+      </button>
+      <button
+        @click="sort = 'name'"
+        :class="sort === 'name'
+              ? 'bg-kinetic-neon text-gray-950 font-bold'
+              : 'bg-kinetic-surface ring-1 ring-white/10 text-gray-400'"
+        class="px-3 py-1.5 rounded-lg transition-all"
+      >
+        A → Z
+      </button>
+    </div>
+  </template>
+
+  <!-- Liste des records -->
+  <div class="space-y-2" x-show="!loading && records.length > 0">
+    <template x-for="r in sortedRecords" :key="r.exerciseId">
+      <div
+        class="bg-kinetic-surface rounded-2xl p-4 ring-1 transition-all"
+        :class="r.isRecent
+              ? 'ring-kinetic-neon/30 shadow-[0_0_18px_rgba(168,255,0,0.18)]'
+              : 'ring-white/5'"
+      >
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-lg" x-text="r.isRecent ? '✨' : '🏋️'"></span>
+            <p class="font-display font-bold text-white truncate" x-text="r.exerciseName"></p>
+          </div>
+          <span
+            class="text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full ring-1 whitespace-nowrap"
+            :class="r.isRecent
+                  ? 'bg-kinetic-neon/15 text-kinetic-neon ring-kinetic-neon/30'
+                  : 'bg-kinetic-elevated text-gray-400 ring-white/5'"
+            x-text="r.dateLabel"
+          ></span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <p class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Charge</p>
+            <p class="font-mono text-white font-bold text-sm" x-text="r.weightLabel"></p>
+          </div>
+          <div>
+            <p class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Reps</p>
+            <p class="font-mono text-white font-bold text-sm" x-text="r.reps"></p>
+          </div>
+          <div>
+            <p class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">e1RM</p>
+            <p class="font-mono text-kinetic-neon font-black text-sm" x-text="r.e1rmKg + ' kg'"></p>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>

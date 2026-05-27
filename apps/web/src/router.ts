@@ -26,7 +26,8 @@ type RouteKey =
   | '/auth-callback' // ← FIX #2 : était '/auth/callback' — aligné avec callbackUrl()
   | '/bodyweight'
   | '/progression'
-  | '/mensurations';
+  | '/mensurations'
+  | '/records';
 
 const ROUTES: Record<RouteKey, string> = {
   '/': './pages/dashboard.html',
@@ -41,6 +42,7 @@ const ROUTES: Record<RouteKey, string> = {
   '/bodyweight': './pages/bodyweight.html',
   '/progression': './pages/progression.html',
   '/mensurations': './pages/mensurations.html',
+  '/records': './pages/records.html',
 };
 
 const ONBOARDING_EXEMPT: readonly RouteKey[] = ['/onboarding', '/login', '/auth-callback'];
