@@ -3,7 +3,7 @@
  * FIX: auth-ready dispatché même en guest mode
  */
 import Alpine from 'alpinejs';
-import { STORAGE_KEYS, resetDailyTasks } from '@kinetic/core';
+import { STORAGE_KEYS, resetDailyTasks, decodeWorkout } from '@kinetic/core';
 
 // ─── Redirect vers le domaine canonique ─────────────────────────────────────
 // Vercel génère une URL preview unique par déploiement (kinetic-prod-XXX-...).
@@ -80,6 +80,7 @@ import { rewardsStore } from './stores/rewards';
 import { offlineStore } from './stores/offline';
 import { nutritionStore } from './stores/nutrition';
 import { goalsStore } from './stores/goals';
+import { achievementsStore } from './stores/achievements';
 
 import { dashboard } from './pages/dashboard.page';
 import { seances } from './pages/seances.page';
@@ -91,6 +92,8 @@ import { nutrition } from './pages/nutrition.page';
 import { program } from './pages/program.page';
 import { profile } from './pages/profile.page';
 import { records } from './pages/records.page';
+import { plates } from './pages/plates.page';
+import { achievements } from './pages/achievements.page';
 import { authCallback } from './pages/auth-callback.page';
 
 import { getDeps } from './deps';
@@ -112,6 +115,7 @@ Alpine.store('vitalite', vitaliteStore());
 Alpine.store('rewards', rewardsStore());
 Alpine.store('nutrition', nutritionStore());
 Alpine.store('goals', goalsStore());
+Alpine.store('achievements', achievementsStore());
 
 // ─── Composants Alpine ───────────────────────────────────────
 Alpine.data('dashboard', dashboard);
@@ -123,6 +127,8 @@ Alpine.data('nutrition', nutrition);
 Alpine.data('program', program);
 Alpine.data('profile', profile);
 Alpine.data('records', records);
+Alpine.data('plates', plates);
+Alpine.data('achievements', achievements);
 Alpine.data('authCallback', authCallback);
 Alpine.data('mensurations', mensurations);
 
@@ -220,6 +226,30 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
       console.warn('[SW] registration failed:', err);
     });
   });
+}
+
+// ─── Import de séance partagée par URL ──────────────────────────────────────
+// Détecte `?import=<token>` au boot, décode, et stocke en sessionStorage pour
+// que la page Séances l'attrape au prochain rendu. On nettoie l'URL pour ne
+// pas re-importer en boucle si l'utilisateur navigue.
+try {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('import');
+  if (token) {
+    const workout = decodeWorkout(token);
+    if (workout) {
+      sessionStorage.setItem(STORAGE_KEYS.PENDING_SHARED_IMPORT, JSON.stringify(workout));
+      params.delete('import');
+      const cleanQs = params.toString();
+      const cleanUrl =
+        window.location.pathname + (cleanQs ? '?' + cleanQs : '') + window.location.hash;
+      window.history.replaceState(null, '', cleanUrl);
+    } else {
+      console.warn('[kinetic] shared workout token invalid');
+    }
+  }
+} catch (err) {
+  console.warn('[kinetic] shared import detection failed:', err);
 }
 
 // ─── Exposition globale Alpine ───────────────────────────────
