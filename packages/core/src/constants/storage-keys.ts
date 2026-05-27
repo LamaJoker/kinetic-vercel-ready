@@ -113,6 +113,7 @@ export const STORAGE_KEYS = {
   NOTIFICATIONS_ENABLED: 'kinetic:notifications:enabled' as const,
   REMINDER_DATE: 'kinetic:reminder:lastDate' as const,
   DAILY_LOG: (date: string) => `kinetic:dailyLog:${date}` as const,
+  PUSH_SUBSCRIPTION: 'kinetic:push:subscription' as const, // localStorage, cache de la subscription
 
   // ─── Schéma IDB & Diagnostics ─────────────────────────────────
   SCHEMA_VERSION: 'kinetic:schema-version' as const,
