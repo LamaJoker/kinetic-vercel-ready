@@ -1,0 +1,138 @@
+<div x-data="plates" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
+  <div class="flex items-center gap-3 mb-6">
+    <a
+      href="/"
+      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
+      aria-label="Retour"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </a>
+    <div class="flex-1">
+      <h1 class="font-display font-black text-2xl tracking-tight text-white">
+        Calculateur de plates
+      </h1>
+      <p class="text-xs text-gray-500">Combien de disques par côté ?</p>
+    </div>
+  </div>
+
+  <!-- Entrées -->
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5 space-y-3">
+    <div>
+      <label class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold block mb-1">
+        Charge totale (kg)
+      </label>
+      <input
+        type="number"
+        x-model.number="targetKg"
+        min="0"
+        step="0.5"
+        class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-electric rounded-lg px-3 py-2.5 text-2xl font-mono font-bold text-white outline-none"
+      />
+    </div>
+    <div>
+      <label class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold block mb-1">
+        Barre (kg)
+      </label>
+      <div class="grid grid-cols-4 gap-2">
+        <template x-for="bar in BAR_PRESETS" :key="bar">
+          <button
+            @click="barKg = bar"
+            :class="barKg === bar
+                  ? 'bg-kinetic-electric text-white font-bold'
+                  : 'bg-kinetic-ink ring-1 ring-white/10 text-gray-400'"
+            class="rounded-lg px-2 py-2 text-sm transition-all"
+            x-text="bar + ' kg'"
+          ></button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Résultat visuel -->
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Par côté</p>
+      <span
+        class="text-[10px] uppercase tracking-widest text-kinetic-neon font-bold"
+        x-text="resultLabel"
+      ></span>
+    </div>
+
+    <template x-if="result.underBar">
+      <p class="text-sm text-kinetic-electric">
+        ⚠️ La barre seule est plus lourde que la cible — réduis la cible ou change de barre.
+      </p>
+    </template>
+
+    <template x-if="!result.underBar && result.perSide.length === 0">
+      <p class="text-sm text-gray-400">Barre seule (pas de disques).</p>
+    </template>
+
+    <!-- Visualisation type "barre" -->
+    <template x-if="!result.underBar && result.perSide.length > 0">
+      <div
+        class="flex items-center justify-center gap-1 py-4 bg-kinetic-ink rounded-xl ring-1 ring-white/5"
+      >
+        <!-- Plates côté gauche (miroir) -->
+        <template x-for="p in mirroredPlates" :key="p.key">
+          <div
+            class="rounded-md shadow-inner flex items-center justify-center font-mono font-bold text-xs"
+            :style="`background: ${p.color}; width: ${p.width}px; height: ${p.height}px; color: ${p.text}`"
+            x-text="p.label"
+          ></div>
+        </template>
+        <!-- Barre -->
+        <div class="bg-gradient-to-r from-gray-600 to-gray-400 h-2 w-12 rounded-full"></div>
+      </div>
+    </template>
+
+    <!-- Liste textuelle -->
+    <template x-if="!result.underBar && result.perSide.length > 0">
+      <div class="mt-3 space-y-1">
+        <template x-for="p in result.perSide" :key="p.plateKg">
+          <div
+            class="flex items-center justify-between text-sm bg-kinetic-ink rounded-lg px-3 py-2"
+          >
+            <span class="font-mono font-bold text-white" x-text="p.plateKg + ' kg'"></span>
+            <span class="text-gray-400" x-text="'×' + p.count + ' par côté'"></span>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <template x-if="result.inexact && !result.underBar">
+      <p class="mt-3 text-xs text-kinetic-electric">
+        ⚠️ Charge la plus proche :
+        <span class="font-bold" x-text="result.achievedKg + ' kg'"></span> (manque
+        <span class="font-bold" x-text="result.deltaKg.toFixed(2) + ' kg'"></span>)
+      </p>
+    </template>
+  </div>
+
+  <!-- Plates dispos (collapsible) -->
+  <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
+    <button
+      @click="showPlates = !showPlates"
+      class="flex items-center justify-between w-full text-left"
+    >
+      <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">
+        Disques disponibles
+      </span>
+      <span class="text-gray-500 text-xs" x-text="showPlates ? '−' : '+'"></span>
+    </button>
+    <div x-show="showPlates" x-transition class="mt-3 flex flex-wrap gap-1.5">
+      <template x-for="p in PLATE_OPTIONS" :key="p">
+        <button
+          @click="togglePlate(p)"
+          :class="enabledPlates.includes(p)
+                ? 'bg-kinetic-neon text-gray-950 font-bold'
+                : 'bg-kinetic-ink ring-1 ring-white/10 text-gray-400'"
+          class="rounded-lg px-2.5 py-1 text-xs transition-all"
+          x-text="p + ' kg'"
+        ></button>
+      </template>
+    </div>
+  </div>
+</div>

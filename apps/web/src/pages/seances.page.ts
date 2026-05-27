@@ -3,6 +3,8 @@
   suggestProgression,
   needsDeload,
   generateWorkout,
+  encodeWorkout,
+  buildShareUrl,
   type ProgressionSuggestion,
   type PerformedSet,
   type WorkoutFocus,
@@ -266,6 +268,43 @@ export function seances() {
           this.latestBodyweight = bwEntries.at(-1)?.weight ?? null;
         }
 
+        // ── Import partagé en attente (depuis ?import=… au boot) ─────────
+        try {
+          const pending = sessionStorage.getItem(STORAGE_KEYS.PENDING_SHARED_IMPORT);
+          if (pending) {
+            sessionStorage.removeItem(STORAGE_KEYS.PENDING_SHARED_IMPORT);
+            const workout = JSON.parse(pending) as {
+              name: string;
+              exercises: Array<{
+                exerciseId: string;
+                sets: number;
+                targetReps: number;
+                targetRpe: number;
+              }>;
+            };
+            // Crée un template à partir du payload partagé
+            const newTemplate = {
+              id: newId(),
+              name: `${workout.name} (partagé)`,
+              createdAt: nowIso(),
+              exercises: workout.exercises,
+            };
+            const updated = [...this.templates, newTemplate];
+            await saveTemplates(deps.storage, updated);
+            this.templates = updated;
+            window.dispatchEvent(
+              new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+                detail: {
+                  kind: 'success',
+                  message: `Modèle "${workout.name}" importé depuis le lien partagé.`,
+                },
+              }),
+            );
+          }
+        } catch (err) {
+          console.warn('[seances] shared import handling failed:', err);
+        }
+
         // ── Auto-démarrer depuis le programme du jour ─────────────────────
         // sessionStorage peut throw en mode privé / WebView restreint
         let autoTemplateId: string | null = null;
@@ -436,6 +475,95 @@ export function seances() {
           },
         }),
       );
+    },
+
+    /**
+     * Re-démarre la dernière séance terminée : clone ses exercices dans une
+     * nouvelle séance. Les séries restent vides (l'utilisateur les remplit en
+     * temps réel) — il a juste à pas se reposer la question "quels exos ?".
+     */
+    quickRestartLast(): void {
+      const lastFinished = [...this.sessions]
+        .filter((s) => s.endedAt)
+        .sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
+      if (!lastFinished) {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'info', message: 'Aucune séance précédente à reprendre.' },
+          }),
+        );
+        return;
+      }
+      this.currentSession = {
+        id: newId(),
+        name: `${lastFinished.name} (reprise)`,
+        startedAt: nowIso(),
+        entries: lastFinished.entries.map((e) => ({ exerciseId: e.exerciseId, sets: [] })),
+      };
+      this.showTemplates = false;
+      this.showAutoGen = false;
+      window.dispatchEvent(
+        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+          detail: {
+            kind: 'success',
+            message: `Reprise : ${lastFinished.entries.length} exercice(s) chargé(s).`,
+          },
+        }),
+      );
+    },
+
+    get hasFinishedSession(): boolean {
+      return this.sessions.some((s) => s.endedAt);
+    },
+
+    /**
+     * Partage un template via URL. On utilise targetReps/Rpe=8 comme défaut
+     * si non renseigné — l'app destinataire les recevra et pourra les ajuster.
+     */
+    async shareTemplate(templateId: string): Promise<void> {
+      const t = this.templates.find((x) => x.id === templateId);
+      if (!t) return;
+      const token = encodeWorkout({
+        name: t.name,
+        exercises: t.exercises.map((ex) => ({
+          exerciseId: ex.exerciseId,
+          sets: ex.sets,
+          targetReps: ex.targetReps,
+          targetRpe: ex.targetRpe,
+        })),
+      });
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const url = buildShareUrl(origin, token);
+
+      // Tentative API Web Share native, fallback clipboard
+      try {
+        const nav = navigator as Navigator & {
+          share?: (data: { title?: string; text?: string; url?: string }) => Promise<void>;
+        };
+        if (typeof nav.share === 'function') {
+          await nav.share({ title: `Séance Kinetic — ${t.name}`, url });
+          return;
+        }
+      } catch {
+        /* L'utilisateur a annulé OU pas supporté → fallback clipboard */
+      }
+      try {
+        await navigator.clipboard.writeText(url);
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'success', message: 'Lien copié dans le presse-papier ✓' },
+          }),
+        );
+      } catch {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: {
+              kind: 'info',
+              message: `Lien : ${url.slice(0, 60)}…`,
+            },
+          }),
+        );
+      }
     },
 
     startFromTemplate(templateId: string): void {

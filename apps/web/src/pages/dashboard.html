@@ -144,6 +144,34 @@
     </a>
   </div>
 
+  <!-- Outils -->
+  <div class="grid grid-cols-2 gap-2 mb-3">
+    <a
+      href="/plates"
+      class="flex items-center gap-2 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-electric/40 transition-all"
+    >
+      <span class="text-lg">🧮</span>
+      <div class="min-w-0">
+        <p class="text-xs font-bold text-white">Calculateur plates</p>
+        <p class="text-[10px] text-gray-500 truncate">Combien par côté ?</p>
+      </div>
+    </a>
+    <a
+      href="/achievements"
+      class="flex items-center gap-2 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-neon/40 transition-all"
+    >
+      <span class="text-lg">🏅</span>
+      <div class="min-w-0">
+        <p class="text-xs font-bold text-white">Achievements</p>
+        <p class="text-[10px] text-gray-500 truncate">
+          <span x-text="$store.achievements ? $store.achievements.unlockedCount : 0"></span>
+          /
+          <span x-text="$store.achievements ? $store.achievements.totalCount : 0"></span> débloqués
+        </p>
+      </div>
+    </a>
+  </div>
+
   <!-- Routine vitalité -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-3 ring-1 ring-white/5">
     <div class="flex items-center justify-between mb-3">

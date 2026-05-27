@@ -81,6 +81,21 @@
     ></span>
   </div>
 
+  <!-- Quick restart (visible only if at least one finished session) -->
+  <template x-if="hasFinishedSession && !currentSession">
+    <button
+      @click="quickRestartLast()"
+      class="w-full mb-3 bg-gradient-to-r from-kinetic-electric/20 to-kinetic-electric/10 ring-1 ring-kinetic-electric/40 rounded-2xl p-3 flex items-center gap-3 hover:ring-kinetic-electric transition-all active:scale-[0.98]"
+    >
+      <span class="text-2xl">🔁</span>
+      <div class="flex-1 text-left">
+        <p class="text-sm font-bold text-white">Reprendre la dernière séance</p>
+        <p class="text-[10px] text-gray-400">Re-charge les exercices de la précédente session</p>
+      </div>
+      <span class="text-kinetic-electric text-lg">→</span>
+    </button>
+  </template>
+
   <!-- Quick actions -->
   <div class="grid grid-cols-3 gap-2 mb-4">
     <button
@@ -198,6 +213,14 @@
               <p class="text-white font-medium" x-text="t.name"></p>
               <span class="text-xs text-gray-500" x-text="t.exercises.length + ' ex'"></span>
             </div>
+          </button>
+          <button
+            @click.stop="shareTemplate(t.id)"
+            class="text-gray-400 hover:text-kinetic-neon p-2 text-xs"
+            aria-label="Partager ce modèle"
+            title="Partager"
+          >
+            ↗
           </button>
           <button
             @click="deleteTemplate(t.id)"

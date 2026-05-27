@@ -84,6 +84,20 @@ export const STORAGE_KEYS = {
   REWARDS_FREEZE_WEEK: 'kinetic:rewards:freeze-replenished-week' as const,
   REWARDS_THEME: 'kinetic:rewards:theme' as const,
 
+  // ─── Achievements (badges débloqués par exploit) ──────────────
+  ACHIEVEMENTS_UNLOCKED: 'kinetic:achievements:unlocked' as const,
+
+  // ─── Préférences UI ───────────────────────────────────────────
+  PREF_UNIT: 'kinetic:pref:unit' as const, // 'kg' | 'lb'
+
+  // ─── Plate calculator ─────────────────────────────────────────
+  PLATE_PREFS: 'kinetic:plate-prefs' as const,
+
+  // ─── Import en attente depuis ?import=<token> ─────────────────
+  // sessionStorage : ne survit pas au rechargement complet, on consomme
+  // dès que la page Séances est rendue.
+  PENDING_SHARED_IMPORT: 'kinetic:pending-shared-import' as const,
+
   // ─── Tâches internes (usecases) ───────────────────────────────
   AWARDED_IDS: 'kinetic:awarded-ids' as const,
   COMPLETED_KEYS: 'kinetic:completed-keys' as const,
