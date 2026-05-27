@@ -114,6 +114,12 @@ export const STORAGE_KEYS = {
   REMINDER_DATE: 'kinetic:reminder:lastDate' as const,
   DAILY_LOG: (date: string) => `kinetic:dailyLog:${date}` as const,
   PUSH_SUBSCRIPTION: 'kinetic:push:subscription' as const, // localStorage, cache de la subscription
+  LOCALE: 'kinetic:locale' as const, // localStorage, langue UI choisie
+  PWA_INSTALL_DISMISSED: 'kinetic:pwa:install-dismissed' as const, // localStorage, timestamp du dernier dismiss
+  PROGRESS_PHOTOS: 'kinetic:progress-photos' as const, // IDB, blobs photos compressés
+  ACTIVE_PROGRAM: 'kinetic:active-program' as const, // user-selected program state
+  PROGRAM_ONE_RMS: 'kinetic:program:one-rms' as const, // user 1RM input for programs
+  AVAILABLE_EQUIPMENT: 'kinetic:available-equipment' as const, // user inventory for substitutions
 
   // ─── Schéma IDB & Diagnostics ─────────────────────────────────
   SCHEMA_VERSION: 'kinetic:schema-version' as const,
@@ -133,6 +139,9 @@ export const STORAGE_KEYS = {
   EVENT_SESSION_SAVED: 'kinetic:session-saved' as const,
   EVENT_SYNC_FAILED: 'kinetic:sync-failed' as const,
   EVENT_ROUTE_CHANGED: 'kinetic:route-changed' as const,
+  EVENT_LOCALE_CHANGED: 'kinetic:locale-changed' as const,
+  EVENT_LOCALE_RELOAD: 'kinetic:locale-reload' as const,
+  ERRORS_LAST_FLUSH: 'kinetic:errors:last-flush' as const, // localStorage, throttle exfiltration
 } as const;
 
 /** Type union de toutes les clés statiques (sans les fonctions) */

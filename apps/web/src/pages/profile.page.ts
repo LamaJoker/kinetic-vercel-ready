@@ -11,6 +11,7 @@ import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import { loadSessions, loadExercises } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
 import { enablePush, disablePush, isPushAvailable, getPushStatus } from '../lib/push';
+import { getLocale, setLocale, type Locale } from '../lib/i18n';
 import {
   detectFormat,
   parseKineticJson,
@@ -58,6 +59,14 @@ export function profile() {
     pushSupported: false,
     pushSubscribed: false,
     pushBusy: false,
+    locale: 'fr' as Locale,
+
+    setUiLocale(locale: Locale): void {
+      this.locale = locale;
+      setLocale(locale);
+      // Soft reload : force le re-render des templates en redispatchant
+      window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_LOCALE_RELOAD));
+    },
 
     async init(): Promise<void> {
       try {
@@ -84,6 +93,7 @@ export function profile() {
 
         await this._refreshStorageUsage();
         this._refreshPushStatus();
+        this.locale = getLocale();
       } catch (err) {
         console.error('[profile] init failed:', err);
       }
