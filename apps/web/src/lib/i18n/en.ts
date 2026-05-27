@@ -143,4 +143,12 @@ export const en: Record<string, string> = {
   'records.total_sbd': 'SBD total',
   'records.tier': 'Tier',
   'records.scores_help': 'Set your bodyweight and log at least one PR in squat / bench / deadlift.',
+
+  // ─── Theme ────────────────────────────────────────────────────
+  'theme.title': 'Appearance',
+  'theme.subtitle': 'Theme · light / dark',
+  'theme.dark': 'Dark',
+  'theme.light': 'Light',
+  'theme.system': 'Auto',
+  'theme.help': 'Auto follows your device preference. Dark is the default.',
 };

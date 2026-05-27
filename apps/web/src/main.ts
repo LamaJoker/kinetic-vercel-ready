@@ -99,6 +99,10 @@ import { programsPage } from './pages/programs.page';
 import { authCallback } from './pages/auth-callback.page';
 import { installAlpineI18nMagic } from './lib/i18n';
 import { initPwaInstallPrompt, pwaInstallPrompt } from './lib/pwa-install';
+import { initTheme } from './lib/theme';
+
+// ─── Theme : appliquer avant tout pour éviter le flash sombre→clair ──────
+initTheme();
 
 import { getDeps } from './deps';
 

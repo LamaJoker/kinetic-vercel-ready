@@ -12,11 +12,11 @@ export default {
         // Couleurs thématiques pilotées par variables CSS (cf. styles.css)
         'kinetic-neon': 'rgb(var(--kinetic-neon) / <alpha-value>)',
         'kinetic-electric': 'rgb(var(--kinetic-electric) / <alpha-value>)',
-        // Palette de fond (Redesign v2)
-        'kinetic-ink': '#050508', // body — void
-        'kinetic-surface': '#0E0E13', // cards
-        'kinetic-elevated': '#151519', // panneaux internes
-        'kinetic-raised': '#1B1B21', // niveaux supérieurs
+        // Palette de fond pilotée par data-mode="light|dark" (cf. styles.css)
+        'kinetic-ink': 'rgb(var(--ink) / <alpha-value>)',
+        'kinetic-surface': 'rgb(var(--surface) / <alpha-value>)',
+        'kinetic-elevated': 'rgb(var(--elevated) / <alpha-value>)',
+        'kinetic-raised': 'rgb(var(--raised) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],

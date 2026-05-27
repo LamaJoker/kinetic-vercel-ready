@@ -122,6 +122,7 @@ export const STORAGE_KEYS = {
   AVAILABLE_EQUIPMENT: 'kinetic:available-equipment' as const, // user inventory for substitutions
   STRENGTH_SCORE_PROFILE: 'kinetic:strength-score-profile' as const, // bw + sex pour Wilks/IPF GL/DOTS
   AI_COACH_USAGE: 'kinetic:ai-coach:usage' as const, // historique requêtes AI coach (rate limit)
+  THEME_MODE: 'kinetic:theme-mode' as const, // 'system' | 'dark' | 'light' — defaut dark
 
   // ─── Schéma IDB & Diagnostics ─────────────────────────────────
   SCHEMA_VERSION: 'kinetic:schema-version' as const,
@@ -143,6 +144,7 @@ export const STORAGE_KEYS = {
   EVENT_ROUTE_CHANGED: 'kinetic:route-changed' as const,
   EVENT_LOCALE_CHANGED: 'kinetic:locale-changed' as const,
   EVENT_LOCALE_RELOAD: 'kinetic:locale-reload' as const,
+  EVENT_THEME_CHANGED: 'kinetic:theme-changed' as const,
   ERRORS_LAST_FLUSH: 'kinetic:errors:last-flush' as const, // localStorage, throttle exfiltration
 } as const;
 

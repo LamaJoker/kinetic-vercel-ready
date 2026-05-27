@@ -147,4 +147,12 @@ export const fr: Record<string, string> = {
   'records.tier': 'Tier',
   'records.scores_help':
     'Renseigne ton poids corporel et fais au moins un PR en squat / bench / deadlift.',
+
+  // ─── Theme ────────────────────────────────────────────────────
+  'theme.title': 'Apparence',
+  'theme.subtitle': 'Thème · clair / foncé',
+  'theme.dark': 'Foncé',
+  'theme.light': 'Clair',
+  'theme.system': 'Auto',
+  'theme.help': 'Auto suit la préférence de ton appareil. Le foncé est le réglage par défaut.',
 };

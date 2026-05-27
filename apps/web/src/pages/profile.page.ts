@@ -12,6 +12,7 @@ import { loadSessions, loadExercises } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
 import { enablePush, disablePush, isPushAvailable, getPushStatus } from '../lib/push';
 import { getLocale, setLocale, type Locale } from '../lib/i18n';
+import { getThemeMode, setThemeMode, type ThemeMode } from '../lib/theme';
 import {
   detectFormat,
   parseKineticJson,
@@ -60,6 +61,12 @@ export function profile() {
     pushSubscribed: false,
     pushBusy: false,
     locale: 'fr' as Locale,
+    themeMode: 'dark' as ThemeMode,
+
+    setTheme(mode: ThemeMode): void {
+      this.themeMode = mode;
+      setThemeMode(mode);
+    },
 
     setUiLocale(locale: Locale): void {
       this.locale = locale;
@@ -94,6 +101,7 @@ export function profile() {
         await this._refreshStorageUsage();
         this._refreshPushStatus();
         this.locale = getLocale();
+        this.themeMode = getThemeMode();
       } catch (err) {
         console.error('[profile] init failed:', err);
       }
