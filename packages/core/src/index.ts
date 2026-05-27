@@ -62,6 +62,8 @@ export * from './domain/program.domain.js';
 export * from './domain/progression.domain.js';
 export * from './domain/analytics.domain.js';
 export * from './domain/goals.domain.js';
+export * from './domain/workout-generator.domain.js';
+export * from './domain/muscle-balance.domain.js';
 
 // ─── Use Cases (orchestration) ────────────────────────────────
 export { completeTask_usecase } from './usecases/complete-task.usecase.js';

@@ -90,6 +90,7 @@ import { mensurations } from './pages/mensurations.page';
 import { nutrition } from './pages/nutrition.page';
 import { program } from './pages/program.page';
 import { profile } from './pages/profile.page';
+import { records } from './pages/records.page';
 import { authCallback } from './pages/auth-callback.page';
 
 import { getDeps } from './deps';
@@ -121,6 +122,7 @@ Alpine.data('bodyweight', bodyweight);
 Alpine.data('nutrition', nutrition);
 Alpine.data('program', program);
 Alpine.data('profile', profile);
+Alpine.data('records', records);
 Alpine.data('authCallback', authCallback);
 Alpine.data('mensurations', mensurations);
 

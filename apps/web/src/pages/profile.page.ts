@@ -1,6 +1,15 @@
 ﻿import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
+import {
+  detectFormat,
+  parseKineticJson,
+  parseStrongCsv,
+  parseHevyCsv,
+  mergeIntoStorage,
+  type ImportFormat,
+  type ImportReport,
+} from '../lib/training/import';
 import { compactStorage, getStorageUsage, formatBytes } from '../lib/storage-maintenance';
 import type { Exercise, WorkoutSession } from '../lib/training/types';
 
@@ -27,6 +36,8 @@ export function profile() {
     savedAt: '',
     showResetModal: false,
     exportLoading: false,
+    importing: false,
+    lastImportReport: null as ImportReport | null,
     restoring: false,
     compacting: false,
     storagePercent: null as number | null,
@@ -179,6 +190,80 @@ export function profile() {
         );
       } finally {
         this.exportLoading = false;
+      }
+    },
+
+    /**
+     * importFile — lit le fichier choisi par l'utilisateur et fusionne dans le
+     * storage. Détecte automatiquement Kinetic JSON / Strong CSV / Hevy CSV.
+     */
+    async importFile(event: Event): Promise<void> {
+      const input = event.target as HTMLInputElement | null;
+      const file = input?.files?.[0];
+      if (!file) return;
+      if (this.importing) return;
+      this.importing = true;
+      this.lastImportReport = null;
+      try {
+        const content = await file.text();
+        const format: ImportFormat = detectFormat(content);
+
+        let bundle;
+        let csvSkipped = 0;
+        if (format === 'kinetic-json') {
+          bundle = parseKineticJson(content);
+        } else if (format === 'hevy-csv') {
+          const r = parseHevyCsv(content);
+          bundle = r.bundle;
+          csvSkipped = r.skipped;
+        } else {
+          const r = parseStrongCsv(content);
+          bundle = r.bundle;
+          csvSkipped = r.skipped;
+        }
+
+        if (bundle.sessions.length === 0) {
+          window.dispatchEvent(
+            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+              detail: {
+                kind: 'warning',
+                message: 'Aucune séance détectée dans le fichier. Vérifie le format.',
+              },
+            }),
+          );
+          return;
+        }
+
+        const deps = await getDeps();
+        const report = await mergeIntoStorage(deps.storage, bundle, format);
+        this.lastImportReport = { ...report, skippedRows: csvSkipped };
+
+        const label =
+          report.importedSessions > 0
+            ? `${report.importedSessions} séance(s) importée(s)` +
+              (report.duplicateSessions > 0
+                ? ` (${report.duplicateSessions} doublon(s) ignoré(s))`
+                : '')
+            : `Aucune nouvelle séance (${report.duplicateSessions} doublon(s))`;
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'success', message: label },
+          }),
+        );
+      } catch (err) {
+        console.error('[profile] import failed:', err);
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: {
+              kind: 'error',
+              message: "Échec de l'import — fichier illisible ou format inconnu.",
+            },
+          }),
+        );
+      } finally {
+        this.importing = false;
+        // Reset l'input pour permettre de re-sélectionner le même fichier
+        if (input) input.value = '';
       }
     },
 

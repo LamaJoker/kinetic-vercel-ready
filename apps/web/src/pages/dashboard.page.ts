@@ -2,15 +2,23 @@
  * Composant Alpine pour la page dashboard.
  * Enregistré dans main.ts via Alpine.data('dashboard', dashboard).
  */
-import { STORAGE_KEYS } from '@kinetic/core';
-import type { StreakState } from '@kinetic/core';
+import { STORAGE_KEYS, muscleBalance } from '@kinetic/core';
+import type { BalanceReport, StreakState } from '@kinetic/core';
 import { getDeps } from '../deps';
+import type { WorkoutSession, Exercise } from '../lib/training/types';
+import { loadSessions, loadExercises } from '../lib/training/storage';
 
 interface ActivityDay {
   label: string;
   short: string;
   active: boolean;
 }
+
+const PATTERN_LABELS: Record<'push' | 'pull' | 'legs', string> = {
+  push: 'pousser',
+  pull: 'tirer',
+  legs: 'jambes',
+};
 
 export function dashboard() {
   return {
@@ -19,6 +27,19 @@ export function dashboard() {
     streak: 0,
     bestStreak: 0,
     activityDays: [] as ActivityDay[],
+    balance: null as BalanceReport | null,
+
+    get balanceWarning(): string | null {
+      const b = this.balance;
+      if (!b || !b.reliable) return null;
+      if (b.underWorked) {
+        return `Volume "${PATTERN_LABELS[b.underWorked]}" très bas sur 4 semaines — pense à équilibrer.`;
+      }
+      if (b.overWorked) {
+        return `Volume "${PATTERN_LABELS[b.overWorked]}" dominant — varie les patterns pour éviter les déséquilibres.`;
+      }
+      return null;
+    },
 
     async init(): Promise<void> {
       const hour = new Date().getHours();
@@ -40,8 +61,32 @@ export function dashboard() {
         }
 
         this.activityDays = await this._buildActivityDays();
+        this.balance = await this._buildBalanceReport();
       } catch (err) {
         console.error('[dashboard] init failed:', err);
+      }
+    },
+
+    async _buildBalanceReport(): Promise<BalanceReport | null> {
+      try {
+        const deps = await getDeps();
+        const [sessions, exercises] = await Promise.all([
+          loadSessions(deps.storage),
+          loadExercises(deps.storage),
+        ]);
+        const musclesById = new Map(exercises.map((e: Exercise) => [e.id, e.muscles]));
+        const sets = (sessions as WorkoutSession[]).flatMap((s) =>
+          s.entries.flatMap((entry) =>
+            entry.sets.map((set) => ({
+              muscles: musclesById.get(entry.exerciseId) ?? [],
+              performedAt: set.performedAt,
+            })),
+          ),
+        );
+        return muscleBalance(sets);
+      } catch (err) {
+        console.warn('[dashboard] _buildBalanceReport failed:', err);
+        return null;
       }
     },
 
