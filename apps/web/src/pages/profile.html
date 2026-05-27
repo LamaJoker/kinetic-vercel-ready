@@ -321,6 +321,63 @@
     </div>
   </div>
 
+  <!-- Notifications push -->
+  <template x-if="pushSupported">
+    <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+      <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Notifications push</h2>
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Rappels d'entraînement</p>
+      <p class="text-xs text-gray-500 mb-3">
+        Reçois un rappel quand tu n'as pas ouvert l'app depuis 24 h ou quand un objectif hebdo est
+        proche. 1 push max par jour, désactivable en 1 tap.
+      </p>
+      <button
+        @click="togglePush()"
+        :disabled="pushBusy"
+        class="w-full px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-40"
+        :class="pushSubscribed
+                  ? 'bg-kinetic-surface ring-1 ring-kinetic-electric/40 text-kinetic-electric hover:ring-kinetic-electric'
+                  : 'bg-kinetic-neon text-gray-950 hover:brightness-110'"
+      >
+        <span x-show="pushBusy">…</span>
+        <span x-show="!pushBusy && !pushSubscribed">Activer les notifications</span>
+        <span x-show="!pushBusy && pushSubscribed">Désactiver</span>
+      </button>
+    </div>
+  </template>
+
+  <!-- Partage profil public -->
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Profil partagé</h2>
+    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">
+      Best lifts · streak · niveau
+    </p>
+    <p class="text-xs text-gray-500 mb-3">
+      Génère un lien public avec tes records — partage avec ton coach ou tes potes. Les données sont
+      encodées dans l'URL, aucun serveur n'est appelé.
+    </p>
+    <div class="flex gap-2">
+      <input
+        x-model="profilePseudo"
+        placeholder="Ton pseudo"
+        maxlength="32"
+        class="flex-1 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
+      />
+      <button
+        @click="shareProfile()"
+        :disabled="sharingProfile"
+        class="px-4 py-2 rounded-xl bg-kinetic-neon text-gray-950 text-sm font-bold hover:brightness-110 disabled:opacity-40 active:scale-95"
+      >
+        <span x-show="!sharingProfile">↗ Partager</span>
+        <span x-show="sharingProfile">…</span>
+      </button>
+    </div>
+    <template x-if="profileShareUrl">
+      <p class="text-[10px] text-gray-500 mt-2 break-all">
+        <span x-text="profileShareUrl"></span>
+      </p>
+    </template>
+  </div>
+
   <!-- Export des données -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Export</h2>

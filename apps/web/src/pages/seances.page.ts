@@ -200,6 +200,7 @@ export function seances() {
     tickHandle: null as number | null,
     restEndsAtMs: 0,
     restPresetSec: 90,
+    fullscreenRest: false,
     _restNotifTimer: null as ReturnType<typeof setTimeout> | null,
     // ── PR Celebration ────────────────────────────────────────
     prCelebration: null as {
@@ -612,32 +613,84 @@ export function seances() {
       const sec = Math.max(15, Math.min(600, Math.floor(Number(this.restPresetSec)) || 90));
       this.restPresetSec = sec;
       this.restEndsAtMs = this.nowMs + sec * 1000;
+      this.fullscreenRest = true;
       hapticMedium();
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        if (this._restNotifTimer) clearTimeout(this._restNotifTimer);
-        this._restNotifTimer = setTimeout(() => {
-          hapticHeavy();
-          new Notification('⏱ Repos terminé !', {
-            body: 'Prêt pour la série suivante',
-            icon: '/icons/icon-96.png',
-            tag: 'rest',
-          });
-        }, sec * 1000);
-      } else {
-        // Vibration de fin même sans notifications
-        if (this._restNotifTimer) clearTimeout(this._restNotifTimer);
-        this._restNotifTimer = setTimeout(() => {
-          hapticHeavy();
-        }, sec * 1000);
-      }
+      this._scheduleRestEndCallback(sec);
+    },
+
+    /**
+     * (Re)programme le callback de fin de repos. Extrait pour pouvoir
+     * être appelé depuis addRestSec() qui modifie restEndsAtMs en cours.
+     */
+    _scheduleRestEndCallback(sec: number): void {
+      if (this._restNotifTimer) clearTimeout(this._restNotifTimer);
+      const fire = (): void => {
+        hapticHeavy();
+        this.fullscreenRest = false;
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          try {
+            new Notification('⏱ Repos terminé !', {
+              body: 'Prêt pour la série suivante',
+              icon: '/icons/icon-96.png',
+              tag: 'rest',
+            });
+          } catch {
+            /* noop */
+          }
+        }
+      };
+      this._restNotifTimer = setTimeout(fire, Math.max(0, sec * 1000));
     },
 
     stopRest(): void {
       this.restEndsAtMs = 0;
+      this.fullscreenRest = false;
       if (this._restNotifTimer) {
         clearTimeout(this._restNotifTimer);
         this._restNotifTimer = null;
       }
+    },
+
+    /** Termine immédiatement le repos (déclenche le retour à l'action). */
+    skipRest(): void {
+      this.stopRest();
+      hapticMedium();
+    },
+
+    /** Ajoute (ou retire) des secondes au repos en cours. Borné à [5s, 10min]. */
+    addRestSec(delta: number): void {
+      if (this.restEndsAtMs <= 0) return;
+      const remaining = Math.max(0, Math.ceil((this.restEndsAtMs - this.nowMs) / 1000));
+      const next = Math.max(5, Math.min(600, remaining + delta));
+      this.restEndsAtMs = this.nowMs + next * 1000;
+      this._scheduleRestEndCallback(next);
+      hapticLight();
+    },
+
+    // ─── Raccourcis +/- sur le draft ───────────────────────────────────────
+    bumpReps(delta: number): void {
+      const current = Number(this.draft.reps) || 0;
+      this.draft.reps = Math.max(1, current + delta);
+      hapticLight();
+    },
+
+    bumpWeight(delta: number): void {
+      // Le pas dépend de l'exercice si on en a un sélectionné dans la session
+      const entry = this.currentSession?.entries[0];
+      const ex = entry ? this.exercises.find((e) => e.id === entry.exerciseId) : null;
+      const step = ex?.incrementKg ?? 2.5;
+      const current = Number(this.draft.weightKg) || 0;
+      const next = Math.max(0, current + delta * step);
+      // Snap à un pas de 0.25 pour éviter les flottants moches
+      this.draft.weightKg = Math.round(next * 4) / 4;
+      hapticLight();
+    },
+
+    bumpRpe(delta: number): void {
+      const current = Number(this.draft.rpe) || 8;
+      const next = Math.max(6, Math.min(10, Math.round((current + delta) * 2) / 2));
+      this.draft.rpe = next;
+      hapticLight();
     },
 
     avgRpeOf(session: WorkoutSession | null): number | null {
