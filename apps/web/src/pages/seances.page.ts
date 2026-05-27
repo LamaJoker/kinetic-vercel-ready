@@ -5,9 +5,11 @@
   generateWorkout,
   encodeWorkout,
   buildShareUrl,
+  suggestSubstitutions,
   type ProgressionSuggestion,
   type PerformedSet,
   type WorkoutFocus,
+  type SubstitutionResult,
 } from '@kinetic/core';
 import { UuidGenerator } from '@kinetic/adapters-web';
 import { getDeps } from '../deps';
@@ -32,7 +34,7 @@ import { suggestedRestSec, requestNotificationPermission } from '../lib/training
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import { hapticLight, hapticMedium, hapticSuccess, hapticHeavy } from '../lib/haptics';
 
-type Draft = { reps: number; weightKg: number; rpe: number };
+type Draft = { reps: number; weightKg: number; rpe: number; note: string; tempo: string };
 
 // ─── Catégorisation par groupe musculaire ────────────────────────────────────
 
@@ -194,7 +196,8 @@ export function seances() {
     currentSession: null as WorkoutSession | null,
     templateName: '',
 
-    draft: { reps: 8, weightKg: 40, rpe: 8 } as Draft,
+    draft: { reps: 8, weightKg: 40, rpe: 8, note: '', tempo: '' } as Draft,
+    showSetExtras: false,
 
     nowMs: Date.now(),
     tickHandle: null as number | null,
@@ -202,6 +205,73 @@ export function seances() {
     restPresetSec: 90,
     fullscreenRest: false,
     _restNotifTimer: null as ReturnType<typeof setTimeout> | null,
+
+    // ─── Substitution ────────────────────────────────────────
+    substitutionFor: null as string | null,
+    substitutionResults: [] as SubstitutionResult[],
+
+    /** Ouvre/ferme le panneau de substitution pour un exercice. */
+    openSubstitution(exerciseId: string): void {
+      if (this.substitutionFor === exerciseId) {
+        this.substitutionFor = null;
+        return;
+      }
+      const target = this.exercises.find((e) => e.id === exerciseId);
+      if (!target) return;
+      const candidates = this.exercises.map((ex) => ({
+        id: ex.id,
+        name: ex.name,
+        muscles: ex.muscles,
+        equipment: ex.equipment ? [ex.equipment] : [],
+      }));
+      this.substitutionResults = suggestSubstitutions({
+        target: {
+          id: target.id,
+          name: target.name,
+          muscles: target.muscles,
+          equipment: target.equipment ? [target.equipment] : [],
+        },
+        candidates,
+        limit: 3,
+      });
+      this.substitutionFor = exerciseId;
+    },
+
+    /** Remplace un exo dans la séance courante en gardant les sets déjà faits. */
+    applySubstitution(oldExerciseId: string, newExerciseId: string): void {
+      if (!this.currentSession) return;
+      const replacement = this.exercises.find((e) => e.id === newExerciseId);
+      if (!replacement) return;
+      // Évite les doublons : si l'exo cible est déjà dans la séance, fusion
+      const alreadyHasNew = this.currentSession.entries.some((e) => e.exerciseId === newExerciseId);
+      if (alreadyHasNew) {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: {
+              kind: 'warning',
+              message: 'Cet exercice est déjà dans ta séance.',
+            },
+          }),
+        );
+        return;
+      }
+      this.currentSession = {
+        ...this.currentSession,
+        entries: this.currentSession.entries.map((e) =>
+          e.exerciseId === oldExerciseId ? { ...e, exerciseId: newExerciseId } : e,
+        ),
+      };
+      this.substitutionFor = null;
+      this.substitutionResults = [];
+      window.dispatchEvent(
+        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+          detail: {
+            kind: 'success',
+            message: `Remplacé par "${replacement.name}".`,
+          },
+        }),
+      );
+    },
     // ── PR Celebration ────────────────────────────────────────
     prCelebration: null as {
       exerciseName: string;
@@ -766,6 +836,7 @@ export function seances() {
       // ── Détecter PR AVANT d'ajouter la série ─────────────────────────────
       const isPr = this.isNewPr(exerciseId, weightKg, reps);
 
+      const note = (this.draft.note ?? '').toString().trim().slice(0, 200);
       this.currentSession = {
         ...this.currentSession,
         entries: this.currentSession.entries.map((e) => {
@@ -774,11 +845,20 @@ export function seances() {
             ...e,
             sets: [
               ...e.sets,
-              { setIndex: e.sets.length, reps, weightKg, rpe, performedAt: nowIso() },
+              {
+                setIndex: e.sets.length,
+                reps,
+                weightKg,
+                rpe,
+                performedAt: nowIso(),
+                ...(note ? { note } : {}),
+              },
             ],
           };
         }),
       };
+      // Vide la note après ajout (le tempo reste pour les sets suivants)
+      this.draft.note = '';
 
       if (isPr) {
         const e1rmKg = Math.round(estimateE1rmKg(weightKg, reps) * 10) / 10;

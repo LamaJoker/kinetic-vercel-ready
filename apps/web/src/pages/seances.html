@@ -426,13 +426,63 @@
                 </template>
               </p>
             </div>
-            <button
-              class="text-xs text-gray-400 hover:text-white"
-              @click="removeExercise(entry.exerciseId)"
-            >
-              Retirer
-            </button>
+            <div class="flex items-center gap-1">
+              <button
+                class="text-xs text-gray-400 hover:text-kinetic-neon p-1.5 rounded-lg hover:bg-kinetic-elevated"
+                @click="openSubstitution(entry.exerciseId)"
+                aria-label="Remplacer cet exercice"
+                title="Remplacer"
+              >
+                ⇄
+              </button>
+              <button
+                class="text-xs text-gray-400 hover:text-white"
+                @click="removeExercise(entry.exerciseId)"
+              >
+                Retirer
+              </button>
+            </div>
           </div>
+
+          <!-- Panneau de substitution -->
+          <template x-if="substitutionFor === entry.exerciseId">
+            <div class="mb-3 bg-kinetic-ink/60 ring-1 ring-kinetic-neon/30 rounded-xl p-3">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-xs font-bold text-kinetic-neon uppercase tracking-widest">
+                  Alternatives suggérées
+                </p>
+                <button
+                  @click="substitutionFor = null"
+                  class="text-xs text-gray-500 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+              <template x-if="substitutionResults.length === 0">
+                <p class="text-xs text-gray-500">Aucune alternative trouvée.</p>
+              </template>
+              <div class="space-y-1.5">
+                <template x-for="alt in substitutionResults" :key="alt.exercise.id">
+                  <button
+                    @click="applySubstitution(entry.exerciseId, alt.exercise.id)"
+                    class="w-full text-left bg-kinetic-elevated rounded-lg px-3 py-2 hover:bg-kinetic-elevated/80 ring-1 ring-white/5 hover:ring-kinetic-neon/40"
+                  >
+                    <div class="flex items-center justify-between gap-2">
+                      <p class="text-sm font-semibold text-white" x-text="alt.exercise.name"></p>
+                      <span
+                        class="text-[10px] text-kinetic-neon font-bold flex-shrink-0"
+                        x-text="Math.round(alt.score * 100) + ' %'"
+                      ></span>
+                    </div>
+                    <p
+                      class="text-[10px] text-gray-500 leading-snug mt-0.5"
+                      x-text="alt.rationale"
+                    ></p>
+                  </button>
+                </template>
+              </div>
+            </div>
+          </template>
 
           <!-- Inputs nouvelle série + raccourcis +/- -->
           <div class="grid grid-cols-3 gap-2 mb-2">
@@ -518,6 +568,44 @@
                 >
                   +
                 </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Note + tempo (optionnel, collapsible) -->
+          <div class="mb-2">
+            <button
+              type="button"
+              @click="showSetExtras = !showSetExtras"
+              class="text-[10px] text-gray-500 hover:text-gray-300 uppercase tracking-widest font-semibold"
+            >
+              <span x-show="!showSetExtras">＋ note / tempo</span>
+              <span x-show="showSetExtras">− masquer</span>
+            </button>
+            <div x-show="showSetExtras" x-transition class="mt-2 grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] uppercase tracking-widest text-gray-500"
+                  >Note (optionnel)</label
+                >
+                <input
+                  type="text"
+                  x-model="draft.note"
+                  maxlength="200"
+                  placeholder="ex: déséquilibré, ceinture..."
+                  class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-2 py-1.5 text-xs text-white mt-1"
+                />
+              </div>
+              <div>
+                <label class="text-[10px] uppercase tracking-widest text-gray-500"
+                  >Tempo (ex: 4-1-2-0)</label
+                >
+                <input
+                  type="text"
+                  x-model="draft.tempo"
+                  maxlength="9"
+                  placeholder="3-0-X-0"
+                  class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-2 py-1.5 text-xs text-white mt-1 font-mono"
+                />
               </div>
             </div>
           </div>
@@ -669,18 +757,25 @@
               <div>e1RM</div>
             </div>
             <template x-for="s in entry.sets" :key="s.setIndex">
-              <div
-                class="grid grid-cols-5 px-3 py-2 text-sm border-t border-white/10"
-                :class="isSetPr(entry.exerciseId, s.weightKg, s.reps) ? 'bg-kinetic-electric/10' : ''"
-              >
-                <div class="text-gray-400" x-text="s.setIndex + 1"></div>
-                <div class="text-white" x-text="s.reps"></div>
-                <div class="text-white" x-text="s.weightKg"></div>
-                <div class="text-white" x-text="s.rpe"></div>
+              <div class="border-t border-white/10">
                 <div
-                  class="text-kinetic-electric font-medium"
-                  x-text="e1rm(s.weightKg, s.reps).toFixed(0)"
-                ></div>
+                  class="grid grid-cols-5 px-3 py-2 text-sm"
+                  :class="isSetPr(entry.exerciseId, s.weightKg, s.reps) ? 'bg-kinetic-electric/10' : ''"
+                >
+                  <div class="text-gray-400" x-text="s.setIndex + 1"></div>
+                  <div class="text-white" x-text="s.reps"></div>
+                  <div class="text-white" x-text="s.weightKg"></div>
+                  <div class="text-white" x-text="s.rpe"></div>
+                  <div
+                    class="text-kinetic-electric font-medium"
+                    x-text="e1rm(s.weightKg, s.reps).toFixed(0)"
+                  ></div>
+                </div>
+                <template x-if="s.note">
+                  <p class="text-[11px] text-gray-400 italic px-3 pb-1.5 leading-snug">
+                    💬 <span x-text="s.note"></span>
+                  </p>
+                </template>
               </div>
             </template>
           </div>

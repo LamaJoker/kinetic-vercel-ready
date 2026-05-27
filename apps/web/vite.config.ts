@@ -69,6 +69,19 @@ export default defineConfig({
           // Libs utilitaires
           if (id.includes('apps/web/src/lib/training/')) return 'lib-training';
           if (id.includes('apps/web/src/lib/user/')) return 'lib-user';
+          // Pages secondaires (programmes, photos) — déchargent main de ~30 KB
+          if (id.includes('apps/web/src/pages/programs.page')) return 'page-programs';
+          if (id.includes('apps/web/src/pages/photos.page')) return 'page-photos';
+          if (id.includes('apps/web/src/pages/achievements.page')) return 'page-achievements';
+          if (id.includes('apps/web/src/pages/plates.page')) return 'page-plates';
+          // i18n : dictionnaires séparés pour permettre lazy-load par locale
+          if (id.includes('apps/web/src/lib/i18n/')) return 'i18n-dict';
+          // Photos lib : dépendances DOM lourdes (canvas), seulement utiles sur /photos
+          if (id.includes('apps/web/src/lib/photos.ts')) return 'lib-photos';
+          // AI coach client : utilisé uniquement quand l'utilisateur clique le bouton
+          if (id.includes('apps/web/src/lib/ai-coach.ts')) return 'lib-ai-coach';
+          // Error reporter : non critique, peut être chargé séparément
+          if (id.includes('apps/web/src/lib/error-reporter.ts')) return 'lib-error-reporter';
         },
         assetFileNames: 'static/assets/[name]-[hash][extname]',
         chunkFileNames: 'static/chunks/[name]-[hash].js',

@@ -124,9 +124,11 @@
             <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
             <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
-          <span class="text-[10px]" :class="currentPath === '/' ? 'font-bold' : 'font-medium'"
-            >Accueil</span
-          >
+          <span
+            class="text-[10px]"
+            :class="currentPath === '/' ? 'font-bold' : 'font-medium'"
+            x-text="$t('nav.dashboard')"
+          ></span>
           <span
             x-show="currentPath === '/'"
             class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"
@@ -158,8 +160,8 @@
           <span
             class="text-[10px]"
             :class="currentPath === '/seances' ? 'font-bold' : 'font-medium'"
-            >Séances</span
-          >
+            x-text="$t('nav.sessions')"
+          ></span>
           <span
             x-show="currentPath === '/seances'"
             class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"
@@ -253,8 +255,8 @@
           <span
             class="text-[10px]"
             :class="currentPath === '/profile' ? 'font-bold' : 'font-medium'"
-            >Profil</span
-          >
+            x-text="$t('nav.profile')"
+          ></span>
           <span
             x-show="currentPath === '/profile'"
             class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"

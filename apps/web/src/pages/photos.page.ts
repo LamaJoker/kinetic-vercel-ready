@@ -1,10 +1,19 @@
 import { STORAGE_KEYS } from '@kinetic/core';
 import { UuidGenerator } from '@kinetic/adapters-web';
 import { getDeps } from '../deps';
-import { loadPhotos, savePhotos, compressImageFile, type PhotoEntry } from '../lib/photos';
+import {
+  loadPhotos,
+  deletePhoto as deletePhotoLib,
+  compressImageFile,
+  addPhoto,
+  getPhotoObjectUrl,
+  type PhotoEntry,
+} from '../lib/photos';
 import { hapticLight, hapticSuccess } from '../lib/haptics';
 
 const _idGen = new UuidGenerator();
+
+type PhotoUrlState = 'pending' | 'resolved' | 'failed';
 
 export function photosPage() {
   return {
@@ -15,6 +24,7 @@ export function photosPage() {
     showCompare: true,
     compareBeforeId: '' as string,
     compareAfterId: '' as string,
+    _urlCache: new Map<string, { url: string; state: PhotoUrlState }>(),
 
     async init(): Promise<void> {
       try {
@@ -24,8 +34,41 @@ export function photosPage() {
           this.compareBeforeId = this.photos[0]!.id;
           this.compareAfterId = this.photos[this.photos.length - 1]!.id;
         }
+        for (const p of this.photos) void this._ensureUrl(p);
       } catch (err) {
         console.error('[photos] init failed:', err);
+      }
+    },
+
+    destroy(): void {
+      for (const entry of this._urlCache.values()) {
+        if (entry.state === 'resolved') URL.revokeObjectURL(entry.url);
+      }
+      this._urlCache.clear();
+    },
+
+    photoUrl(p: PhotoEntry): string {
+      const cached = this._urlCache.get(p.id);
+      if (cached?.state === 'resolved') return cached.url;
+      void this._ensureUrl(p);
+      return '';
+    },
+
+    async _ensureUrl(p: PhotoEntry): Promise<void> {
+      if (this._urlCache.has(p.id)) return;
+      this._urlCache.set(p.id, { url: '', state: 'pending' });
+      try {
+        const deps = await getDeps();
+        const url = await getPhotoObjectUrl(deps.storage, p);
+        if (url) {
+          this._urlCache.set(p.id, { url, state: 'resolved' });
+        } else {
+          this._urlCache.set(p.id, { url: '', state: 'failed' });
+        }
+        this.photos = [...this.photos];
+      } catch (err) {
+        console.warn('[photos] ensureUrl failed:', err);
+        this._urlCache.set(p.id, { url: '', state: 'failed' });
       }
     },
 
@@ -66,21 +109,20 @@ export function photosPage() {
       }
       this.adding = true;
       try {
-        const dataUrl = await compressImageFile(file);
-        const entry: PhotoEntry = {
-          id: _idGen.newId(),
-          takenAt: new Date().toISOString(),
-          dataUrl,
+        const blob = await compressImageFile(file);
+        const deps = await getDeps();
+        const id = _idGen.newId();
+        const takenAt = new Date().toISOString();
+        this.photos = await addPhoto(deps.storage, blob, {
+          id,
+          takenAt,
           ...(typeof this.newBodyweight === 'number' && this.newBodyweight > 0
             ? { bodyweightKg: this.newBodyweight }
             : {}),
           ...(this.newLabel ? { label: this.newLabel } : {}),
-        };
-        const deps = await getDeps();
-        const next = [...this.photos, entry];
-        await savePhotos(deps.storage, next);
-        this.photos = next;
-        target.value = ''; // reset input so the same file can be added again
+        });
+        await this._ensureUrl(this.photos.at(-1)!);
+        target.value = '';
         hapticSuccess();
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
@@ -102,8 +144,10 @@ export function photosPage() {
     async removePhoto(id: string): Promise<void> {
       try {
         const deps = await getDeps();
-        const next = this.photos.filter((p) => p.id !== id);
-        await savePhotos(deps.storage, next);
+        const next = await deletePhotoLib(deps.storage, id);
+        const cached = this._urlCache.get(id);
+        if (cached?.state === 'resolved') URL.revokeObjectURL(cached.url);
+        this._urlCache.delete(id);
         this.photos = next;
         hapticLight();
       } catch (err) {

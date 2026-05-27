@@ -113,4 +113,38 @@ export const fr: Record<string, string> = {
   'pwa.install_ios':
     "Sur iPhone : appuie sur Partager (□↑) puis « Sur l'écran d'accueil » pour installer Kinetic.",
   'pwa.dismiss': 'Plus tard',
+
+  // ─── Dashboard tools ──────────────────────────────────────────
+  'tools.plates': 'Calculateur plates',
+  'tools.plates_sub': 'Combien par côté ?',
+  'tools.achievements': 'Achievements',
+  'tools.achievements_sub': 'débloqués',
+  'tools.ai_coach': 'Coach IA',
+  'tools.ai_coach_sub': 'Pose une question sur ta progression',
+
+  // ─── Dashboard greeting ───────────────────────────────────────
+  'greeting.morning': 'Bonjour 👋',
+  'greeting.afternoon': 'Bon après-midi 🌤️',
+  'greeting.evening': 'Bonsoir 🌙',
+
+  // ─── Login full ───────────────────────────────────────────────
+  'login.subtitle': 'Connexion magique sans mot de passe',
+  'login.email_placeholder': 'ton@email.com',
+  'login.magic_link': 'Recevoir un lien magique',
+  'login.or': 'ou',
+  'login.no_account': 'Pas de compte ? On en crée un automatiquement.',
+
+  // ─── Records ──────────────────────────────────────────────────
+  'records.title': 'Records',
+  'records.active_prs': 'PR actifs',
+  'records.last_7d': '7 derniers j',
+  'records.top_e1rm': 'Top e1RM',
+  'records.strength_scores': 'Scores de force',
+  'records.sbd_normalized': 'SBD normalisé',
+  'records.bodyweight': 'Poids (kg)',
+  'records.sex': 'Sexe',
+  'records.total_sbd': 'Total SBD',
+  'records.tier': 'Tier',
+  'records.scores_help':
+    'Renseigne ton poids corporel et fais au moins un PR en squat / bench / deadlift.',
 };

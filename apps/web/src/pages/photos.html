@@ -88,7 +88,7 @@
                 </template>
               </select>
               <img
-                :src="comparePhoto(compareBeforeId)?.dataUrl"
+                x-bind:src="comparePhoto(compareBeforeId) ? photoUrl(comparePhoto(compareBeforeId)) : ''"
                 class="w-full aspect-[3/4] object-cover rounded-xl bg-black"
               />
             </div>
@@ -102,7 +102,7 @@
                 </template>
               </select>
               <img
-                :src="comparePhoto(compareAfterId)?.dataUrl"
+                x-bind:src="comparePhoto(compareAfterId) ? photoUrl(comparePhoto(compareAfterId)) : ''"
                 class="w-full aspect-[3/4] object-cover rounded-xl bg-black"
               />
             </div>
@@ -130,9 +130,9 @@
       <template x-for="p in photos.slice().reverse()" :key="p.id">
         <div class="relative group">
           <img
-            :src="p.dataUrl"
+            x-bind:src="photoUrl(p)"
             class="w-full aspect-[3/4] object-cover rounded-xl bg-black"
-            :alt="photoDateLabel(p)"
+            x-bind:alt="photoDateLabel(p)"
           />
           <div
             class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent rounded-b-xl px-2 py-1.5"

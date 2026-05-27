@@ -58,6 +58,7 @@ serve(async (req: Request) => {
   });
   const { data: userData, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userData.user) return json({ error: 'unauthorized' }, 401);
+  const userId = userData.user.id;
 
   let body: CoachBody = {};
   try {
@@ -69,6 +70,39 @@ serve(async (req: Request) => {
   if (!question) return json({ error: 'question_required' }, 400);
 
   const contextJson = JSON.stringify(body.context ?? {}).slice(0, 20_000);
+
+  // ── Rate limit : 10 requêtes/heure/user ─────────────────────────────────
+  const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count, error: countErr } = await adminClient
+    .from('ai_coach_usage')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('requested_at', oneHourAgo);
+  if (countErr) {
+    console.warn('[ai-coach] rate-limit check failed:', countErr.message);
+  } else if ((count ?? 0) >= 10) {
+    return json(
+      {
+        error: 'rate_limit_exceeded',
+        message: 'Limite atteinte (10 requêtes/heure). Réessaie plus tard.',
+        retryAfterMinutes: 60,
+      },
+      429,
+    );
+  }
+  // Insert APRES vérification (best-effort, on n'échoue pas si l'insert se loupe)
+  await adminClient
+    .from('ai_coach_usage')
+    .insert({
+      user_id: userId,
+      requested_at: new Date().toISOString(),
+      prompt_chars: question.length + contextJson.length,
+    })
+    .then(() => null)
+    .catch((err: unknown) => console.warn('[ai-coach] usage log failed:', err));
 
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {

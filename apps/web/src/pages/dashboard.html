@@ -79,7 +79,7 @@
           d="M6 7h2m8 0h2M5 9v6a2 2 0 002 2h1v2h2v-2h4v2h2v-2h1a2 2 0 002-2V9M8 7V5a1 1 0 011-1h6a1 1 0 011 1v2"
         />
       </svg>
-      <span class="text-[10px] text-gray-400 font-semibold">Séances</span>
+      <span class="text-[10px] text-gray-400 font-semibold" x-text="$t('nav.sessions')"></span>
     </a>
     <a
       href="/progression"
@@ -98,7 +98,7 @@
           d="M3 17l6-6 4 4 8-8M14 7h7v7"
         />
       </svg>
-      <span class="text-[10px] text-gray-400 font-semibold">Progrès</span>
+      <span class="text-[10px] text-gray-400 font-semibold" x-text="$t('nav.progression')"></span>
     </a>
     <a
       href="/records"
@@ -112,7 +112,7 @@
           d="M5 3v4a7 7 0 0014 0V3M9 21h6M12 17v4"
         />
       </svg>
-      <span class="text-[10px] text-gray-400 font-semibold">Records</span>
+      <span class="text-[10px] text-gray-400 font-semibold" x-text="$t('nav.records')"></span>
     </a>
     <a
       href="/nutrition"
@@ -127,6 +127,7 @@
         />
       </svg>
       <span class="text-[10px] text-gray-400 font-semibold">Nutrition</span>
+      <!-- Same word in EN -->
     </a>
     <a
       href="/bodyweight"
@@ -140,7 +141,10 @@
           d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
         />
       </svg>
-      <span class="text-[10px] text-gray-400 font-semibold">Poids</span>
+      <span
+        class="text-[10px] text-gray-400 font-semibold"
+        x-text="$locale() === 'en' ? 'Body' : 'Poids'"
+      ></span>
     </a>
   </div>
 
@@ -152,8 +156,8 @@
     >
       <span class="text-lg">🧮</span>
       <div class="min-w-0">
-        <p class="text-xs font-bold text-white">Calculateur plates</p>
-        <p class="text-[10px] text-gray-500 truncate">Combien par côté ?</p>
+        <p class="text-xs font-bold text-white" x-text="$t('tools.plates')"></p>
+        <p class="text-[10px] text-gray-500 truncate" x-text="$t('tools.plates_sub')"></p>
       </div>
     </a>
     <a
@@ -162,14 +166,124 @@
     >
       <span class="text-lg">🏅</span>
       <div class="min-w-0">
-        <p class="text-xs font-bold text-white">Achievements</p>
+        <p class="text-xs font-bold text-white" x-text="$t('tools.achievements')"></p>
         <p class="text-[10px] text-gray-500 truncate">
           <span x-text="$store.achievements ? $store.achievements.unlockedCount : 0"></span>
           /
-          <span x-text="$store.achievements ? $store.achievements.totalCount : 0"></span> débloqués
+          <span x-text="$store.achievements ? $store.achievements.totalCount : 0"></span>
+          <span x-text="$t('tools.achievements_sub')"></span>
         </p>
       </div>
     </a>
+  </div>
+
+  <!-- ── AI Coach ────────────────────────────────────────────────────────── -->
+  <template x-if="aiCoachAvailable">
+    <button
+      @click="openCoachModal()"
+      class="w-full mb-3 bg-gradient-to-r from-purple-700/40 via-purple-600/30 to-kinetic-ink ring-1 ring-purple-400/30 rounded-2xl p-3 flex items-center gap-3 hover:ring-purple-300/60 transition-all active:scale-[0.98]"
+    >
+      <span class="text-2xl">🤖</span>
+      <div class="flex-1 text-left min-w-0">
+        <p class="text-sm font-bold text-white">Coach IA</p>
+        <p class="text-[10px] text-purple-200 truncate">Pose une question sur ta progression</p>
+      </div>
+      <span class="text-purple-300 text-lg">→</span>
+    </button>
+  </template>
+
+  <!-- ── AI Coach Modal ──────────────────────────────────────────────────── -->
+  <div
+    x-show="showCoachModal"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="closeCoachModal()"
+    @keydown.escape.window="closeCoachModal()"
+    class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+    style="display: none"
+  >
+    <div
+      class="w-full max-w-md bg-kinetic-surface rounded-3xl ring-1 ring-purple-400/30 p-5 shadow-2xl"
+      @click.stop
+    >
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🤖</span>
+          <h2 class="font-display font-black text-white text-lg">Coach IA</h2>
+        </div>
+        <button
+          @click="closeCoachModal()"
+          class="text-gray-400 hover:text-white p-1"
+          aria-label="Fermer"
+        >
+          ✕
+        </button>
+      </div>
+
+      <p class="text-xs text-gray-500 mb-3">
+        Pose une question — j'analyse tes 50 dernières séances avec Claude.
+      </p>
+
+      <!-- Suggestions -->
+      <div class="grid grid-cols-1 gap-1.5 mb-3" x-show="!coachAnswer && !coachLoading">
+        <template x-for="suggestion in coachSuggestions" :key="suggestion">
+          <button
+            @click="coachQuestion = suggestion"
+            class="text-left text-xs text-purple-200 bg-purple-900/30 ring-1 ring-purple-500/20 rounded-lg px-3 py-2 hover:ring-purple-400/40"
+            x-text="suggestion"
+          ></button>
+        </template>
+      </div>
+
+      <!-- Input -->
+      <div class="flex gap-2 mb-3" x-show="!coachAnswer">
+        <input
+          x-model="coachQuestion"
+          @keydown.enter="askCoachAi()"
+          :disabled="coachLoading"
+          placeholder="Pourquoi je stagne au bench ?"
+          maxlength="500"
+          class="flex-1 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white disabled:opacity-50"
+        />
+        <button
+          @click="askCoachAi()"
+          :disabled="coachLoading || !coachQuestion.trim()"
+          class="px-4 py-2 rounded-xl bg-purple-500 text-white text-sm font-bold hover:brightness-110 disabled:opacity-40 active:scale-95"
+        >
+          <span x-show="!coachLoading">→</span>
+          <span x-show="coachLoading">…</span>
+        </button>
+      </div>
+
+      <!-- Réponse -->
+      <template x-if="coachAnswer">
+        <div class="bg-kinetic-ink/60 ring-1 ring-purple-500/20 rounded-xl p-3 mb-3">
+          <p
+            class="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap"
+            x-text="coachAnswer"
+          ></p>
+        </div>
+      </template>
+
+      <div class="flex gap-2" x-show="coachAnswer">
+        <button
+          @click="resetCoach()"
+          class="flex-1 text-xs px-3 py-2 rounded-lg bg-kinetic-elevated text-white font-semibold hover:bg-white/10"
+        >
+          Autre question
+        </button>
+        <button
+          @click="closeCoachModal()"
+          class="flex-1 text-xs px-3 py-2 rounded-lg bg-purple-500 text-white font-bold"
+        >
+          Fermer
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Routine vitalité -->

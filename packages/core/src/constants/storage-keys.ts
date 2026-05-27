@@ -120,6 +120,8 @@ export const STORAGE_KEYS = {
   ACTIVE_PROGRAM: 'kinetic:active-program' as const, // user-selected program state
   PROGRAM_ONE_RMS: 'kinetic:program:one-rms' as const, // user 1RM input for programs
   AVAILABLE_EQUIPMENT: 'kinetic:available-equipment' as const, // user inventory for substitutions
+  STRENGTH_SCORE_PROFILE: 'kinetic:strength-score-profile' as const, // bw + sex pour Wilks/IPF GL/DOTS
+  AI_COACH_USAGE: 'kinetic:ai-coach:usage' as const, // historique requêtes AI coach (rate limit)
 
   // ─── Schéma IDB & Diagnostics ─────────────────────────────────
   SCHEMA_VERSION: 'kinetic:schema-version' as const,

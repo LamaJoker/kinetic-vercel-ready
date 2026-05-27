@@ -3,7 +3,17 @@
  * exercice). Source de vérité = sessions enregistrées + détection PR via
  * analytics domain.
  */
-import { STORAGE_KEYS, detectPRs, type AnalyticsSet } from '@kinetic/core';
+import {
+  STORAGE_KEYS,
+  detectPRs,
+  wilks2020,
+  ipfGoodlift,
+  dotsScore,
+  tierFromIpfGl,
+  type AnalyticsSet,
+  type StrengthSex,
+  type StrengthTier,
+} from '@kinetic/core';
 import { getDeps } from '../deps';
 import type { Exercise, WorkoutSession } from '../lib/training/types';
 import { loadExercises, loadSessions } from '../lib/training/storage';
@@ -41,11 +51,40 @@ function formatWeight(weightKg: number): string {
   return weightKg % 1 === 0 ? `${weightKg} kg` : `${weightKg.toFixed(1)} kg`;
 }
 
+const TIER_LABELS_FR: Record<StrengthTier, string> = {
+  beginner: 'Débutant',
+  novice: 'Novice',
+  intermediate: 'Intermédiaire',
+  advanced: 'Avancé',
+  elite: 'Elite',
+};
+
+interface SbdRecords {
+  squat: number;
+  bench: number;
+  deadlift: number;
+}
+
+function detectLiftCategory(name: string): keyof SbdRecords | null {
+  const n = name.toLowerCase();
+  if (/squat/.test(n) && !/front|hack|goblet|split/.test(n)) return 'squat';
+  if (/(bench[\s-]?press|developpe[\s-]?couche|d[ée]velopp[ée][\s-]?couch[ée])/.test(n))
+    return 'bench';
+  if (/(deadlift|souleve[\s-]?de[\s-]?terre|s[ou]l[èe]v[ée][\s-]?de[\s-]?terre)/.test(n))
+    return 'deadlift';
+  return null;
+}
+
 export function records() {
   return {
     loading: true,
     records: [] as DisplayRecord[],
     sort: 'recent' as 'e1rm' | 'recent' | 'name',
+
+    // ─── Strength scores ────────────────────────────────────────
+    scoreBodyweightKg: 0,
+    scoreSex: 'male' as StrengthSex,
+    showScoresEditor: false,
 
     get subtitleLabel(): string {
       if (this.loading) return '';
@@ -61,6 +100,86 @@ export function records() {
 
     get recentCount(): number {
       return this.records.filter((r) => r.isRecent).length;
+    },
+
+    get sbdTotalKg(): number {
+      const sbd = this._sbdMaxByCategory();
+      return Math.round((sbd.squat + sbd.bench + sbd.deadlift) * 10) / 10;
+    },
+
+    get sbdBreakdown(): SbdRecords {
+      return this._sbdMaxByCategory();
+    },
+
+    get wilksScore(): number {
+      return wilks2020(this.sbdTotalKg, this.scoreBodyweightKg, this.scoreSex);
+    },
+
+    get ipfGlScore(): number {
+      return ipfGoodlift(this.sbdTotalKg, this.scoreBodyweightKg, this.scoreSex);
+    },
+
+    get dotsScoreValue(): number {
+      return dotsScore(this.sbdTotalKg, this.scoreBodyweightKg, this.scoreSex);
+    },
+
+    get strengthTierLabel(): string {
+      const tier = tierFromIpfGl(this.ipfGlScore);
+      return TIER_LABELS_FR[tier];
+    },
+
+    get scoresReady(): boolean {
+      return (
+        this.scoreBodyweightKg > 0 &&
+        this.sbdTotalKg > 0 &&
+        (this.sbdBreakdown.squat > 0 ||
+          this.sbdBreakdown.bench > 0 ||
+          this.sbdBreakdown.deadlift > 0)
+      );
+    },
+
+    _sbdMaxByCategory(): SbdRecords {
+      const acc: SbdRecords = { squat: 0, bench: 0, deadlift: 0 };
+      for (const r of this.records) {
+        const cat = detectLiftCategory(r.exerciseName);
+        if (!cat) continue;
+        // On utilise l'e1RM comme estimation 1RM raisonnable
+        if (r.e1rmKg > acc[cat]) acc[cat] = r.e1rmKg;
+      }
+      // Arrondi à 0.5 kg pour l'affichage
+      return {
+        squat: Math.round(acc.squat * 2) / 2,
+        bench: Math.round(acc.bench * 2) / 2,
+        deadlift: Math.round(acc.deadlift * 2) / 2,
+      };
+    },
+
+    async setScoreBodyweight(value: string): Promise<void> {
+      const num = Number(value);
+      if (!Number.isFinite(num) || num < 0) return;
+      this.scoreBodyweightKg = num;
+      try {
+        const deps = await getDeps();
+        await deps.storage.set(STORAGE_KEYS.STRENGTH_SCORE_PROFILE, {
+          bodyweightKg: num,
+          sex: this.scoreSex,
+        });
+      } catch (err) {
+        console.warn('[records] persist score profile failed:', err);
+      }
+    },
+
+    async setScoreSex(sex: StrengthSex): Promise<void> {
+      this.scoreSex = sex;
+      try {
+        const deps = await getDeps();
+        await deps.storage.set(STORAGE_KEYS.STRENGTH_SCORE_PROFILE, {
+          bodyweightKg: this.scoreBodyweightKg,
+          sex,
+        });
+      } catch (err) {
+        console.warn('[records] persist score profile failed:', err);
+      }
     },
 
     get sortedRecords(): DisplayRecord[] {
@@ -79,11 +198,22 @@ export function records() {
       this.loading = true;
       try {
         const deps = await getDeps();
-        const [sessions, exercises] = await Promise.all([
+        const [sessions, exercises, scoreProfile, bwEntries] = await Promise.all([
           loadSessions(deps.storage),
           loadExercises(deps.storage),
+          deps.storage.get<{ bodyweightKg: number; sex: StrengthSex }>(
+            STORAGE_KEYS.STRENGTH_SCORE_PROFILE,
+          ),
+          deps.storage.get<Array<{ weight: number }>>(STORAGE_KEYS.BODYWEIGHT_ENTRIES),
         ]);
         this.records = this._computeRecords(sessions, exercises);
+        if (scoreProfile && typeof scoreProfile === 'object') {
+          this.scoreBodyweightKg = Number(scoreProfile.bodyweightKg) || 0;
+          this.scoreSex = scoreProfile.sex === 'female' ? 'female' : 'male';
+        } else if (Array.isArray(bwEntries) && bwEntries.length > 0) {
+          // Fallback : dernier poids enregistré dans le module bodyweight
+          this.scoreBodyweightKg = Number(bwEntries.at(-1)?.weight) || 0;
+        }
       } catch (err) {
         console.error('[records] init failed:', err);
         window.dispatchEvent(
