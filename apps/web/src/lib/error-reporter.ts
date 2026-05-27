@@ -26,10 +26,15 @@ interface ErrorReport {
   source: 'unhandled_rejection' | 'uncaught_error' | 'manual';
 }
 
-const SUPABASE_URL = (import.meta as ImportMeta & { env?: Record<string, string> }).env
-  ?.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = (import.meta as ImportMeta & { env?: Record<string, string> }).env
-  ?.VITE_SUPABASE_ANON_KEY;
+// Lecture lazy (cf. ai-coach.ts) pour rester testable.
+function envUrl(): string | undefined {
+  const meta = import.meta as ImportMeta & { env?: Record<string, string> };
+  return meta.env?.VITE_SUPABASE_URL;
+}
+function envAnonKey(): string | undefined {
+  const meta = import.meta as ImportMeta & { env?: Record<string, string> };
+  return meta.env?.VITE_SUPABASE_ANON_KEY;
+}
 
 function readBuffer(): string {
   try {
@@ -90,6 +95,8 @@ function markFlushed(): void {
  * le buffer local pour la prochaine tentative.
  */
 export async function flushErrorsToServer(): Promise<{ sent: number; ok: boolean }> {
+  const SUPABASE_URL = envUrl();
+  const SUPABASE_ANON_KEY = envAnonKey();
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { sent: 0, ok: false };
   const raw = readBuffer();
   const reports = parseBuffer(raw);

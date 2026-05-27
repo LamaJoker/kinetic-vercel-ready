@@ -84,4 +84,44 @@ describe('i18n', () => {
     mod.setLocale('xx' as 'fr');
     expect(mod.getLocale()).toBe('fr');
   });
+
+  it('installAlpineI18nMagic enregistre $t et $locale', async () => {
+    const calls: Array<[string, () => unknown]> = [];
+    const fakeAlpine = {
+      magic: (name: string, cb: () => unknown) => {
+        calls.push([name, cb]);
+      },
+    };
+    const { installAlpineI18nMagic } = await import('../../apps/web/src/lib/i18n.js');
+    installAlpineI18nMagic(fakeAlpine);
+    expect(calls.map((c) => c[0])).toEqual(['t', 'locale']);
+    // Le $t magic appelle t() — on vérifie qu'il retourne une fonction valide
+    const tFn = calls[0]![1]() as (key: string) => string;
+    expect(typeof tFn).toBe('function');
+    expect(tFn('common.save')).toBeTruthy();
+  });
+
+  it("installAlpineI18nMagic noop si Alpine n'a pas .magic", async () => {
+    const { installAlpineI18nMagic } = await import('../../apps/web/src/lib/i18n.js');
+    // Ne doit pas throw
+    expect(() => installAlpineI18nMagic({})).not.toThrow();
+  });
+
+  it('setLocale dispatch un CustomEvent kinetic:locale-changed', async () => {
+    let captured: CustomEvent | null = null;
+    (globalThis as Record<string, unknown>).window = {
+      ...((globalThis as Record<string, unknown>).window as object | undefined),
+      dispatchEvent(ev: CustomEvent) {
+        captured = ev;
+        return true;
+      },
+    };
+    (globalThis as Record<string, unknown>).document = {
+      documentElement: { lang: '' },
+    };
+    const mod = await import('../../apps/web/src/lib/i18n.js');
+    mod.setLocale('en');
+    expect(captured).not.toBeNull();
+    expect(captured!.type).toBe('kinetic:locale-changed');
+  });
 });

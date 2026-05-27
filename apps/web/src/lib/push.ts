@@ -15,9 +15,11 @@
 
 import { STORAGE_KEYS } from '@kinetic/core';
 
-const VAPID_PUBLIC_KEY: string | undefined = (
-  import.meta as ImportMeta & { env?: Record<string, string> }
-).env?.VITE_VAPID_PUBLIC_KEY;
+// Lecture lazy (cf. ai-coach.ts) pour rester testable avec vi.stubEnv.
+function vapidPublicKey(): string | undefined {
+  const meta = import.meta as ImportMeta & { env?: Record<string, string> };
+  return meta.env?.VITE_VAPID_PUBLIC_KEY;
+}
 
 export interface PushStatus {
   supported: boolean;
@@ -54,7 +56,7 @@ export function getPushStatus(): PushStatus {
  * crasherait — autant désactiver l'UI proprement.
  */
 export function isPushAvailable(): boolean {
-  return getPushStatus().supported && !!VAPID_PUBLIC_KEY;
+  return getPushStatus().supported && !!vapidPublicKey();
 }
 
 /**
@@ -79,7 +81,7 @@ export async function enablePush(): Promise<PushSubscriptionJSON | null> {
         userVisibleOnly: true,
         // ArrayBuffer cast : pushManager.subscribe accepte BufferSource mais
         // TS lib.dom restreint à ArrayBuffer concret ; on copie pour assurer.
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY!).buffer as ArrayBuffer,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey()!).buffer as ArrayBuffer,
       }));
 
     const json = subscription.toJSON();

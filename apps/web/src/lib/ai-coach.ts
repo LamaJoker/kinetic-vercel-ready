@@ -13,10 +13,19 @@
 import { STORAGE_KEYS } from '@kinetic/core';
 import type { WorkoutSession } from './training/types';
 
-const SUPABASE_URL = (import.meta as ImportMeta & { env?: Record<string, string> }).env
-  ?.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = (import.meta as ImportMeta & { env?: Record<string, string> }).env
-  ?.VITE_SUPABASE_ANON_KEY;
+/**
+ * Lecture lazy des env pour rester testable. Si on capturait
+ * `import.meta.env.VITE_X` dans une const top-level, les tests qui posent
+ * `vi.stubEnv(...)` après le premier import ne verraient jamais la mise à jour.
+ */
+function envUrl(): string | undefined {
+  const meta = import.meta as ImportMeta & { env?: Record<string, string> };
+  return meta.env?.VITE_SUPABASE_URL;
+}
+function envAnonKey(): string | undefined {
+  const meta = import.meta as ImportMeta & { env?: Record<string, string> };
+  return meta.env?.VITE_SUPABASE_ANON_KEY;
+}
 
 export interface CoachQuery {
   question: string;
@@ -28,15 +37,17 @@ export interface CoachAnswer {
 }
 
 export function isAiCoachAvailable(): boolean {
-  return !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
+  return !!envUrl() && !!envAnonKey();
 }
 
 export async function askCoach(query: CoachQuery): Promise<CoachAnswer> {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  const supabaseUrl = envUrl();
+  const supabaseAnonKey = envAnonKey();
+  if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Supabase non configuré — coach IA indisponible.');
   }
   // On utilise le token JWT du user courant si dispo, sinon la clé anon.
-  let token = SUPABASE_ANON_KEY;
+  let token: string = supabaseAnonKey;
   try {
     const { supabase } = await import('@kinetic/adapters-web');
     if (supabase) {
@@ -63,13 +74,13 @@ export async function askCoach(query: CoachQuery): Promise<CoachAnswer> {
     })),
   }));
 
-  const url = `${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/ai-coach`;
+  const url = `${supabaseUrl.replace(/\/$/, '')}/functions/v1/ai-coach`;
   const resp = await fetch(url, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       Authorization: `Bearer ${token}`,
-      apikey: SUPABASE_ANON_KEY,
+      apikey: supabaseAnonKey,
     },
     body: JSON.stringify({
       question: query.question,

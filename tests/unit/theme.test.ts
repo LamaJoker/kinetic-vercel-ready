@@ -134,4 +134,53 @@ describe('theme', () => {
     initTheme();
     expect(document.documentElement.getAttribute('data-mode')).toBe('light');
   });
+
+  it('applyThemeMode dispatch un EVENT_THEME_CHANGED', async () => {
+    // Polyfill window.dispatchEvent + addEventListener si manquant
+    let captured: CustomEvent | null = null;
+    (globalThis as Record<string, unknown>).window = {
+      ...((globalThis as Record<string, unknown>).window as object | undefined),
+      dispatchEvent(ev: CustomEvent) {
+        captured = ev;
+        return true;
+      },
+    };
+    const { applyThemeMode } = await import('../../apps/web/src/lib/theme.js');
+    applyThemeMode('light');
+    expect(captured).not.toBeNull();
+    expect(captured!.type).toBe('kinetic:theme-changed');
+  });
+
+  it("setThemeMode('system') installe le listener matchMedia", async () => {
+    let listenerInstalled = false;
+    const mqlMock = {
+      matches: false,
+      addEventListener: (_evt: string, _cb: () => void) => {
+        listenerInstalled = true;
+      },
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+      media: '',
+      onchange: null,
+    } as unknown as MediaQueryList;
+    (globalThis as Record<string, unknown>).window = {
+      ...((globalThis as Record<string, unknown>).window as object | undefined),
+      matchMedia: () => mqlMock,
+      dispatchEvent: () => true,
+    };
+    const { setThemeMode } = await import('../../apps/web/src/lib/theme.js');
+    setThemeMode('system');
+    expect(listenerInstalled).toBe(true);
+  });
+
+  it("resolveThemeMode retourne 'dark' si window.matchMedia indisponible", async () => {
+    (globalThis as Record<string, unknown>).window = {
+      ...((globalThis as Record<string, unknown>).window as object | undefined),
+      matchMedia: undefined,
+    };
+    const { resolveThemeMode } = await import('../../apps/web/src/lib/theme.js');
+    expect(resolveThemeMode('system')).toBe('dark');
+  });
 });
