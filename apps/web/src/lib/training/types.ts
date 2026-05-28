@@ -32,6 +32,12 @@ export interface SetEntry {
   weightKg: number;
   rpe: number; // 6-10 (roughly)
   performedAt: IsoDateTime;
+  /**
+   * Note libre par set (≤ 200 caractères) — utile pour traçabilité technique
+   * ("barre déséquilibrée à droite", "talons relevés", "ceinture nécessaire").
+   * Champ optionnel pour rester rétrocompatible avec les séances historiques.
+   */
+  note?: string;
 }
 
 export interface SessionExerciseEntry {

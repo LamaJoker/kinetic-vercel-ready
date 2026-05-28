@@ -68,6 +68,13 @@ export * from './domain/plate-calculator.domain.js';
 export * from './domain/achievements.domain.js';
 export * from './domain/heatmap.domain.js';
 export * from './domain/workout-share.domain.js';
+export * from './domain/deload.domain.js';
+export * from './domain/profile-share.domain.js';
+export * from './domain/programs-catalog.domain.js';
+export * from './domain/exercise-substitution.domain.js';
+export * from './domain/strength-score.domain.js';
+export * from './domain/tempo.domain.js';
+export * from './domain/glossary.domain.js';
 
 // ─── Use Cases (orchestration) ────────────────────────────────
 export { completeTask_usecase } from './usecases/complete-task.usecase.js';

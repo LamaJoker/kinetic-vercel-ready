@@ -94,7 +94,19 @@ import { profile } from './pages/profile.page';
 import { records } from './pages/records.page';
 import { plates } from './pages/plates.page';
 import { achievements } from './pages/achievements.page';
+import { photosPage } from './pages/photos.page';
+import { programsPage } from './pages/programs.page';
+import { glossairePage } from './pages/glossaire.page';
+import { helpTip } from './components/help-tip';
 import { authCallback } from './pages/auth-callback.page';
+import { installAlpineI18nMagic } from './lib/i18n';
+import { initPwaInstallPrompt, pwaInstallPrompt } from './lib/pwa-install';
+import { initTheme } from './lib/theme';
+import { initDisplayDensity } from './lib/display-mode';
+
+// ─── Theme + densité : appliquer avant tout pour éviter le flash ─────────
+initTheme();
+initDisplayDensity();
 
 import { getDeps } from './deps';
 
@@ -129,8 +141,24 @@ Alpine.data('profile', profile);
 Alpine.data('records', records);
 Alpine.data('plates', plates);
 Alpine.data('achievements', achievements);
+Alpine.data('photosPage', photosPage);
+Alpine.data('programsPage', programsPage);
+Alpine.data('glossairePage', glossairePage);
+Alpine.data('helpTip', helpTip);
+Alpine.data('pwaInstallPrompt', pwaInstallPrompt);
 Alpine.data('authCallback', authCallback);
 Alpine.data('mensurations', mensurations);
+
+// ─── i18n magic helper ($t dans les templates) ──────────────────────────────
+installAlpineI18nMagic(Alpine);
+
+// ─── PWA install bus (capture beforeinstallprompt avant qu'Alpine init) ─────
+initPwaInstallPrompt();
+
+// ─── Error reporter (best effort, throttlé 30 min) ──────────────────────────
+import('./lib/error-reporter')
+  .then(({ initErrorReporter }) => initErrorReporter())
+  .catch(() => null);
 
 // ─── Shell de la page (body x-data) ─────────────────────────────────────────
 // Remplace x-data="{ currentPath: location.pathname }" dans index.html.

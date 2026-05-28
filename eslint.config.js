@@ -111,6 +111,8 @@ export default [
       'packages/adapter-web/src/supabase/database.types.ts',
       // storage-keys.ts is the definitions file — it must declare the literal strings
       'packages/core/src/constants/storage-keys.ts',
+      // Supabase Edge Functions run on Deno, hors du graph TS du monorepo
+      'supabase/functions/**',
       'tests/coverage/**',
       'playwright-report/**',
     ],

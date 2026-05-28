@@ -70,15 +70,37 @@
 :root {
   --v: oklch(66% 0.26 285);
   --v-glow: oklch(66% 0.26 285 / 0.35);
-  --void: #07070b;
-  --surface: #0e0e13;
-  --elevated: #151519;
-  --raised: #1b1b21;
+  /* ── Palette dark (defaut). Format "R G B" pour rgb()/<alpha-value> Tailwind ── */
+  --ink: 5 5 8;
+  --surface: 14 14 19;
+  --elevated: 21 21 25;
+  --raised: 27 27 33;
+  --tx-rgb: 238 238 246;
   --border: rgba(255, 255, 255, 0.07);
   --border-hi: rgba(255, 255, 255, 0.14);
-  --tx: #eeeef6;
-  --tx2: rgba(238, 238, 246, 0.52);
-  --tx3: rgba(238, 238, 246, 0.26);
+  --tx: rgb(var(--tx-rgb));
+  --tx2: rgb(var(--tx-rgb) / 0.52);
+  --tx3: rgb(var(--tx-rgb) / 0.26);
+  /* Force le rendu navigateur natif (scrollbars, controls) en harmonie */
+  color-scheme: dark;
+}
+
+/* ─── Mode clair ────────────────────────────────────────────────────────
+   Activé via attribut data-mode="light" sur <html>.
+   Le mode est ORTHOGONAL au data-theme (couleurs d'accent) : on peut
+   combiner par ex. `data-mode="light" data-theme="cyber"`.
+   ───────────────────────────────────────────────────────────────────── */
+[data-mode='light'] {
+  /* Fond cassé blanc avec nuances légères, jamais 100% pur pour éviter
+     la fatigue oculaire en plein soleil */
+  --ink: 248 249 252; /* body */
+  --surface: 255 255 255; /* cards */
+  --elevated: 244 245 249; /* panneaux internes */
+  --raised: 234 236 243; /* niveaux supérieurs */
+  --tx-rgb: 18 19 26; /* texte principal */
+  --border: rgba(15, 16, 24, 0.08);
+  --border-hi: rgba(15, 16, 24, 0.16);
+  color-scheme: light;
 }
 
 /* ─── Layout iOS-friendly ─── */
@@ -92,7 +114,7 @@ body {
   font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   color: var(--tx);
   -webkit-font-smoothing: antialiased;
-  background: var(--void);
+  background: rgb(var(--ink));
   background-image:
     radial-gradient(ellipse 70% 50% at 20% 0%, rgb(var(--kinetic-neon) / 0.18) 0%, transparent 55%),
     radial-gradient(
@@ -102,6 +124,21 @@ body {
     ),
     radial-gradient(ellipse 40% 35% at 55% 50%, var(--v-glow) 0%, transparent 65%);
   background-attachment: fixed;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+/* Mode clair : on atténue significativement les glows de fond
+   (gradients trop saturés sur fond clair → fatigue visuelle) */
+[data-mode='light'] body {
+  background-image:
+    radial-gradient(ellipse 70% 50% at 20% 0%, rgb(var(--kinetic-neon) / 0.06) 0%, transparent 55%),
+    radial-gradient(
+      ellipse 55% 40% at 80% 95%,
+      rgb(var(--kinetic-electric) / 0.05) 0%,
+      transparent 55%
+    );
 }
 
 h1,
@@ -130,6 +167,25 @@ h4 {
 
 [x-cloak] {
   display: none !important;
+}
+
+/* ─── Mode d'affichage Simple / Avancé ──────────────────────────────────
+   En mode "simple" (data-density absent ou = simple), on masque tout
+   élément taggé `.adv-only` : blocs avancés (coach périodisation, scores
+   normalisés, équilibre musculaire détaillé, etc.). Le mode "advanced"
+   révèle tout. Défaut = simple pour ne pas noyer les débutants.
+   ───────────────────────────────────────────────────────────────────── */
+html:not([data-density='advanced']) .adv-only {
+  display: none !important;
+}
+
+/* Petit badge "Avancé" optionnel à côté des sections, visible seulement
+   quand on EST en mode avancé, pour signaler que c'est du contenu poussé. */
+html[data-density='advanced'] .adv-badge {
+  display: inline-flex;
+}
+.adv-badge {
+  display: none;
 }
 
 /* ─── AUTO-APPLY hairline gradient + tweaks aux patterns existants ───
@@ -534,4 +590,115 @@ input[type='range']::-moz-range-thumb {
   cursor: pointer;
   box-shadow: 0 0 10px var(--p-glow);
   border: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Mode clair — overrides ciblés des classes Tailwind hardcodées
+   ───────────────────────────────────────────────────────────────────────
+   Approche : ~340 occurrences de `text-white`, `bg-white/X`, `ring-white/X`
+   dans les templates sont hardcodées (le redesign initial était dark-only).
+   Refactor classe-par-classe = 50 fichiers → trop invasif pour ce sprint.
+   À la place, on override l'effet visuel quand `data-mode='light'` est posé
+   sur <html>. C'est `!important` partout parce qu'on lutte contre Tailwind
+   utilities qui ont une spécificité équivalente.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+[data-mode='light'] .text-white {
+  color: var(--tx) !important;
+}
+[data-mode='light'] .text-gray-200 {
+  color: rgb(38 39 50) !important;
+}
+[data-mode='light'] .text-gray-300 {
+  color: rgb(58 60 75) !important;
+}
+[data-mode='light'] .text-gray-400 {
+  color: rgb(85 87 105) !important;
+}
+[data-mode='light'] .text-gray-500 {
+  color: rgb(110 112 130) !important;
+}
+[data-mode='light'] .text-gray-600 {
+  color: rgb(135 138 155) !important;
+}
+
+/* `bg-white/X` (overlay clair sur fond foncé) → en mode clair on inverse
+   en noir/transparent pour rester subtle */
+[data-mode='light'] .bg-white\/5 {
+  background-color: rgba(15, 16, 24, 0.04) !important;
+}
+[data-mode='light'] .bg-white\/10 {
+  background-color: rgba(15, 16, 24, 0.06) !important;
+}
+[data-mode='light'] .bg-white\/20 {
+  background-color: rgba(15, 16, 24, 0.1) !important;
+}
+[data-mode='light'] .hover\:bg-white\/5:hover {
+  background-color: rgba(15, 16, 24, 0.05) !important;
+}
+[data-mode='light'] .hover\:bg-white\/10:hover {
+  background-color: rgba(15, 16, 24, 0.08) !important;
+}
+[data-mode='light'] .hover\:bg-white\/20:hover {
+  background-color: rgba(15, 16, 24, 0.12) !important;
+}
+
+/* `ring-white/X` */
+[data-mode='light'] .ring-white\/5 {
+  --tw-ring-color: rgba(15, 16, 24, 0.06) !important;
+}
+[data-mode='light'] .ring-white\/10 {
+  --tw-ring-color: rgba(15, 16, 24, 0.1) !important;
+}
+[data-mode='light'] .ring-white\/20 {
+  --tw-ring-color: rgba(15, 16, 24, 0.16) !important;
+}
+[data-mode='light'] .ring-white\/30 {
+  --tw-ring-color: rgba(15, 16, 24, 0.22) !important;
+}
+[data-mode='light'] .hover\:ring-white\/20:hover {
+  --tw-ring-color: rgba(15, 16, 24, 0.18) !important;
+}
+[data-mode='light'] .hover\:ring-white\/30:hover {
+  --tw-ring-color: rgba(15, 16, 24, 0.24) !important;
+}
+
+/* `border-white/X` */
+[data-mode='light'] .border-white\/5,
+[data-mode='light'] .border-white\/10 {
+  border-color: rgba(15, 16, 24, 0.08) !important;
+}
+[data-mode='light'] .border-white\/20 {
+  border-color: rgba(15, 16, 24, 0.14) !important;
+}
+
+/* Le bouton "primaire" `bg-kinetic-neon text-gray-950` reste comme tel
+   (neon est lisible sur fond gris-950 même en light). Inverse de l'attendu :
+   pour les `text-gray-950` dans un contexte de surface (pas bouton primaire),
+   on garde aussi tel quel — un texte gris très foncé fonctionne en light. */
+
+/* Carte "subtle" : `bg-kinetic-surface` est déjà piloté par --surface,
+   donc rien à faire ici. */
+
+/* Gradient overlays type "from-black/80 to-transparent" sur photos :
+   en light, on garde un overlay sombre car les images sont colorées. */
+
+/* La pseudo-bordure subtle sur les cards `.bg-kinetic-surface::before`
+   utilise un gradient blanc — en mode clair on l'inverse vers du noir
+   pour qu'il reste visible sur fond blanc */
+[data-mode='light'] .bg-kinetic-surface.rounded-2xl::before,
+[data-mode='light'] .bg-kinetic-surface.rounded-3xl::before,
+[data-mode='light'] .bg-kinetic-surface.rounded-xl::before,
+[data-mode='light'] .bg-kinetic-surface.rounded-k::before {
+  background: linear-gradient(
+    135deg,
+    rgba(15, 16, 24, 0.06) 0%,
+    transparent 45%,
+    rgba(15, 16, 24, 0.02) 100%
+  );
+}
+
+/* Range slider track en mode clair */
+[data-mode='light'] input[type='range'] {
+  background: rgb(var(--elevated));
 }

@@ -29,7 +29,10 @@ type RouteKey =
   | '/mensurations'
   | '/records'
   | '/plates'
-  | '/achievements';
+  | '/achievements'
+  | '/photos'
+  | '/programs'
+  | '/glossaire';
 
 const ROUTES: Record<RouteKey, string> = {
   '/': './pages/dashboard.html',
@@ -47,6 +50,9 @@ const ROUTES: Record<RouteKey, string> = {
   '/records': './pages/records.html',
   '/plates': './pages/plates.html',
   '/achievements': './pages/achievements.html',
+  '/photos': './pages/photos.html',
+  '/programs': './pages/programs.html',
+  '/glossaire': './pages/glossaire.html',
 };
 
 const ONBOARDING_EXEMPT: readonly RouteKey[] = ['/onboarding', '/login', '/auth-callback'];

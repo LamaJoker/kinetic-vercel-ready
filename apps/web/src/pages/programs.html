@@ -1,0 +1,157 @@
+<div x-data="programsPage" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
+  <div class="flex items-center gap-3 mb-6">
+    <a
+      href="/"
+      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
+      aria-label="Retour"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </a>
+    <h1 class="text-2xl font-display font-black tracking-tight text-white">Programmes</h1>
+  </div>
+
+  <!-- Liste catalogue -->
+  <template x-if="!selectedProgram">
+    <div class="space-y-3">
+      <p class="text-xs text-gray-500 mb-2">
+        Programmes éprouvés en littérature. Calcule tes charges à partir de tes 1RM.
+      </p>
+      <template x-for="p in catalog" :key="p.id">
+        <button
+          @click="select(p.id)"
+          class="w-full bg-kinetic-surface rounded-2xl p-4 text-left ring-1 ring-white/5 hover:ring-kinetic-neon/40 transition-all active:scale-[0.98]"
+        >
+          <div class="flex items-center justify-between mb-1">
+            <h2 class="text-white font-bold" x-text="p.name"></h2>
+            <span
+              class="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full"
+              :class="p.level === 'beginner'
+                ? 'bg-kinetic-neon/20 text-kinetic-neon'
+                : p.level === 'intermediate'
+                ? 'bg-kinetic-electric/20 text-kinetic-electric'
+                : 'bg-purple-500/20 text-purple-300'"
+              x-text="p.level"
+            ></span>
+          </div>
+          <p class="text-xs text-gray-400 leading-relaxed mb-2" x-text="p.description"></p>
+          <div class="flex gap-3 text-[10px] text-gray-500">
+            <span x-text="p.durationWeeks + ' semaines'"></span>
+            <span>·</span>
+            <span x-text="p.daysPerWeek + ' jours/sem'"></span>
+            <span>·</span>
+            <span x-text="p.goal"></span>
+          </div>
+          <p class="text-[10px] text-gray-600 italic mt-1.5" x-text="'Source : ' + p.citation"></p>
+        </button>
+      </template>
+    </div>
+  </template>
+
+  <!-- Détail programme + saisie 1RM -->
+  <template x-if="selectedProgram">
+    <div>
+      <button @click="back()" class="text-xs text-gray-400 mb-4 hover:text-white">
+        ← Retour au catalogue
+      </button>
+      <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+        <h2 class="text-xl text-white font-black mb-1" x-text="selectedProgram.name"></h2>
+        <p class="text-xs text-gray-400 mb-3" x-text="selectedProgram.description"></p>
+        <p
+          class="text-[10px] text-gray-600 italic"
+          x-text="'Source : ' + selectedProgram.citation"
+        ></p>
+      </div>
+
+      <!-- 1RMs -->
+      <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+        <h3 class="font-bold text-white mb-3">Tes 1RM (kg)</h3>
+        <p class="text-xs text-gray-500 mb-3">
+          Pas besoin de tout remplir — seules les barres référencées dans le programme sont
+          nécessaires.
+        </p>
+        <div class="grid grid-cols-2 gap-2">
+          <template x-for="lift in requiredLifts" :key="lift">
+            <div>
+              <label
+                class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
+                x-text="liftLabel(lift)"
+              ></label>
+              <input
+                type="number"
+                step="2.5"
+                min="0"
+                :value="oneRms[lift] || ''"
+                @input="setOneRm(lift, $event.target.value)"
+                class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white mt-1"
+                :placeholder="liftLabel(lift) + ' kg'"
+              />
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Semaine courante -->
+      <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-white">Semaine</h3>
+          <div class="flex gap-1.5">
+            <button
+              @click="prevWeek()"
+              :disabled="currentWeekIndex === 0"
+              class="px-2 py-1 rounded-lg bg-kinetic-elevated text-white text-sm disabled:opacity-30"
+            >
+              ←
+            </button>
+            <span class="px-3 py-1 text-sm font-bold text-white">
+              <span x-text="currentWeekIndex + 1"></span> /
+              <span x-text="selectedProgram.weeks.length"></span>
+            </span>
+            <button
+              @click="nextWeek()"
+              :disabled="currentWeekIndex === selectedProgram.weeks.length - 1"
+              class="px-2 py-1 rounded-lg bg-kinetic-elevated text-white text-sm disabled:opacity-30"
+            >
+              →
+            </button>
+          </div>
+        </div>
+        <p
+          class="text-xs text-gray-400 mb-3"
+          x-text="selectedProgram.weeks[currentWeekIndex]?.label"
+        ></p>
+
+        <template x-for="(session, sIdx) in resolvedSessions" :key="sIdx">
+          <div class="bg-kinetic-elevated/50 rounded-xl p-3 mb-2 border border-white/10">
+            <p class="text-sm font-bold text-white mb-2" x-text="session.name"></p>
+            <template x-for="(ex, exIdx) in session.exercises" :key="exIdx">
+              <div class="mb-2">
+                <p
+                  class="text-xs text-gray-300 font-semibold mb-1"
+                  x-text="liftLabel(ex.liftRef)"
+                ></p>
+                <div class="grid grid-cols-3 gap-1 text-[10px] text-gray-500 px-2 mb-0.5">
+                  <span>Set</span><span>Charge</span><span>Reps</span>
+                </div>
+                <template x-for="(set, setIdx) in ex.sets" :key="setIdx">
+                  <div
+                    class="grid grid-cols-3 gap-1 text-xs text-white px-2 py-1 rounded"
+                    :class="set.amrap ? 'bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30' : ''"
+                  >
+                    <span class="text-gray-400" x-text="setIdx + 1"></span>
+                    <span class="font-mono font-bold" x-text="set.weightKg + ' kg'"></span>
+                    <span class="font-mono">
+                      <span x-text="set.reps"></span>
+                      <span x-show="set.amrap" class="text-kinetic-electric">+</span>
+                    </span>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </div>
+  </template>
+</div>

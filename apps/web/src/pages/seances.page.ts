@@ -5,9 +5,11 @@
   generateWorkout,
   encodeWorkout,
   buildShareUrl,
+  suggestSubstitutions,
   type ProgressionSuggestion,
   type PerformedSet,
   type WorkoutFocus,
+  type SubstitutionResult,
 } from '@kinetic/core';
 import { UuidGenerator } from '@kinetic/adapters-web';
 import { getDeps } from '../deps';
@@ -32,7 +34,7 @@ import { suggestedRestSec, requestNotificationPermission } from '../lib/training
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import { hapticLight, hapticMedium, hapticSuccess, hapticHeavy } from '../lib/haptics';
 
-type Draft = { reps: number; weightKg: number; rpe: number };
+type Draft = { reps: number; weightKg: number; rpe: number; note: string; tempo: string };
 
 // ─── Catégorisation par groupe musculaire ────────────────────────────────────
 
@@ -194,13 +196,82 @@ export function seances() {
     currentSession: null as WorkoutSession | null,
     templateName: '',
 
-    draft: { reps: 8, weightKg: 40, rpe: 8 } as Draft,
+    draft: { reps: 8, weightKg: 40, rpe: 8, note: '', tempo: '' } as Draft,
+    showSetExtras: false,
 
     nowMs: Date.now(),
     tickHandle: null as number | null,
     restEndsAtMs: 0,
     restPresetSec: 90,
+    fullscreenRest: false,
     _restNotifTimer: null as ReturnType<typeof setTimeout> | null,
+
+    // ─── Substitution ────────────────────────────────────────
+    substitutionFor: null as string | null,
+    substitutionResults: [] as SubstitutionResult[],
+
+    /** Ouvre/ferme le panneau de substitution pour un exercice. */
+    openSubstitution(exerciseId: string): void {
+      if (this.substitutionFor === exerciseId) {
+        this.substitutionFor = null;
+        return;
+      }
+      const target = this.exercises.find((e) => e.id === exerciseId);
+      if (!target) return;
+      const candidates = this.exercises.map((ex) => ({
+        id: ex.id,
+        name: ex.name,
+        muscles: ex.muscles,
+        equipment: ex.equipment ? [ex.equipment] : [],
+      }));
+      this.substitutionResults = suggestSubstitutions({
+        target: {
+          id: target.id,
+          name: target.name,
+          muscles: target.muscles,
+          equipment: target.equipment ? [target.equipment] : [],
+        },
+        candidates,
+        limit: 3,
+      });
+      this.substitutionFor = exerciseId;
+    },
+
+    /** Remplace un exo dans la séance courante en gardant les sets déjà faits. */
+    applySubstitution(oldExerciseId: string, newExerciseId: string): void {
+      if (!this.currentSession) return;
+      const replacement = this.exercises.find((e) => e.id === newExerciseId);
+      if (!replacement) return;
+      // Évite les doublons : si l'exo cible est déjà dans la séance, fusion
+      const alreadyHasNew = this.currentSession.entries.some((e) => e.exerciseId === newExerciseId);
+      if (alreadyHasNew) {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: {
+              kind: 'warning',
+              message: 'Cet exercice est déjà dans ta séance.',
+            },
+          }),
+        );
+        return;
+      }
+      this.currentSession = {
+        ...this.currentSession,
+        entries: this.currentSession.entries.map((e) =>
+          e.exerciseId === oldExerciseId ? { ...e, exerciseId: newExerciseId } : e,
+        ),
+      };
+      this.substitutionFor = null;
+      this.substitutionResults = [];
+      window.dispatchEvent(
+        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+          detail: {
+            kind: 'success',
+            message: `Remplacé par "${replacement.name}".`,
+          },
+        }),
+      );
+    },
     // ── PR Celebration ────────────────────────────────────────
     prCelebration: null as {
       exerciseName: string;
@@ -612,32 +683,84 @@ export function seances() {
       const sec = Math.max(15, Math.min(600, Math.floor(Number(this.restPresetSec)) || 90));
       this.restPresetSec = sec;
       this.restEndsAtMs = this.nowMs + sec * 1000;
+      this.fullscreenRest = true;
       hapticMedium();
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        if (this._restNotifTimer) clearTimeout(this._restNotifTimer);
-        this._restNotifTimer = setTimeout(() => {
-          hapticHeavy();
-          new Notification('⏱ Repos terminé !', {
-            body: 'Prêt pour la série suivante',
-            icon: '/icons/icon-96.png',
-            tag: 'rest',
-          });
-        }, sec * 1000);
-      } else {
-        // Vibration de fin même sans notifications
-        if (this._restNotifTimer) clearTimeout(this._restNotifTimer);
-        this._restNotifTimer = setTimeout(() => {
-          hapticHeavy();
-        }, sec * 1000);
-      }
+      this._scheduleRestEndCallback(sec);
+    },
+
+    /**
+     * (Re)programme le callback de fin de repos. Extrait pour pouvoir
+     * être appelé depuis addRestSec() qui modifie restEndsAtMs en cours.
+     */
+    _scheduleRestEndCallback(sec: number): void {
+      if (this._restNotifTimer) clearTimeout(this._restNotifTimer);
+      const fire = (): void => {
+        hapticHeavy();
+        this.fullscreenRest = false;
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          try {
+            new Notification('⏱ Repos terminé !', {
+              body: 'Prêt pour la série suivante',
+              icon: '/icons/icon-96.png',
+              tag: 'rest',
+            });
+          } catch {
+            /* noop */
+          }
+        }
+      };
+      this._restNotifTimer = setTimeout(fire, Math.max(0, sec * 1000));
     },
 
     stopRest(): void {
       this.restEndsAtMs = 0;
+      this.fullscreenRest = false;
       if (this._restNotifTimer) {
         clearTimeout(this._restNotifTimer);
         this._restNotifTimer = null;
       }
+    },
+
+    /** Termine immédiatement le repos (déclenche le retour à l'action). */
+    skipRest(): void {
+      this.stopRest();
+      hapticMedium();
+    },
+
+    /** Ajoute (ou retire) des secondes au repos en cours. Borné à [5s, 10min]. */
+    addRestSec(delta: number): void {
+      if (this.restEndsAtMs <= 0) return;
+      const remaining = Math.max(0, Math.ceil((this.restEndsAtMs - this.nowMs) / 1000));
+      const next = Math.max(5, Math.min(600, remaining + delta));
+      this.restEndsAtMs = this.nowMs + next * 1000;
+      this._scheduleRestEndCallback(next);
+      hapticLight();
+    },
+
+    // ─── Raccourcis +/- sur le draft ───────────────────────────────────────
+    bumpReps(delta: number): void {
+      const current = Number(this.draft.reps) || 0;
+      this.draft.reps = Math.max(1, current + delta);
+      hapticLight();
+    },
+
+    bumpWeight(delta: number): void {
+      // Le pas dépend de l'exercice si on en a un sélectionné dans la session
+      const entry = this.currentSession?.entries[0];
+      const ex = entry ? this.exercises.find((e) => e.id === entry.exerciseId) : null;
+      const step = ex?.incrementKg ?? 2.5;
+      const current = Number(this.draft.weightKg) || 0;
+      const next = Math.max(0, current + delta * step);
+      // Snap à un pas de 0.25 pour éviter les flottants moches
+      this.draft.weightKg = Math.round(next * 4) / 4;
+      hapticLight();
+    },
+
+    bumpRpe(delta: number): void {
+      const current = Number(this.draft.rpe) || 8;
+      const next = Math.max(6, Math.min(10, Math.round((current + delta) * 2) / 2));
+      this.draft.rpe = next;
+      hapticLight();
     },
 
     avgRpeOf(session: WorkoutSession | null): number | null {
@@ -713,6 +836,7 @@ export function seances() {
       // ── Détecter PR AVANT d'ajouter la série ─────────────────────────────
       const isPr = this.isNewPr(exerciseId, weightKg, reps);
 
+      const note = (this.draft.note ?? '').toString().trim().slice(0, 200);
       this.currentSession = {
         ...this.currentSession,
         entries: this.currentSession.entries.map((e) => {
@@ -721,11 +845,20 @@ export function seances() {
             ...e,
             sets: [
               ...e.sets,
-              { setIndex: e.sets.length, reps, weightKg, rpe, performedAt: nowIso() },
+              {
+                setIndex: e.sets.length,
+                reps,
+                weightKg,
+                rpe,
+                performedAt: nowIso(),
+                ...(note ? { note } : {}),
+              },
             ],
           };
         }),
       };
+      // Vide la note après ajout (le tempo reste pour les sets suivants)
+      this.draft.note = '';
 
       if (isPr) {
         const e1rmKg = Math.round(estimateE1rmKg(weightKg, reps) * 10) / 10;

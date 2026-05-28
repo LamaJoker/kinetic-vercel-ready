@@ -1,0 +1,56 @@
+<div x-data="glossairePage" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
+  <div class="flex items-center gap-3 mb-6">
+    <a
+      href="/profile"
+      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
+      aria-label="Retour"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </a>
+    <div class="flex-1">
+      <h1 class="text-2xl font-display font-black tracking-tight text-white">Glossaire</h1>
+      <p class="text-xs text-gray-500">Tous les termes expliqués simplement</p>
+    </div>
+  </div>
+
+  <!-- Recherche -->
+  <div class="mb-4">
+    <input
+      x-model="query"
+      type="search"
+      placeholder="Rechercher un terme (RPE, e1RM, deload...)"
+      class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600"
+    />
+  </div>
+
+  <!-- Résultats -->
+  <template x-if="results.length === 0">
+    <p class="text-sm text-gray-500 text-center py-8">Aucun terme ne correspond à ta recherche.</p>
+  </template>
+
+  <div class="space-y-3">
+    <template x-for="term in results" :key="term.id">
+      <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
+        <div class="flex items-center justify-between mb-1">
+          <h2 class="text-white font-bold" x-text="term.term"></h2>
+          <span
+            class="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-kinetic-elevated text-gray-400"
+            x-text="term.category"
+          ></span>
+        </div>
+        <p class="text-sm text-gray-300 leading-relaxed mb-2" x-text="term.long"></p>
+        <template x-if="term.formula">
+          <p
+            class="text-xs font-mono bg-kinetic-ink/60 rounded-lg px-3 py-2 text-kinetic-neon mb-1.5"
+            x-text="term.formula"
+          ></p>
+        </template>
+        <template x-if="term.example">
+          <p class="text-xs text-gray-500 italic">Exemple : <span x-text="term.example"></span></p>
+        </template>
+      </div>
+    </template>
+  </div>
+</div>

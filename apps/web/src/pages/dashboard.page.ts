@@ -7,6 +7,7 @@ import type { BalanceReport, StreakState } from '@kinetic/core';
 import { getDeps } from '../deps';
 import type { WorkoutSession, Exercise } from '../lib/training/types';
 import { loadSessions, loadExercises } from '../lib/training/storage';
+import { hapticLight } from '../lib/haptics';
 
 interface ActivityDay {
   label: string;
@@ -29,6 +30,58 @@ export function dashboard() {
     activityDays: [] as ActivityDay[],
     balance: null as BalanceReport | null,
 
+    // ─── AI Coach ────────────────────────────────────────────────────────
+    aiCoachAvailable: false,
+    showCoachModal: false,
+    coachQuestion: '',
+    coachAnswer: '',
+    coachLoading: false,
+    coachSuggestions: [
+      'Pourquoi je stagne au bench ?',
+      'Mon volume est-il suffisant pour grossir ?',
+      'Quand faire un deload ?',
+      'Quel exercice je devrais ajouter ?',
+    ] as string[],
+    _allSessions: [] as WorkoutSession[],
+
+    openCoachModal(): void {
+      this.showCoachModal = true;
+      this.coachAnswer = '';
+      this.coachQuestion = '';
+      hapticLight();
+    },
+
+    closeCoachModal(): void {
+      this.showCoachModal = false;
+    },
+
+    resetCoach(): void {
+      this.coachAnswer = '';
+      this.coachQuestion = '';
+    },
+
+    async askCoachAi(): Promise<void> {
+      const q = this.coachQuestion.trim();
+      if (!q || this.coachLoading) return;
+      this.coachLoading = true;
+      try {
+        const { askCoach } = await import('../lib/ai-coach');
+        const result = await askCoach({ question: q, recentSessions: this._allSessions });
+        this.coachAnswer = result.answer || "Je n'ai pas pu répondre. Réessaie.";
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Coach IA indisponible.';
+        try {
+          const { dispatchCoachError } = await import('../lib/ai-coach');
+          dispatchCoachError(msg);
+        } catch {
+          /* noop */
+        }
+        this.coachAnswer = `❌ ${msg}`;
+      } finally {
+        this.coachLoading = false;
+      }
+    },
+
     get balanceWarning(): string | null {
       const b = this.balance;
       if (!b || !b.reliable) return null;
@@ -43,9 +96,15 @@ export function dashboard() {
 
     async init(): Promise<void> {
       const hour = new Date().getHours();
-      this.greeting = hour < 12 ? 'Bonjour 👋' : hour < 18 ? 'Bon après-midi 🌤️' : 'Bonsoir 🌙';
+      // Greeting i18n-aware (les imports dynamiques permettent de ne pas
+      // gonfler le bundle si l'utilisateur reste en FR).
+      const { t, getLocale } = await import('../lib/i18n');
+      const greetingKey =
+        hour < 12 ? 'greeting.morning' : hour < 18 ? 'greeting.afternoon' : 'greeting.evening';
+      this.greeting = t(greetingKey);
 
-      this.todayLabel = new Date().toLocaleDateString('fr-FR', {
+      const localeTag = getLocale() === 'en' ? 'en-US' : 'fr-FR';
+      this.todayLabel = new Date().toLocaleDateString(localeTag, {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
@@ -62,6 +121,15 @@ export function dashboard() {
 
         this.activityDays = await this._buildActivityDays();
         this.balance = await this._buildBalanceReport();
+        this._allSessions = await loadSessions(deps.storage);
+
+        // AI Coach disponibilité (config Supabase + clé VAPID indépendantes)
+        try {
+          const { isAiCoachAvailable } = await import('../lib/ai-coach');
+          this.aiCoachAvailable = isAiCoachAvailable();
+        } catch {
+          this.aiCoachAvailable = false;
+        }
       } catch (err) {
         console.error('[dashboard] init failed:', err);
       }

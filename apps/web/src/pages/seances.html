@@ -1,4 +1,56 @@
 <div x-data="seances" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
+  <!-- ── Overlay Rest Timer Plein écran ─────────────────────────────────── -->
+  <div
+    x-show="fullscreenRest && restRemainingSec() > 0"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    class="fixed inset-0 z-[60] flex flex-col items-center justify-center p-6 bg-black/85 backdrop-blur-md"
+    @keydown.escape.window="fullscreenRest = false"
+  >
+    <p class="text-xs uppercase tracking-[0.3em] font-bold text-kinetic-neon mb-4">Repos</p>
+    <div
+      class="text-[7rem] sm:text-[9rem] leading-none font-black text-white font-mono tabular-nums select-none"
+      :class="restRemainingSec() <= 5 ? 'text-kinetic-electric animate-pulse' : ''"
+      x-text="restLabel()"
+    ></div>
+    <p
+      class="mt-2 text-sm text-gray-400"
+      x-text="'Prochaine série dans ' + restRemainingSec() + ' s'"
+    ></p>
+
+    <div class="mt-10 grid grid-cols-3 gap-3 w-full max-w-xs">
+      <button
+        @click="addRestSec(-15)"
+        class="bg-kinetic-surface ring-1 ring-white/10 rounded-2xl py-3 text-white text-sm font-bold hover:ring-white/30 active:scale-95"
+      >
+        −15 s
+      </button>
+      <button
+        @click="skipRest()"
+        class="bg-kinetic-neon text-gray-950 rounded-2xl py-3 font-black text-sm hover:brightness-110 active:scale-95"
+      >
+        Passer
+      </button>
+      <button
+        @click="addRestSec(15)"
+        class="bg-kinetic-surface ring-1 ring-white/10 rounded-2xl py-3 text-white text-sm font-bold hover:ring-white/30 active:scale-95"
+      >
+        +15 s
+      </button>
+    </div>
+
+    <button
+      @click="fullscreenRest = false"
+      class="mt-6 text-xs text-gray-500 hover:text-white underline underline-offset-4"
+    >
+      Réduire (le timer continue)
+    </button>
+  </div>
+
   <!-- ── Overlay Nouveau PR ──────────────────────────────────────────────── -->
   <div
     x-show="prCelebration !== null"
@@ -374,45 +426,209 @@
                 </template>
               </p>
             </div>
-            <button
-              class="text-xs text-gray-400 hover:text-white"
-              @click="removeExercise(entry.exerciseId)"
-            >
-              Retirer
-            </button>
+            <div class="flex items-center gap-1">
+              <button
+                class="text-xs text-gray-400 hover:text-kinetic-neon p-1.5 rounded-lg hover:bg-kinetic-elevated"
+                @click="openSubstitution(entry.exerciseId)"
+                aria-label="Remplacer cet exercice"
+                title="Remplacer"
+              >
+                ⇄
+              </button>
+              <button
+                class="text-xs text-gray-400 hover:text-white"
+                @click="removeExercise(entry.exerciseId)"
+              >
+                Retirer
+              </button>
+            </div>
           </div>
 
-          <!-- Inputs nouvelle série -->
+          <!-- Panneau de substitution -->
+          <template x-if="substitutionFor === entry.exerciseId">
+            <div class="mb-3 bg-kinetic-ink/60 ring-1 ring-kinetic-neon/30 rounded-xl p-3">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-xs font-bold text-kinetic-neon uppercase tracking-widest">
+                  Alternatives suggérées
+                </p>
+                <button
+                  @click="substitutionFor = null"
+                  class="text-xs text-gray-500 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+              <template x-if="substitutionResults.length === 0">
+                <p class="text-xs text-gray-500">Aucune alternative trouvée.</p>
+              </template>
+              <div class="space-y-1.5">
+                <template x-for="alt in substitutionResults" :key="alt.exercise.id">
+                  <button
+                    @click="applySubstitution(entry.exerciseId, alt.exercise.id)"
+                    class="w-full text-left bg-kinetic-elevated rounded-lg px-3 py-2 hover:bg-kinetic-elevated/80 ring-1 ring-white/5 hover:ring-kinetic-neon/40"
+                  >
+                    <div class="flex items-center justify-between gap-2">
+                      <p class="text-sm font-semibold text-white" x-text="alt.exercise.name"></p>
+                      <span
+                        class="text-[10px] text-kinetic-neon font-bold flex-shrink-0"
+                        x-text="Math.round(alt.score * 100) + ' %'"
+                      ></span>
+                    </div>
+                    <p
+                      class="text-[10px] text-gray-500 leading-snug mt-0.5"
+                      x-text="alt.rationale"
+                    ></p>
+                  </button>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- Inputs nouvelle série + raccourcis +/- -->
           <div class="grid grid-cols-3 gap-2 mb-2">
             <div>
               <label class="text-xs text-gray-400 font-medium">Reps</label>
-              <input
-                type="number"
-                min="1"
-                x-model.number="draft.reps"
-                class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-white text-sm"
-              />
+              <div class="flex items-stretch gap-1">
+                <button
+                  type="button"
+                  @click="bumpReps(-1)"
+                  aria-label="Diminuer les reps"
+                  class="px-2 bg-kinetic-elevated text-white rounded-l-xl text-sm font-bold hover:bg-white/10 active:scale-95"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min="1"
+                  x-model.number="draft.reps"
+                  class="w-full min-w-0 bg-kinetic-ink border border-white/10 px-2 py-2 text-white text-sm text-center"
+                />
+                <button
+                  type="button"
+                  @click="bumpReps(1)"
+                  aria-label="Augmenter les reps"
+                  class="px-2 bg-kinetic-elevated text-white rounded-r-xl text-sm font-bold hover:bg-white/10 active:scale-95"
+                >
+                  +
+                </button>
+              </div>
             </div>
             <div>
               <label class="text-xs text-gray-400 font-medium">Kg</label>
-              <input
-                type="number"
-                min="0"
-                step="0.5"
-                x-model.number="draft.weightKg"
-                class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-white text-sm"
-              />
+              <div class="flex items-stretch gap-1">
+                <button
+                  type="button"
+                  @click="bumpWeight(-1)"
+                  aria-label="Diminuer la charge"
+                  class="px-2 bg-kinetic-elevated text-white rounded-l-xl text-sm font-bold hover:bg-white/10 active:scale-95"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  x-model.number="draft.weightKg"
+                  class="w-full min-w-0 bg-kinetic-ink border border-white/10 px-2 py-2 text-white text-sm text-center"
+                />
+                <button
+                  type="button"
+                  @click="bumpWeight(1)"
+                  aria-label="Augmenter la charge"
+                  class="px-2 bg-kinetic-elevated text-white rounded-r-xl text-sm font-bold hover:bg-white/10 active:scale-95"
+                >
+                  +
+                </button>
+              </div>
             </div>
             <div>
-              <label class="text-xs text-gray-400 font-medium">RPE (6–10)</label>
-              <input
-                type="number"
-                min="6"
-                max="10"
-                step="0.5"
-                x-model.number="draft.rpe"
-                class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-white text-sm"
-              />
+              <label class="text-xs text-gray-400 font-medium inline-flex items-center gap-1">
+                RPE (6–10)
+                <span x-data="helpTip" data-term="rpe" class="relative inline-flex">
+                  <button
+                    type="button"
+                    @click="toggle()"
+                    @click.outside="close()"
+                    aria-label="Qu'est-ce que le RPE ?"
+                    class="w-4 h-4 rounded-full bg-kinetic-elevated text-gray-400 text-[9px] font-bold flex items-center justify-center hover:text-white"
+                  >
+                    i
+                  </button>
+                  <span
+                    x-show="open"
+                    x-transition
+                    class="absolute left-0 bottom-6 z-50 w-56 bg-kinetic-raised ring-1 ring-white/15 rounded-xl p-3 shadow-2xl text-[11px] text-gray-200 leading-snug font-normal normal-case tracking-normal"
+                    style="display: none"
+                  >
+                    <span class="block font-bold text-white mb-0.5" x-text="label"></span>
+                    <span x-text="def"></span>
+                  </span>
+                </span>
+              </label>
+              <div class="flex items-stretch gap-1">
+                <button
+                  type="button"
+                  @click="bumpRpe(-0.5)"
+                  aria-label="Diminuer le RPE"
+                  class="px-2 bg-kinetic-elevated text-white rounded-l-xl text-sm font-bold hover:bg-white/10 active:scale-95"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min="6"
+                  max="10"
+                  step="0.5"
+                  x-model.number="draft.rpe"
+                  class="w-full min-w-0 bg-kinetic-ink border border-white/10 px-2 py-2 text-white text-sm text-center"
+                />
+                <button
+                  type="button"
+                  @click="bumpRpe(0.5)"
+                  aria-label="Augmenter le RPE"
+                  class="px-2 bg-kinetic-elevated text-white rounded-r-xl text-sm font-bold hover:bg-white/10 active:scale-95"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Note + tempo (optionnel, collapsible) -->
+          <div class="mb-2">
+            <button
+              type="button"
+              @click="showSetExtras = !showSetExtras"
+              class="text-[10px] text-gray-500 hover:text-gray-300 uppercase tracking-widest font-semibold"
+            >
+              <span x-show="!showSetExtras">＋ note / tempo</span>
+              <span x-show="showSetExtras">− masquer</span>
+            </button>
+            <div x-show="showSetExtras" x-transition class="mt-2 grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] uppercase tracking-widest text-gray-500"
+                  >Note (optionnel)</label
+                >
+                <input
+                  type="text"
+                  x-model="draft.note"
+                  maxlength="200"
+                  placeholder="ex: déséquilibré, ceinture..."
+                  class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-2 py-1.5 text-xs text-white mt-1"
+                />
+              </div>
+              <div>
+                <label class="text-[10px] uppercase tracking-widest text-gray-500"
+                  >Tempo (ex: 4-1-2-0)</label
+                >
+                <input
+                  type="text"
+                  x-model="draft.tempo"
+                  maxlength="9"
+                  placeholder="3-0-X-0"
+                  class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-2 py-1.5 text-xs text-white mt-1 font-mono"
+                />
+              </div>
             </div>
           </div>
 
@@ -526,11 +742,11 @@
               ⭐ Nouveau PR !
             </p>
           </div>
-          <!-- Suggestion auto-progression (bloc indépendant, full width) -->
+          <!-- Suggestion auto-progression (bloc indépendant, full width) — avancé -->
           <template
             x-if="progressionSuggestion(entry.exerciseId) !== null && progressionSuggestion(entry.exerciseId).strategy !== 'first_time'"
           >
-            <div class="bg-kinetic-elevated/60 rounded-xl px-3 py-2 mb-2">
+            <div class="adv-only bg-kinetic-elevated/60 rounded-xl px-3 py-2 mb-2">
               <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-0.5">
                 Cible
               </p>
@@ -563,18 +779,25 @@
               <div>e1RM</div>
             </div>
             <template x-for="s in entry.sets" :key="s.setIndex">
-              <div
-                class="grid grid-cols-5 px-3 py-2 text-sm border-t border-white/10"
-                :class="isSetPr(entry.exerciseId, s.weightKg, s.reps) ? 'bg-kinetic-electric/10' : ''"
-              >
-                <div class="text-gray-400" x-text="s.setIndex + 1"></div>
-                <div class="text-white" x-text="s.reps"></div>
-                <div class="text-white" x-text="s.weightKg"></div>
-                <div class="text-white" x-text="s.rpe"></div>
+              <div class="border-t border-white/10">
                 <div
-                  class="text-kinetic-electric font-medium"
-                  x-text="e1rm(s.weightKg, s.reps).toFixed(0)"
-                ></div>
+                  class="grid grid-cols-5 px-3 py-2 text-sm"
+                  :class="isSetPr(entry.exerciseId, s.weightKg, s.reps) ? 'bg-kinetic-electric/10' : ''"
+                >
+                  <div class="text-gray-400" x-text="s.setIndex + 1"></div>
+                  <div class="text-white" x-text="s.reps"></div>
+                  <div class="text-white" x-text="s.weightKg"></div>
+                  <div class="text-white" x-text="s.rpe"></div>
+                  <div
+                    class="text-kinetic-electric font-medium"
+                    x-text="e1rm(s.weightKg, s.reps).toFixed(0)"
+                  ></div>
+                </div>
+                <template x-if="s.note">
+                  <p class="text-[11px] text-gray-400 italic px-3 pb-1.5 leading-snug">
+                    💬 <span x-text="s.note"></span>
+                  </p>
+                </template>
               </div>
             </template>
           </div>

@@ -213,3 +213,144 @@ export function needsDeload(history: readonly PerformedSet[]): boolean {
   const trend = slope(last5.map((s) => e1rm(s.weightKg, s.reps)));
   return avgRpe >= 9 && trend <= 0;
 }
+
+// ─── Suggestion de charge de départ (profil-aware) ─────────────────────────
+
+export type ExerciseCategory =
+  | 'squat'
+  | 'bench'
+  | 'deadlift'
+  | 'overhead_press'
+  | 'row'
+  | 'pull'
+  | 'accessory_compound'
+  | 'isolation'
+  | 'bodyweight';
+
+export type StrengthLevel = 'beginner' | 'intermediate' | 'advanced';
+
+export type ProgressionSex = 'male' | 'female' | 'other';
+
+export interface StartingWeightInput {
+  category: ExerciseCategory;
+  bodyweightKg: number;
+  level: StrengthLevel;
+  sex?: ProgressionSex;
+  incrementKg?: number; // défaut 2.5
+  targetReps?: number; // défaut 8 (zone hypertrophie)
+}
+
+export interface StartingWeightSuggestion {
+  weightKg: number;
+  rationale: string;
+  confidence: number; // 0..1
+}
+
+/**
+ * Multiplicateurs poids-corporel pour un 1RM "raisonnable" par catégorie + niveau.
+ *
+ * Sources :
+ *   - Symmetric Strength / ExRx standards (males) pour benchmarks intermédiaires
+ *   - Helms et al. — Strength training pyramid (gender deltas)
+ *   - Greg Nuckols' "Beginner / Intermediate / Advanced" ratios
+ *
+ * Les valeurs sont des 1RM cibles. On dérive ensuite le poids de travail à
+ * la cible reps en inversant Epley (intensité ~ 1 - reps/30 = working / 1RM).
+ */
+const MALE_1RM_RATIOS: Record<ExerciseCategory, Record<StrengthLevel, number>> = {
+  squat: { beginner: 0.8, intermediate: 1.25, advanced: 1.75 },
+  bench: { beginner: 0.6, intermediate: 1.0, advanced: 1.4 },
+  deadlift: { beginner: 1.0, intermediate: 1.5, advanced: 2.1 },
+  overhead_press: { beginner: 0.4, intermediate: 0.65, advanced: 0.95 },
+  row: { beginner: 0.55, intermediate: 0.85, advanced: 1.15 },
+  pull: { beginner: 0.45, intermediate: 0.7, advanced: 1.0 },
+  accessory_compound: { beginner: 0.5, intermediate: 0.75, advanced: 1.05 },
+  isolation: { beginner: 0.15, intermediate: 0.25, advanced: 0.4 },
+  bodyweight: { beginner: 0, intermediate: 0, advanced: 0 },
+};
+
+// Coefficient féminin (sur 1RM) — ~75 % haut du corps, ~85 % bas du corps.
+const FEMALE_RATIO_FACTOR: Record<ExerciseCategory, number> = {
+  squat: 0.85,
+  bench: 0.7,
+  deadlift: 0.82,
+  overhead_press: 0.65,
+  row: 0.72,
+  pull: 0.65,
+  accessory_compound: 0.75,
+  isolation: 0.7,
+  bodyweight: 1,
+};
+
+/**
+ * suggestStartingWeight — recommande une charge de travail pour un athlète
+ * qui n'a aucun historique sur l'exercice. Sans cette fonction, l'app sort
+ * "0 kg, choisis quelque chose" — friction inutile à l'onboarding.
+ *
+ * Stratégie :
+ *   1. 1RM estimé = bodyweight × ratio(catégorie, niveau, sexe)
+ *   2. Charge de travail = 1RM × (1 - targetReps/30)  // Epley inverse
+ *   3. Arrondi au pas (incrementKg), borné à ≥ 0
+ *
+ * Confiance : 0.4 (toujours à valider après le 1er set).
+ */
+export function suggestStartingWeight(input: StartingWeightInput): StartingWeightSuggestion {
+  const { category, bodyweightKg, level, sex = 'male', incrementKg = 2.5, targetReps = 8 } = input;
+
+  if (category === 'bodyweight') {
+    return {
+      weightKg: 0,
+      rationale: 'Exercice au poids du corps — pas de charge externe.',
+      confidence: 1,
+    };
+  }
+
+  if (!Number.isFinite(bodyweightKg) || bodyweightKg <= 0) {
+    return {
+      weightKg: 0,
+      rationale: 'Renseigne ton poids corporel dans Profil pour obtenir une suggestion de départ.',
+      confidence: 0,
+    };
+  }
+
+  const baseRatio = MALE_1RM_RATIOS[category][level];
+  const factor = sex === 'female' ? FEMALE_RATIO_FACTOR[category] : 1;
+  const oneRm = bodyweightKg * baseRatio * factor;
+
+  // Epley inverse : working ≈ 1RM × (1 − reps/30)
+  const reps = Math.max(1, Math.min(20, Math.floor(targetReps)));
+  const intensity = 1 - reps / 30;
+  const raw = oneRm * intensity;
+  const weight = Math.max(0, roundTo(raw, incrementKg));
+
+  const sexLabel = sex === 'female' ? 'F' : sex === 'male' ? 'M' : '';
+  return {
+    weightKg: weight,
+    rationale: `Estimation ${sexLabel} ${level} : ~${oneRm.toFixed(0)} kg max → ${weight} kg × ${reps} (≈ ${(intensity * 100).toFixed(0)} % 1RM). Ajuste après ton 1er set.`,
+    confidence: 0.4,
+  };
+}
+
+/**
+ * Helper : déduit la catégorie d'un exercice à partir d'IDs courants ou de muscles.
+ * Heuristique simple, conservatrice — bascule sur 'isolation' par défaut.
+ */
+export function inferExerciseCategory(opts: {
+  exerciseId?: string;
+  muscles?: readonly string[];
+  isCompound?: boolean;
+}): ExerciseCategory {
+  const id = (opts.exerciseId ?? '').toLowerCase();
+  if (/squat/.test(id)) return 'squat';
+  if (/bench|developpe-couche|developpe_couche|bench-press/.test(id)) return 'bench';
+  if (/deadlift|souleve-de-terre|souleve_de_terre/.test(id)) return 'deadlift';
+  if (/overhead|ohp|developpe-militaire|developpe_militaire/.test(id)) return 'overhead_press';
+  if (/row|rowing|tirage-horizontal/.test(id)) return 'row';
+  if (/pull-up|chin-up|traction|pullup|chinup/.test(id)) return 'pull';
+  const muscles = new Set(opts.muscles ?? []);
+  if (opts.isCompound) return 'accessory_compound';
+  if (muscles.has('quads') || muscles.has('hamstrings') || muscles.has('glutes')) {
+    return 'accessory_compound';
+  }
+  return 'isolation';
+}

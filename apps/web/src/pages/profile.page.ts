@@ -1,6 +1,19 @@
-﻿import { STORAGE_KEYS } from '@kinetic/core';
+﻿import {
+  STORAGE_KEYS,
+  encodeProfile,
+  buildProfileShareUrl,
+  computeXpState,
+  type SharedProfile,
+  type ProfileBestLift,
+} from '@kinetic/core';
 import { getDeps } from '../deps';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
+import { loadSessions, loadExercises } from '../lib/training/storage';
+import { estimateE1rmKg } from '../lib/training/rpe';
+import { enablePush, disablePush, isPushAvailable, getPushStatus } from '../lib/push';
+import { getLocale, setLocale, type Locale } from '../lib/i18n';
+import { getThemeMode, setThemeMode, type ThemeMode } from '../lib/theme';
+import { getDisplayDensity, setDisplayDensity, type DisplayDensity } from '../lib/display-mode';
 import {
   detectFormat,
   parseKineticJson,
@@ -42,6 +55,32 @@ export function profile() {
     compacting: false,
     storagePercent: null as number | null,
     storageLabel: '—',
+    profilePseudo: '',
+    profileShareUrl: '',
+    sharingProfile: false,
+    pushSupported: false,
+    pushSubscribed: false,
+    pushBusy: false,
+    locale: 'fr' as Locale,
+    themeMode: 'dark' as ThemeMode,
+    density: 'simple' as DisplayDensity,
+
+    setTheme(mode: ThemeMode): void {
+      this.themeMode = mode;
+      setThemeMode(mode);
+    },
+
+    setDensity(density: DisplayDensity): void {
+      this.density = density;
+      setDisplayDensity(density);
+    },
+
+    setUiLocale(locale: Locale): void {
+      this.locale = locale;
+      setLocale(locale);
+      // Soft reload : force le re-render des templates en redispatchant
+      window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_LOCALE_RELOAD));
+    },
 
     async init(): Promise<void> {
       try {
@@ -67,8 +106,56 @@ export function profile() {
         }
 
         await this._refreshStorageUsage();
+        this._refreshPushStatus();
+        this.locale = getLocale();
+        this.themeMode = getThemeMode();
+        this.density = getDisplayDensity();
       } catch (err) {
         console.error('[profile] init failed:', err);
+      }
+    },
+
+    _refreshPushStatus(): void {
+      this.pushSupported = isPushAvailable();
+      const status = getPushStatus();
+      this.pushSubscribed = status.subscribed && status.permission === 'granted';
+    },
+
+    async togglePush(): Promise<void> {
+      if (this.pushBusy) return;
+      this.pushBusy = true;
+      try {
+        if (this.pushSubscribed) {
+          await disablePush();
+          this.pushSubscribed = false;
+          window.dispatchEvent(
+            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+              detail: { kind: 'info', message: 'Notifications push désactivées.' },
+            }),
+          );
+        } else {
+          const sub = await enablePush();
+          if (sub) {
+            this.pushSubscribed = true;
+            window.dispatchEvent(
+              new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+                detail: { kind: 'success', message: 'Notifications push activées ✓' },
+              }),
+            );
+          } else {
+            window.dispatchEvent(
+              new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+                detail: {
+                  kind: 'warning',
+                  message:
+                    'Activation refusée — vérifie la permission Notifications dans ton navigateur.',
+                },
+              }),
+            );
+          }
+        }
+      } finally {
+        this.pushBusy = false;
       }
     },
 
@@ -130,6 +217,102 @@ export function profile() {
             detail: { kind: 'error', message: 'Échec sauvegarde du nom. Réessaie.' },
           }),
         );
+      }
+    },
+
+    /**
+     * Construit un profil partagé compact (3 best lifts par e1RM) et
+     * encode-le dans une URL. Tente l'API Web Share native, fallback clipboard.
+     */
+    async shareProfile(): Promise<void> {
+      if (this.sharingProfile) return;
+      this.sharingProfile = true;
+      try {
+        const deps = await getDeps();
+        const [sessions, exercises, xpTotal] = await Promise.all([
+          loadSessions(deps.storage),
+          loadExercises(deps.storage),
+          deps.storage.get<number>(STORAGE_KEYS.XP),
+        ]);
+
+        // Best lift par exercice (par e1RM Epley, sets et séances confondus)
+        const bestByEx = new Map<string, ProfileBestLift>();
+        for (const s of sessions) {
+          for (const entry of s.entries) {
+            for (const set of entry.sets) {
+              const e1 = estimateE1rmKg(set.weightKg, set.reps);
+              const prev = bestByEx.get(entry.exerciseId);
+              if (!prev || e1 > prev.e1rmKg) {
+                bestByEx.set(entry.exerciseId, {
+                  exerciseId: entry.exerciseId,
+                  weightKg: set.weightKg,
+                  reps: set.reps,
+                  e1rmKg: Math.round(e1 * 10) / 10,
+                });
+              }
+            }
+          }
+        }
+        const bestLifts = [...bestByEx.values()].sort((a, b) => b.e1rmKg - a.e1rmKg).slice(0, 3);
+
+        // Niveau XP (recalcule depuis totalXp pour rester fiable)
+        const totalXp = typeof xpTotal === 'number' && Number.isFinite(xpTotal) ? xpTotal : 0;
+        const xp = computeXpState(Math.max(0, totalXp));
+
+        const pseudo = (this.profilePseudo || this.displayName || 'Athlète Kinetic')
+          .trim()
+          .slice(0, 32);
+
+        const payload: SharedProfile = {
+          pseudo,
+          level: xp.currentLevel,
+          streak: this.streak,
+          totalSessions: sessions.length,
+          bestLifts: bestLifts.map((b) => ({
+            // remplace l'id par un libellé court lisible (chez le destinataire,
+            // si l'exercice n'existe pas dans son catalogue, on garde le label brut)
+            exerciseId:
+              exercises.find((e) => e.id === b.exerciseId)?.name?.slice(0, 32) ?? b.exerciseId,
+            weightKg: b.weightKg,
+            reps: b.reps,
+            e1rmKg: b.e1rmKg,
+          })),
+        };
+        const token = encodeProfile(payload);
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const url = buildProfileShareUrl(origin, token);
+        this.profileShareUrl = url;
+
+        const nav = navigator as Navigator & {
+          share?: (data: { title?: string; url?: string }) => Promise<void>;
+        };
+        try {
+          if (typeof nav.share === 'function') {
+            await nav.share({ title: `${pseudo} — Profil Kinetic`, url });
+            return;
+          }
+        } catch {
+          /* annulé ou non supporté → fallback clipboard */
+        }
+        try {
+          await navigator.clipboard.writeText(url);
+          window.dispatchEvent(
+            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+              detail: { kind: 'success', message: 'Lien profil copié ✓' },
+            }),
+          );
+        } catch {
+          /* le lien est de toute façon affiché dans l'UI */
+        }
+      } catch (err) {
+        console.error('[profile] shareProfile failed:', err);
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Impossible de générer le lien — réessaie.' },
+          }),
+        );
+      } finally {
+        this.sharingProfile = false;
       }
     },
 
