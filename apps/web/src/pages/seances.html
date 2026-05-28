@@ -542,7 +542,29 @@
               </div>
             </div>
             <div>
-              <label class="text-xs text-gray-400 font-medium">RPE (6–10)</label>
+              <label class="text-xs text-gray-400 font-medium inline-flex items-center gap-1">
+                RPE (6–10)
+                <span x-data="helpTip" data-term="rpe" class="relative inline-flex">
+                  <button
+                    type="button"
+                    @click="toggle()"
+                    @click.outside="close()"
+                    aria-label="Qu'est-ce que le RPE ?"
+                    class="w-4 h-4 rounded-full bg-kinetic-elevated text-gray-400 text-[9px] font-bold flex items-center justify-center hover:text-white"
+                  >
+                    i
+                  </button>
+                  <span
+                    x-show="open"
+                    x-transition
+                    class="absolute left-0 bottom-6 z-50 w-56 bg-kinetic-raised ring-1 ring-white/15 rounded-xl p-3 shadow-2xl text-[11px] text-gray-200 leading-snug font-normal normal-case tracking-normal"
+                    style="display: none"
+                  >
+                    <span class="block font-bold text-white mb-0.5" x-text="label"></span>
+                    <span x-text="def"></span>
+                  </span>
+                </span>
+              </label>
               <div class="flex items-stretch gap-1">
                 <button
                   type="button"
@@ -720,11 +742,11 @@
               ⭐ Nouveau PR !
             </p>
           </div>
-          <!-- Suggestion auto-progression (bloc indépendant, full width) -->
+          <!-- Suggestion auto-progression (bloc indépendant, full width) — avancé -->
           <template
             x-if="progressionSuggestion(entry.exerciseId) !== null && progressionSuggestion(entry.exerciseId).strategy !== 'first_time'"
           >
-            <div class="bg-kinetic-elevated/60 rounded-xl px-3 py-2 mb-2">
+            <div class="adv-only bg-kinetic-elevated/60 rounded-xl px-3 py-2 mb-2">
               <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-0.5">
                 Cible
               </p>

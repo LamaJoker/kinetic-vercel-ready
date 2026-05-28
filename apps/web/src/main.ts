@@ -96,13 +96,17 @@ import { plates } from './pages/plates.page';
 import { achievements } from './pages/achievements.page';
 import { photosPage } from './pages/photos.page';
 import { programsPage } from './pages/programs.page';
+import { glossairePage } from './pages/glossaire.page';
+import { helpTip } from './components/help-tip';
 import { authCallback } from './pages/auth-callback.page';
 import { installAlpineI18nMagic } from './lib/i18n';
 import { initPwaInstallPrompt, pwaInstallPrompt } from './lib/pwa-install';
 import { initTheme } from './lib/theme';
+import { initDisplayDensity } from './lib/display-mode';
 
-// ─── Theme : appliquer avant tout pour éviter le flash sombre→clair ──────
+// ─── Theme + densité : appliquer avant tout pour éviter le flash ─────────
 initTheme();
+initDisplayDensity();
 
 import { getDeps } from './deps';
 
@@ -139,6 +143,8 @@ Alpine.data('plates', plates);
 Alpine.data('achievements', achievements);
 Alpine.data('photosPage', photosPage);
 Alpine.data('programsPage', programsPage);
+Alpine.data('glossairePage', glossairePage);
+Alpine.data('helpTip', helpTip);
 Alpine.data('pwaInstallPrompt', pwaInstallPrompt);
 Alpine.data('authCallback', authCallback);
 Alpine.data('mensurations', mensurations);

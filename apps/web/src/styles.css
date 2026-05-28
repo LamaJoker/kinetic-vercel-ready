@@ -169,6 +169,25 @@ h4 {
   display: none !important;
 }
 
+/* ─── Mode d'affichage Simple / Avancé ──────────────────────────────────
+   En mode "simple" (data-density absent ou = simple), on masque tout
+   élément taggé `.adv-only` : blocs avancés (coach périodisation, scores
+   normalisés, équilibre musculaire détaillé, etc.). Le mode "advanced"
+   révèle tout. Défaut = simple pour ne pas noyer les débutants.
+   ───────────────────────────────────────────────────────────────────── */
+html:not([data-density='advanced']) .adv-only {
+  display: none !important;
+}
+
+/* Petit badge "Avancé" optionnel à côté des sections, visible seulement
+   quand on EST en mode avancé, pour signaler que c'est du contenu poussé. */
+html[data-density='advanced'] .adv-badge {
+  display: inline-flex;
+}
+.adv-badge {
+  display: none;
+}
+
 /* ─── AUTO-APPLY hairline gradient + tweaks aux patterns existants ───
    Aucun changement de markup nécessaire. Toutes les cartes
    (bg-kinetic-surface + rounded-*) reçoivent le traitement k-card.

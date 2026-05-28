@@ -13,6 +13,7 @@ import { estimateE1rmKg } from '../lib/training/rpe';
 import { enablePush, disablePush, isPushAvailable, getPushStatus } from '../lib/push';
 import { getLocale, setLocale, type Locale } from '../lib/i18n';
 import { getThemeMode, setThemeMode, type ThemeMode } from '../lib/theme';
+import { getDisplayDensity, setDisplayDensity, type DisplayDensity } from '../lib/display-mode';
 import {
   detectFormat,
   parseKineticJson,
@@ -62,10 +63,16 @@ export function profile() {
     pushBusy: false,
     locale: 'fr' as Locale,
     themeMode: 'dark' as ThemeMode,
+    density: 'simple' as DisplayDensity,
 
     setTheme(mode: ThemeMode): void {
       this.themeMode = mode;
       setThemeMode(mode);
+    },
+
+    setDensity(density: DisplayDensity): void {
+      this.density = density;
+      setDisplayDensity(density);
     },
 
     setUiLocale(locale: Locale): void {
@@ -102,6 +109,7 @@ export function profile() {
         this._refreshPushStatus();
         this.locale = getLocale();
         this.themeMode = getThemeMode();
+        this.density = getDisplayDensity();
       } catch (err) {
         console.error('[profile] init failed:', err);
       }
