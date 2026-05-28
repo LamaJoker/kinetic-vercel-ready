@@ -5,7 +5,10 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Polyfill minimal pour tests qui tournent en environnement node-only
+// Polyfill minimal pour tests qui tournent en environnement node-only.
+// IMPORTANT : Node 20 (utilisé en CI) n'expose PAS `navigator` global,
+// contrairement à Node 21+. On le polyfill explicitement avant les tests
+// qui font `Object.defineProperty(navigator, ...)`.
 if (typeof localStorage === 'undefined') {
   const store: Record<string, string> = {};
   (globalThis as Record<string, unknown>).localStorage = {
@@ -20,6 +23,13 @@ if (typeof localStorage === 'undefined') {
       for (const k of Object.keys(store)) delete store[k];
     },
   } as Storage;
+}
+if (typeof globalThis.navigator === 'undefined') {
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    writable: true,
+    value: { language: 'fr-FR' },
+  });
 }
 
 beforeEach(() => {
