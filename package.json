@@ -57,7 +57,7 @@
     "eslint-plugin-import": "^2.31.0",
     "globals": "^15.0.0",
     "husky": "^9.1.7",
-    "idb-keyval": "^6.2.2",
+    "idb-keyval": "^6.2.5",
     "lint-staged": "^15.2.10",
     "prettier": "^3.0.0",
     "typescript": "^5.5.0",
