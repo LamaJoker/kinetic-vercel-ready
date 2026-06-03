@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         continue-on-error: true
         with:
           languages: ${{ matrix.language }}
@@ -42,7 +42,7 @@ jobs:
       # enabled, the analyze step fails on upload. Mark it continue-on-error
       # so the job still reports as success; remove when GHAS is enabled.
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         continue-on-error: true
         with:
           category: '/language:${{ matrix.language }}'
