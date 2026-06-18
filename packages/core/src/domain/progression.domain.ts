@@ -13,6 +13,8 @@
  * Pur — aucune dépendance, aucun I/O.
  */
 
+import { estimatedE1rmFromRpe, loadForReps, pickTopSet } from './rpe-chart.domain.js';
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface PerformedSet {
@@ -108,14 +110,33 @@ export function slope(values: readonly number[]): number {
 const DELOAD_WINDOW_MS = 14 * 24 * 60 * 60 * 1_000;
 
 /**
+ * referenceSet — set de référence pour la suggestion.
+ *
+ * Le dernier set loggé est souvent un back-off ou un échauffement et sous-estime
+ * la vraie capacité du jour. On prend plutôt le *meilleur* set (e1RM RPE-aware)
+ * de la séance la plus récente, les sets étant groupés par jour calendaire (UTC).
+ * Pour un historique à un set par séance, c'est exactement le dernier set.
+ */
+function referenceSet(history: readonly PerformedSet[]): PerformedSet {
+  const last = history[history.length - 1]!;
+  const lastDay = last.at.slice(0, 10); // YYYY-MM-DD
+  const sameSession = history.filter((s) => s.at.slice(0, 10) === lastDay);
+  return (pickTopSet(sameSession) as PerformedSet | null) ?? last;
+}
+
+/**
  * suggestProgression — stratégie de progression basée sur RPE + trend e1RM.
  *
  * Règles (dans cet ordre) :
  *   1. Historique vide → 'first_time', charge "sécuritaire" (barre à vide si pas fourni).
  *   2. Dans la fenêtre de 14j : RPE moyen >= 9.5 ET e1RM stagnant → 'deload' (-10%).
- *   3. Dernier set à RPE <= targetRpe - 1 ET reps >= targetReps → 'increase_weight' (+incrément).
- *   4. Dernier set à RPE dans [target-0.5, target+0.5] ET reps < targetReps → 'increase_reps'.
+ *   3. Set de réf. à RPE <= targetRpe - 1 ET reps >= targetReps → 'increase_weight'
+ *      (charge cible RPE-aware via la charte RTS, plancher = +incrément).
+ *   4. Set de réf. à RPE dans [target-0.5, target+0.5] ET reps < targetReps → 'increase_reps'.
  *   5. Sinon → 'hold' (même charge, garder la qualité).
+ *
+ * Le "set de référence" est le meilleur set de la séance la plus récente (cf.
+ * referenceSet), pas le dernier set loggé.
  */
 export function suggestProgression(input: ProgressionInput): ProgressionSuggestion {
   const { targetReps, targetRpe, incrementKg, history } = input;
@@ -132,7 +153,9 @@ export function suggestProgression(input: ProgressionInput): ProgressionSuggesti
     };
   }
 
-  const last = history[history.length - 1]!;
+  // Set de référence : meilleur set de la séance la plus récente (et non le
+  // dernier set loggé, souvent un back-off). Voir referenceSet().
+  const reference = referenceSet(history);
 
   // 2. Deload : évaluation sur fenêtre temporelle de 14 jours
   //    (pas juste les 3 dernières séances — sensible à la fréquence d'entraînement)
@@ -147,7 +170,7 @@ export function suggestProgression(input: ProgressionInput): ProgressionSuggesti
     if (avgRpeRecent >= 9.5 && trendRecent <= 0) {
       return {
         strategy: 'deload',
-        suggestedWeight: roundTo(last.weightKg * 0.9, incrementKg),
+        suggestedWeight: roundTo(reference.weightKg * 0.9, incrementKg),
         suggestedReps: targetReps,
         suggestedRpe: Math.max(6, targetRpe - 2),
         confidence: 0.8,
@@ -156,24 +179,32 @@ export function suggestProgression(input: ProgressionInput): ProgressionSuggesti
     }
   }
 
-  // 3. Charge trop facile ET objectif reps atteint
-  if (last.rpe <= targetRpe - 1 && last.reps >= targetReps) {
+  // 3. Charge trop facile ET objectif reps atteint → charge cible RPE-aware.
+  //    Au lieu d'un +incrément aveugle, on calcule la charge qui vise exactement
+  //    targetRpe à targetReps, à partir du 1RM estimé (réserve RIR prise en compte).
+  //    Plancher : jamais en-dessous d'un incrément au-dessus du set de référence,
+  //    pour garder la sémantique "augmenter".
+  if (reference.rpe <= targetRpe - 1 && reference.reps >= targetReps) {
+    const e1 = estimatedE1rmFromRpe(reference.weightKg, reference.reps, reference.rpe);
+    const rpeAware = loadForReps(e1, targetReps, targetRpe, incrementKg || 2.5);
+    const floor = roundTo(reference.weightKg + incrementKg, incrementKg);
+    const suggestedWeight = Math.max(rpeAware, floor);
     return {
       strategy: 'increase_weight',
-      suggestedWeight: roundTo(last.weightKg + incrementKg, incrementKg),
+      suggestedWeight,
       suggestedReps: targetReps,
       suggestedRpe: targetRpe,
       confidence: 0.9,
-      rationale: `RPE ${last.rpe} < cible ${targetRpe} avec reps ok — +${incrementKg} kg.`,
+      rationale: `RPE ${reference.rpe} < cible ${targetRpe} avec reps ok — charge cible ${suggestedWeight} kg (calculée pour viser RPE ${targetRpe}).`,
     };
   }
 
   // 4. Charge OK, mais pas encore les reps
-  if (Math.abs(last.rpe - targetRpe) <= 0.5 && last.reps < targetReps) {
+  if (Math.abs(reference.rpe - targetRpe) <= 0.5 && reference.reps < targetReps) {
     return {
       strategy: 'increase_reps',
-      suggestedWeight: last.weightKg,
-      suggestedReps: Math.min(targetReps, last.reps + 1),
+      suggestedWeight: reference.weightKg,
+      suggestedReps: Math.min(targetReps, reference.reps + 1),
       suggestedRpe: targetRpe,
       confidence: 0.75,
       rationale: 'Même charge, vise +1 rep (double progression).',
@@ -181,20 +212,20 @@ export function suggestProgression(input: ProgressionInput): ProgressionSuggesti
   }
 
   // 5. Trop dur mais pas deload
-  if (last.rpe > targetRpe + 0.5) {
+  if (reference.rpe > targetRpe + 0.5) {
     return {
       strategy: 'hold',
-      suggestedWeight: last.weightKg,
+      suggestedWeight: reference.weightKg,
       suggestedReps: targetReps,
       suggestedRpe: targetRpe,
       confidence: 0.6,
-      rationale: `RPE ${last.rpe} > cible ${targetRpe} — consolider avant d'augmenter.`,
+      rationale: `RPE ${reference.rpe} > cible ${targetRpe} — consolider avant d'augmenter.`,
     };
   }
 
   return {
     strategy: 'hold',
-    suggestedWeight: last.weightKg,
+    suggestedWeight: reference.weightKg,
     suggestedReps: targetReps,
     suggestedRpe: targetRpe,
     confidence: 0.5,

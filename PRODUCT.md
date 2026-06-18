@@ -53,23 +53,24 @@
 
 ### 🧠 Suivi intelligent — _partiellement livré dans cette branche_
 
-| Feature                                     | État                    | Module                              |
-| ------------------------------------------- | ----------------------- | ----------------------------------- |
-| Tracking poids / reps / RPE                 | ✅ existant             | `lib/training/types.ts`             |
-| Historique par exercice                     | ✅ existant             | stockage IDB                        |
-| Estimation e1RM (Epley)                     | ✅ existant             | `lib/training/rpe.ts`               |
-| **Suggestion automatique de progression**   | ✅ **NEW**              | `core/domain/progression.domain.ts` |
-| **Détection de deload (fatigue chronique)** | ✅ **NEW**              | `needsDeload()`                     |
-| Suggestion de charge de départ (1er exo)    | 🟡 fallback heuristique | à enrichir avec profil              |
+| Feature                                       | État        | Module                                                                |
+| --------------------------------------------- | ----------- | --------------------------------------------------------------------- |
+| Tracking poids / reps / RPE                   | ✅ existant | `lib/training/types.ts`                                               |
+| Historique par exercice                       | ✅ existant | stockage IDB                                                          |
+| Estimation e1RM (Epley)                       | ✅ existant | `lib/training/rpe.ts`                                                 |
+| **Suggestion automatique de progression**     | ✅ **NEW**  | `core/domain/progression.domain.ts`                                   |
+| **Charte RPE→%1RM (RTS) + charge cible**      | ✅ **NEW**  | `core/domain/rpe-chart.domain.ts` (branché dans `suggestProgression`) |
+| **Détection de deload (fatigue chronique)**   | ✅ **NEW**  | `needsDeload()`                                                       |
+| Suggestion de charge de départ (profil-aware) | ✅ existant | `suggestStartingWeight()` (sexe/niveau/poids)                         |
 
 ### 📅 Planification avancée
 
-| Feature                                                 | État                              |
-| ------------------------------------------------------- | --------------------------------- |
-| Splits PPL / Upper-Lower / Full Body / Bro Split        | ✅ existant (`program.domain.ts`) |
-| Génération automatique depuis un split + objectifs      | 🟡 à faire (use case)             |
-| Adaptation fatigue/récupération (insert deload semaine) | 🟡 lié à `needsDeload()`          |
-| Planning par jour de la semaine                         | ✅ existant (`todayFocus()`)      |
+| Feature                                                 | État                                        |
+| ------------------------------------------------------- | ------------------------------------------- |
+| Splits PPL / Upper-Lower / Full Body / Bro Split        | ✅ existant (`program.domain.ts`)           |
+| Génération automatique depuis un split + objectifs      | ✅ existant (`workout-generator.domain.ts`) |
+| Adaptation fatigue/récupération (insert deload semaine) | 🟡 lié à `needsDeload()`                    |
+| Planning par jour de la semaine                         | ✅ existant (`todayFocus()`)                |
 
 ### 📊 Analytics — _livré dans cette branche_
 
@@ -83,23 +84,23 @@
 
 ### 🔔 Engagement
 
-| Feature                                       | État                                      |
-| --------------------------------------------- | ----------------------------------------- |
-| XP + niveaux (8 paliers)                      | ✅ existant                               |
-| Streak quotidien                              | ✅ existant                               |
-| **Timer de repos (vibration + notification)** | ✅ **NEW** (`lib/training/rest-timer.ts`) |
-| Push Web réelle (Service Worker + VAPID)      | 🟡 à faire                                |
-| Objectifs hebdo (3 séances, X kg tonnage)     | 🟡 à faire                                |
+| Feature                                       | État                                                   |
+| --------------------------------------------- | ------------------------------------------------------ |
+| XP + niveaux (8 paliers)                      | ✅ existant                                            |
+| Streak quotidien                              | ✅ existant                                            |
+| **Timer de repos (vibration + notification)** | ✅ **NEW** (`lib/training/rest-timer.ts`)              |
+| Push Web réelle (Service Worker + VAPID)      | 🟡 codé, à déployer (`lib/push.ts` + Edge `send-push`) |
+| Objectifs hebdo (3 séances, X kg tonnage)     | ✅ existant (`goals.domain.ts` + store)                |
 
 ### 👤 UX
 
-| Feature                                           | État                     |
-| ------------------------------------------------- | ------------------------ |
-| Mobile-first, dark, minimal                       | ✅ existant              |
-| Onboarding multi-étapes                           | ✅ existant              |
-| Quick-start séance (dernière ou template du jour) | 🟡 à faire               |
-| Raccourci +1 rep / +incrément                     | 🟡 à faire               |
-| Timer plein écran entre séries                    | 🟡 lié au nouveau module |
+| Feature                                           | État                        |
+| ------------------------------------------------- | --------------------------- |
+| Mobile-first, dark, minimal                       | ✅ existant                 |
+| Onboarding multi-étapes                           | ✅ existant                 |
+| Quick-start séance (dernière ou template du jour) | ✅ existant (quick-restart) |
+| Raccourci +1 rep / +incrément                     | ✅ existant                 |
+| Timer plein écran entre séries                    | 🟡 lié au nouveau module    |
 
 ### 🌐 Social _(optionnel, phase 3)_
 
@@ -111,13 +112,13 @@
 
 ### 🧩 Extras différenciants — _partiellement livré_
 
-| Feature                              | État                                  |
-| ------------------------------------ | ------------------------------------- |
-| Mode offline complet                 | ✅ existant                           |
-| Sync cloud (Supabase + RLS + CRDT)   | ✅ existant                           |
-| **Export JSON / CSV des séances**    | ✅ **NEW** (`lib/training/export.ts`) |
-| Import depuis Strong / Hevy          | 🟡 à faire (format CSV standardisé)   |
-| Wearables (Apple Health, Google Fit) | 🟡 phase 3                            |
+| Feature                              | État                                   |
+| ------------------------------------ | -------------------------------------- |
+| Mode offline complet                 | ✅ existant                            |
+| Sync cloud (Supabase + RLS + CRDT)   | ✅ existant                            |
+| **Export JSON / CSV des séances**    | ✅ **NEW** (`lib/training/export.ts`)  |
+| Import depuis Strong / Hevy          | ✅ existant (`lib/training/import.ts`) |
+| Wearables (Apple Health, Google Fit) | 🟡 phase 3                             |
 
 ---
 

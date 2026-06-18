@@ -99,8 +99,27 @@ describe('suggestProgression', () => {
     const history = [set(10, 70, 7, 0)];
     const s = suggestProgression({ ...base, incrementKg: 0, history });
     expect(s.strategy).toBe('increase_weight');
-    // roundTo(70 + 0, 0) → step = 2.5 → Math.round(70/2.5)*2.5 = 28*2.5 = 70
-    expect(s.suggestedWeight).toBe(70);
+    // Charge cible RPE-aware : e1RM(70,10,@7)≈104 → loadForReps(104, 8 reps @ RPE 8, pas 2.5) = 77.5.
+    // Le plancher roundTo(70 + 0, 0) → step=2.5 → 70 (couvre roundTo step<=0) ; max(77.5, 70) = 77.5.
+    expect(s.suggestedWeight).toBe(77.5);
+  });
+
+  it('base la suggestion sur le top-set de la seance, pas le dernier set logge (back-off)', () => {
+    // Meme seance (jour 0) : set lourd a RPE 7 puis back-off leger. Le dernier set
+    // logge est le back-off ; le moteur doit raisonner sur le top-set (100 kg).
+    const history = [set(8, 100, 7, 0), set(12, 60, 8, 0)];
+    const s = suggestProgression({ ...base, history });
+    expect(s.strategy).toBe('increase_weight');
+    expect(s.suggestedWeight).toBe(102.5); // calcule depuis le top-set, pas les 60 kg du back-off
+  });
+
+  it('vise une charge plus grande qu un simple increment quand le set de reference est tres facile', () => {
+    // Set a RPE 6 (4 reps en reserve) : la charte RTS suggere un saut > +2.5 kg.
+    const history = [set(8, 100, 6, 0)];
+    const s = suggestProgression({ ...base, history });
+    expect(s.strategy).toBe('increase_weight');
+    expect(s.suggestedWeight).toBeGreaterThan(102.5); // plus qu un increment aveugle
+    expect(s.suggestedWeight).toBe(107.5);
   });
 
   it('ne declenche pas de deload si les sets sont hors de la fenetre 14j', () => {
