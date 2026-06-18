@@ -93,7 +93,11 @@ charge de départ profil-aware, deload réduisant volume ET intensité). Gaps r�
 - **Profil public hébergé** (au-delà du token `workout-share`/`profile-share`
   déjà codé). **M.**
 - **Health sync réel** — dépend de P0-2. **L.**
-- **Scanner code-barres nutrition** (OpenFoodFacts). **M.**
+- ~~**Scanner code-barres nutrition** (OpenFoodFacts)~~ ✅ **livré 2026-06-18** :
+  `openfoodfacts.domain.ts` (parseur pur — normalise les données crowdsourcées :
+  kcal/kJ/Atwater, marques, portions) + `lib/openfoodfacts.ts` (fetch) + méthode
+  `scanBarcode` du store nutrition + champ code-barres dans la page. Recherche par
+  saisie du code ; scan caméra (plugin ML Kit) = ajout futur trivial.
 
 ---
 

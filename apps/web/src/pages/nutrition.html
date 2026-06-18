@@ -204,6 +204,23 @@
           </div>
         </div>
 
+        <!-- Scan / recherche par code-barres (OpenFoodFacts) -->
+        <div class="flex gap-2 items-center mb-3">
+          <input
+            x-model="barcode"
+            @keydown.enter.prevent="scanProduct()"
+            inputmode="numeric"
+            placeholder="📷 Code-barres (OpenFoodFacts)…"
+            class="flex-1 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600"
+          />
+          <button
+            @click="scanProduct()"
+            :disabled="scanning || !barcode.trim()"
+            class="shrink-0 bg-kinetic-neon/15 ring-1 ring-kinetic-neon/30 text-kinetic-neon rounded-xl px-3 py-2.5 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+            x-text="scanning ? '…' : 'Chercher'"
+          ></button>
+        </div>
+
         <!-- Saisie manuelle si pas de sélection depuis DB -->
         <template x-if="!selectedFood">
           <div class="mb-3">

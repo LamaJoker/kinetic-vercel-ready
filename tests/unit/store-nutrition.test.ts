@@ -12,10 +12,16 @@ vi.mock('../../apps/web/src/deps.js', () => ({
   }),
 }));
 
+vi.mock('../../apps/web/src/lib/openfoodfacts.js', () => ({
+  normalizeBarcode: (raw: string) => (raw ?? '').replace(/\D/g, ''),
+  fetchFoodByBarcode: vi.fn(),
+}));
+
 import { nutritionStore } from '../../apps/web/src/stores/nutrition.js';
 import type { LoggedMeal, FoodEntry } from '../../apps/web/src/stores/nutrition.js';
 import type { NutritionPlan } from '@kinetic/core';
 import { getDeps } from '../../apps/web/src/deps.js';
+import { fetchFoodByBarcode } from '../../apps/web/src/lib/openfoodfacts.js';
 
 function makeMeal(overrides: Partial<LoggedMeal> = {}): LoggedMeal {
   return {
@@ -541,5 +547,69 @@ describe('nutritionStore.removeMealItem — storage.set failure', () => {
     expect(dispatchFn).toHaveBeenCalledOnce();
     // In-memory state must not be mutated when storage failed
     expect(store.todayLog).toHaveLength(1);
+  });
+});
+
+// ─── scanBarcode (OpenFoodFacts) ───────────────────────────────────────────────
+describe('nutritionStore.scanBarcode', () => {
+  let store: ReturnType<typeof nutritionStore>;
+  const dispatchFn = vi.fn();
+  const mockFetch = vi.mocked(fetchFoodByBarcode);
+
+  beforeEach(() => {
+    vi.stubGlobal('window', { dispatchEvent: dispatchFn });
+    store = nutritionStore();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('returns null and notifies for a too-short barcode (no network call)', async () => {
+    const r = await store.scanBarcode('123');
+    expect(r).toBeNull();
+    expect(dispatchFn).toHaveBeenCalledTimes(1);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns null and notifies when the product is not found', async () => {
+    mockFetch.mockResolvedValueOnce(null);
+    const r = await store.scanBarcode('3017620422003');
+    expect(r).toBeNull();
+    expect(dispatchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps a found product to a FoodEntry with the brand appended to the name', async () => {
+    mockFetch.mockResolvedValueOnce({
+      barcode: '3017620422003',
+      name: 'Nutella',
+      brand: 'Ferrero',
+      kcalPer100: 539,
+      proteinPer100: 6.3,
+      carbsPer100: 57.5,
+      fatPer100: 30.9,
+    });
+    const r = await store.scanBarcode('3017620422003');
+    expect(r).toEqual({
+      name: 'Nutella (Ferrero)',
+      kcalPer100: 539,
+      proteinPer100: 6.3,
+      carbsPer100: 57.5,
+      fatPer100: 30.9,
+    });
+  });
+
+  it('uses the product name as-is when there is no brand', async () => {
+    mockFetch.mockResolvedValueOnce({
+      barcode: '11111111',
+      name: 'Yaourt nature',
+      kcalPer100: 60,
+      proteinPer100: 4,
+      carbsPer100: 5,
+      fatPer100: 3,
+    });
+    const r = await store.scanBarcode('11111111');
+    expect(r?.name).toBe('Yaourt nature');
   });
 });

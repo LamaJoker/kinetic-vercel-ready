@@ -5,5 +5,6 @@ export * from './nutrition.domain.js';
 export * from './program.domain.js';
 export * from './progression.domain.js';
 export * from './rpe-chart.domain.js';
+export * from './openfoodfacts.domain.js';
 export * from './analytics.domain.js';
 export * from './goals.domain.js';

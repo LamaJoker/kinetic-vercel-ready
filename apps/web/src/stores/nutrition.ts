@@ -5,6 +5,7 @@
 import { buildNutritionPlan, macroProgress, STORAGE_KEYS } from '@kinetic/core';
 import type { NutritionPlan } from '@kinetic/core';
 import { getDeps } from '../deps';
+import { fetchFoodByBarcode, normalizeBarcode } from '../lib/openfoodfacts';
 
 // FIX: défini ici au lieu d'être importé depuis @kinetic/core
 export interface FoodEntry {
@@ -175,6 +176,39 @@ export function nutritionStore() {
           }),
         );
       }
+    },
+
+    /**
+     * scanBarcode — cherche un produit par code-barres via OpenFoodFacts et
+     * renvoie un FoodEntry prêt à pré-remplir le formulaire (macros /100 g).
+     * Renvoie null (+ notification) si code invalide, produit introuvable ou erreur.
+     */
+    async scanBarcode(barcode: string): Promise<FoodEntry | null> {
+      const code = normalizeBarcode(barcode);
+      if (code.length < 8) {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'warning', message: 'Code-barres invalide (8 chiffres minimum).' },
+          }),
+        );
+        return null;
+      }
+      const scanned = await fetchFoodByBarcode(code);
+      if (!scanned) {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'warning', message: 'Produit introuvable dans OpenFoodFacts.' },
+          }),
+        );
+        return null;
+      }
+      return {
+        name: scanned.brand ? `${scanned.name} (${scanned.brand})` : scanned.name,
+        kcalPer100: scanned.kcalPer100,
+        proteinPer100: scanned.proteinPer100,
+        carbsPer100: scanned.carbsPer100,
+        fatPer100: scanned.fatPer100,
+      };
     },
   };
 }

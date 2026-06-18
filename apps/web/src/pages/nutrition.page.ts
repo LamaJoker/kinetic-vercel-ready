@@ -1,11 +1,20 @@
 ﻿import Alpine from 'alpinejs';
 import { mealTimingPlan, STORAGE_KEYS, type MealTiming, type NutritionPlan } from '@kinetic/core';
 
+interface ScannedFoodEntry {
+  name: string;
+  kcalPer100: number;
+  proteinPer100: number;
+  carbsPer100: number;
+  fatPer100: number;
+}
+
 interface NutritionStoreShape {
   plan: NutritionPlan | null;
   init(): Promise<void>;
   recalculatePlan(): Promise<void>;
   addMealItem(mealName: string, food: unknown, grams: number): Promise<boolean>;
+  scanBarcode(barcode: string): Promise<ScannedFoodEntry | null>;
 }
 
 interface LocalFood {
@@ -42,6 +51,10 @@ export function nutrition() {
     foodResults: [] as LocalFood[],
     selectedFood: null as LocalFood | null,
     foodDbReady: false,
+
+    // ── Scan code-barres (OpenFoodFacts) ──────────────────────────────────────
+    barcode: '',
+    scanning: false,
 
     get mealTimings(): MealTiming[] {
       const store = Alpine.store('nutrition') as NutritionStoreShape | undefined;
@@ -81,6 +94,33 @@ export function nutrition() {
       this.newMeal.fat = food.fat;
       this.foodQuery = food.name;
       this.foodResults = [];
+    },
+
+    /** Cherche un produit par code-barres (OpenFoodFacts) et pré-remplit le formulaire. */
+    async scanProduct(): Promise<void> {
+      const code = this.barcode.trim();
+      if (!code || this.scanning) return;
+      this.scanning = true;
+      try {
+        const store = Alpine.store('nutrition') as NutritionStoreShape;
+        const food = await store.scanBarcode(code);
+        if (!food) return;
+        this.selectedFood = null;
+        this.newMeal.name = food.name;
+        this.newMeal.kcal = food.kcalPer100;
+        this.newMeal.protein = food.proteinPer100;
+        this.newMeal.carbs = food.carbsPer100;
+        this.newMeal.fat = food.fatPer100;
+        this.foodQuery = food.name;
+        this.foodResults = [];
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'success', message: `${food.name} trouvé — vérifie la quantité ✓` },
+          }),
+        );
+      } finally {
+        this.scanning = false;
+      }
     },
 
     /** Vide la sélection pour permettre la saisie manuelle. */
@@ -126,6 +166,7 @@ export function nutrition() {
       this.foodQuery = '';
       this.selectedFood = null;
       this.foodResults = [];
+      this.barcode = '';
       this.showAddForm = false;
 
       window.dispatchEvent(
