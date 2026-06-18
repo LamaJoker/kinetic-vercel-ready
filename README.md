@@ -2,6 +2,14 @@
 
 > Gamifie tes routines. Gagne des XP. Progresse chaque jour.
 
+[![CI](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/ci.yml/badge.svg)](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/codeql.yml/badge.svg)](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/codeql.yml)
+[![Tests](https://img.shields.io/badge/tests-1193%20passing-brightgreen)](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-98%25%20lines-brightgreen)](#-tests)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![PWA](https://img.shields.io/badge/PWA-installable-5a0fc8?logo=pwa&logoColor=white)](#-pwa)
+[![License](https://img.shields.io/badge/license-MIT-blue)](#-licence)
+
 Application mobile PWA progressive pour la productivité et le fitness, construite avec Alpine.js, TypeScript et Supabase.
 
 ---
@@ -57,8 +65,8 @@ kinetic/
 
 ```bash
 # 1. Cloner et installer
-git clone https://github.com/ton-user/kinetic.git
-cd kinetic
+git clone https://github.com/LamaJoker/kinetic-vercel-ready.git
+cd kinetic-vercel-ready
 pnpm install
 
 # 2. Configurer les variables d'environnement
@@ -128,16 +136,18 @@ pnpm e2e:ui
 pnpm e2e:headed
 ```
 
-### Coverage minimum requis (CI bloquant)
+### Couverture réelle (CI bloquant)
 
-| Métrique   | Seuil | Réel  |
-| ---------- | ----- | ----- |
-| Lines      | 60%   | 60.2% |
-| Functions  | 60%   | 67.5% |
-| Branches   | 55%   | 86.5% |
-| Statements | 60%   | 60.2% |
+`1193 tests` répartis sur `77 fichiers` — couverture mesurée sur le domaine métier (`packages/*/src` + `apps/web/src`, hors UI/adapters couverts en E2E) :
 
-> **Note** : Pages Alpine et stores complexes exclus du périmètre de couverture unitaire (couverts par les tests Playwright E2E). La Phase 2 ciblera 80% avec happy-dom pour la couche stores.
+| Métrique   | Seuil CI | Réel   |
+| ---------- | -------- | ------ |
+| Lines      | 70%      | 98.17% |
+| Statements | 70%      | 98.17% |
+| Functions  | 72%      | 97.69% |
+| Branches   | 84%      | 91.86% |
+
+> **Périmètre** : les pages Alpine (`apps/web/src/pages`), les adapters d'infrastructure (IndexedDB, Supabase) et le bootstrap (`main.ts`, `router.ts`) sont exclus de la couverture unitaire car testés via Playwright E2E. Le cœur métier (domaine, usecases, stores) atteint ~98%.
 
 ---
 
