@@ -65,12 +65,12 @@
 
 ### 📅 Planification avancée
 
-| Feature                                                 | État                                        |
-| ------------------------------------------------------- | ------------------------------------------- |
-| Splits PPL / Upper-Lower / Full Body / Bro Split        | ✅ existant (`program.domain.ts`)           |
-| Génération automatique depuis un split + objectifs      | ✅ existant (`workout-generator.domain.ts`) |
-| Adaptation fatigue/récupération (insert deload semaine) | 🟡 lié à `needsDeload()`                    |
-| Planning par jour de la semaine                         | ✅ existant (`todayFocus()`)                |
+| Feature                                                 | État                                                                  |
+| ------------------------------------------------------- | --------------------------------------------------------------------- |
+| Splits PPL / Upper-Lower / Full Body / Bro Split        | ✅ existant (`program.domain.ts`)                                     |
+| Génération automatique depuis un split + objectifs      | ✅ existant (`workout-generator.domain.ts`)                           |
+| Adaptation fatigue/récupération (insert deload semaine) | ✅ existant (`deload-advisor.domain.ts` : volume MRV + `needsDeload`) |
+| Planning par jour de la semaine                         | ✅ existant (`todayFocus()`)                                          |
 
 ### 📊 Analytics — _livré dans cette branche_
 

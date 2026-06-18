@@ -60,21 +60,19 @@ natives. Décider : (a) publier l'app iOS native ? (b) activer le plugin Health 
 
 ---
 
-## P2 — Qualité du moteur d'autorégulation _(EN COURS)_
+## P2 — Qualité du moteur d'autorégulation _(✅ LIVRÉ 2026-06-18)_
 
-L'engine fonctionne et est mieux qu'annoncé (fenêtre deload 14j, suggestion de
-charge de départ profil-aware, deload réduisant volume ET intensité). Gaps réels :
+L'engine fonctionne (fenêtre deload 14j, charge de départ profil-aware, deload
+réduisant volume ET intensité). Les gaps identifiés sont désormais comblés :
 
-- **Tables RPE→%1RM (RTS/Tuchscherer)** — le fichier cite ces sources mais ne les
-  implémente pas. Permet de calculer la charge exacte pour viser une RPE cible au
-  lieu d'un `+increment` aveugle. → **module `rpe-chart.domain.ts` (livré, additif).**
-- **Sélection du top-set** : `suggestProgression` se base sur le set _littéralement
-  dernier_ (qui peut être un back-off/échauffement) au lieu du meilleur set de la
-  dernière séance. → **`pickTopSet()` livré ; intégration à faire.**
-- **e1RM RPE-aware** : Epley seul ignore la réserve (RIR). `estimatedE1rmFromRpe()`
-  (livré) donne une estimation plus juste.
-- **Deload via volume (MEV/MRV)** : optionnel, gros effort de modélisation — à
-  évaluer plus tard ; l'approche RPE+trend actuelle reste raisonnable.
+- ✅ **Tables RPE→%1RM (RTS/Tuchscherer)** — `rpe-chart.domain.ts` livré.
+- ✅ **Sélection du top-set** — `suggestProgression` utilise désormais le meilleur
+  set de la dernière séance (`pickTopSet`), plus le dernier set littéral.
+- ✅ **e1RM RPE-aware** — `estimatedE1rmFromRpe()` ; la charge cible d'augmentation
+  est calculée via la charte RTS, plus un `+increment` aveugle.
+- ✅ **Deload via volume (MEV/MRV)** — `deload-advisor.domain.ts` :
+  `buildDeloadRecommendation()` combine volume hebdo/muscle vs MRV (repères RP/
+  Israetel) ET `needsDeload()` (fatigue RPE) en une reco de planification.
 
 ---
 

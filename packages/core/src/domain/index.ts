@@ -8,4 +8,5 @@ export * from './rpe-chart.domain.js';
 export * from './openfoodfacts.domain.js';
 export * from './analytics.domain.js';
 export * from './weekly-review.domain.js';
+export * from './deload-advisor.domain.js';
 export * from './goals.domain.js';
