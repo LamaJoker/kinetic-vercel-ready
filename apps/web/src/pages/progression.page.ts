@@ -6,11 +6,13 @@ import {
   muscleDistribution,
   detectPRs,
   consistencyScore,
+  buildWeeklyReview,
   type AnalyticsSet,
   type VolumeBucket,
   type ExerciseStats,
   type MuscleShare,
   type PersonalRecord,
+  type WeeklyReview,
 } from '@kinetic/core';
 import type { Exercise, WorkoutSession } from '../lib/training/types';
 import { loadExercises, loadSessions } from '../lib/training/storage';
@@ -145,6 +147,27 @@ export function progression() {
 
     get consistency(): number {
       return consistencyScore(this._analyticsSets(), 8);
+    },
+
+    // ─── Bilan de la semaine ─────────────────────────────────
+
+    get weeklyReview(): WeeklyReview {
+      return buildWeeklyReview(this._analyticsSets());
+    },
+
+    /** Libellé + emoji de tendance pour la carte bilan hebdo. */
+    weeklyTrendLabel(): string {
+      const r = this.weeklyReview;
+      switch (r.trend) {
+        case 'up':
+          return `📈 +${r.tonnageDeltaPct}% vs semaine dernière`;
+        case 'down':
+          return `📉 ${r.tonnageDeltaPct}% vs semaine dernière`;
+        case 'first':
+          return '✨ Première semaine de données';
+        default:
+          return '➡️ Stable vs semaine dernière';
+      }
     },
 
     // ─── Onglet FORCE : courbe e1RM par exercice ─────────────

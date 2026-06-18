@@ -30,6 +30,53 @@
     </div>
   </template>
 
+  <!-- Bilan de la semaine -->
+  <div
+    x-show="totalSessions > 0"
+    class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5 mb-4"
+  >
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Ta semaine</p>
+      <span
+        class="text-[11px] font-medium"
+        :class="weeklyReview.trend === 'up' ? 'text-kinetic-neon' : weeklyReview.trend === 'down' ? 'text-kinetic-electric' : 'text-gray-400'"
+        x-text="weeklyTrendLabel()"
+      ></span>
+    </div>
+    <div class="flex items-end gap-2 mb-3">
+      <span
+        class="font-display font-black text-3xl text-white"
+        x-text="formatNumber(weeklyReview.tonnageKg)"
+      ></span>
+      <span class="text-sm text-gray-500 font-medium mb-1">kg de tonnage</span>
+    </div>
+    <div class="grid grid-cols-4 gap-2 text-center">
+      <div>
+        <p class="font-display font-black text-lg text-white" x-text="weeklyReview.sessions"></p>
+        <p class="text-[9px] uppercase tracking-wide text-gray-500">séances</p>
+      </div>
+      <div>
+        <p
+          class="font-display font-black text-lg text-white"
+          x-text="weeklyReview.trainingDays"
+        ></p>
+        <p class="text-[9px] uppercase tracking-wide text-gray-500">jours</p>
+      </div>
+      <div>
+        <p class="font-display font-black text-lg text-white" x-text="weeklyReview.totalSets"></p>
+        <p class="text-[9px] uppercase tracking-wide text-gray-500">sets</p>
+      </div>
+      <div>
+        <p
+          class="font-display font-black text-lg"
+          :class="weeklyReview.prCount > 0 ? 'text-kinetic-neon' : 'text-white'"
+          x-text="weeklyReview.prCount"
+        ></p>
+        <p class="text-[9px] uppercase tracking-wide text-gray-500">PR 🏆</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Stats globales -->
   <div x-show="totalSessions > 0" class="grid grid-cols-3 gap-2 mb-4">
     <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
