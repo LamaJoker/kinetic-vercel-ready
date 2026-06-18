@@ -63,6 +63,7 @@ export * from './domain/progression.domain.js';
 export * from './domain/rpe-chart.domain.js';
 export * from './domain/openfoodfacts.domain.js';
 export * from './domain/analytics.domain.js';
+export * from './domain/weekly-review.domain.js';
 export * from './domain/goals.domain.js';
 export * from './domain/workout-generator.domain.js';
 export * from './domain/muscle-balance.domain.js';
