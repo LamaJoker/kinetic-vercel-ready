@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/ci.yml/badge.svg)](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/codeql.yml/badge.svg)](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/codeql.yml)
-[![Tests](https://img.shields.io/badge/tests-1193%20passing-brightgreen)](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-1195%20passing-brightgreen)](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-98%25%20lines-brightgreen)](#-tests)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![PWA](https://img.shields.io/badge/PWA-installable-5a0fc8?logo=pwa&logoColor=white)](#-pwa)
@@ -138,7 +138,7 @@ pnpm e2e:headed
 
 ### Couverture réelle (CI bloquant)
 
-`1193 tests` répartis sur `77 fichiers` — couverture mesurée sur le domaine métier (`packages/*/src` + `apps/web/src`, hors UI/adapters couverts en E2E) :
+`1195 tests` répartis sur `77 fichiers` — couverture mesurée sur le domaine métier (`packages/*/src` + `apps/web/src`, hors UI/adapters couverts en E2E) :
 
 | Métrique   | Seuil CI | Réel   |
 | ---------- | -------- | ------ |
