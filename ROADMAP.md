@@ -34,13 +34,15 @@ AI coach (env-gated), i18n FR/EN, timer de repos plein écran, quick-restart.
 
 ## P0 — Décisions stratégiques bloquantes
 
-**1. Monétisation — 0 ligne de code.** Aucun Stripe, paywall, ni couche
-d'entitlement. Tout le modèle Free/Pro/Coach est non implémenté. Si la monétisation
-est un objectif, c'est le chantier #1 : couche `isPro` + gates UI + checkout Stripe
+**1. Monétisation — EN COURS (2026-06-18).** Modèle free/Pro défini + **couche
+d'entitlement livrée** (`entitlements.domain.ts` : `effectiveTier`/`isPro`/`canUse`/
+`startTrial`, essai 7 j, `PRO_FEATURES`, limite programmes gratuits). Reste :
+gates UI sur la couche insight + checkout Stripe + webhook (Edge Function Supabase
 
-- webhook (Edge Function Supabase + table `subscriptions`). **Effort : L.**
-  Ne pas gater l'historique à 30 j (l'historique _est_ le produit) — gater la couche
-  _insight_ (analytics avancées, auto-progression, heatmap).
+- table `subscriptions`). **Effort restant : M–L.**
+  Free = log + historique (jamais gaté) + stats de base + 1 programme. Pro (~4,99 €/
+  mois) = intelligence : auto-progression, deload, analytics avancées, AI coach, scan
+  nutrition, programmes illimités, export.
 
 **2. iOS natif + Health.** Le shell Android existe déjà ; **iOS natif n'est pas
 configuré** (pas de scripts `ios:`). `health-sync.ts` est un stub : Apple Health /
