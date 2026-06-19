@@ -81,6 +81,7 @@ import { offlineStore } from './stores/offline';
 import { nutritionStore } from './stores/nutrition';
 import { goalsStore } from './stores/goals';
 import { achievementsStore } from './stores/achievements';
+import { entitlementStore } from './stores/entitlement';
 
 import { dashboard } from './pages/dashboard.page';
 import { seances } from './pages/seances.page';
@@ -128,6 +129,7 @@ Alpine.store('rewards', rewardsStore());
 Alpine.store('nutrition', nutritionStore());
 Alpine.store('goals', goalsStore());
 Alpine.store('achievements', achievementsStore());
+Alpine.store('entitlement', entitlementStore());
 
 // ─── Composants Alpine ───────────────────────────────────────
 Alpine.data('dashboard', dashboard);
@@ -286,6 +288,8 @@ window.Alpine = Alpine;
 // ─── Démarrage ───────────────────────────────────────────────
 Alpine.start();
 initAnalytics();
+// Charge le plan free/Pro (et démarre l'essai au 1er lancement).
+void (Alpine.store('entitlement') as { init(): Promise<void> }).init();
 
 // Démarrer le router APRÈS Alpine.start()
 // Le store auth dispatche kinetic:auth-ready dans son init()

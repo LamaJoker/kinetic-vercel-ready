@@ -76,6 +76,41 @@
     </div>
   </div>
 
+  <!-- Abonnement -->
+  <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5 mb-4">
+    <div class="flex items-center justify-between mb-2">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Abonnement</p>
+      <span
+        class="text-xs font-bold"
+        :class="$store.entitlement.isPro ? 'text-kinetic-neon' : 'text-gray-400'"
+        x-text="$store.entitlement.isPro ? ($store.entitlement.isOnTrial ? 'Essai Pro' : 'Pro') : 'Gratuit'"
+      ></span>
+    </div>
+    <p
+      class="text-xs text-gray-400 mb-3"
+      x-show="$store.entitlement.isOnTrial"
+      x-text="'Essai Pro — ' + $store.entitlement.trialDaysLeft + ' jour(s) restant(s)'"
+    ></p>
+    <p class="text-xs text-gray-500 mb-3" x-show="!$store.entitlement.isPro">
+      Débloque l'intelligence : auto-progression, conseiller de deload, analytics avancées, AI
+      coach, scan nutrition et export.
+    </p>
+    <button
+      x-show="!$store.entitlement.isPro"
+      @click="$store.entitlement.setTier('pro')"
+      class="w-full bg-kinetic-neon text-gray-950 font-bold rounded-xl py-2.5 text-sm hover:brightness-110 active:scale-95"
+    >
+      Passer Pro
+    </button>
+    <button
+      x-show="$store.entitlement.isPro && !$store.entitlement.isOnTrial"
+      @click="$store.entitlement.setTier('free')"
+      class="w-full bg-kinetic-elevated text-gray-400 rounded-xl py-2 text-xs hover:text-white"
+    >
+      Revenir au gratuit
+    </button>
+  </div>
+
   <!-- Stats -->
   <div class="grid grid-cols-3 gap-3 mb-6">
     <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">

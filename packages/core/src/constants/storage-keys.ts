@@ -73,6 +73,7 @@ export const STORAGE_KEYS = {
   USER_PROFILE: 'kinetic:userProfile' as const,
   PROFILE: 'kinetic:profile' as const, // displayName et préférences UI
   STATS: 'kinetic:stats' as const, // stats agrégées en cache (totalSessions, etc.)
+  ENTITLEMENT: 'kinetic:entitlement' as const, // plan free/Pro + essai (cf. entitlements.domain)
 
   // ─── Objectifs ────────────────────────────────────────────────
   GOALS: 'kinetic:goals' as const,
