@@ -4,10 +4,8 @@ import {
   isPro,
   isOnTrial,
   canUse,
-  activeProgramLimit,
   startTrial,
   PRO_FEATURES,
-  FREE_ACTIVE_PROGRAM_LIMIT,
   type Entitlement,
 } from '@kinetic/core';
 
@@ -72,13 +70,6 @@ describe('canUse', () => {
 
   it('autorise pendant l essai', () => {
     expect(canUse({ trialEndsAt: future }, 'ai_coach', NOW)).toBe(true);
-  });
-});
-
-describe('activeProgramLimit', () => {
-  it('limite le gratuit, illimité en Pro', () => {
-    expect(activeProgramLimit({}, NOW)).toBe(FREE_ACTIVE_PROGRAM_LIMIT);
-    expect(activeProgramLimit({ tier: 'pro' }, NOW)).toBe(Infinity);
   });
 });
 

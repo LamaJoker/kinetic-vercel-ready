@@ -40,9 +40,9 @@ d'entitlement livrée** (`entitlements.domain.ts` : `effectiveTier`/`isPro`/`can
 gates UI sur la couche insight + checkout Stripe + webhook (Edge Function Supabase
 
 - table `subscriptions`). **Effort restant : M–L.**
-  Free = log + historique (jamais gaté) + stats de base + 1 programme. Pro (~4,99 €/
-  mois) = intelligence : auto-progression, deload, analytics avancées, AI coach, scan
-  nutrition, programmes illimités, export.
+  Free = log + historique (jamais gaté) + stats de base + programmes illimités. Pro
+  (~4,99 €/mois) = intelligence : auto-progression, deload, analytics avancées, AI
+  coach, scan nutrition, export.
 
 **2. iOS natif + Health.** Le shell Android existe déjà ; **iOS natif n'est pas
 configuré** (pas de scripts `ios:`). `health-sync.ts` est un stub : Apple Health /

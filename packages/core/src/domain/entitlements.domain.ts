@@ -1,11 +1,11 @@
 /**
  * Entitlements Domain — couche d'accès gratuit / Pro (sans paiement).
  *
- * Encode le modèle de monétisation : l'historique et le log restent gratuits
- * (l'historique EST le produit) ; on gate la couche *intelligence*
- * (auto-progression, deload, analytics avancées, AI coach, scan nutrition,
- * programmes illimités, export). Le paiement (Stripe) viendra brancher un
- * `Entitlement` ; ce module ne décide que « ce plan donne-t-il accès à X ».
+ * Encode le modèle de monétisation : l'historique, le log ET les programmes
+ * restent gratuits ; on gate la couche *intelligence* (auto-progression, deload,
+ * analytics avancées, AI coach, scan nutrition, export). Le paiement (Stripe)
+ * viendra brancher un `Entitlement` ; ce module ne décide que « ce plan donne-t-il
+ * accès à X ».
  *
  * Pur — aucune dépendance, aucun I/O. Source de vérité unique des règles d'accès.
  */
@@ -20,7 +20,6 @@ export type ProFeature =
   | 'advanced_analytics' // bilan hebdo, heatmap, volume/muscle, courbes e1RM, PR
   | 'ai_coach' // coach IA
   | 'nutrition_scanner' // scan code-barres OpenFoodFacts
-  | 'unlimited_programs' // au-delà de la limite gratuite
   | 'data_export'; // export JSON/CSV
 
 /** Liste figée des features Pro (utile pour l'UI : page d'upgrade, etc.). */
@@ -30,12 +29,8 @@ export const PRO_FEATURES: readonly ProFeature[] = [
   'advanced_analytics',
   'ai_coach',
   'nutrition_scanner',
-  'unlimited_programs',
   'data_export',
 ];
-
-/** Nombre de programmes actifs autorisés en gratuit. */
-export const FREE_ACTIVE_PROGRAM_LIMIT = 1;
 
 /** Durée d'essai Pro offerte à l'inscription (jours). */
 export const TRIAL_DAYS = 7;
@@ -102,14 +97,6 @@ export function canUse(
 ): boolean {
   // Toutes les features listées sont Pro → accès ssi Pro effectif.
   return PRO_FEATURES.includes(feature) && isPro(entitlement, nowIso);
-}
-
-/** Nombre de programmes actifs autorisés selon le plan. */
-export function activeProgramLimit(
-  entitlement: Entitlement | null | undefined,
-  nowIso?: string,
-): number {
-  return isPro(entitlement, nowIso) ? Infinity : FREE_ACTIVE_PROGRAM_LIMIT;
 }
 
 /**
