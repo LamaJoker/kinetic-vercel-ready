@@ -428,6 +428,15 @@
             </div>
             <div class="flex items-center gap-1">
               <button
+                x-show="cues(entry.exerciseId)"
+                class="text-xs text-gray-400 hover:text-kinetic-neon p-1.5 rounded-lg hover:bg-kinetic-elevated"
+                @click="toggleCues(entry.exerciseId)"
+                aria-label="Voir comment exécuter cet exercice"
+                title="Comment exécuter ?"
+              >
+                ?
+              </button>
+              <button
                 class="text-xs text-gray-400 hover:text-kinetic-neon p-1.5 rounded-lg hover:bg-kinetic-elevated"
                 @click="openSubstitution(entry.exerciseId)"
                 aria-label="Remplacer cet exercice"
@@ -480,6 +489,50 @@
                     ></p>
                   </button>
                 </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- Panneau consignes d'exécution -->
+          <template x-if="cuesFor === entry.exerciseId && cues(entry.exerciseId)">
+            <div
+              class="mb-3 bg-kinetic-ink/60 ring-1 ring-kinetic-neon/30 rounded-xl p-3 space-y-2.5"
+            >
+              <div class="flex items-center justify-between">
+                <p class="text-xs font-bold text-kinetic-neon uppercase tracking-widest">
+                  Comment exécuter
+                </p>
+                <button @click="cuesFor = null" class="text-xs text-gray-500 hover:text-white">
+                  ✕
+                </button>
+              </div>
+              <div>
+                <p class="text-[10px] uppercase tracking-wide text-gray-500 mb-1">Exécution</p>
+                <ol class="list-decimal list-inside space-y-1">
+                  <template x-for="(step, i) in cues(entry.exerciseId).execution" :key="i">
+                    <li class="text-xs text-gray-300 leading-snug" x-text="step"></li>
+                  </template>
+                </ol>
+              </div>
+              <div>
+                <p class="text-[10px] uppercase tracking-wide text-gray-500 mb-1">
+                  Erreurs courantes
+                </p>
+                <ul class="space-y-0.5">
+                  <template x-for="(m, i) in cues(entry.exerciseId).mistakes" :key="i">
+                    <li class="text-xs text-gray-400 leading-snug">⚠️ <span x-text="m"></span></li>
+                  </template>
+                </ul>
+              </div>
+              <div>
+                <p class="text-[10px] uppercase tracking-wide text-gray-500 mb-1">Conseils</p>
+                <ul class="space-y-0.5">
+                  <template x-for="(t, i) in cues(entry.exerciseId).tips" :key="i">
+                    <li class="text-xs text-kinetic-neon/90 leading-snug">
+                      💡 <span x-text="t"></span>
+                    </li>
+                  </template>
+                </ul>
               </div>
             </div>
           </template>

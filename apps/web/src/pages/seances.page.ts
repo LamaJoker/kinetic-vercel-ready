@@ -6,10 +6,12 @@
   encodeWorkout,
   buildShareUrl,
   suggestSubstitutions,
+  getExerciseCues,
   type ProgressionSuggestion,
   type PerformedSet,
   type WorkoutFocus,
   type SubstitutionResult,
+  type ExerciseCues,
 } from '@kinetic/core';
 import { UuidGenerator } from '@kinetic/adapters-web';
 import { getDeps } from '../deps';
@@ -205,6 +207,19 @@ export function seances() {
     restPresetSec: 90,
     fullscreenRest: false,
     _restNotifTimer: null as ReturnType<typeof setTimeout> | null,
+
+    // ─── Consignes d'exécution ───────────────────────────────
+    cuesFor: null as string | null,
+
+    /** Ouvre/ferme le panneau de consignes d'un exercice. */
+    toggleCues(exerciseId: string): void {
+      this.cuesFor = this.cuesFor === exerciseId ? null : exerciseId;
+    },
+
+    /** Consignes de forme d'un exercice (null si non documenté). */
+    cues(exerciseId: string): ExerciseCues | null {
+      return getExerciseCues(exerciseId);
+    },
 
     // ─── Substitution ────────────────────────────────────────
     substitutionFor: null as string | null,

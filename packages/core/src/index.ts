@@ -66,6 +66,7 @@ export * from './domain/analytics.domain.js';
 export * from './domain/weekly-review.domain.js';
 export * from './domain/deload-advisor.domain.js';
 export * from './domain/entitlements.domain.js';
+export * from './domain/exercise-cues.domain.js';
 export * from './domain/goals.domain.js';
 export * from './domain/workout-generator.domain.js';
 export * from './domain/muscle-balance.domain.js';
