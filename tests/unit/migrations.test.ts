@@ -6,11 +6,11 @@ import { STORAGE_KEYS } from '@kinetic/core';
 const SCHEMA_VERSION_KEY = 'kinetic:schema-version';
 
 describe('runMigrationsIfNeeded', () => {
-  it('sets schema version to 1 on fresh install', async () => {
+  it('sets schema version to the latest (2) on fresh install', async () => {
     const storage = new InMemoryStorage();
     await runMigrationsIfNeeded(storage);
     const version = await storage.get<number>(SCHEMA_VERSION_KEY);
-    expect(version).toBe(1);
+    expect(version).toBe(2);
   });
 
   it('is idempotent — calling twice with version=1 does not re-run migration', async () => {
@@ -24,7 +24,7 @@ describe('runMigrationsIfNeeded', () => {
 
   it('skips when schema version already equals SCHEMA_VERSION', async () => {
     const storage = new InMemoryStorage();
-    await storage.set(SCHEMA_VERSION_KEY, 1);
+    await storage.set(SCHEMA_VERSION_KEY, 2);
     const setSpy = vi.spyOn(storage, 'set');
     await runMigrationsIfNeeded(storage);
     expect(setSpy).not.toHaveBeenCalled();
@@ -34,7 +34,7 @@ describe('runMigrationsIfNeeded', () => {
     const storage = new InMemoryStorage();
     await storage.set(SCHEMA_VERSION_KEY, 0);
     await runMigrationsIfNeeded(storage);
-    expect(await storage.get<number>(SCHEMA_VERSION_KEY)).toBe(1);
+    expect(await storage.get<number>(SCHEMA_VERSION_KEY)).toBe(2);
   });
 
   it('preserves existing data through v1 migration (baseline — no transforms)', async () => {
@@ -53,7 +53,7 @@ describe('runMigrationsIfNeeded', () => {
     // Simulate a stored version lower than SCHEMA_VERSION (0 → treat as needing migration)
     await storage.set(SCHEMA_VERSION_KEY, null as any);
     await runMigrationsIfNeeded(storage);
-    expect(await storage.get<number>(SCHEMA_VERSION_KEY)).toBe(1);
+    expect(await storage.get<number>(SCHEMA_VERSION_KEY)).toBe(2);
   });
 
   it('uses navigator.locks when available to prevent concurrent runs', async () => {
@@ -141,7 +141,7 @@ describe('runMigrationsIfNeeded', () => {
 
     // Schema version should be set to SCHEMA_VERSION (1) after all migrations
     const version = await storage.get<number>(SCHEMA_VERSION_KEY);
-    expect(version).toBe(1);
+    expect(version).toBe(2);
   });
 
   it('removes keys added during migration that were not in the original snapshot', async () => {
@@ -173,5 +173,29 @@ describe('runMigrationsIfNeeded', () => {
 
     // The extra key that appeared after the snapshot must have been removed
     expect(removeSpy).toHaveBeenCalledWith('kinetic:temp-migration-key');
+  });
+
+  it('v2 : replie le tableau legacy des séances en une clé par séance', async () => {
+    const storage = new InMemoryStorage();
+    await storage.set(SCHEMA_VERSION_KEY, 1);
+    await storage.set('kinetic:training:sessions', [
+      { id: 'a', name: 'Push', startedAt: '2026-01-01T10:00:00Z', entries: [] },
+      { id: 'b', name: 'Pull', startedAt: '2026-01-03T10:00:00Z', entries: [] },
+      { broken: true },
+    ]);
+    // Une version plus récente au nouveau format ne doit pas être écrasée
+    await storage.set('kinetic:training:session:b', {
+      id: 'b',
+      name: 'Pull (édité)',
+      startedAt: '2026-01-03T10:00:00Z',
+      entries: [],
+    });
+
+    await runMigrationsIfNeeded(storage);
+
+    expect(await storage.get(SCHEMA_VERSION_KEY)).toBe(2);
+    expect(await storage.get('kinetic:training:sessions')).toBeNull();
+    expect(await storage.get('kinetic:training:session:a')).toMatchObject({ name: 'Push' });
+    expect(await storage.get('kinetic:training:session:b')).toMatchObject({ name: 'Pull (édité)' });
   });
 });

@@ -46,7 +46,11 @@ export const STORAGE_KEYS = {
   NUTRITION_CUSTOM_FOODS: 'kinetic:nutrition:custom-foods' as const,
 
   // ─── Entraînement ─────────────────────────────────────────────
+  /** @deprecated Format historique (tableau unique). Lu uniquement pour la migration v2. */
   TRAINING_SESSIONS: 'kinetic:training:sessions' as const,
+  /** Une clé par séance — évite la limite 1 MB et les conflits LWW sur tout l'historique. */
+  TRAINING_SESSION: (id: string) => `kinetic:training:session:${id}` as const,
+  TRAINING_SESSION_PREFIX: 'kinetic:training:session:' as const,
   TRAINING_TEMPLATES: 'kinetic:training:templates' as const,
   TRAINING_EXERCISES: 'kinetic:training:exercises' as const,
 
@@ -107,6 +111,12 @@ export const STORAGE_KEYS = {
 
   // ─── Sync interne ─────────────────────────────────────────────
   SYNC_LAST_AT: 'kinetic:sync:last-at' as const,
+  /** Curseur serveur (updated_at max reçu) — remplace SYNC_LAST_AT basé sur l'horloge client. */
+  SYNC_CURSOR: 'kinetic:sync:cursor' as const,
+  /** Outbox persistante des écritures non confirmées par le cloud (survit au reload). */
+  SYNC_OUTBOX: 'kinetic:sync:outbox' as const,
+  /** Cache local (localStorage) du plan lu depuis la table serveur `entitlements`. */
+  ENTITLEMENT_SERVER_CACHE: 'kinetic:entitlement:server-cache' as const,
   SYNC_INITIAL_DONE: '_kinetic:initial-sync-done' as const,
   DEVICE_ID: 'kinetic:deviceId' as const,
 

@@ -374,7 +374,7 @@ describe('HybridStorage', () => {
       expect(await blockingRemote.get('pending-key')).toEqual({ data: 42 });
     });
 
-    it('abandonne une cle apres 3 tentatives echouees et dispatch EVENT_SYNC_FAILED', async () => {
+    it('ne renonce jamais : notifie au 3e échec mais garde la clé jusqu au succès', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const dispatchSpy = vi.fn();
       vi.stubGlobal('window', {
@@ -383,23 +383,29 @@ describe('HybridStorage', () => {
         dispatchEvent: dispatchSpy,
       });
 
+      let clock = 1_000_000;
       const failingRemote = new InMemoryStorage();
-      vi.spyOn(failingRemote, 'set').mockRejectedValue(new Error('disk full'));
+      const setSpy = vi.spyOn(failingRemote, 'set').mockRejectedValue(new Error('disk full'));
 
-      const h = new HybridStorage(local, failingRemote);
-      // Ajouter une cle en pending (offline)
       vi.stubGlobal('navigator', { onLine: false });
+      const h = new HybridStorage(local, failingRemote, { now: () => clock, scheduleRetry: null });
       await h.set('kinetic:xp', { xp: 100 });
-
-      // Flush 3 fois pour atteindre la limite
       vi.stubGlobal('navigator', { onLine: true });
-      await h.flushPendingWrites(); // attempt 1 (→ attempts becomes 1)
-      await h.flushPendingWrites(); // attempt 2 (→ attempts becomes 2)
-      await h.flushPendingWrites(); // attempt 3 → give-up, dispatch EVENT_SYNC_FAILED
+
+      for (let i = 0; i < 3; i++) {
+        await h.flushPendingWrites();
+        clock += 10 * 60 * 1000; // dépasse le backoff max
+      }
 
       expect(dispatchSpy).toHaveBeenCalledOnce();
-      const event = dispatchSpy.mock.calls[0][0] as CustomEvent;
-      expect(event.type).toContain('sync');
+      expect((dispatchSpy.mock.calls[0]![0] as CustomEvent).type).toContain('sync');
+      expect(await h.pendingCount()).toBe(1);
+
+      // Le cloud revient : la donnée finit par partir
+      setSpy.mockRestore();
+      await h.flushPendingWrites();
+      expect(await failingRemote.get('kinetic:xp')).toEqual({ xp: 100 });
+      expect(await h.pendingCount()).toBe(0);
 
       consoleSpy.mockRestore();
     });
@@ -497,77 +503,211 @@ describe('HybridStorage', () => {
     });
   });
 
-  describe('flushPendingWrites — concurrent-deletion guard', () => {
-    it('skips keys deleted from pendingWrites mid-flush (covers line 213 continue branch)', async () => {
+  describe('outbox persistante', () => {
+    it('une écriture hors-ligne survit au rechargement de la page', async () => {
       vi.stubGlobal('navigator', { onLine: false });
-      const h = new HybridStorage(local, remote);
-      const KEY1 = 'kinetic:key1' as Parameters<typeof h.set>[0];
-      const KEY2 = 'kinetic:key2' as Parameters<typeof h.set>[0];
-      await h.set(KEY1, 'val1');
-      await h.set(KEY2, 'val2');
+      const before = new HybridStorage(local, remote, { scheduleRetry: null });
+      await before.set('kinetic:training:session:s1', { id: 's1' });
+      before.dispose();
+
+      // « Reload » : nouvelle instance sur le même IndexedDB
+      vi.stubGlobal('navigator', { onLine: true });
+      const after = new HybridStorage(local, remote, { scheduleRetry: null });
+      expect(await after.pendingCount()).toBe(1);
+      await after.flushPendingWrites();
+
+      expect(await remote.get('kinetic:training:session:s1')).toEqual({ id: 's1' });
+      expect(await after.pendingCount()).toBe(0);
+      expect(await local.get('kinetic:sync:outbox')).toBeNull();
+    });
+
+    it('propage les suppressions hors-ligne (tombstone) après reload', async () => {
+      await remote.set('kinetic:training:session:old', { id: 'old' });
+      await local.set('kinetic:training:session:old', { id: 'old' });
+
+      vi.stubGlobal('navigator', { onLine: false });
+      const before = new HybridStorage(local, remote, { scheduleRetry: null });
+      await before.remove('kinetic:training:session:old');
+
+      vi.stubGlobal('navigator', { onLine: true });
+      const after = new HybridStorage(local, remote, { scheduleRetry: null });
+      await after.flushPendingWrites();
+
+      expect(await remote.get('kinetic:training:session:old')).toBeNull();
+    });
+
+    it('applique un backoff : pas de retry immédiat après un échec', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      let clock = 0;
+      const flaky = new InMemoryStorage();
+      const setSpy = vi.spyOn(flaky, 'set').mockRejectedValueOnce(new Error('503'));
+      const h = new HybridStorage(local, flaky, { now: () => clock, scheduleRetry: null });
+
+      await h.set('kinetic:xp', { xp: 1 });
+      await h.flushPendingWrites(); // garantit que la 1re tentative a eu lieu
+      const callsAfterFailure = setSpy.mock.calls.length;
+
+      await h.flushPendingWrites(); // backoff actif → aucun appel
+      expect(setSpy.mock.calls.length).toBe(callsAfterFailure);
+
+      clock += 2_000;
+      await h.flushPendingWrites();
+      expect(await flaky.get('kinetic:xp')).toEqual({ xp: 1 });
+    });
+
+    it('ne pousse jamais un null si la lecture locale échoue', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      await remote.set('kinetic:xp', { xp: 42 });
+      vi.stubGlobal('navigator', { onLine: false });
+      const h = new HybridStorage(local, remote, { scheduleRetry: null });
+      await h.set('kinetic:xp', { xp: 50 });
       vi.stubGlobal('navigator', { onLine: true });
 
-      // Access private pendingWrites via cast
-      const pendingWrites = (h as unknown as { pendingWrites: Map<string, unknown> }).pendingWrites;
+      vi.spyOn(local, 'get').mockResolvedValue(null); // IDB en panne
+      const removeSpy = vi.spyOn(remote, 'remove');
+      await h.flushPendingWrites({ ignoreBackoff: true });
 
-      // When key1 is synced to remote, delete key2 from pendingWrites before the loop reaches it
-      const originalSet = remote.set.bind(remote);
-      vi.spyOn(remote, 'set').mockImplementation(async (k, v) => {
+      expect(removeSpy).not.toHaveBeenCalled();
+      expect(await remote.get('kinetic:xp')).toEqual({ xp: 42 });
+    });
+
+    it('une écriture pendant un flush en cours reste en attente (garde de révision)', async () => {
+      const slow = new InMemoryStorage();
+      let release!: () => void;
+      const gate = new Promise<void>((r) => (release = r));
+      const originalSet = slow.set.bind(slow);
+      vi.spyOn(slow, 'set').mockImplementationOnce(async (k, v) => {
+        await gate;
         await originalSet(k, v);
-        if (k === KEY1) pendingWrites.delete(KEY2);
       });
 
+      vi.stubGlobal('navigator', { onLine: false });
+      const h = new HybridStorage(local, slow, { scheduleRetry: null });
+      await h.set('kinetic:xp', { xp: 1 });
+      vi.stubGlobal('navigator', { onLine: true });
+
+      const flush = h.flushPendingWrites();
+      await new Promise((r) => setTimeout(r, 0));
+      vi.stubGlobal('navigator', { onLine: false });
+      await h.set('kinetic:xp', { xp: 2 }); // nouvelle révision pendant le flush
+      release();
+      await flush;
+
+      expect(await h.pendingCount()).toBe(1);
+      vi.stubGlobal('navigator', { onLine: true });
+      await h.flushPendingWrites({ ignoreBackoff: true });
+      expect(await slow.get('kinetic:xp')).toEqual({ xp: 2 });
+    });
+
+    it('les clés internes de synchro ne partent jamais dans le cloud', async () => {
+      const h = new HybridStorage(local, remote, { scheduleRetry: null });
+      await h.set('kinetic:sync:cursor', '2026-01-01T00:00:00Z');
+      await h.set('kinetic:schema-version', 2);
       await h.flushPendingWrites();
-
-      // key1 was synced; key2 was deleted mid-loop → skipped via continue
-      expect(await remote.get(KEY1)).toBe('val1');
-      expect(await remote.get(KEY2)).toBeNull();
+      expect(await remote.keys()).toEqual([]);
     });
   });
 
-  describe('queueWrite — prev.attempts preservation', () => {
-    it('uses existing attempts count when same key is re-queued (covers line 250 prev?.attempts branch)', async () => {
-      vi.stubGlobal('navigator', { onLine: false });
-      const h = new HybridStorage(local, remote);
-      const KEY = 'kinetic:xp' as Parameters<typeof h.set>[0];
+  describe('pull avec curseur serveur (pullChanges)', () => {
+    class PullRemote extends InMemoryStorage {
+      rows: Array<{ key: string; value: unknown; updatedAt: string }> = [];
+      pullCalls: Array<[string, string, number]> = [];
+      unsupported = false;
 
-      await h.set(KEY, { xp: 100 }); // first write → prev undefined → ?? 0 (right branch)
-      await h.set(KEY, { xp: 200 }); // second write → prev.attempts = 0 → left branch of ??
-
-      const pendingWrites = (h as unknown as { pendingWrites: Map<string, unknown> }).pendingWrites;
-      const entry = pendingWrites.get(KEY) as { value: unknown; attempts: number };
-
-      expect(entry.value).toEqual({ xp: 200 }); // updated to latest value
-      expect(entry.attempts).toBe(0); // preserved via prev.attempts (left branch)
-    });
-  });
-
-  describe('queueWrite eviction', () => {
-    it('evince la plus ancienne cle quand la queue est pleine', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      // Remplir la queue jusqu'a MAX_PENDING_WRITES (500) via remote offline
-      const bigRemote = new InMemoryStorage();
-      vi.stubGlobal('navigator', { onLine: false });
-      const h = new HybridStorage(local, bigRemote);
-
-      // Ajouter 500 cles differentes pour remplir la queue
-      const keys: string[] = [];
-      for (let i = 0; i < 500; i++) {
-        const k = `kinetic:fill:${i}` as Parameters<typeof h.set>[0];
-        keys.push(k);
-        await h.set(k, i);
+      async pullChanges(since: string, afterKey: string, limit: number) {
+        this.pullCalls.push([since, afterKey, limit]);
+        if (this.unsupported) return null;
+        return this.rows
+          .filter((r) => r.updatedAt > since || (r.updatedAt === since && r.key > afterKey))
+          .sort((a, b) =>
+            a.updatedAt === b.updatedAt
+              ? a.key < b.key
+                ? -1
+                : 1
+              : a.updatedAt < b.updatedAt
+                ? -1
+                : 1,
+          )
+          .slice(0, limit);
       }
+    }
 
-      // La 501e ecriture doit evoicer la plus ancienne cle
-      await h.set('kinetic:xp' as Parameters<typeof h.set>[0], { xp: 999 });
+    it('stocke le curseur = updated_at serveur max (pas l horloge client)', async () => {
+      const pr = new PullRemote();
+      pr.rows = [
+        { key: 'kinetic:a', value: 1, updatedAt: '2026-03-01T10:00:00.000Z' },
+        { key: 'kinetic:b', value: 2, updatedAt: '2026-03-02T10:00:00.000Z' },
+      ];
+      const h = new HybridStorage(local, pr, {
+        now: () => Date.parse('2030-01-01'),
+        scheduleRetry: null,
+      });
+      await h.syncFromRemote();
 
-      // La premiere cle doit avoir ete evictee — le warn doit avoir ete appele
-      const warnMsg = consoleSpy.mock.calls[0]?.[0] as string;
-      expect(warnMsg).toContain('[HybridStorage]');
-      expect(warnMsg).toContain('kinetic:fill:0');
+      expect(await local.get('kinetic:sync:cursor')).toBe('2026-03-02T10:00:00.000Z');
+      expect(await local.get('kinetic:a')).toBe(1);
+    });
 
-      consoleSpy.mockRestore();
+    it('delta : applique les changements des autres appareils sauf les clés en outbox', async () => {
+      const pr = new PullRemote();
+      await local.set('kinetic:sync:cursor', '2026-03-01T00:00:00.000Z');
+      await local.set('kinetic:other', 'old');
+      pr.rows = [
+        { key: 'kinetic:other', value: 'from-device-B', updatedAt: '2026-03-05T00:00:00.000Z' },
+        { key: 'kinetic:mine', value: 'stale-cloud', updatedAt: '2026-03-05T00:00:00.000Z' },
+      ];
+
+      vi.stubGlobal('navigator', { onLine: false });
+      const h = new HybridStorage(local, pr, { scheduleRetry: null });
+      await h.set('kinetic:mine', 'local-unsynced');
+      vi.stubGlobal('navigator', { onLine: true });
+
+      await h.syncFromRemote();
+      expect(await local.get('kinetic:other')).toBe('from-device-B');
+      expect(await local.get('kinetic:mine')).toBe('local-unsynced');
+      // recouvrement de 5 s sur le curseur
+      expect(pr.pullCalls[0]![0]).toBe('2026-02-28T23:59:55.000Z');
+    });
+
+    it('pagine jusqu à épuisement', async () => {
+      const pr = new PullRemote();
+      pr.rows = Array.from({ length: 1203 }, (_, i) => ({
+        key: `kinetic:k:${String(i).padStart(5, '0')}`,
+        value: i,
+        updatedAt: '2026-03-01T00:00:00.000Z',
+      }));
+      const h = new HybridStorage(local, pr, { scheduleRetry: null });
+      await h.syncFromRemote();
+      expect((await local.keys()).filter((k) => k.startsWith('kinetic:k:'))).toHaveLength(1203);
+      expect(pr.pullCalls.length).toBe(3);
+    });
+
+    it('première liaison : pousse les données locales absentes du cloud (mode invité → compte)', async () => {
+      const pr = new PullRemote();
+      await local.set('kinetic:training:session:guest-1', { id: 'guest-1' });
+      const h = new HybridStorage(local, pr, { scheduleRetry: null });
+      await h.syncFromRemote();
+      await h.flushPendingWrites({ ignoreBackoff: true });
+      expect(await pr.get('kinetic:training:session:guest-1')).toEqual({ id: 'guest-1' });
+    });
+
+    it('bascule en mode legacy si la RPC n est pas déployée', async () => {
+      const pr = new PullRemote();
+      pr.unsupported = true;
+      await pr.set('kinetic:legacy', 'v');
+      const h = new HybridStorage(local, pr, { scheduleRetry: null });
+      await h.syncFromRemote();
+      expect(await local.get('kinetic:legacy')).toBe('v');
+      expect(await local.get('kinetic:sync:last-at')).not.toBeNull();
+    });
+
+    it('n avance pas le curseur si le pull échoue', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const pr = new PullRemote();
+      vi.spyOn(pr, 'pullChanges').mockRejectedValue(new Error('540 project paused'));
+      const h = new HybridStorage(local, pr, { scheduleRetry: null });
+      await h.syncFromRemote();
+      expect(await local.get('kinetic:sync:cursor')).toBeNull();
     });
   });
 });

@@ -21,6 +21,7 @@ import {
   mergeIntoStorage,
 } from '../../apps/web/src/lib/training/import.js';
 import type { StoragePort } from '@kinetic/core';
+import { loadSessions } from '../../apps/web/src/lib/training/storage.js';
 
 // ─── Storage stub (mémoire) ─────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ function createMemoryStorage(): StoragePort {
     set: async (key: string, value: unknown) => {
       data.set(key, value);
     },
-    delete: async (key: string) => {
+    remove: async (key: string) => {
       data.delete(key);
     },
     clear: async () => {
@@ -263,7 +264,12 @@ describe('mergeIntoStorage', () => {
     expect(report.duplicateSessions).toBe(1);
     expect(report.createdExercises).toBe(1);
 
-    const sessions = await storage.get<unknown[]>('kinetic:training:sessions');
-    expect(sessions).toHaveLength(2);
+    const sessions = await loadSessions(storage);
+    expect(sessions.map((s) => s.id)).toEqual(['existing', 'new']);
+    // Le doublon ne remplace pas la séance existante
+    expect(sessions[0]!.name).toBe('Old');
+    // Le tableau legacy a été replié en une clé par séance
+    expect(await storage.get('kinetic:training:sessions')).toBeNull();
+    expect(await storage.get('kinetic:training:session:new')).not.toBeNull();
   });
 });

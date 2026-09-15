@@ -7,6 +7,10 @@ import {
   saveTemplates,
   loadSessions,
   saveSessions,
+  saveSession,
+  deleteSession,
+  sessionStorageKey,
+  foldLegacySessions,
 } from '../../apps/web/src/lib/training/storage.js';
 import { DEFAULT_EXERCISES, DEFAULT_TEMPLATES } from '../../apps/web/src/lib/training/seed.js';
 
@@ -173,5 +177,79 @@ describe('loadSessions / saveSessions', () => {
     await saveSessions(storage, sessions);
     const result = await loadSessions(storage);
     expect(result).toEqual(sessions);
+  });
+});
+
+// ─── Séances : une clé par séance ────────────────────────────────────────────
+
+describe('sessions — une clé par séance', () => {
+  const mk = (id: string, startedAt: string) => ({ id, name: id, startedAt, entries: [] });
+
+  it('saveSession écrit uniquement la clé de la séance', async () => {
+    const storage = new InMemoryStorage();
+    await saveSession(storage, mk('s1', '2026-01-01T00:00:00Z'));
+    expect(await storage.keys()).toEqual(['kinetic:training:session:s1']);
+  });
+
+  it('loadSessions renvoie les séances triées par date de début', async () => {
+    const storage = new InMemoryStorage();
+    await saveSession(storage, mk('late', '2026-02-01T00:00:00Z'));
+    await saveSession(storage, mk('early', '2026-01-01T00:00:00Z'));
+    const sessions = await loadSessions(storage);
+    expect(sessions.map((s) => s.id)).toEqual(['early', 'late']);
+  });
+
+  it('saveSessions ne supprime jamais les séances absentes de la liste', async () => {
+    const storage = new InMemoryStorage();
+    await saveSession(storage, mk('keep', '2026-01-01T00:00:00Z'));
+    await saveSessions(storage, [mk('other', '2026-01-02T00:00:00Z')]);
+    expect((await loadSessions(storage)).map((s) => s.id)).toEqual(['keep', 'other']);
+  });
+
+  it('deleteSession supprime la séance ciblée', async () => {
+    const storage = new InMemoryStorage();
+    await saveSession(storage, mk('a', '2026-01-01T00:00:00Z'));
+    await saveSession(storage, mk('b', '2026-01-02T00:00:00Z'));
+    await deleteSession(storage, 'a');
+    expect((await loadSessions(storage)).map((s) => s.id)).toEqual(['b']);
+  });
+
+  it('assainit les ids non conformes au format de clé, sans collision', () => {
+    const k1 = sessionStorageKey('strong/2026 01 01');
+    const k2 = sessionStorageKey('strong_2026_01_01');
+    expect(k1).toMatch(/^[a-zA-Z0-9:_-]{1,200}$/);
+    expect(k1).not.toBe(k2);
+  });
+
+  it('dépasse largement l ancienne limite de 1 MB par valeur', async () => {
+    const storage = new InMemoryStorage();
+    const bigEntries = Array.from({ length: 30 }, (_, i) => ({
+      exerciseId: `ex-${i}`,
+      sets: Array.from({ length: 5 }, (_, j) => ({
+        setIndex: j,
+        reps: 8,
+        weightKg: 100,
+        rpe: 8,
+        performedAt: '2026-01-01T00:00:00Z',
+      })),
+    }));
+    for (let i = 0; i < 1500; i++) {
+      const startedAt = `2026-01-01T00:00:${String(i % 60).padStart(2, '0')}Z`;
+      await saveSession(storage, { ...mk(`s${i}`, startedAt), entries: bigEntries });
+    }
+    const oneSessionBytes = JSON.stringify(await storage.get('kinetic:training:session:s0')).length;
+    // L'historique complet ferait ~1500 × taille d'une séance : bien au-delà de 1 MB…
+    expect(oneSessionBytes * 1500).toBeGreaterThan(1_048_576);
+    // …mais chaque valeur stockée reste minuscule.
+    expect(oneSessionBytes).toBeLessThan(20_000);
+    expect(await loadSessions(storage)).toHaveLength(1500);
+  });
+
+  it('foldLegacySessions est idempotent', async () => {
+    const storage = new InMemoryStorage();
+    await storage.set('kinetic:training:sessions', [mk('x', '2026-01-01T00:00:00Z')]);
+    expect(await foldLegacySessions(storage)).toBe(1);
+    expect(await foldLegacySessions(storage)).toBe(0);
+    expect((await loadSessions(storage)).map((s) => s.id)).toEqual(['x']);
   });
 });
