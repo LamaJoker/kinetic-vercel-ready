@@ -11,8 +11,9 @@
  */
 import type { StoragePort } from '@kinetic/core';
 import { STORAGE_KEYS } from '@kinetic/core';
+import { foldLegacySessions } from './training/storage';
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const KEY = STORAGE_KEYS.SCHEMA_VERSION;
 
 async function snapshotStorage(storage: StoragePort): Promise<Map<string, unknown>> {
@@ -95,11 +96,16 @@ async function _runMigrationsCore(storage: StoragePort): Promise<void> {
   }
 }
 
-async function runMigration(version: number, _storage: StoragePort): Promise<void> {
+async function runMigration(version: number, storage: StoragePort): Promise<void> {
   switch (version) {
     case 1:
       // Baseline: existing data written before versioning is already
       // in the correct shape — nothing to transform.
+      break;
+
+    case 2:
+      // Séances : tableau unique `kinetic:training:sessions` → une clé par séance.
+      await foldLegacySessions(storage);
       break;
 
     default:

@@ -25,7 +25,8 @@ import {
   loadExercises,
   loadSessions,
   loadTemplates,
-  saveSessions,
+  saveSession,
+  deleteSession as deleteSessionFromStorage,
   saveTemplates,
 } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
@@ -1012,7 +1013,7 @@ export function seances() {
       try {
         const deps = await getDeps();
         const next = this.sessions.filter((s) => s.id !== id);
-        await saveSessions(deps.storage, next);
+        await deleteSessionFromStorage(deps.storage, id);
         this.sessions = next;
         this.confirmDeleteId = null;
         this.expandedSessionId = null;
@@ -1289,7 +1290,7 @@ export function seances() {
         // Persist FIRST so a write failure doesn't leave the UI in an
         // inconsistent state (session shown in history but not on disk).
         const next = [...this.sessions, finalized];
-        await saveSessions(deps.storage, next);
+        await saveSession(deps.storage, finalized);
         this.sessions = next;
         this.currentSession = null;
         this.templateName = '';

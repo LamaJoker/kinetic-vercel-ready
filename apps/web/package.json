@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node ../../scripts/sync-web-dist.mjs",
+    "build": "vite build && node ../../scripts/spa-entrypoints.mjs",
+    "build:e2e": "vite build --mode e2e && node ../../scripts/spa-entrypoints.mjs",
     "preview": "vite preview",
     "preview:ci": "vite preview --port 3000",
     "android:sync": "cap sync android",

@@ -42,7 +42,7 @@
 **Différenciation**
 
 1. **Auto-progression RPE** — charge suivante suggérée à chaque série (pas juste "coche la tâche")
-2. **Offline-first sérieux** — IndexedDB + CRDT + sync Supabase, jamais de perte de donnée
+2. **Offline-first sérieux** — IndexedDB + outbox persistante + sync Supabase sur horloge serveur
 3. **PWA native-feel** — pas besoin d'installer 200 Mo, tout tourne dans le navigateur
 4. **Gamification honnête** — XP + streak, mais liée à la _qualité_ de la séance (pas juste présence)
 5. **Data ownership** — export JSON/CSV en 1 clic, pas de lock-in
@@ -115,7 +115,7 @@
 | Feature                              | État                                   |
 | ------------------------------------ | -------------------------------------- |
 | Mode offline complet                 | ✅ existant                            |
-| Sync cloud (Supabase + RLS + CRDT)   | ✅ existant                            |
+| Sync cloud (Supabase + RLS + outbox) | ✅ existant                            |
 | **Export JSON / CSV des séances**    | ✅ **NEW** (`lib/training/export.ts`)  |
 | Import depuis Strong / Hevy          | ✅ existant (`lib/training/import.ts`) |
 | Wearables (Apple Health, Google Fit) | 🟡 phase 3                             |
@@ -131,8 +131,8 @@ Frontend  : Alpine.js 3 + Vite + Tailwind 3 (PWA, service worker)
 Langage   : TypeScript strict (monorepo pnpm)
 Storage   : IndexedDB (idb-keyval) + Supabase (Postgres, RLS)
 Auth      : Supabase (magic link + OAuth Google)
-Sync      : HybridStorage (IDB→cloud, CRDT)
-Tests     : Vitest (214 tests unitaires/intégration) + Playwright (E2E)
+Sync      : HybridStorage (IDB→cloud, outbox persistante, LWW par clé)
+Tests     : Vitest (unitaires/intégration) + Playwright (E2E)
 CI/CD     : GitHub Actions → Vercel (Paris CDN)
 ```
 
@@ -148,7 +148,7 @@ packages/core           # Pure TS — domaine, zero I/O
 packages/adapter-web    # Implémentations navigateur
 ├── IdbStorage          # IndexedDB
 ├── SystemClock         # Date.now
-└── supabase/           # SupabaseStorage, HybridStorage, auth, CRDT
+└── supabase/           # SupabaseStorage, HybridStorage, auth, entitlements
 
 apps/web                # UI Alpine
 ├── pages/              # HTML + .page.ts par route
@@ -488,7 +488,7 @@ interface SetEntry {
 - ✅ **Simplicité** — chaque feature livrée a une API < 5 paramètres
 - ✅ **Pas de gadget** — zéro IA externe facturée, tout tourne en TS pur
 - ✅ **Mobile-first** — timer avec Vibration API + Notification API
-- ✅ **Code production** — 214 tests verts, TS strict, zéro dépendance ajoutée
+- ✅ **Code production** — tests verts, TS strict, zéro dépendance ajoutée
 - ✅ **Offline-first préservé** — tous les nouveaux modules sont pure functions, compatibles IDB
 
 ---

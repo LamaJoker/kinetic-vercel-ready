@@ -67,30 +67,6 @@ jobs:
 
       - run: pnpm typecheck
 
-  # ─── 3. Audit sécurité dépendances ──────────────────────────
-  audit:
-    name: Dependency Audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v6
-        with: { version: '${{ env.PNPM_VERSION }}' }
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '${{ env.NODE_VERSION }}'
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - name: Audit prod dependencies (critical = blocking)
-        run: pnpm audit --prod --audit-level=critical
-
-      - name: Audit prod dependencies (high = warning)
-        run: pnpm audit --prod --audit-level=high
-        continue-on-error: true # warning seulement, ne bloque pas le merge
-
   # ─── 4. Tests unitaires ─────────────────────────────────────
   unit:
     name: Unit Tests
@@ -165,7 +141,7 @@ jobs:
         run: pnpm exec playwright install --with-deps ${{ matrix.project == 'mobile-safari' && 'webkit' || 'chromium' }}
 
       - name: Build app (needed for E2E)
-        run: pnpm build
+        run: pnpm build:e2e
         env:
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_ANON_KEY: ''

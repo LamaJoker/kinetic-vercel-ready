@@ -1,0 +1,47 @@
+# Évite la mise en pause des projets Supabase Free après ~7 jours sans activité
+# (projet de démo / portfolio). Appelle la RPC `keep_alive` (migration 009),
+# qui exécute une vraie requête Postgres.
+#
+# Secrets requis (Settings → Secrets and variables → Actions) :
+#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY  (déjà utilisés par ci.yml)
+#
+# Limite : GitHub désactive les workflows planifiés d'un dépôt sans commit
+# pendant 60 jours — un e-mail prévient avant ; il suffit de réactiver.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: '17 7 */3 * *' # tous les 3 jours à 07:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: Ping Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call keep_alive RPC
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::warning::Secrets Supabase absents — ping ignoré."
+            exit 0
+          fi
+          status=$(curl -sS -o response.txt -w '%{http_code}' -X POST \
+            "$SUPABASE_URL/rest/v1/rpc/keep_alive" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          echo "HTTP $status — $(cat response.txt)"
+          case "$status" in
+            200) echo "Projet Supabase actif." ;;
+            540) echo "::error::Projet Supabase EN PAUSE — le restaurer depuis le dashboard (voir DEPLOYMENT.md)." ; exit 1 ;;
+            404) echo "::error::RPC keep_alive introuvable — appliquer la migration 009." ; exit 1 ;;
+            *)   echo "::error::Réponse inattendue de Supabase." ; exit 1 ;;
+          esac

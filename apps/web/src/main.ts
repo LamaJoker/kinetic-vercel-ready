@@ -249,6 +249,23 @@ Alpine.data('levelUpOverlay', () => ({
   },
 }));
 
+// ─── Chunk introuvable après un déploiement ─────────────────
+// Un onglet ouvert sur une ancienne version peut demander un chunk qui n'existe
+// plus. Vite émet alors `vite:preloadError` : on recharge UNE fois pour récupérer
+// la nouvelle version (garde anti-boucle en sessionStorage).
+window.addEventListener('vite:preloadError', (event) => {
+  const GUARD = STORAGE_KEYS.PRELOAD_RELOAD_AT;
+  try {
+    const last = Number(sessionStorage.getItem(GUARD) ?? 0);
+    if (Date.now() - last < 30_000) return;
+    sessionStorage.setItem(GUARD, String(Date.now()));
+  } catch {
+    /* sessionStorage indisponible : on tente quand même un rechargement */
+  }
+  event.preventDefault();
+  window.location.reload();
+});
+
 // ─── Service Worker (prod) ───────────────────────────────────
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -288,8 +305,8 @@ window.Alpine = Alpine;
 // ─── Démarrage ───────────────────────────────────────────────
 Alpine.start();
 initAnalytics();
-// Charge le plan free/Pro (et démarre l'essai au 1er lancement).
-void (Alpine.store('entitlement') as { init(): Promise<void> }).init();
+// Note : le store `entitlement` est initialisé automatiquement par Alpine.store()
+// (méthode init). Un second appel explicite doublait le travail et les erreurs.
 
 // Démarrer le router APRÈS Alpine.start()
 // Le store auth dispatche kinetic:auth-ready dans son init()

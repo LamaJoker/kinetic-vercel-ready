@@ -46,8 +46,8 @@ export async function askCoach(query: CoachQuery): Promise<CoachAnswer> {
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Supabase non configuré — coach IA indisponible.');
   }
-  // On utilise le token JWT du user courant si dispo, sinon la clé anon.
-  let token: string = supabaseAnonKey;
+  // Le coach exige un compte : sans session, inutile d'appeler le serveur (401).
+  let token: string | null = null;
   try {
     const { supabase } = await import('@kinetic/adapters-web');
     if (supabase) {
@@ -55,10 +55,13 @@ export async function askCoach(query: CoachQuery): Promise<CoachAnswer> {
         auth: { getSession: () => Promise<{ data: { session: { access_token: string } | null } }> };
       };
       const { data } = await sb.auth.getSession();
-      if (data.session?.access_token) token = data.session.access_token;
+      token = data.session?.access_token ?? null;
     }
   } catch {
-    /* anonymous fallback */
+    token = null;
+  }
+  if (!token) {
+    throw new Error('Connecte-toi pour utiliser le coach IA.');
   }
 
   // Compression du contexte : on ne garde que 50 séances et on retire les
@@ -88,7 +91,7 @@ export async function askCoach(query: CoachQuery): Promise<CoachAnswer> {
     }),
   });
   if (!resp.ok) {
-    throw new Error(`Coach IA indisponible (HTTP ${resp.status}).`);
+    throw new Error(coachErrorMessage(resp.status));
   }
   const data = (await resp.json()) as { answer?: string; error?: string };
   if (data.error) throw new Error(`Coach IA : ${data.error}`);
@@ -103,4 +106,20 @@ export function dispatchCoachError(message: string): void {
       detail: { kind: 'error', message },
     }),
   );
+}
+
+/** Messages utilisateur pour les codes renvoyés par l'Edge Function. */
+export function coachErrorMessage(status: number): string {
+  switch (status) {
+    case 401:
+      return 'Session expirée — reconnecte-toi pour utiliser le coach IA.';
+    case 403:
+      return 'Le coach IA est une fonctionnalité Pro.';
+    case 429:
+      return 'Limite atteinte (10 questions/heure). Réessaie plus tard.';
+    case 413:
+      return 'Historique trop volumineux pour le coach — réessaie avec moins de séances.';
+    default:
+      return `Coach IA indisponible (HTTP ${status}).`;
+  }
 }

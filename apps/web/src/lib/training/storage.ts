@@ -70,15 +70,126 @@ export async function saveTemplates(
   await storage.set(KEY_TEMPLATES, JSON.parse(JSON.stringify(templates)));
 }
 
-export async function loadSessions(storage: StoragePort): Promise<WorkoutSession[]> {
-  const data = await storage.get<WorkoutSession[]>(KEY_SESSIONS);
-  return Array.isArray(data) ? data : [];
+// ─── Séances : une clé par séance ────────────────────────────────────────────
+//
+// Historiquement toutes les séances vivaient dans un tableau unique
+// (`kinetic:training:sessions`). Problèmes : limite 1 MB par valeur (IDB et
+// Supabase) atteinte après quelques centaines de séances, historique complet
+// ré-uploadé à chaque série, et conflit Last-Write-Wins sur tout l'historique
+// quand deux appareils ajoutent chacun une séance.
+//
+// Désormais : `kinetic:training:session:<id>`. Le tableau legacy est « replié »
+// automatiquement (migration v2 + filet de sécurité à la lecture).
+
+const LEGACY_SESSIONS_KEY = KEY_SESSIONS;
+const SESSION_PREFIX = STORAGE_KEYS.TRAINING_SESSION_PREFIX;
+const SAFE_ID = /^[a-zA-Z0-9_-]{1,150}$/;
+
+function shortHash(input: string): string {
+  let h = 5381;
+  for (let i = 0; i < input.length; i++) h = ((h << 5) + h + input.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
 }
 
+/** Clé de stockage d'une séance (id assaini pour respecter /^[a-zA-Z0-9:_-]{1,200}$/). */
+export function sessionStorageKey(id: string): string {
+  if (SAFE_ID.test(id)) return STORAGE_KEYS.TRAINING_SESSION(id);
+  const cleaned = id.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 120);
+  return STORAGE_KEYS.TRAINING_SESSION(`${cleaned}_${shortHash(id)}`);
+}
+
+function isSession(value: unknown): value is WorkoutSession {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Partial<WorkoutSession>;
+  return typeof v.id === 'string' && typeof v.startedAt === 'string' && Array.isArray(v.entries);
+}
+
+/** Neutralise les proxies Alpine avant le structured-clone IDB (DataCloneError Safari/Firefox). */
+function plain<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function byStartedAt(a: WorkoutSession, b: WorkoutSession): number {
+  if (a.startedAt === b.startedAt) return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  return a.startedAt < b.startedAt ? -1 : 1;
+}
+
+const foldInflight = new WeakMap<StoragePort, Promise<number>>();
+
+/**
+ * foldLegacySessions — déplace le tableau legacy vers une clé par séance.
+ * N'écrase jamais une séance déjà stockée au nouveau format (plus récente).
+ * Idempotent et dédoublonné par instance de storage.
+ * @returns nombre de séances déplacées.
+ */
+export function foldLegacySessions(storage: StoragePort): Promise<number> {
+  const existing = foldInflight.get(storage);
+  if (existing) return existing;
+
+  const run = (async () => {
+    const legacy = await storage.get<unknown>(LEGACY_SESSIONS_KEY);
+    if (legacy === null || legacy === undefined) return 0;
+
+    let moved = 0;
+    if (Array.isArray(legacy)) {
+      for (const candidate of legacy) {
+        if (!isSession(candidate)) continue;
+        const key = sessionStorageKey(candidate.id);
+        if ((await storage.get(key)) !== null) continue;
+        await storage.set(key, plain(candidate));
+        moved++;
+      }
+    }
+    // Suppression seulement après que toutes les écritures ont réussi.
+    await storage.remove(LEGACY_SESSIONS_KEY);
+    return moved;
+  })();
+
+  foldInflight.set(storage, run);
+  return run.finally(() => foldInflight.delete(storage));
+}
+
+export async function loadSessions(storage: StoragePort): Promise<WorkoutSession[]> {
+  try {
+    await foldLegacySessions(storage);
+  } catch (err) {
+    console.warn('[training] legacy sessions fold failed:', err);
+  }
+
+  const keys = (await storage.keys()).filter((k) => k.startsWith(SESSION_PREFIX));
+  const values = await Promise.all(keys.map((k) => storage.get<unknown>(k)));
+  const sessions = values.filter(isSession);
+
+  // Filet : si le fold a échoué, on lit quand même le legacy (sans doublons).
+  const legacy = await storage.get<unknown>(LEGACY_SESSIONS_KEY);
+  if (Array.isArray(legacy)) {
+    const ids = new Set(sessions.map((s) => s.id));
+    for (const s of legacy) if (isSession(s) && !ids.has(s.id)) sessions.push(s);
+  }
+
+  return sessions.sort(byStartedAt);
+}
+
+/** Crée ou met à jour UNE séance (seule sa clé est écrite / synchronisée). */
+export async function saveSession(storage: StoragePort, session: WorkoutSession): Promise<void> {
+  await storage.set(sessionStorageKey(session.id), plain(session));
+}
+
+/** Supprime UNE séance (la suppression est propagée au cloud). */
+export async function deleteSession(storage: StoragePort, id: string): Promise<void> {
+  await storage.remove(sessionStorageKey(id));
+}
+
+/**
+ * saveSessions — upsert d'un lot de séances. Ne supprime JAMAIS les séances
+ * absentes de la liste : une lecture partielle ne peut plus effacer l'historique.
+ * Pour supprimer, utiliser `deleteSession`.
+ */
 export async function saveSessions(
   storage: StoragePort,
   sessions: WorkoutSession[],
 ): Promise<void> {
-  // Idem saveTemplates : neutralise les proxies Alpine avant le structured-clone IDB.
-  await storage.set(KEY_SESSIONS, JSON.parse(JSON.stringify(sessions)));
+  for (const session of sessions) {
+    if (isSession(session)) await saveSession(storage, session);
+  }
 }

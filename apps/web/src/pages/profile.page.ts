@@ -24,7 +24,7 @@ import {
   type ImportReport,
 } from '../lib/training/import';
 import { compactStorage, getStorageUsage, formatBytes } from '../lib/storage-maintenance';
-import type { Exercise, WorkoutSession } from '../lib/training/types';
+import type { Exercise } from '../lib/training/types';
 
 interface ProfileShape {
   displayName?: string;
@@ -321,7 +321,7 @@ export function profile() {
       try {
         const deps = await getDeps();
         const [sessions, exercises] = await Promise.all([
-          deps.storage.get<WorkoutSession[]>(STORAGE_KEYS.TRAINING_SESSIONS),
+          loadSessions(deps.storage),
           deps.storage.get<Exercise[]>(STORAGE_KEYS.TRAINING_EXERCISES),
         ]);
         const s = Array.isArray(sessions) ? sessions : [];
@@ -351,7 +351,7 @@ export function profile() {
       try {
         const deps = await getDeps();
         const [sessions, exercises] = await Promise.all([
-          deps.storage.get<WorkoutSession[]>(STORAGE_KEYS.TRAINING_SESSIONS),
+          loadSessions(deps.storage),
           deps.storage.get<Exercise[]>(STORAGE_KEYS.TRAINING_EXERCISES),
         ]);
         const s = Array.isArray(sessions) ? sessions : [];

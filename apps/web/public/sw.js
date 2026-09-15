@@ -6,6 +6,11 @@
 const VERSION       = '__SW_BUILD__';
 const STATIC_CACHE  = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
+// Assets hashés (/static/*) : noms uniques et immuables → cache PARTAGÉ entre
+// versions. Un onglet encore ouvert sur l'ancienne version peut ainsi toujours
+// charger ses chunks après un déploiement (sinon : 404 → index.html → erreur MIME).
+const ASSETS_CACHE  = 'kinetic-assets-v1';
+const ASSETS_MAX_ENTRIES = 250;
 
 // Shell minimal à précacher.
 // Les assets hashés (/static/*) sont cachés runtime au fur et à mesure.
@@ -44,9 +49,10 @@ self.addEventListener('activate', (event) => {
       const keys = await caches.keys();
       await Promise.all(
         keys
-          .filter((k) => k !== STATIC_CACHE && k !== RUNTIME_CACHE)
+          .filter((k) => k !== STATIC_CACHE && k !== RUNTIME_CACHE && k !== ASSETS_CACHE)
           .map((k) => caches.delete(k)),
       );
+      await trimCache(ASSETS_CACHE, ASSETS_MAX_ENTRIES);
       await self.clients.claim();
     })(),
   );
@@ -73,7 +79,7 @@ self.addEventListener('fetch', (event) => {
 
   // Assets hashés immutables → cache first (long TTL)
   if (url.pathname.startsWith('/static/')) {
-    event.respondWith(cacheFirst(req, RUNTIME_CACHE));
+    event.respondWith(cacheFirst(req, ASSETS_CACHE));
     return;
   }
 
@@ -109,13 +115,27 @@ async function cacheFirst(req, cacheName) {
   if (cached) return cached;
   try {
     const resp = await fetch(req);
-    if (resp.ok) {
+    // Ne jamais mettre en cache un fallback HTML servi à la place d'un asset
+    // (rewrite SPA sur un chunk disparu) : il empoisonnerait le cache.
+    const type = resp.headers.get('content-type') || '';
+    if (resp.ok && !type.includes('text/html')) {
       const cache = await caches.open(cacheName);
       cache.put(req, resp.clone()).catch(() => {});
     }
     return resp;
   } catch {
     return new Response('Offline', { status: 503 });
+  }
+}
+
+async function trimCache(cacheName, maxEntries) {
+  try {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    const excess = keys.length - maxEntries;
+    for (let i = 0; i < excess; i++) await cache.delete(keys[i]);
+  } catch {
+    /* noop */
   }
 }
 

@@ -132,7 +132,7 @@ describe('ai-coach (env configurée)', () => {
     );
     const { askCoach } = await import('../../apps/web/src/lib/ai-coach.js');
     await expect(askCoach({ question: 'x', recentSessions: [] })).rejects.toThrow(
-      /Coach IA indisponible \(HTTP 429\)/,
+      /Limite atteinte/,
     );
   });
 
@@ -166,6 +166,25 @@ describe('ai-coach (env configurée)', () => {
     await askCoach({ question: 'x', recentSessions: sessions });
     const body = JSON.parse((fetchMock.mock.calls[0]![1] as { body: string }).body);
     expect(body.context.sessions.length).toBe(50);
+  });
+
+  it("askCoach n'appelle pas le serveur sans session (invité)", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const adapters = (await import('@kinetic/adapters-web')) as unknown as {
+      supabase: { auth: { getSession: ReturnType<typeof vi.fn> } };
+    };
+    adapters.supabase.auth.getSession.mockResolvedValueOnce({ data: { session: null } });
+    const { askCoach } = await import('../../apps/web/src/lib/ai-coach.js');
+    await expect(askCoach({ question: 'x', recentSessions: [] })).rejects.toThrow(/Connecte-toi/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('coachErrorMessage traduit les codes de l Edge Function', async () => {
+    const { coachErrorMessage } = await import('../../apps/web/src/lib/ai-coach.js');
+    expect(coachErrorMessage(403)).toMatch(/Pro/);
+    expect(coachErrorMessage(401)).toMatch(/reconnecte/);
+    expect(coachErrorMessage(500)).toMatch(/HTTP 500/);
   });
 
   it('dispatchCoachError dispatch un CustomEvent kinetic:notify', async () => {

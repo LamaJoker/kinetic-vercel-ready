@@ -1,5 +1,6 @@
 export { HybridStorage } from './HybridStorage.js';
 export { SupabaseStorage } from './SupabaseStorage.js';
+export { fetchServerEntitlement } from './entitlements.js';
 export { SupabaseDailyLogSync, NoopDailyLogSync } from './SupabaseDailyLogSync.js';
 export { AuthRateLimiter, authRateLimiter } from './RateLimiter.js';
 export {

@@ -301,7 +301,7 @@ export async function mergeIntoStorage(
   }
 
   if (newSessions.length > 0) {
-    await saveSessions(storage, [...existingSessions, ...newSessions]);
+    await saveSessions(storage, newSessions);
   }
   if (newExercises.length > 0) {
     await saveExercises(storage, [...existingExercises, ...newExercises]);

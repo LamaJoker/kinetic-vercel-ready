@@ -10,7 +10,7 @@ on:
 
 env:
   NODE_VERSION: '20'
-  PNPM_VERSION: '9'
+  PNPM_VERSION: '9.15.9'
 
 jobs:
   # ─── Audit bloquant sur vulnérabilités critiques ───────────────
@@ -19,9 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v6
         with: { version: '${{ env.PNPM_VERSION }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '${{ env.NODE_VERSION }}'
           cache: pnpm
@@ -42,9 +42,9 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v6
         with: { version: '${{ env.PNPM_VERSION }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '${{ env.NODE_VERSION }}'
           cache: pnpm

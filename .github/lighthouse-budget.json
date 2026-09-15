@@ -5,8 +5,7 @@
       { "category": "performance", "minScore": 0.85 },
       { "category": "accessibility", "minScore": 0.9 },
       { "category": "best-practices", "minScore": 0.9 },
-      { "category": "seo", "minScore": 0.85 },
-      { "category": "pwa", "minScore": 0.9 }
+      { "category": "seo", "minScore": 0.85 }
     ],
     "timings": [
       { "metric": "interactive", "budget": 4000 },

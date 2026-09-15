@@ -8,11 +8,16 @@ import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from './deps';
 import { ric } from './lib/performance';
 
-const PAGE_MODULES = import.meta.glob('./pages/*.html', {
+/**
+ * Templates HTML chargés à la demande : un chunk par page au lieu de tout
+ * embarquer dans le bundle principal (qui dépassait le budget de 350 KiB).
+ * `prefetchPages()` les précharge ensuite en tâche de fond pour que le service
+ * worker les mette en cache → toutes les pages restent disponibles hors-ligne.
+ */
+const PAGE_LOADERS = import.meta.glob('./pages/*.html', {
   query: '?raw',
   import: 'default',
-  eager: true,
-}) as Record<string, string>;
+}) as Record<string, () => Promise<string>>;
 
 type RouteKey =
   | '/'
@@ -72,11 +77,43 @@ const NOT_FOUND_HTML = `
     </div>
   </div>`;
 
-function resolveHtml(path: string): string {
+const LOAD_ERROR_HTML = `
+  <div class="min-h-screen flex items-center justify-center p-8 text-center">
+    <div>
+      <p class="text-gray-300 font-medium mb-2">Impossible de charger cette page.</p>
+      <p class="text-gray-500 text-sm mb-4">Vérifie ta connexion puis réessaie.</p>
+      <a href="/" class="text-kinetic-purple underline text-sm">Retour au dashboard</a>
+    </div>
+  </div>`;
+
+async function resolveHtml(path: string): Promise<string> {
   const file = ROUTES[path as RouteKey];
-  if (!file) return NOT_FOUND_HTML;
-  return PAGE_MODULES[file] ?? NOT_FOUND_HTML;
+  const load = file ? PAGE_LOADERS[file] : undefined;
+  if (!load) return NOT_FOUND_HTML;
+  try {
+    return await load();
+  } catch (err) {
+    console.error('[router] page template load failed:', path, err);
+    return LOAD_ERROR_HTML;
+  }
 }
+
+let prefetched = false;
+
+/** Précharge tous les templates pendant un temps mort (cache SW → offline complet). */
+export function prefetchPages(): void {
+  if (prefetched) return;
+  prefetched = true;
+  ric(
+    () => {
+      for (const load of Object.values(PAGE_LOADERS)) void load().catch(() => undefined);
+    },
+    { timeout: 10_000 },
+  );
+}
+
+/** Incrémenté à chaque navigation : un rendu lent ne peut pas écraser un rendu plus récent. */
+let renderSeq = 0;
 
 let _onboardingKnown: boolean | null = null;
 
@@ -85,7 +122,9 @@ async function hasCompletedOnboarding(): Promise<boolean> {
   // having to write USER_PROFILE to IDB (which causes a persistent IDB
   // connection hang on mobile-safari/WebKit CI when set from a test context).
   // Set via page.addInitScript() before app code runs.
+  // Compilé uniquement dans les builds E2E (VITE_E2E=true) : absent du bundle de production.
   if (
+    import.meta.env.VITE_E2E === 'true' &&
     typeof window !== 'undefined' &&
     (window as Window & { __kineticSkipOnboarding?: boolean }).__kineticSkipOnboarding === true
   ) {
@@ -105,6 +144,7 @@ async function hasCompletedOnboarding(): Promise<boolean> {
 }
 
 async function render(path: string): Promise<void> {
+  const seq = ++renderSeq;
   // FIX #3 : Préserver le hash AVANT toute navigation — Supabase en a besoin
   // pour les magic links et OAuth (tokens dans le fragment #access_token=...)
   const hash = window.location.hash;
@@ -128,6 +168,9 @@ async function render(path: string): Promise<void> {
   host.style.opacity = '0.6';
   host.setAttribute('aria-busy', 'true');
 
+  const html = await resolveHtml(normalizedPath);
+  if (seq !== renderSeq) return; // une navigation plus récente a pris la main
+
   host.querySelectorAll<HTMLElement>('[x-data]').forEach((el) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = (el as any)._x_dataStack?.[0];
@@ -140,7 +183,7 @@ async function render(path: string): Promise<void> {
     }
   });
 
-  host.innerHTML = resolveHtml(normalizedPath);
+  host.innerHTML = html;
 
   // FIX #3 : Restaurer le hash après injection du HTML pour que Supabase Auth JS
   // puisse le lire lors de l'init du composant auth-callback
@@ -213,6 +256,11 @@ export function initRouter(): void {
   );
 
   window.addEventListener('popstate', () => void render(window.location.pathname || '/'));
+
+  if (typeof window.addEventListener === 'function') {
+    window.addEventListener('load', () => prefetchPages(), { once: true });
+    if (document.readyState === 'complete') prefetchPages();
+  }
 
   let _authReadyReceived = false;
 

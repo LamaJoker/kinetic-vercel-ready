@@ -28,6 +28,27 @@ export interface Database {
         };
         Relationships: [];
       };
+      entitlements: {
+        Row: {
+          user_id: string;
+          tier: 'free' | 'pro';
+          pro_until: string | null;
+          trial_ends_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          tier?: 'free' | 'pro';
+          pro_until?: string | null;
+          trial_ends_at?: string | null;
+        };
+        Update: {
+          tier?: 'free' | 'pro';
+          pro_until?: string | null;
+          trial_ends_at?: string | null;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;
@@ -61,6 +82,14 @@ export interface Database {
           p_metadata?:   Json | null;
         };
         Returns: void;
+      };
+      sync_pull: {
+        Args: { p_since: string; p_after_key: string; p_limit: number };
+        Returns: { key: string; value: Json; updated_at: string }[];
+      };
+      keep_alive: {
+        Args: Record<string, never>;
+        Returns: string;
       };
       get_changes_since: {
         Args: { p_since: string };

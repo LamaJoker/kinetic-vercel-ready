@@ -34,7 +34,7 @@ apps/web/             ← UI Alpine.js (stores, pages, router)
 
 ### Positives
 
-- Domain testable en pur JS/TS (514 tests unitaires, < 2s).
+- Domain testable en pur JS/TS (tests unitaires rapides, sans navigateur).
 - Coverage domain ≥ 80 % atteignable sans browser.
 - Swap d'adapter sans toucher la logique métier.
 - Frontière claire pour le code review : un PR qui ajoute un import externe dans `packages/core` est immédiatement signalé.
