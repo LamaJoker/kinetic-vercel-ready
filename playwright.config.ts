@@ -25,7 +25,10 @@ export default defineConfig({
   retries: isCI ? 2 : 1,
   workers: 1,
 
-  reporter: [['html', { outputFolder: 'tests/e2e/report', open: 'never' }], ['list']],
+  // En CI, le reporter `github` publie chaque échec en annotation (lisible dans la PR).
+  reporter: isCI
+    ? [['github'], ['html', { outputFolder: 'tests/e2e/report', open: 'never' }], ['list']]
+    : [['html', { outputFolder: 'tests/e2e/report', open: 'never' }], ['list']],
 
   use: {
     baseURL: 'http://localhost:3000',
