@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/ci.yml/badge.svg)](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/codeql.yml/badge.svg)](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/codeql.yml)
-[![Tests](https://img.shields.io/badge/tests-1195%20passing-brightgreen)](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-1274%20passing-brightgreen)](https://github.com/LamaJoker/kinetic-vercel-ready/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-98%25%20lines-brightgreen)](#-tests)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![PWA](https://img.shields.io/badge/PWA-installable-5a0fc8?logo=pwa&logoColor=white)](#-pwa)
@@ -29,7 +29,7 @@ kinetic/
 │           └── main.ts         # Point d'entrée
 ├── packages/
 │   ├── core/                   # Domaine métier pur (logique + ports)
-│   └── adapter-web/            # Implémentations (IDB, Supabase, CRDT)
+│   └── adapter-web/            # Implémentations (IDB, Supabase, outbox de synchro)
 ├── supabase/
 │   └── migrations/             # SQL migrations versionnées
 ├── tests/
@@ -98,12 +98,12 @@ pnpm icons
 3. Appliquer les migrations :
 
 ```bash
-# Via Supabase CLI
-pnpm db:push
+# Via Supabase CLI (applique 001 → 009 dans l'ordre)
+supabase link --project-ref <ref>
+supabase db push
 
-# Ou manuellement via SQL Editor :
-# supabase/migrations/001_initial.sql
-# supabase/migrations/002_optimizations.sql
+# Ou manuellement via SQL Editor : coller chaque fichier de
+# supabase/migrations/ dans l'ordre numérique (001 → 009).
 ```
 
 ### Activer Google OAuth
@@ -138,14 +138,14 @@ pnpm e2e:headed
 
 ### Couverture réelle (CI bloquant)
 
-`1195 tests` répartis sur `77 fichiers` — couverture mesurée sur le domaine métier (`packages/*/src` + `apps/web/src`, hors UI/adapters couverts en E2E) :
+`1274 tests` répartis sur `85 fichiers` — couverture mesurée sur le domaine métier (`packages/*/src` + `apps/web/src`, hors UI/adapters couverts en E2E) :
 
 | Métrique   | Seuil CI | Réel   |
 | ---------- | -------- | ------ |
-| Lines      | 70%      | 98.17% |
-| Statements | 70%      | 98.17% |
-| Functions  | 72%      | 97.69% |
-| Branches   | 84%      | 91.86% |
+| Lines      | 70%      | 97.78% |
+| Statements | 70%      | 97.78% |
+| Functions  | 72%      | 97.57% |
+| Branches   | 84%      | 91.26% |
 
 > **Périmètre** : les pages Alpine (`apps/web/src/pages`), les adapters d'infrastructure (IndexedDB, Supabase) et le bootstrap (`main.ts`, `router.ts`) sont exclus de la couverture unitaire car testés via Playwright E2E. Le cœur métier (domaine, usecases, stores) atteint ~98%.
 
@@ -169,7 +169,8 @@ vercel link
 
 # Configurer les variables d'env dans Vercel Dashboard
 # Settings → Environment Variables :
-# VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+# VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_PUBLIC_SITE_URL
+# (aucune clé serveur : l'app Vercel est 100 % statique)
 
 # Deploy production
 vercel --prod
@@ -179,13 +180,14 @@ vercel --prod
 
 Se référer à `.env.example` (unique source de vérité — copier vers `apps/web/.env.local`).
 
-| Variable                    | Scope  | Description                                   |
-| --------------------------- | ------ | --------------------------------------------- |
-| `VITE_SUPABASE_URL`         | Client | URL projet Supabase                           |
-| `VITE_SUPABASE_ANON_KEY`    | Client | Clé anonyme Supabase                          |
-| `VITE_PUBLIC_SITE_URL`      | Client | URL canonique (requis pour APK Android OAuth) |
-| `SUPABASE_URL`              | Server | URL Supabase pour use côté serveur            |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server | Service role (analytics + admin uniquement)   |
+| Variable                 | Scope  | Description                                          |
+| ------------------------ | ------ | ---------------------------------------------------- |
+| `VITE_SUPABASE_URL`      | Client | URL projet Supabase                                  |
+| `VITE_SUPABASE_ANON_KEY` | Client | Clé anonyme Supabase                                 |
+| `VITE_PUBLIC_SITE_URL`   | Client | URL canonique (requis pour APK Android OAuth)        |
+| `VITE_DEMO_UNLOCK_PRO`   | Client | `true` = activation Pro locale (démo, sans paiement) |
+
+> ⚠️ Ne mets **jamais** `SUPABASE_SERVICE_ROLE_KEY` dans Vercel : aucun code ne s'exécute côté serveur sur Vercel. Elle vit uniquement dans les secrets des Edge Functions Supabase (injectée automatiquement).
 
 ---
 
@@ -205,9 +207,10 @@ Le pipeline GitHub Actions (`/.github/workflows/ci.yml`) exécute sur chaque pus
 
 ## 🔒 Sécurité
 
-- **CSP** via `vercel.json` — `script-src 'unsafe-eval'` requis par Alpine.js (compilation de templates en runtime) ; migration vers AOT prévue en Phase 3
+- **CSP** via `vercel.json` — `script-src 'self'` sans `unsafe-eval` grâce au build `@alpinejs/csp`
 - **RLS** Supabase sur **toutes** les tables (y compris `vitals_metrics` depuis migration 006)
-- **Quota** 1000 clés / 50MB par utilisateur
+- **Quota** 20 000 clés / 50 MB par utilisateur (migration 009)
+- **Plan Pro vérifié côté serveur** : table `entitlements` en lecture seule pour le client, revérifiée par l'Edge Function `ai-coach` (quota atomique 10 req/h)
 - **Rate limiting** client-side (magic link : 3 / 5min) + trigger SQL sur `vitals_metrics`
 - **Sanitization** HTML-entity-encoding (whitelist) sur toutes les entrées utilisateur
 - **HTTPS** forcé via HSTS (max-age: 2 ans)

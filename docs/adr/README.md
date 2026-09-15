@@ -14,11 +14,12 @@ Lecture : [Michael Nygard — Documenting architecture decisions](https://cognit
 
 ## Liste
 
-| #                                      | Titre                                      | Status   |
-| -------------------------------------- | ------------------------------------------ | -------- |
-| [0001](0001-hexagonal-architecture.md) | Architecture hexagonale (ports & adapters) | Accepted |
-| [0002](0002-alpine-over-react.md)      | Alpine.js plutôt que React/Vue             | Accepted |
-| [0003](0003-offline-first-storage.md)  | Stockage offline-first avec sync différée  | Accepted |
+| #                                       | Titre                                      | Status   |
+| --------------------------------------- | ------------------------------------------ | -------- |
+| [0001](0001-hexagonal-architecture.md)  | Architecture hexagonale (ports & adapters) | Accepted |
+| [0002](0002-alpine-over-react.md)       | Alpine.js plutôt que React/Vue             | Accepted |
+| [0003](0003-offline-first-storage.md)   | Stockage offline-first avec sync différée  | Accepted |
+| [0004](0004-sync-outbox-lww-per-key.md) | Sync : outbox persistante, LWW par clé     | Accepted |
 
 ## Quand écrire un ADR ?
 
