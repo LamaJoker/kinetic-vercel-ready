@@ -8,6 +8,7 @@ export { validateStorageKey, validateStorageValue } from './validation.js';
 // ─── Couche Supabase (optionnelle) ──────────────────────────
 export { HybridStorage } from './supabase/HybridStorage.js';
 export { SupabaseStorage } from './supabase/SupabaseStorage.js';
+export { fetchServerEntitlement } from './supabase/entitlements.js';
 export { SupabaseDailyLogSync, NoopDailyLogSync } from './supabase/SupabaseDailyLogSync.js';
 export { AuthRateLimiter, authRateLimiter } from './supabase/RateLimiter.js';
 export {

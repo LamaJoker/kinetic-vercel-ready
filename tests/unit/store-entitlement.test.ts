@@ -8,6 +8,9 @@ const storageMock = vi.hoisted(() => ({
   clear: vi.fn(),
 }));
 
+const serverMock = vi.hoisted(() => ({ fetchServerEntitlement: vi.fn() }));
+vi.mock('@kinetic/adapters-web', () => serverMock);
+
 vi.mock('../../apps/web/src/deps.js', () => ({
   getDeps: vi.fn().mockResolvedValue({ storage: storageMock }),
 }));
@@ -21,9 +24,22 @@ describe('entitlementStore', () => {
     store = entitlementStore();
     storageMock.get.mockReset();
     storageMock.set.mockReset();
+    serverMock.fetchServerEntitlement.mockReset().mockResolvedValue(null);
+    vi.stubGlobal('localStorage', {
+      store: {} as Record<string, string>,
+      getItem(k: string) {
+        return (this.store as Record<string, string>)[k] ?? null;
+      },
+      setItem(k: string, v: string) {
+        (this.store as Record<string, string>)[k] = v;
+      },
+    });
   });
 
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllGlobals();
+  });
 
   it('démarre un essai Pro de 7 jours au premier lancement (rien en stockage)', async () => {
     storageMock.get.mockResolvedValueOnce(null);
@@ -75,5 +91,38 @@ describe('entitlementStore', () => {
     await store.init();
     expect(store.isPro).toBe(false);
     expect(store.loaded).toBe(true);
+  });
+
+  it('utilisateur connecté : le plan vient du serveur, pas du stockage local', async () => {
+    serverMock.fetchServerEntitlement.mockResolvedValueOnce({
+      tier: 'free',
+      proUntil: null,
+      trialEndsAt: null,
+    });
+    storageMock.get.mockResolvedValueOnce({ tier: 'pro', proUntil: null }); // falsifié localement
+    await store.init();
+    expect(store.source).toBe('server');
+    expect(store.isPro).toBe(false);
+    expect(storageMock.get).not.toHaveBeenCalled();
+  });
+
+  it('plan serveur : setTier est refusé (seul le backend écrit entitlements)', async () => {
+    serverMock.fetchServerEntitlement.mockResolvedValueOnce({ tier: 'free' });
+    vi.stubGlobal('window', { dispatchEvent: vi.fn(), addEventListener: vi.fn() });
+    await store.init();
+    expect(store.canSelfUpgrade).toBe(false);
+    await store.setTier('pro');
+    expect(store.isPro).toBe(false);
+    expect(storageMock.set).not.toHaveBeenCalled();
+  });
+
+  it('hors-ligne : réutilise le dernier plan serveur mis en cache', async () => {
+    serverMock.fetchServerEntitlement.mockResolvedValueOnce({ tier: 'pro', proUntil: null });
+    await store.init();
+    const offline = entitlementStore();
+    serverMock.fetchServerEntitlement.mockRejectedValueOnce(new Error('Failed to fetch'));
+    await offline.init();
+    expect(offline.source).toBe('server-cache');
+    expect(offline.isPro).toBe(true);
   });
 });

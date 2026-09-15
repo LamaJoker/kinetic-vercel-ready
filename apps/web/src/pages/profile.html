@@ -95,20 +95,30 @@
       Débloque l'intelligence : auto-progression, conseiller de deload, analytics avancées, AI
       coach, scan nutrition et export.
     </p>
-    <button
-      x-show="!$store.entitlement.isPro"
-      @click="$store.entitlement.setTier('pro')"
-      class="w-full bg-kinetic-neon text-gray-950 font-bold rounded-xl py-2.5 text-sm hover:brightness-110 active:scale-95"
+    <template x-if="$store.entitlement.canSelfUpgrade">
+      <div>
+        <button
+          x-show="!$store.entitlement.isPro"
+          @click="$store.entitlement.setTier('pro')"
+          class="w-full bg-kinetic-neon text-gray-950 font-bold rounded-xl py-2.5 text-sm hover:brightness-110 active:scale-95"
+        >
+          Activer Pro (mode démo)
+        </button>
+        <button
+          x-show="$store.entitlement.isPro && !$store.entitlement.isOnTrial"
+          @click="$store.entitlement.setTier('free')"
+          class="w-full bg-kinetic-elevated text-gray-400 rounded-xl py-2 text-xs hover:text-white"
+        >
+          Revenir au gratuit
+        </button>
+      </div>
+    </template>
+    <p
+      x-show="!$store.entitlement.canSelfUpgrade && !$store.entitlement.isPro"
+      class="text-xs text-gray-500 text-center rounded-xl bg-kinetic-elevated py-2.5"
     >
-      Passer Pro
-    </button>
-    <button
-      x-show="$store.entitlement.isPro && !$store.entitlement.isOnTrial"
-      @click="$store.entitlement.setTier('free')"
-      class="w-full bg-kinetic-elevated text-gray-400 rounded-xl py-2 text-xs hover:text-white"
-    >
-      Revenir au gratuit
-    </button>
+      Abonnement Pro bientôt disponible.
+    </p>
   </div>
 
   <!-- Stats -->
