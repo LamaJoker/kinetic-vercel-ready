@@ -106,8 +106,11 @@ export function entitlementStore() {
           this.entitlement = stored;
         } else {
           // Premier lancement → essai Pro de 7 jours.
-          this.entitlement = startTrial();
-          await deps.storage.set(KEY, this.entitlement);
+          // On persiste l'objet brut AVANT de l'assigner : une fois dans le
+          // store, `this.entitlement` est un Proxy réactif Alpine.
+          const trial = startTrial();
+          await deps.storage.set(KEY, trial);
+          this.entitlement = trial;
         }
       } catch (err) {
         console.error('[entitlement] init failed:', err);
@@ -159,13 +162,14 @@ export function entitlementStore() {
         }
         return;
       }
-      this.entitlement =
+      const next: Entitlement =
         tier === 'pro'
           ? { tier: 'pro', proUntil: null, trialEndsAt: null }
           : { tier: 'free', proUntil: null, trialEndsAt: null };
+      this.entitlement = next;
       try {
         const deps = await getDeps();
-        await deps.storage.set(KEY, this.entitlement);
+        await deps.storage.set(KEY, next);
       } catch (err) {
         console.error('[entitlement] setTier failed:', err);
       }

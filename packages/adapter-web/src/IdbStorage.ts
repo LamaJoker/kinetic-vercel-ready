@@ -43,7 +43,7 @@ export class IdbStorage implements StoragePort {
     }
 
     try {
-      await set(key, value, this.store);
+      await set(key, toStructuredCloneable(value), this.store);
     } catch (err) {
       // Surface the REAL DOM error name (QuotaExceededError, DataCloneError,
       // InvalidStateError…) so callers can show an accurate user-facing
@@ -86,4 +86,15 @@ export class IdbStorage implements StoragePort {
       throw err;
     }
   }
+}
+
+/**
+ * Les valeurs du StoragePort sont JSON par contrat. Les objets venant des
+ * composants Alpine sont des Proxy réactifs que l'algorithme de structured
+ * clone d'IndexedDB refuse (DataCloneError sur Chrome, Safari, Firefox) :
+ * on stocke donc une copie JSON « plate ». Les primitives passent telles quelles.
+ */
+function toStructuredCloneable<T>(value: T): T {
+  if (value === null || typeof value !== 'object') return value;
+  return JSON.parse(JSON.stringify(value)) as T;
 }

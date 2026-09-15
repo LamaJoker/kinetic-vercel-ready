@@ -305,8 +305,8 @@ window.Alpine = Alpine;
 // ─── Démarrage ───────────────────────────────────────────────
 Alpine.start();
 initAnalytics();
-// Charge le plan free/Pro (et démarre l'essai au 1er lancement).
-void (Alpine.store('entitlement') as { init(): Promise<void> }).init();
+// Note : le store `entitlement` est initialisé automatiquement par Alpine.store()
+// (méthode init). Un second appel explicite doublait le travail et les erreurs.
 
 // Démarrer le router APRÈS Alpine.start()
 // Le store auth dispatche kinetic:auth-ready dans son init()
