@@ -71,23 +71,29 @@ function json(req: Request, payload: unknown, status = 200): Response {
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders(req) });
   if (req.method !== 'POST') return json(req, { error: 'method_not_allowed' }, 405);
-  if (!ANTHROPIC_API_KEY || !SUPABASE_URL || !SERVICE_ROLE_KEY) {
-    console.error('[ai-coach] configuration incomplète (secrets manquants)');
-    return json(req, { error: 'server_misconfigured' }, 500);
-  }
 
   // ── Authentification : JWT utilisateur obligatoire ─────────────────────
   const authHeader = req.headers.get('authorization') ?? '';
   if (!authHeader.toLowerCase().startsWith('bearer ')) {
     return json(req, { error: 'unauthorized' }, 401);
   }
-  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY || SERVICE_ROLE_KEY, {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return json(req, { error: 'server_misconfigured' }, 500);
+  }
+  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data: userData, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userData.user) return json(req, { error: 'unauthorized' }, 401);
   const userId = userData.user.id;
+
+  // Configuration vérifiée APRÈS l'authentification : un appel anonyme ne doit
+  // rien apprendre de l'état du serveur.
+  if (!ANTHROPIC_API_KEY || !SERVICE_ROLE_KEY) {
+    console.error('[ai-coach] configuration incomplète (secrets manquants)');
+    return json(req, { error: 'server_misconfigured' }, 500);
+  }
 
   // ── Validation d'entrée ────────────────────────────────────────────────
   let body: CoachBody;
