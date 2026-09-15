@@ -108,6 +108,7 @@ create policy "entitlements_select_own"
 
 revoke all    on public.entitlements from anon, authenticated;
 grant  select on public.entitlements to authenticated;
+grant  all    on public.entitlements to service_role;
 
 drop trigger if exists entitlements_updated_at on public.entitlements;
 create trigger entitlements_updated_at
@@ -158,6 +159,7 @@ as $$
 $$;
 
 revoke execute on function public.is_pro(uuid) from public, anon, authenticated;
+grant  execute on function public.is_pro(uuid) to service_role;
 
 
 -- ─── 4. Quota coach IA atomique ─────────────────────────────────────────────
@@ -197,6 +199,7 @@ $$;
 
 revoke execute on function public.consume_ai_coach_quota(uuid, integer, integer)
   from public, anon, authenticated;
+grant  execute on function public.consume_ai_coach_quota(uuid, integer, integer) to service_role;
 
 
 -- ─── 5. Keep-alive ──────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@
   "packageManager": "pnpm@9.15.9",
   "scripts": {
     "build": "pnpm --filter @kinetic/web build",
+    "build:e2e": "pnpm --filter @kinetic/web build:e2e",
     "dev": "pnpm --filter @kinetic/web dev",
     "preview": "pnpm --filter @kinetic/web preview",
     "android:open": "pnpm --filter @kinetic/web android:open",
@@ -23,6 +24,7 @@
     "format:check": "prettier --check .",
     "audit:prod": "pnpm audit --prod",
     "e2e": "playwright test",
+    "e2e:full": "pnpm build:e2e && playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "playwright test --headed",
     "e2e:a11y": "playwright test tests/e2e/a11y.spec.ts",

@@ -12,7 +12,7 @@ import { defineConfig, devices } from '@playwright/test';
  *   2. Service Worker enregistré → le test offline est valide
  *   3. Assets optimisés → timings réalistes
  *
- * Workflow local : `pnpm build && pnpm e2e`
+ * Workflow local : `pnpm e2e:full` (build avec VITE_E2E=true puis tests)
  * CI : le job `e2e` fait `pnpm build` avant de lancer Playwright.
  */
 const isCI = !!process.env['CI'];
@@ -74,7 +74,7 @@ export default defineConfig({
   ],
 
   // Toujours servir le build de production (local et CI identiques).
-  // En local : `pnpm build && pnpm e2e` (ou `pnpm e2e:full`).
+  // En local : `pnpm e2e:full` (le build E2E active le raccourci d'onboarding de test).
   // Si le build est absent, vite preview affichera une erreur claire.
   webServer: {
     command: 'pnpm --filter @kinetic/web preview:ci',

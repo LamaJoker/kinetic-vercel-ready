@@ -85,7 +85,9 @@ async function hasCompletedOnboarding(): Promise<boolean> {
   // having to write USER_PROFILE to IDB (which causes a persistent IDB
   // connection hang on mobile-safari/WebKit CI when set from a test context).
   // Set via page.addInitScript() before app code runs.
+  // Compilé uniquement dans les builds E2E (VITE_E2E=true) : absent du bundle de production.
   if (
+    import.meta.env.VITE_E2E === 'true' &&
     typeof window !== 'undefined' &&
     (window as Window & { __kineticSkipOnboarding?: boolean }).__kineticSkipOnboarding === true
   ) {

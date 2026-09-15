@@ -249,6 +249,23 @@ Alpine.data('levelUpOverlay', () => ({
   },
 }));
 
+// ─── Chunk introuvable après un déploiement ─────────────────
+// Un onglet ouvert sur une ancienne version peut demander un chunk qui n'existe
+// plus. Vite émet alors `vite:preloadError` : on recharge UNE fois pour récupérer
+// la nouvelle version (garde anti-boucle en sessionStorage).
+window.addEventListener('vite:preloadError', (event) => {
+  const GUARD = STORAGE_KEYS.PRELOAD_RELOAD_AT;
+  try {
+    const last = Number(sessionStorage.getItem(GUARD) ?? 0);
+    if (Date.now() - last < 30_000) return;
+    sessionStorage.setItem(GUARD, String(Date.now()));
+  } catch {
+    /* sessionStorage indisponible : on tente quand même un rechargement */
+  }
+  event.preventDefault();
+  window.location.reload();
+});
+
 // ─── Service Worker (prod) ───────────────────────────────────
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {

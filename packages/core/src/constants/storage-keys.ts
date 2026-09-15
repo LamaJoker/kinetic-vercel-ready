@@ -116,6 +116,8 @@ export const STORAGE_KEYS = {
   /** Outbox persistante des écritures non confirmées par le cloud (survit au reload). */
   SYNC_OUTBOX: 'kinetic:sync:outbox' as const,
   /** Cache local (localStorage) du plan lu depuis la table serveur `entitlements`. */
+  /** sessionStorage : horodatage du dernier reload après un chunk introuvable (anti-boucle). */
+  PRELOAD_RELOAD_AT: 'kinetic:preload-reload-at' as const,
   ENTITLEMENT_SERVER_CACHE: 'kinetic:entitlement:server-cache' as const,
   SYNC_INITIAL_DONE: '_kinetic:initial-sync-done' as const,
   DEVICE_ID: 'kinetic:deviceId' as const,
