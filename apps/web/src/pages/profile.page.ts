@@ -6,6 +6,7 @@
   type SharedProfile,
   type ProfileBestLift,
 } from '@kinetic/core';
+import Alpine from 'alpinejs';
 import { getDeps } from '../deps';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import { loadSessions, loadExercises } from '../lib/training/storage';
@@ -316,7 +317,25 @@ export function profile() {
       }
     },
 
+    /** L'export des données est une feature Pro. */
+    get canExport(): boolean {
+      const ent = Alpine.store('entitlement') as { can(f: string): boolean } | undefined;
+      return ent ? ent.can('data_export') : false;
+    },
+
+    _exportBlockedNotify(): void {
+      window.dispatchEvent(
+        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+          detail: {
+            kind: 'warning',
+            message: 'L’export des données est une fonctionnalité Pro.',
+          },
+        }),
+      );
+    },
+
     async exportJson(): Promise<void> {
+      if (!this.canExport) return this._exportBlockedNotify();
       this.exportLoading = true;
       try {
         const deps = await getDeps();
@@ -347,6 +366,7 @@ export function profile() {
     },
 
     async exportCsv(): Promise<void> {
+      if (!this.canExport) return this._exportBlockedNotify();
       this.exportLoading = true;
       try {
         const deps = await getDeps();
