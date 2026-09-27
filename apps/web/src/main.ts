@@ -82,6 +82,7 @@ import { nutritionStore } from './stores/nutrition';
 import { goalsStore } from './stores/goals';
 import { achievementsStore } from './stores/achievements';
 import { entitlementStore } from './stores/entitlement';
+import { registerSvgDirective } from './lib/svg-directive';
 
 import { dashboard } from './pages/dashboard.page';
 import { seances } from './pages/seances.page';
@@ -120,6 +121,9 @@ import { initAnalytics } from './lib/analytics';
 import './styles.css';
 
 // ─── Stores ──────────────────────────────────────────────────
+// Directive x-svg : remplace x-html, interdit par le build CSP d'Alpine.
+registerSvgDirective(Alpine as never);
+
 Alpine.store('notifications', notificationsStore());
 Alpine.store('offline', offlineStore());
 Alpine.store('auth', authStore());

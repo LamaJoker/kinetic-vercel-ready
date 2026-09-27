@@ -115,9 +115,9 @@ export const fr: Record<string, string> = {
   'pwa.dismiss': 'Plus tard',
 
   // ─── Dashboard tools ──────────────────────────────────────────
-  'tools.plates': 'Calculateur plates',
-  'tools.plates_sub': 'Combien par côté ?',
-  'tools.achievements': 'Achievements',
+  'tools.plates': 'Chargement de barre',
+  'tools.plates_sub': 'Disques par côté',
+  'tools.achievements': 'Succès',
   'tools.achievements_sub': 'débloqués',
   'tools.ai_coach': 'Coach IA',
   'tools.ai_coach_sub': 'Pose une question sur ta progression',

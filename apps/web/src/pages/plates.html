@@ -72,10 +72,7 @@
 
     <!-- Barre chargée (SVG généré, couleurs de compétition) -->
     <template x-if="!result.underBar && result.perSide.length > 0">
-      <div
-        class="bg-kinetic-ink rounded-xl ring-1 ring-white/5 px-2 py-3"
-        x-html="barbellSvg"
-      ></div>
+      <div class="bg-kinetic-ink rounded-xl ring-1 ring-white/5 px-2 py-3" x-svg="barbellSvg"></div>
     </template>
 
     <!-- Liste textuelle -->

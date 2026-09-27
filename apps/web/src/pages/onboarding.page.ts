@@ -118,12 +118,10 @@ export function onboarding() {
         const { loadDemoData } = await import('../lib/demo');
         const count = await loadDemoData(deps.storage);
         window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_ONBOARDING_COMPLETE));
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: `Démo chargée : ${count} séances` },
-          }),
-        );
-        navigate('/', true);
+        console.info(`[onboarding] démo chargée : ${count} séances`);
+        // Rechargement complet : chaque store (XP, série, objectifs…) repart
+        // des données de démo au lieu de son état vide déjà en mémoire.
+        window.location.assign('/');
       } catch (err) {
         console.error('[onboarding] demo failed:', err);
         window.dispatchEvent(

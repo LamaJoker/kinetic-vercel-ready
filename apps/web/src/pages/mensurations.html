@@ -102,7 +102,7 @@
 
     <!-- Graphique ou état vide -->
     <template x-if="chartPoints().length >= 2">
-      <div x-html="chartSvg()" class="w-full"></div>
+      <div x-svg="chartSvg()" class="w-full"></div>
     </template>
     <template x-if="chartPoints().length < 2">
       <div class="flex flex-col items-center justify-center py-8 text-center">
