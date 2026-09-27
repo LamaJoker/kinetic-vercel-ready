@@ -70,7 +70,6 @@
       :aria-label="'Voir les ' + $store.vitalite.hiddenIds.length + ' tâches masquées'"
       class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-kinetic-surface ring-1 ring-white/10 text-sm text-gray-300 hover:text-white hover:bg-kinetic-elevated transition-colors"
     >
-      <span></span>
       <span x-text="$store.vitalite.hiddenIds.length"></span>
     </button>
     <button
@@ -78,7 +77,6 @@
       aria-label="Voir l'historique des 7 derniers jours"
       class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-kinetic-surface ring-1 ring-white/10 text-sm text-gray-300 hover:text-white hover:bg-kinetic-elevated transition-colors"
     >
-      <span></span>
       <span>Historique</span>
     </button>
   </div>
@@ -268,7 +266,9 @@
             <div class="flex-1 min-w-0">
               <p class="text-sm text-white font-medium capitalize" x-text="day.label"></p>
               <p class="text-xs text-gray-500">
-                <span x-text="day.doneIds.length"></span> tâche(s) complétée(s)
+                <span
+                  x-text="$plural(day.doneIds.length, 'tâche complétée', 'tâches complétées')"
+                ></span>
               </p>
             </div>
             <!-- Mini barre de progression -->
@@ -471,7 +471,6 @@
     x-transition:enter-end="opacity-100 translate-y-0"
     class="mt-6 p-6 bg-kinetic-neon rounded-2xl text-gray-950 text-center shadow-2xl shadow-kinetic-neon/30"
   >
-    <p class="text-5xl mb-3"></p>
     <p class="font-display font-black text-2xl tracking-tight">Routine complète !</p>
     <p class="text-gray-900/80 text-sm mt-2 font-medium">Incroyable. Continue comme ça demain.</p>
     <a

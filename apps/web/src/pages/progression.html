@@ -16,7 +16,6 @@
   <!-- État vide -->
   <template x-if="!loading && totalSessions === 0">
     <div class="bg-kinetic-surface rounded-2xl p-8 text-center ring-1 ring-white/5">
-      <div class="text-5xl mb-3"></div>
       <p class="text-white font-semibold mb-1">Pas encore de données</p>
       <p class="text-sm text-gray-500 mb-5">
         Termine une première séance pour voir ta progression apparaître ici.
@@ -359,7 +358,7 @@
                 <div
                   class="w-3 h-3 rounded-sm cursor-default transition-transform hover:scale-125"
                   :class="heatmapColor(cell.count)"
-                  :title="cell.label + (cell.count > 0 ? ' · ' + cell.count + ' séance(s)' : '')"
+                  :title="cell.label + (cell.count > 0 ? ' : ' + $plural(cell.count, 'séance') : '')"
                 ></div>
               </template>
             </div>

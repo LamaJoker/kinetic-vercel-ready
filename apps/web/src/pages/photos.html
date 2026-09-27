@@ -113,7 +113,7 @@
   <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-bold text-white">Mes photos</h2>
-      <span class="text-xs text-gray-500" x-text="photos.length + ' photo(s)'"></span>
+      <span class="text-xs text-gray-500" x-text="$plural(photos.length, 'photo')"></span>
     </div>
     <template x-if="photos.length === 0">
       <p class="text-sm text-gray-500 text-center py-8">
