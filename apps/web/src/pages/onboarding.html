@@ -77,8 +77,8 @@
           @click="sex = 'male'"
           class="rounded-xl px-3 py-2.5 text-sm font-semibold transition-all"
           :class="sex === 'male'
-                  ? 'ring-2 ring-kinetic-electric bg-kinetic-electric/10 text-white'
-                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-electric/40 hover:bg-kinetic-elevated'"
+                  ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
+                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'"
         >
           Homme
         </button>
@@ -86,8 +86,8 @@
           @click="sex = 'female'"
           class="rounded-xl px-3 py-2.5 text-sm font-semibold transition-all"
           :class="sex === 'female'
-                  ? 'ring-2 ring-kinetic-electric bg-kinetic-electric/10 text-white'
-                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-electric/40 hover:bg-kinetic-elevated'"
+                  ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
+                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'"
         >
           Femme
         </button>
@@ -170,14 +170,9 @@
     <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-4">
       <div class="flex items-start gap-3">
         <div
-          class="w-9 h-9 rounded-xl bg-kinetic-electric/15 ring-1 ring-kinetic-electric/30 flex items-center justify-center flex-shrink-0"
+          class="w-9 h-9 rounded-xl bg-kinetic-raised flex items-center justify-center flex-shrink-0"
         >
-          <svg
-            class="w-4 h-4 text-kinetic-electric"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"

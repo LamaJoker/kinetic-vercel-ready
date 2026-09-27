@@ -26,7 +26,7 @@
         x-model.number="targetKg"
         min="0"
         step="0.5"
-        class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-electric rounded-lg px-3 py-2.5 text-2xl tabular-nums font-bold text-white outline-none"
+        class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-neon rounded-lg px-3 py-2.5 text-2xl tabular-nums font-bold text-white outline-none"
       />
     </div>
     <div>
@@ -36,7 +36,7 @@
           <button
             @click="barKg = bar"
             :class="barKg === bar
-                  ? 'bg-kinetic-electric text-white font-bold'
+                  ? 'bg-kinetic-neon text-gray-950 font-bold'
                   : 'bg-kinetic-ink ring-1 ring-white/10 text-gray-400'"
             class="rounded-lg px-2 py-2 text-sm transition-all"
             x-text="bar + ' kg'"

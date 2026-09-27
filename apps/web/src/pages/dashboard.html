@@ -7,7 +7,7 @@
     </div>
     <a href="/profile" class="relative select-none">
       <div
-        class="w-11 h-11 rounded-full bg-kinetic-electric flex items-center justify-center text-white font-display font-black text-sm ring-1 ring-white/10"
+        class="w-11 h-11 rounded-full bg-kinetic-raised flex items-center justify-center text-white font-semibold text-sm"
         x-text="$store.auth.initials"
       ></div>
       <div
@@ -116,11 +116,14 @@
       ></div>
     </div>
     <div class="flex justify-between mt-2">
-      <p class="text-xs text-gray-600 font-semibold" x-text="'LV.' + $store.xp.currentLevel"></p>
+      <p
+        class="text-xs text-gray-600 font-semibold"
+        x-text="'Niveau ' + $store.xp.currentLevel"
+      ></p>
       <p
         class="text-xs text-gray-500"
         x-show="!$store.xp.isMaxLevel"
-        x-text="$store.xp.remaining + ' XP → LV.' + ($store.xp.currentLevel + 1)"
+        x-text="'Encore ' + $store.xp.remaining + ' XP pour le niveau ' + ($store.xp.currentLevel + 1)"
       ></p>
       <p class="text-xs text-kinetic-electric font-medium" x-show="$store.xp.isMaxLevel">MAX</p>
     </div>
@@ -130,14 +133,9 @@
   <div class="grid grid-cols-5 gap-2 mb-3">
     <a
       href="/seances"
-      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-electric/40 transition-all group"
+      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-white/20 transition-all group"
     >
-      <svg
-        class="w-5 h-5 text-kinetic-electric"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
+      <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -149,14 +147,9 @@
     </a>
     <a
       href="/progression"
-      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-electric/40 transition-all group"
+      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-white/20 transition-all group"
     >
-      <svg
-        class="w-5 h-5 text-kinetic-electric"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
+      <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -168,9 +161,9 @@
     </a>
     <a
       href="/records"
-      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-neon/40 transition-all group"
+      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-white/20 transition-all group"
     >
-      <svg class="w-5 h-5 text-kinetic-neon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -182,9 +175,9 @@
     </a>
     <a
       href="/nutrition"
-      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-neon/40 transition-all group"
+      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-white/20 transition-all group"
     >
-      <svg class="w-5 h-5 text-kinetic-neon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -199,7 +192,7 @@
       href="/bodyweight"
       class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-white/20 transition-all group"
     >
-      <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -218,7 +211,7 @@
   <div class="grid grid-cols-2 gap-2 mb-3">
     <a
       href="/plates"
-      class="flex items-center gap-2 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-electric/40 transition-all"
+      class="flex items-center gap-2 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-neon/40 transition-all"
     >
       <div class="min-w-0">
         <p class="text-xs font-bold text-white" x-text="$t('tools.plates')"></p>
@@ -486,7 +479,7 @@
           step="1"
           x-model.number="$store.goals.targetSessions"
           @change="$store.goals.save(); $store.goals.reload()"
-          class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-electric rounded-lg px-2.5 py-1.5 text-sm text-white outline-none"
+          class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-neon rounded-lg px-2.5 py-1.5 text-sm text-white outline-none"
         />
       </div>
       <div>
@@ -498,7 +491,7 @@
           x-model.number="$store.goals.targetTonnageKg"
           @change="$store.goals.save(); $store.goals.reload()"
           placeholder="0 = aucun"
-          class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-electric rounded-lg px-2.5 py-1.5 text-sm text-white outline-none"
+          class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-neon rounded-lg px-2.5 py-1.5 text-sm text-white outline-none"
         />
       </div>
     </div>
