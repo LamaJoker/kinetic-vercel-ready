@@ -11,11 +11,7 @@
       </svg>
     </a>
     <h1 class="text-2xl font-display font-black tracking-tight text-white">Routine vitalité</h1>
-    <span
-      class="ml-auto text-xs text-gray-500"
-      x-text="new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })"
-    >
-    </span>
+    <span class="ml-auto text-xs text-gray-500" x-text="$today"> </span>
   </div>
 
   <!-- Progression globale -->
@@ -272,12 +268,12 @@
             <div class="w-16 h-1.5 bg-black/40 rounded-full overflow-hidden">
               <div
                 class="h-full bg-kinetic-neon rounded-full transition-all"
-                :style="'width: ' + Math.min(100, Math.round(day.doneIds.length / Math.max(1, $store.vitalite.totalCount) * 100)) + '%'"
+                :style="'width: ' + $math.min(100, $math.round(day.doneIds.length / $math.max(1, $store.vitalite.totalCount) * 100)) + '%'"
               ></div>
             </div>
             <span
               class="text-xs font-bold text-kinetic-neon"
-              x-text="Math.min(100, Math.round(day.doneIds.length / Math.max(1,$store.vitalite.totalCount) * 100)) + '%'"
+              x-text="$math.min(100, $math.round(day.doneIds.length / $math.max(1,$store.vitalite.totalCount) * 100)) + '%'"
             ></span>
             <svg
               class="w-4 h-4 text-gray-500 flex-shrink-0 transition-transform"

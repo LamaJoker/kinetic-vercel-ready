@@ -165,6 +165,40 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
   });
 
   const nowIso = now.toISOString();
+  const food = (name: string, kcal: number, p: number, c: number, f: number) => ({
+    name,
+    kcalPer100: kcal,
+    proteinPer100: p,
+    carbsPer100: c,
+    fatPer100: f,
+  });
+  const meal = (
+    id: string,
+    mealName: string,
+    hour: number,
+    items: Array<[ReturnType<typeof food>, number]>,
+  ) => {
+    const at = new Date(today);
+    at.setHours(hour, 15, 0, 0);
+    return {
+      id,
+      mealName,
+      loggedAt: at.toISOString(),
+      items: items.map(([f, grams]) => ({ food: f, grams })),
+    };
+  };
+  const todayMeals = [
+    meal('demo-meal-1', 'Petit-déjeuner', 8, [
+      [food("Flocons d'avoine", 372, 13.5, 58.7, 7), 80],
+      [food('Skyr nature', 63, 11, 4, 0.2), 250],
+      [food('Banane', 89, 1.1, 22.8, 0.3), 120],
+    ]),
+    meal('demo-meal-2', 'Déjeuner', 13, [
+      [food('Riz basmati cuit', 130, 2.7, 28, 0.3), 220],
+      [food('Blanc de poulet', 110, 23, 0, 1.5), 180],
+      [food("Huile d'olive", 884, 0, 0, 100), 10],
+    ]),
+  ];
   const lastTrained = sessions[sessions.length - 1];
   const values: Array<[StorageKey, unknown]> = [
     [
@@ -185,6 +219,7 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
     [STORAGE_KEYS.BODYWEIGHT_GOAL, 76],
     [STORAGE_KEYS.MEASUREMENTS_ENTRIES, measurements],
     [STORAGE_KEYS.XP, { xp: 2350 }],
+    [STORAGE_KEYS.NUTRITION_LOG(localIsoDate(today)), todayMeals],
     [
       STORAGE_KEYS.STREAK,
       {

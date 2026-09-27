@@ -78,6 +78,12 @@ export function progression() {
 
     // ─── Projection : sessions → AnalyticsSet[] ──────────────
 
+    /** Nombre de séances sur les N dernières semaines. */
+    sessionsInLastWeeks(weeks: number): number {
+      const since = Date.now() - weeks * 7 * 86_400_000;
+      return this.sessions.filter((s) => Date.parse(s.startedAt) >= since).length;
+    },
+
     _analyticsSets(): AnalyticsSet[] {
       // M1 FIX: résultat mémoïzé — recalculé uniquement si le cache est null
       // (invalidé dans init() à chaque rechargement des sessions)

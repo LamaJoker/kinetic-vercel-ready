@@ -2,6 +2,7 @@ import type { StoragePort } from '@kinetic/core';
 import { STORAGE_KEYS } from '@kinetic/core';
 import type { Exercise, WorkoutSession, WorkoutTemplate } from './types';
 import { DEFAULT_EXERCISES, DEFAULT_TEMPLATES } from './seed';
+import { localizeExercises } from './exercise-names-fr';
 
 const KEY_EXERCISES = STORAGE_KEYS.TRAINING_EXERCISES;
 const KEY_TEMPLATES = STORAGE_KEYS.TRAINING_TEMPLATES;
@@ -10,7 +11,7 @@ const EXERCISES_FETCH_TIMEOUT_MS = 8000;
 
 export async function loadExercises(storage: StoragePort): Promise<Exercise[]> {
   const data = await storage.get<Exercise[]>(KEY_EXERCISES);
-  if (Array.isArray(data) && data.length > 0) return data;
+  if (Array.isArray(data) && data.length > 0) return localizeExercises(data);
 
   // Try to bootstrap from a static exercise catalog (can contain 1000+ exercises)
   // without bundling it into JS. Falls back to a small seed list if missing.
@@ -38,7 +39,7 @@ export async function loadExercises(storage: StoragePort): Promise<Exercise[]> {
 
         if (normalized.length > 0) {
           await storage.set(KEY_EXERCISES, normalized);
-          return normalized;
+          return localizeExercises(normalized);
         }
       }
     }
@@ -47,7 +48,7 @@ export async function loadExercises(storage: StoragePort): Promise<Exercise[]> {
   }
 
   await storage.set(KEY_EXERCISES, [...DEFAULT_EXERCISES]);
-  return [...DEFAULT_EXERCISES];
+  return localizeExercises(DEFAULT_EXERCISES);
 }
 
 export async function saveExercises(storage: StoragePort, exercises: Exercise[]): Promise<void> {

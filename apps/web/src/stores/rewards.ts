@@ -75,6 +75,11 @@ export function rewardsStore() {
     currentTheme: 'electrique',
     allThemes: THEMES,
 
+    /** Libellé du thème actif (évite une fonction fléchée dans le template). */
+    get currentThemeLabel(): string {
+      return THEMES.find((t) => t.id === this.currentTheme)?.label ?? '—';
+    },
+
     // Référence statique pour les templates
     allRewards: REWARDS,
 

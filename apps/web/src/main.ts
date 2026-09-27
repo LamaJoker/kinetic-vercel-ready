@@ -129,6 +129,12 @@ registerSvgDirective(Alpine as never);
   'plural',
   () => plural,
 );
+// Le build CSP n'expose pas les globales (Math, Date) aux expressions :
+// $math.round(x) et $today les rendent disponibles sans eval.
+(Alpine as unknown as { magic(name: string, cb: () => unknown): void }).magic('math', () => Math);
+(Alpine as unknown as { magic(name: string, cb: () => unknown): void }).magic('today', () =>
+  new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }),
+);
 
 Alpine.store('notifications', notificationsStore());
 Alpine.store('offline', offlineStore());
