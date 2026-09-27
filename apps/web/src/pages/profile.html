@@ -22,30 +22,20 @@
   <!-- Avatar + identité -->
   <div class="flex items-center gap-4 mb-8">
     <div class="relative">
-      <!-- Aura dorée pour les Légendes -->
-      <div
-        class="absolute inset-0 rounded-full blur-xl scale-110 -z-10"
-        :class="$store.rewards.hasLegendBadge
-             ? 'bg-yellow-400/40'
-             : 'bg-kinetic-electric/30'"
-      ></div>
       <div
         class="w-16 h-16 rounded-full flex items-center justify-center text-white font-display font-black text-xl select-none ring-2 transition-all"
         :class="$store.rewards.hasLegendBadge
-             ? 'bg-kinetic-neon ring-yellow-400/40'
-             : 'bg-kinetic-electric ring-white/10'"
+             ? 'bg-kinetic-neon text-gray-950 ring-kinetic-neon/40'
+             : 'bg-kinetic-raised ring-white/10'"
         x-text="$store.auth.initials"
       ></div>
       <!-- Badge niveau ou couronne Légende -->
       <div
         class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center shadow-md ring-1 ring-black/40 transition-all"
         :class="$store.rewards.hasLegendBadge
-             ? 'bg-yellow-400'
-             : 'bg-kinetic-electric'"
+             ? 'bg-kinetic-neon'
+             : 'bg-kinetic-neon'"
       >
-        <template x-if="$store.rewards.hasLegendBadge">
-          <span class="text-[11px]"></span>
-        </template>
         <template x-if="!$store.rewards.hasLegendBadge">
           <svg
             viewBox="0 0 24 24"
@@ -364,7 +354,7 @@
       </p>
       <button
         @click="$store.auth.logout()"
-        class="w-full py-2.5 bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl text-sm font-semibold hover:ring-kinetic-electric/40 transition-all"
+        class="w-full py-2.5 bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl text-sm font-semibold hover:ring-kinetic-neon/40 transition-all"
       >
         Se déconnecter
       </button>
