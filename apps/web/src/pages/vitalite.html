@@ -366,7 +366,7 @@
             ></p>
             <p
               class="text-xs mt-0.5 font-semibold"
-              :class="task.done ? 'text-kinetic-neon' : 'text-kinetic-electric/90'"
+              :class="task.done ? 'text-kinetic-neon' : 'text-gray-400'"
               x-text="task.done ? 'Complété ✓' : '+' + task.xp + ' XP'"
             ></p>
           </div>
@@ -376,7 +376,7 @@
             class="text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-bold"
             :class="{
                   'bg-kinetic-electric/15 text-kinetic-electric ring-1 ring-kinetic-electric/30': task.priority === 'high',
-                  'bg-kinetic-electric/10 text-kinetic-electric ring-1 ring-kinetic-electric/20': task.priority === 'med',
+                  'bg-white/5 text-gray-300 ring-1 ring-white/10': task.priority === 'med',
                   'bg-white/5 text-gray-500 ring-1 ring-white/5':                                 task.priority === 'low'
                 }"
             x-text="{ high: 'Haute', med: 'Moy.', low: 'Faible' }[task.priority]"
