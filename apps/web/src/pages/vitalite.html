@@ -337,12 +337,16 @@
         >
           <!-- Icône / Checkmark -->
           <div
-            class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 transition-all duration-300"
+            class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
             :class="task.done
                  ? 'bg-kinetic-neon/15 ring-1 ring-kinetic-neon/30'
                  : 'bg-kinetic-elevated ring-1 ring-white/5'"
           >
-            <span x-show="!task.done" x-text="task.icon"></span>
+            <span
+              x-show="!task.done"
+              class="w-5 h-5 rounded-full ring-2 ring-white/25"
+              aria-hidden="true"
+            ></span>
             <span
               x-show="task.done"
               x-transition:enter="transition duration-300"

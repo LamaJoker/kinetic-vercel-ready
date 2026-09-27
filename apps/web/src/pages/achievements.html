@@ -59,12 +59,23 @@
               : 'bg-kinetic-surface ring-white/5 opacity-50'"
       >
         <div
-          class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-          :class="$store.achievements.isUnlocked(ach.id)
-                ? 'bg-kinetic-neon/15 ring-1 ring-kinetic-neon/30'
-                : 'bg-white/5 ring-1 ring-white/10'"
-          x-text="ach.emoji"
-        ></div>
+          class="w-10 h-10 shrink-0"
+          :class="$store.achievements.isUnlocked(ach.id) ? 'text-kinetic-neon' : 'text-white/10'"
+        >
+          <svg viewBox="0 0 24 24" class="w-full h-full" aria-hidden="true">
+            <circle cx="12" cy="12" r="10.5" fill="currentColor" />
+            <circle
+              cx="12"
+              cy="12"
+              r="6.5"
+              fill="none"
+              stroke="rgb(var(--surface))"
+              stroke-opacity="0.35"
+              stroke-width="1.2"
+            />
+            <circle cx="12" cy="12" r="2.6" fill="rgb(var(--surface))" />
+          </svg>
+        </div>
         <div class="flex-1 min-w-0">
           <p
             class="text-sm font-bold leading-tight"

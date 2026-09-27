@@ -223,12 +223,12 @@ export function progression() {
       const dots = pts
         .map(
           (p) =>
-            `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#A8FF00' : '#FF6A00'}"><title>${p.label}: ${p.y.toFixed(1)} kg</title></circle>`,
+            `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#F2C230' : '#D93A34'}"><title>${p.label}: ${p.y.toFixed(1)} kg</title></circle>`,
         )
         .join('');
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe e1RM">
-        <path d="${area}" fill="#FF6A00" fill-opacity="0.15"/>
-        <path d="${line}" fill="none" stroke="#FF6A00" stroke-width="2" stroke-linecap="round"/>
+        <path d="${area}" fill="#D93A34" fill-opacity="0.15"/>
+        <path d="${line}" fill="none" stroke="#D93A34" stroke-width="2" stroke-linecap="round"/>
         ${dots}
         <text x="${padX}" y="${H - 4}" fill="#6B7280" font-size="9">${minY.toFixed(0)} kg</text>
         <text x="${padX}" y="14" fill="#6B7280" font-size="9">${maxY.toFixed(0)} kg</text>
@@ -344,7 +344,7 @@ export function progression() {
       if (count === 0) return 'bg-kinetic-ink ring-1 ring-white/5';
       if (count === 1) return 'bg-kinetic-neon/30';
       if (count === 2) return 'bg-kinetic-neon/60';
-      return 'bg-kinetic-neon shadow-[0_0_6px_rgba(168,255,0,0.6)]';
+      return 'bg-kinetic-neon shadow-[0_0_6px_rgba(242,194,48,0.6)]';
     },
 
     get longestStreak(): number {

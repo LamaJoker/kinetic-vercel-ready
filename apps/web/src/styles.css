@@ -768,3 +768,20 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Barlow Condensed seulement aux grandes tailles : en petit, texte système lisible */
+:is(.font-display, h1, h2, h3, h4, h5):is(
+  .text-xs,
+  .text-sm,
+  .text-base,
+  .text-\[10px\],
+  .text-\[11px\]
+) {
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    sans-serif;
+}

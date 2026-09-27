@@ -43,7 +43,7 @@
               cy="40"
               r="30"
               fill="none"
-              stroke="#A8FF00"
+              stroke="#F2C230"
               stroke-width="8"
               :stroke-dasharray="Math.min(188, ($store.nutrition.progress ? ($store.nutrition.progress.kcalPct || 0) : 0) * 1.88) + ' 188'"
               stroke-linecap="round"
@@ -88,8 +88,8 @@
       <div class="space-y-2">
         <template
           x-for="macro in [
-          { label: 'Protéines', key: 'proteinG', pctKey: 'proteinPct', color: '#A8FF00', unit: 'g' },
-          { label: 'Glucides',  key: 'carbsG',   pctKey: 'carbsPct',   color: '#FF6A00', unit: 'g' },
+          { label: 'Protéines', key: 'proteinG', pctKey: 'proteinPct', color: '#F2C230', unit: 'g' },
+          { label: 'Glucides',  key: 'carbsG',   pctKey: 'carbsPct',   color: '#D93A34', unit: 'g' },
           { label: 'Lipides',   key: 'fatG',     pctKey: 'fatPct',     color: '#FFFFFF', unit: 'g' }
         ]"
         >

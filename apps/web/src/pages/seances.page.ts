@@ -1244,7 +1244,7 @@ export function seances() {
       const circles = pts
         .map(
           (p) =>
-            `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#FFD166' : '#7F77DD'}"><title>${p.label}: ${p.y.toFixed(1)}</title></circle>`,
+            `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#FFD166' : '#3E6FD8'}"><title>${p.label}: ${p.y.toFixed(1)}</title></circle>`,
         )
         .join('');
       const metric =
@@ -1254,8 +1254,8 @@ export function seances() {
             ? 'Volume (kg·reps)'
             : 'e1RM (kg)';
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="${metric}">
-        <path d="${area}" fill="#7F77DD" fill-opacity="0.15"/>
-        <path d="${line}" fill="none" stroke="#7F77DD" stroke-width="2" stroke-linecap="round"/>
+        <path d="${area}" fill="#3E6FD8" fill-opacity="0.15"/>
+        <path d="${line}" fill="none" stroke="#3E6FD8" stroke-width="2" stroke-linecap="round"/>
         ${circles}
         <text x="${padX}" y="${H - 2}" fill="#6B7280" font-size="9">${minY.toFixed(0)}</text>
         <text x="${padX}" y="14" fill="#6B7280" font-size="9">${maxY.toFixed(0)}</text>

@@ -19,7 +19,8 @@
           class="w-2.5 h-2.5 text-gray-950"
           aria-hidden="true"
         >
-          <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z" />
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="3" fill="rgb(var(--ink))" />
         </svg>
       </div>
     </a>
@@ -386,17 +387,15 @@
 
   <!-- Stats rapides -->
   <div class="grid grid-cols-2 gap-3 mb-3">
-    <div
-      class="relative overflow-hidden rounded-2xl p-4 bg-kinetic-electric ring-1 ring-kinetic-electric/20"
-    >
-      <div
-        class="absolute -top-6 -right-6 w-24 h-24 bg-kinetic-electric/20 rounded-full blur-2xl"
-      ></div>
-      <p class="relative text-white/80 text-xs font-semibold mb-1">Streak</p>
-      <p class="relative text-4xl font-display font-black text-white" x-text="streak + ''"></p>
+    <div class="bg-kinetic-surface rounded-2xl p-4">
+      <p class="text-gray-400 text-xs font-semibold mb-1">Série en cours</p>
+      <p class="text-4xl font-display font-bold text-white">
+        <span x-text="streak"></span>
+        <span class="text-base font-sans font-medium text-gray-500">jours</span>
+      </p>
     </div>
     <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
-      <p class="text-gray-500 text-xs font-semibold mb-1">Record</p>
+      <p class="text-gray-400 text-xs font-semibold mb-1">Meilleure série</p>
       <p
         class="text-4xl font-display font-black text-kinetic-electric"
         x-text="bestStreak + ''"

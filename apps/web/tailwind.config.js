@@ -5,10 +5,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        'kinetic-purple': '#7F77DD',
-        'kinetic-teal': '#00C2A0',
-        'kinetic-coral': '#FF6B6B',
-        'kinetic-gold': '#FFD166',
+        'kinetic-purple': '#3E6FD8',
+        'kinetic-teal': '#1E9E5A',
+        'kinetic-coral': '#D93A34',
+        'kinetic-gold': '#F2C230',
         // Couleurs thématiques pilotées par variables CSS (cf. styles.css)
         'kinetic-neon': 'rgb(var(--kinetic-neon) / <alpha-value>)',
         'kinetic-electric': 'rgb(var(--kinetic-electric) / <alpha-value>)',
