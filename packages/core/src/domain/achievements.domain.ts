@@ -132,8 +132,8 @@ export function buildAchievementCatalog(): Achievement[] {
   for (const m of VOLUME_MILESTONES) {
     list.push({
       id: `volume:${m.tonnes}t`,
-      title: `${m.tonnes} t soulevées`,
-      description: `${m.tonnes} tonnes de volume total soulevé.`,
+      title: `${m.tonnes} t soulevée${m.tonnes > 1 ? 's' : ''}`,
+      description: `${m.tonnes} tonne${m.tonnes > 1 ? 's' : ''} de volume total soulevée${m.tonnes > 1 ? 's' : ''}.`,
       emoji: m.emoji,
       category: 'volume',
       tier: m.tier,
