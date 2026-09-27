@@ -86,6 +86,8 @@ function val(entry: MeasurementEntry, key: MetricKey): number | undefined {
   return (entry as unknown as Record<string, unknown>)[key] as number | undefined;
 }
 
+type ProgressPhotoLike = { id: string };
+
 export function mensurations() {
   return {
     entries: [] as MeasurementEntry[],
@@ -97,6 +99,11 @@ export function mensurations() {
     photos: [] as ProgressPhoto[],
     showPhotos: false,
     selectedPhotoId: null as string | null,
+
+    /** Photo ouverte (0 ou 1 élément) — pas de fonction fléchée dans le template. */
+    get selectedPhotos(): ProgressPhotoLike[] {
+      return (this.photos as ProgressPhotoLike[]).filter((p) => p.id === this.selectedPhotoId);
+    },
     takingPhoto: false,
 
     // Form bindings (flat — Alpine x-model requires direct properties)

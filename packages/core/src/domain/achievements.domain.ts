@@ -7,7 +7,7 @@
  *   - "10/50/100 séances complétées"
  *   - "Première PR" → "10 PR" → "50 PR"
  *   - "Bench 60 / 80 / 100 / 140 kg" (etc. pour squat, deadlift)
- *   - "Streak 7 / 30 / 100 jours"
+ *   - "Série de 7 / 30 / 100 jours"
  *   - "Volume 10/50/100 t cumulé"
  *
  * Pur, déterministe. L'appelant fournit les inputs (sessions, e1rm best,
@@ -85,9 +85,9 @@ const STRENGTH_EMOJIS: Record<LiftKey, string> = {
   deadlift: '🏋️‍♂️',
 };
 const STRENGTH_LABELS: Record<LiftKey, string> = {
-  bench: 'Bench',
+  bench: 'Développé couché',
   squat: 'Squat',
-  deadlift: 'Deadlift',
+  deadlift: 'Soulevé de terre',
 };
 
 // ─── Construction du catalogue plat ──────────────────────────────────────────
@@ -110,7 +110,7 @@ export function buildAchievementCatalog(): Achievement[] {
   for (const m of STREAK_MILESTONES) {
     list.push({
       id: `streak:${m.days}`,
-      title: `Streak ${m.days} j`,
+      title: `Série de ${m.days} jours`,
       description: `${m.days} jours d'activité consécutifs.`,
       emoji: m.emoji,
       category: 'streak',
@@ -132,7 +132,7 @@ export function buildAchievementCatalog(): Achievement[] {
   for (const m of VOLUME_MILESTONES) {
     list.push({
       id: `volume:${m.tonnes}t`,
-      title: `${m.tonnes}t cumulés`,
+      title: `${m.tonnes} t soulevées`,
       description: `${m.tonnes} tonnes de volume total soulevé.`,
       emoji: m.emoji,
       category: 'volume',

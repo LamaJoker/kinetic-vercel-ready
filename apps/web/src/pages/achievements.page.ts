@@ -26,7 +26,7 @@ export function achievements(): AchievementsAlpine {
     categories: [
       { key: 'all', label: 'Tout' },
       { key: 'milestone', label: 'Séances' },
-      { key: 'streak', label: 'Streak' },
+      { key: 'streak', label: 'Séries' },
       { key: 'pr', label: 'PR' },
       { key: 'volume', label: 'Volume' },
       { key: 'strength', label: 'Force' },

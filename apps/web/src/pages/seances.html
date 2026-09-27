@@ -117,10 +117,7 @@
       </svg>
     </a>
     <h1 class="text-2xl font-display font-black tracking-tight text-white">Séances</h1>
-    <span
-      class="ml-auto text-xs text-gray-500"
-      x-text="new Date().toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})"
-    ></span>
+    <span class="ml-auto text-xs text-gray-500" x-text="$today"></span>
   </div>
 
   <!-- Quick restart (visible only if at least one finished session) -->
@@ -467,7 +464,7 @@
                       <p class="text-sm font-semibold text-white" x-text="alt.exercise.name"></p>
                       <span
                         class="text-[10px] text-kinetic-neon font-bold flex-shrink-0"
-                        x-text="Math.round(alt.score * 100) + ' %'"
+                        x-text="$math.round(alt.score * 100) + ' %'"
                       ></span>
                     </div>
                     <p

@@ -308,7 +308,7 @@
 
       <p
         class="text-[10px] text-gray-600 mt-3 text-center"
-        x-text="'Thème actif : ' + ($store.rewards.allThemes.find(t => t.id === $store.rewards.currentTheme) ? $store.rewards.allThemes.find(t => t.id === $store.rewards.currentTheme).label : '—')"
+        x-text="'Thème actif : ' + $store.rewards.currentThemeLabel"
       ></p>
     </div>
   </template>

@@ -23,6 +23,58 @@ export interface LoggedMeal {
   loggedAt: string;
 }
 
+export interface MacroBar {
+  key: 'proteinG' | 'carbsG' | 'fatG';
+  label: string;
+  consumed: number;
+  target: number;
+  /** 0 → 100, pour la largeur de la barre */
+  pct: number;
+  over: boolean;
+  /** « 48 / 170 g » ou « Dépassé de 12 g » */
+  detail: string;
+  style: { width: string; backgroundColor: string };
+}
+
+const MACRO_DEFS: Array<{ key: MacroBar['key']; label: string; color: string }> = [
+  { key: 'proteinG', label: 'Protéines', color: '#D93A34' },
+  { key: 'carbsG', label: 'Glucides', color: '#F2C230' },
+  { key: 'fatG', label: 'Lipides', color: '#EDEAE3' },
+];
+
+function fmt(n: number): string {
+  return Math.round(n).toLocaleString('fr-FR');
+}
+
+export function buildMacroBars(
+  consumed: { proteinG: number; carbsG: number; fatG: number },
+  targets: { proteinG: number; carbsG: number; fatG: number } | null,
+): MacroBar[] {
+  return MACRO_DEFS.map(({ key, label, color }) => {
+    const value = Math.max(0, consumed[key] || 0);
+    const target = Math.max(0, targets?.[key] ?? 0);
+    const ratio = target > 0 ? value / target : 0;
+    const pct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
+    const over = target > 0 && value > target * 1.05;
+    return {
+      key,
+      label,
+      consumed: value,
+      target,
+      pct,
+      over,
+      detail: over ? `Dépassé de ${fmt(value - target)} g` : `${fmt(value)} / ${fmt(target)} g`,
+      // Un minimum visible dès la première bouchée, sinon 0 %.
+      style: { width: `${value > 0 && pct < 2 ? 2 : pct}%`, backgroundColor: color },
+    };
+  });
+}
+
+export function ringDash(value: number, target: number, circumference: number): string {
+  const ratio = target > 0 ? Math.max(0, Math.min(1, value / target)) : 0;
+  return `${(ratio * circumference).toFixed(1)} ${circumference}`;
+}
+
 const KEY_PLAN = STORAGE_KEYS.NUTRITION_PLAN;
 const KEY_LOG = (date: string) => STORAGE_KEYS.NUTRITION_LOG(date);
 
@@ -63,6 +115,21 @@ export function nutritionStore() {
     get progress() {
       if (!this.plan?.macros) return null;
       return macroProgress(this.consumed, this.plan.macros);
+    },
+
+    /**
+     * Barres de macros prêtes à afficher (aucun calcul dans le template :
+     * le build CSP d'Alpine n'autorise pas `Math` dans les expressions, ce qui
+     * laissait les barres vides).
+     */
+    get macroBars(): MacroBar[] {
+      return buildMacroBars(this.consumed, this.plan?.macros ?? null);
+    },
+
+    /** Anneau des calories : `stroke-dasharray` de l'arc rempli (circonférence 188). */
+    get kcalDash(): string {
+      const target = this.plan?.macros?.kcal ?? 0;
+      return ringDash(this.consumed.kcal, target, 188);
     },
 
     get remaining() {
