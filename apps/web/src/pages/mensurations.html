@@ -41,7 +41,7 @@
         ></p>
         <p
           class="font-display font-black text-base text-white leading-none"
-          x-text="currentValue(m.key) !== null ? currentValue(m.key) : '—'"
+          x-text="formatCm(currentValue(m.key))"
         ></p>
         <p
           x-show="currentValue(m.key) !== null"

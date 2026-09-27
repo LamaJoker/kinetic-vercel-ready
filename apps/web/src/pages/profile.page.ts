@@ -258,7 +258,7 @@ export function profile() {
         const [sessions, exercises, xpTotal] = await Promise.all([
           loadSessions(deps.storage),
           loadExercises(deps.storage),
-          deps.storage.get<number>(STORAGE_KEYS.XP),
+          deps.storage.get<{ xp: number } | number>(STORAGE_KEYS.XP),
         ]);
 
         // Best lift par exercice (par e1RM Epley, sets et séances confondus)
@@ -282,7 +282,9 @@ export function profile() {
         const bestLifts = [...bestByEx.values()].sort((a, b) => b.e1rmKg - a.e1rmKg).slice(0, 3);
 
         // Niveau XP (recalcule depuis totalXp pour rester fiable)
-        const totalXp = typeof xpTotal === 'number' && Number.isFinite(xpTotal) ? xpTotal : 0;
+        // Format stocké : { xp } (xp store, use cases) — nombre brut toléré (ancien format).
+        const rawXp = typeof xpTotal === 'number' ? xpTotal : xpTotal?.xp;
+        const totalXp = typeof rawXp === 'number' && Number.isFinite(rawXp) ? rawXp : 0;
         const xp = computeXpState(Math.max(0, totalXp));
 
         const pseudo = (this.profilePseudo || this.displayName || 'Athlète Kinetic')

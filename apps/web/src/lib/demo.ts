@@ -149,17 +149,18 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
   const measurements = [WEEKS * 7, 28, 0].map((d, i) => {
     const day = new Date(today);
     day.setDate(today.getDate() - d);
+    const r = (x: number) => Math.round(x * 10) / 10;
     return {
       id: `demo-m${i}`,
       date: localIsoDate(day),
-      chest: 101 + i * 0.8,
-      waist: 84 - i * 1.2,
-      hips: 97 - i * 0.4,
-      leftBicep: 36 + i * 0.4,
-      rightBicep: 36.3 + i * 0.4,
-      shoulders: 118 + i * 0.7,
-      leftThigh: 58 + i * 0.3,
-      rightThigh: 58.2 + i * 0.3,
+      chest: r(101 + i * 0.8),
+      waist: r(84 - i * 1.2),
+      hips: r(97 - i * 0.4),
+      leftBicep: r(36 + i * 0.4),
+      rightBicep: r(36.3 + i * 0.4),
+      shoulders: r(118 + i * 0.7),
+      leftThigh: r(58 + i * 0.3),
+      rightThigh: r(58.2 + i * 0.3),
     };
   });
 
@@ -183,7 +184,7 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
     [STORAGE_KEYS.BODYWEIGHT_ENTRIES, bodyweight],
     [STORAGE_KEYS.BODYWEIGHT_GOAL, 76],
     [STORAGE_KEYS.MEASUREMENTS_ENTRIES, measurements],
-    [STORAGE_KEYS.XP, 2350],
+    [STORAGE_KEYS.XP, { xp: 2350 }],
     [
       STORAGE_KEYS.STREAK,
       {
