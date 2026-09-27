@@ -52,11 +52,11 @@ test('onboarding', async ({ page }) => {
 
 test('routes', async ({ page }) => {
   if (DEMO) {
-    await boot(page, '/profile');
-    await page.evaluate(async () => {
-      const fn = (window as any).__kineticLoadDemo as (() => Promise<void>) | undefined;
-      if (fn) await fn();
-    });
+    // Parcours réel : onboarding → « Voir la démo »
+    await boot(page, '/onboarding', false);
+    await page.getByRole('button', { name: 'Voir la démo' }).click();
+    await page.waitForURL('http://localhost:3000/', { timeout: 15_000 });
+    await page.waitForTimeout(1500);
   }
   let i = 1;
   for (const [path, name] of ROUTES) {

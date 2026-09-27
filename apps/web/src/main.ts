@@ -174,6 +174,10 @@ Alpine.data('navShell', () => ({
   isBodyPage(this: { currentPath: string }) {
     return this.currentPath === '/bodyweight' || this.currentPath === '/mensurations';
   },
+  /** Écrans plein cadre (onboarding, connexion) : pas de barre de navigation. */
+  isChromeless(this: { currentPath: string }) {
+    return ['/onboarding', '/login', '/auth-callback', '/auth/callback'].includes(this.currentPath);
+  },
 }));
 
 // ─── Composants inline → Alpine.data (requis par @alpinejs/csp) ─────────────

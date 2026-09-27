@@ -110,6 +110,32 @@ export function onboarding() {
       };
     },
 
+    /** Charge le jeu de démo (invité) puis ouvre le tableau de bord. */
+    async startDemo(): Promise<void> {
+      this.saving = true;
+      try {
+        const deps = await getDeps();
+        const { loadDemoData } = await import('../lib/demo');
+        const count = await loadDemoData(deps.storage);
+        window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_ONBOARDING_COMPLETE));
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'success', message: `Démo chargée : ${count} séances` },
+          }),
+        );
+        navigate('/', true);
+      } catch (err) {
+        console.error('[onboarding] demo failed:', err);
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Impossible de charger la démo.' },
+          }),
+        );
+      } finally {
+        this.saving = false;
+      }
+    },
+
     async save(): Promise<void> {
       const draft = this._profileDraft();
       if (!draft) return;
@@ -126,7 +152,7 @@ export function onboarding() {
 
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: 'Profil sauvegarde' },
+            detail: { kind: 'success', message: 'Profil créé' },
           }),
         );
         window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_ONBOARDING_COMPLETE));

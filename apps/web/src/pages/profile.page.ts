@@ -83,9 +83,34 @@ export function profile() {
       window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_LOCALE_RELOAD));
     },
 
+    demoActive: false,
+
+    /** Retire le jeu de démo puis relance l'onboarding (rechargement complet). */
+    async exitDemo(): Promise<void> {
+      try {
+        const deps = await getDeps();
+        const { clearDemoData } = await import('../lib/demo');
+        await clearDemoData(deps.storage);
+        window.location.assign('/onboarding');
+      } catch (err) {
+        console.error('[profile] exitDemo failed:', err);
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: "Impossible d'effacer la démo." },
+          }),
+        );
+      }
+    },
+
     async init(): Promise<void> {
       try {
         const deps = await getDeps();
+        void import('../lib/demo')
+          .then(({ isDemoActive }) => isDemoActive(deps.storage))
+          .then((active) => {
+            this.demoActive = active;
+          })
+          .catch(() => undefined);
 
         // Lectures parallèles : 3 round-trips IDB → 1 batch
         const [profileData, streakData, stats] = await Promise.all([
