@@ -116,11 +116,14 @@
       ></div>
     </div>
     <div class="flex justify-between mt-2">
-      <p class="text-xs text-gray-600 font-semibold" x-text="'LV.' + $store.xp.currentLevel"></p>
+      <p
+        class="text-xs text-gray-600 font-semibold"
+        x-text="'Niveau ' + $store.xp.currentLevel"
+      ></p>
       <p
         class="text-xs text-gray-500"
         x-show="!$store.xp.isMaxLevel"
-        x-text="$store.xp.remaining + ' XP → LV.' + ($store.xp.currentLevel + 1)"
+        x-text="'Encore ' + $store.xp.remaining + ' XP pour le niveau ' + ($store.xp.currentLevel + 1)"
       ></p>
       <p class="text-xs text-kinetic-electric font-medium" x-show="$store.xp.isMaxLevel">MAX</p>
     </div>
