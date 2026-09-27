@@ -17,7 +17,7 @@ export default defineConfig({
     serviceWorkers: 'block',
   },
   webServer: {
-    command: 'pnpm preview:ci',
+    command: 'pnpm --filter @kinetic/web preview:ci',
     url: 'http://localhost:3000',
     timeout: 60_000,
     reuseExistingServer: false,
