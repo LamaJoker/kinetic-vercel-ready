@@ -77,7 +77,6 @@
       </div>
       <!-- Contenu -->
       <div class="relative z-10">
-        <div class="text-5xl mb-2 animate-bounce"></div>
         <p class="text-xs font-bold text-kinetic-electric mb-1">Nouveau Record</p>
         <p
           class="text-white font-black text-xl mb-3 leading-tight"
@@ -135,14 +134,22 @@
   <template x-if="hasFinishedSession && !currentSession">
     <button
       @click="quickRestartLast()"
-      class="w-full mb-3 bg-kinetic-electric/15 ring-1 ring-kinetic-electric/40 rounded-2xl p-3 flex items-center gap-3 hover:ring-kinetic-electric transition-all active:scale-[0.98]"
+      class="w-full mb-3 bg-kinetic-surface ring-1 ring-white/10 rounded-2xl p-3 flex items-center gap-3 hover:ring-white/25 transition-all active:scale-[0.98]"
     >
-      <span class="text-2xl"></span>
       <div class="flex-1 text-left">
         <p class="text-sm font-bold text-white">Reprendre la dernière séance</p>
-        <p class="text-[10px] text-gray-400">Re-charge les exercices de la précédente session</p>
+        <p class="text-xs text-gray-400">Mêmes exercices que ta dernière séance</p>
       </div>
-      <span class="text-kinetic-electric text-lg">→</span>
+      <svg
+        class="w-4 h-4 text-gray-500"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6" />
+      </svg>
     </button>
   </template>
 
@@ -163,7 +170,7 @@
     >
       <p class="text-xs text-gray-500 mb-1">Modèles</p>
       <p class="text-white font-semibold text-sm">Prédéfinies</p>
-      <p class="text-[10px] text-gray-500 mt-1" x-text="templates.length + ' modèle(s)'"></p>
+      <p class="text-[10px] text-gray-500 mt-1" x-text="$plural(templates.length, 'modèle')"></p>
     </button>
 
     <button
@@ -198,42 +205,36 @@
         @click="startAutoWorkout('push')"
         class="bg-kinetic-elevated ring-1 ring-white/10 rounded-xl p-3 text-center hover:ring-kinetic-neon/40 transition-all active:scale-95"
       >
-        <p class="text-xl mb-0.5"></p>
         <p class="text-xs text-white font-semibold">Push</p>
       </button>
       <button
         @click="startAutoWorkout('pull')"
         class="bg-kinetic-elevated ring-1 ring-white/10 rounded-xl p-3 text-center hover:ring-kinetic-neon/40 transition-all active:scale-95"
       >
-        <p class="text-xl mb-0.5"></p>
         <p class="text-xs text-white font-semibold">Pull</p>
       </button>
       <button
         @click="startAutoWorkout('legs')"
         class="bg-kinetic-elevated ring-1 ring-white/10 rounded-xl p-3 text-center hover:ring-kinetic-neon/40 transition-all active:scale-95"
       >
-        <p class="text-xl mb-0.5"></p>
         <p class="text-xs text-white font-semibold">Jambes</p>
       </button>
       <button
         @click="startAutoWorkout('upper')"
         class="bg-kinetic-elevated ring-1 ring-white/10 rounded-xl p-3 text-center hover:ring-kinetic-neon/40 transition-all active:scale-95"
       >
-        <p class="text-xl mb-0.5"></p>
         <p class="text-xs text-white font-semibold">Upper</p>
       </button>
       <button
         @click="startAutoWorkout('lower')"
         class="bg-kinetic-elevated ring-1 ring-white/10 rounded-xl p-3 text-center hover:ring-kinetic-neon/40 transition-all active:scale-95"
       >
-        <p class="text-xl mb-0.5"></p>
         <p class="text-xs text-white font-semibold">Lower</p>
       </button>
       <button
         @click="startAutoWorkout('full')"
         class="bg-kinetic-elevated ring-1 ring-white/10 rounded-xl p-3 text-center hover:ring-kinetic-neon/40 transition-all active:scale-95"
       >
-        <p class="text-xl mb-0.5"></p>
         <p class="text-xs text-white font-semibold">Full body</p>
       </button>
     </div>
@@ -409,7 +410,7 @@
             <div>
               <p class="text-white font-semibold" x-text="exerciseName(entry.exerciseId)"></p>
               <p class="text-xs text-gray-500">
-                <span x-text="entry.sets.length"></span> série(s)
+                <span x-text="$plural(entry.sets.length, 'série')"></span>
                 <template x-if="pr(entry.exerciseId)">
                   <span class="ml-2 text-kinetic-electric"
                     >PR :
@@ -861,7 +862,7 @@
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-semibold text-white">Historique</h2>
-      <span class="text-xs text-gray-500" x-text="sessions.length + ' séance(s)'"></span>
+      <span class="text-xs text-gray-500" x-text="$plural(sessions.length, 'séance')"></span>
     </div>
 
     <template x-if="sessions.length === 0">
@@ -885,7 +886,7 @@
             </div>
             <div class="flex items-center justify-between gap-2 mt-1">
               <p class="text-xs text-gray-500">
-                <span x-text="s.entries.length"></span> exercice(s)
+                <span x-text="$plural(s.entries.length, 'exercice')"></span>
                 <span x-show="s.durationMin" class="mx-1">·</span>
                 <span x-show="s.durationMin" x-text="s.durationMin + ' min'"></span>
                 <span x-show="s.caloriesKcal" class="mx-1">·</span>
@@ -989,7 +990,7 @@
       <p
         class="text-[10px] text-gray-600 text-center pt-1"
         x-show="sessions.length > 20"
-        x-text="'+' + (sessions.length - 20) + ' séance(s) plus anciennes — exporte en JSON pour tout consulter.'"
+        x-text="'+ ' + $plural(sessions.length - 20, 'séance plus ancienne', 'séances plus anciennes') + '. Exporte en JSON pour tout consulter.'"
       ></p>
     </div>
   </div>

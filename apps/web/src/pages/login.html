@@ -1,26 +1,24 @@
 <div class="min-h-screen flex items-center justify-center px-4 bg-kinetic-ink" x-data="loginPage">
   <div class="w-full max-w-sm">
-    <!-- Logo area -->
+    <!-- Marque -->
     <div class="text-center mb-10">
-      <div class="w-20 h-20 mx-auto relative mb-6">
-        <div class="absolute inset-0 rounded-3xl bg-kinetic-neon/20 blur-2xl"></div>
-        <div
-          class="relative w-20 h-20 bg-kinetic-neon rounded-3xl flex items-center justify-center ring-1 ring-white/10"
-        >
-          <svg
-            class="w-10 h-10 text-gray-950"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <circle cx="12" cy="12" r="3" fill="rgb(var(--ink))" />
-          </svg>
-        </div>
-      </div>
-      <p class="text-xs text-kinetic-neon font-bold mt-3">Performance OS</p>
-      <h1 class="text-4xl font-display font-black tracking-tight text-white mt-1">Kinetic</h1>
-      <p class="text-gray-500 text-sm mt-2">Transforme tes habitudes en résultats.</p>
+      <svg class="w-16 h-16 mx-auto text-kinetic-neon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="11" fill="currentColor" />
+        <circle
+          cx="12"
+          cy="12"
+          r="7"
+          fill="none"
+          stroke="rgb(var(--ink))"
+          stroke-opacity="0.3"
+          stroke-width="1"
+        />
+        <circle cx="12" cy="12" r="2.8" fill="rgb(var(--ink))" />
+      </svg>
+      <h1 class="text-5xl font-display font-bold tracking-tight text-white mt-5">Kinetic</h1>
+      <p class="text-gray-400 text-sm mt-2">
+        Ton carnet de musculation. Il fonctionne aussi sans réseau.
+      </p>
     </div>
 
     <!-- Erreur -->
@@ -37,7 +35,6 @@
       x-transition
       class="mb-4 bg-kinetic-neon/10 border border-kinetic-neon/20 rounded-2xl p-6 text-center"
     >
-      <p class="text-4xl mb-3"></p>
       <p class="text-kinetic-neon font-display font-black text-lg">Lien envoyé !</p>
       <p class="text-gray-500 text-sm mt-2">Vérifie ta boîte mail pour te connecter.</p>
     </div>
@@ -149,8 +146,9 @@
       <pre x-show="show" x-text="log" class="whitespace-pre-wrap mt-2 break-all"></pre>
     </div>
 
-    <!-- Diagnostic config auth (toujours visible) -->
+    <!-- Diagnostic config auth : seulement en cas d'erreur de connexion -->
     <div
+      x-show="$store.auth.error"
       x-data="authDiagPanel"
       class="mt-4 p-3 bg-kinetic-surface/50 border border-white/5 rounded-xl text-[10px] tabular-nums text-gray-500"
     >

@@ -1,4 +1,5 @@
-﻿import {
+﻿import { plural } from '../lib/plural';
+import {
   STORAGE_KEYS,
   encodeProfile,
   buildProfileShareUrl,
@@ -207,7 +208,7 @@ export function profile() {
               kind: 'success',
               message:
                 report.removedKeys > 0
-                  ? `${report.removedKeys} entrée(s) journalière(s) supprimée(s) (avant ${report.cutoffDate}).`
+                  ? `${plural(report.removedKeys, 'entrée journalière supprimée', 'entrées journalières supprimées')} (avant ${report.cutoffDate}).`
                   : 'Stockage déjà optimal — aucune entrée à purger.',
             },
           }),
@@ -470,11 +471,11 @@ export function profile() {
 
         const label =
           report.importedSessions > 0
-            ? `${report.importedSessions} séance(s) importée(s)` +
+            ? plural(report.importedSessions, 'séance importée', 'séances importées') +
               (report.duplicateSessions > 0
-                ? ` (${report.duplicateSessions} doublon(s) ignoré(s))`
+                ? ` (${plural(report.duplicateSessions, 'doublon ignoré', 'doublons ignorés')})`
                 : '')
-            : `Aucune nouvelle séance (${report.duplicateSessions} doublon(s))`;
+            : `Aucune nouvelle séance (${plural(report.duplicateSessions, 'doublon')})`;
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
             detail: { kind: 'success', message: label },

@@ -83,6 +83,7 @@ import { goalsStore } from './stores/goals';
 import { achievementsStore } from './stores/achievements';
 import { entitlementStore } from './stores/entitlement';
 import { registerSvgDirective } from './lib/svg-directive';
+import { plural } from './lib/plural';
 
 import { dashboard } from './pages/dashboard.page';
 import { seances } from './pages/seances.page';
@@ -123,6 +124,11 @@ import './styles.css';
 // ─── Stores ──────────────────────────────────────────────────
 // Directive x-svg : remplace x-html, interdit par le build CSP d'Alpine.
 registerSvgDirective(Alpine as never);
+// $plural(n, 'séance') → « 3 séances » (fin des « séance(s) »)
+(Alpine as unknown as { magic(name: string, cb: () => unknown): void }).magic(
+  'plural',
+  () => plural,
+);
 
 Alpine.store('notifications', notificationsStore());
 Alpine.store('offline', offlineStore());

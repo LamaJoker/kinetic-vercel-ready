@@ -108,7 +108,7 @@
     <p
       class="text-xs text-gray-400 mb-3"
       x-show="$store.entitlement.isOnTrial"
-      x-text="'Essai Pro — ' + $store.entitlement.trialDaysLeft + ' jour(s) restant(s)'"
+      x-text="'Essai Pro : ' + $plural($store.entitlement.trialDaysLeft, 'jour restant', 'jours restants')"
     ></p>
     <p class="text-xs text-gray-500 mb-3" x-show="!$store.entitlement.isPro">
       Débloque l'intelligence : auto-progression, conseiller de deload, analytics avancées, AI
@@ -420,7 +420,6 @@
           ? 'bg-kinetic-neon text-gray-950'
           : 'bg-kinetic-elevated text-white hover:bg-white/10'"
       >
-        <span class="text-xl"></span>
         <span>Foncé</span>
       </button>
       <button
@@ -430,7 +429,6 @@
           ? 'bg-kinetic-neon text-gray-950'
           : 'bg-kinetic-elevated text-white hover:bg-white/10'"
       >
-        <span class="text-xl"></span>
         <span>Clair</span>
       </button>
       <button
@@ -440,7 +438,6 @@
           ? 'bg-kinetic-neon text-gray-950'
           : 'bg-kinetic-elevated text-white hover:bg-white/10'"
       >
-        <span class="text-xl"></span>
         <span>Auto</span>
       </button>
     </div>
@@ -461,7 +458,6 @@
           ? 'bg-kinetic-neon text-gray-950'
           : 'bg-kinetic-elevated text-white hover:bg-white/10'"
       >
-        <span class="text-xl"></span>
         <span>Simple</span>
       </button>
       <button
@@ -471,7 +467,6 @@
           ? 'bg-kinetic-neon text-gray-950'
           : 'bg-kinetic-elevated text-white hover:bg-white/10'"
       >
-        <span class="text-xl"></span>
         <span>Avancé</span>
       </button>
     </div>
@@ -487,7 +482,6 @@
     class="block bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5 hover:ring-kinetic-neon/30 transition-all"
   >
     <div class="flex items-center gap-3">
-      <span class="text-2xl"></span>
       <div class="flex-1">
         <h2 class="font-bold text-white">Glossaire</h2>
         <p class="text-xs text-gray-500">RPE, e1RM, deload, tonnage… tout expliqué simplement</p>
@@ -528,7 +522,6 @@
     class="block bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5 hover:ring-kinetic-neon/30 transition-all"
   >
     <div class="flex items-center gap-3">
-      <span class="text-2xl"></span>
       <div class="flex-1">
         <h2 class="font-bold text-white">Photos de progrès</h2>
         <p class="text-xs text-gray-500">Timeline avant/après stockée localement</p>
@@ -543,7 +536,6 @@
     class="block bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5 hover:ring-kinetic-neon/30 transition-all"
   >
     <div class="flex items-center gap-3">
-      <span class="text-2xl"></span>
       <div class="flex-1">
         <h2 class="font-bold text-white">Programmes pré-écrits</h2>
         <p class="text-xs text-gray-500">5/3/1, Starting Strength, GZCLP, Madcow, nSuns</p>
@@ -647,16 +639,17 @@
         <p>
           <span
             class="text-kinetic-neon font-bold"
-            x-text="lastImportReport.importedSessions"
+            x-text="$plural(lastImportReport.importedSessions, 'séance ajoutée', 'séances ajoutées')"
+          ></span
+          >, <span x-text="$plural(lastImportReport.duplicateSessions, 'doublon')"></span>,
+          <span
+            x-text="$plural(lastImportReport.createdExercises, 'exercice créé', 'exercices créés')"
           ></span>
-          séance(s) ajoutée(s) ·
-          <span x-text="lastImportReport.duplicateSessions"></span> doublon(s) ·
-          <span x-text="lastImportReport.createdExercises"></span> exercice(s) créé(s)
         </p>
         <p
           x-show="lastImportReport.skippedRows > 0"
           class="text-gray-500 mt-1"
-          x-text="lastImportReport.skippedRows + ' ligne(s) ignorée(s) (champs manquants)'"
+          x-text="$plural(lastImportReport.skippedRows, 'ligne ignorée', 'lignes ignorées') + ' (champs manquants)'"
         ></p>
       </div>
     </template>
@@ -745,7 +738,6 @@
     <div
       class="relative bg-kinetic-surface ring-1 ring-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
     >
-      <p class="text-xl mb-2"></p>
       <h3 class="font-display font-bold text-lg text-white mb-2">Réinitialiser ?</h3>
       <p class="text-sm text-gray-400 mb-5">
         Cette action supprimera toute ta progression locale. Irréversible.

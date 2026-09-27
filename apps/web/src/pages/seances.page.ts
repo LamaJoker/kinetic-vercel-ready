@@ -1,4 +1,5 @@
-﻿import {
+﻿import { plural } from '../lib/plural';
+import {
   STORAGE_KEYS,
   suggestProgression,
   needsDeload,
@@ -593,7 +594,7 @@ export function seances() {
         new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
           detail: {
             kind: 'success',
-            message: `Reprise : ${lastFinished.entries.length} exercice(s) chargé(s).`,
+            message: `Reprise : ${plural(lastFinished.entries.length, 'exercice chargé', 'exercices chargés')}.`,
           },
         }),
       );

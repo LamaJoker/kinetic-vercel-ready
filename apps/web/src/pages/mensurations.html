@@ -504,7 +504,7 @@
       <p
         x-show="photos.length > 12"
         class="text-[10px] text-gray-600 text-center mt-2"
-        x-text="'+' + (photos.length - 12) + ' plus ancien(s)'"
+        x-text="'+ ' + $plural(photos.length - 12, 'photo plus ancienne', 'photos plus anciennes')"
       ></p>
     </div>
   </div>
