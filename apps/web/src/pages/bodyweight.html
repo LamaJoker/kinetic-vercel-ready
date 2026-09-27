@@ -33,7 +33,7 @@
   <!-- Hero : poids actuel + evolution -->
   <div
     x-show="entries.length > 0"
-    class="bg-gradient-to-br from-kinetic-surface to-kinetic-ink rounded-3xl p-5 mb-4 ring-1 ring-white/8 relative overflow-hidden"
+    class="bg-kinetic-surface rounded-3xl p-5 mb-4 ring-1 ring-white/8 relative overflow-hidden"
   >
     <!-- Glow décoratif -->
     <div
@@ -43,9 +43,7 @@
 
     <div class="flex items-end justify-between relative z-10">
       <div>
-        <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-1">
-          Poids actuel
-        </p>
+        <p class="text-xs text-gray-500 font-semibold mb-1">Poids actuel</p>
         <div class="flex items-baseline gap-2">
           <span
             class="font-display font-black text-5xl text-white leading-none"
@@ -60,9 +58,7 @@
         ></p>
       </div>
       <div class="text-right">
-        <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-1">
-          Évolution
-        </p>
+        <p class="text-xs text-gray-500 font-semibold mb-1">Évolution</p>
         <p
           class="font-display font-black text-2xl leading-none"
           :class="delta > 0 ? 'text-kinetic-electric' : delta < 0 ? 'text-kinetic-neon' : 'text-gray-400'"
@@ -79,21 +75,19 @@
     <template x-if="goalWeight > 0">
       <div class="mt-4 pt-4 border-t border-white/8">
         <div class="flex justify-between mb-1.5">
-          <span class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold"
-            >Objectif</span
-          >
-          <span class="text-[10px] text-gray-400 font-mono" x-text="goalWeight + ' kg'"></span>
+          <span class="text-xs text-gray-500 font-semibold">Objectif</span>
+          <span class="text-[10px] text-gray-400 tabular-nums" x-text="goalWeight + ' kg'"></span>
         </div>
         <div class="h-1.5 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
           <div
             class="h-full rounded-full transition-all duration-700"
-            :class="goalProgress >= 100 ? 'bg-kinetic-neon shadow-[0_0_10px_rgba(168,255,0,0.6)]' : 'bg-kinetic-electric/70'"
+            :class="goalProgress >= 100 ? 'bg-kinetic-neon' : 'bg-kinetic-electric/70'"
             :style="'width: ' + Math.min(100, goalProgress) + '%'"
           ></div>
         </div>
         <p
           class="text-[10px] text-gray-500 mt-1"
-          x-text="goalProgress >= 100 ? '🎯 Objectif atteint !' : Math.round(goalProgress) + '% accompli'"
+          x-text="goalProgress >= 100 ? 'Objectif atteint !' : Math.round(goalProgress) + '% accompli'"
         ></p>
       </div>
     </template>
@@ -102,21 +96,21 @@
   <!-- Mini stats -->
   <div x-show="entries.length > 0" class="grid grid-cols-3 gap-2 mb-4">
     <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Min</p>
+      <p class="text-xs text-gray-500 font-semibold">Min</p>
       <p
         class="font-display font-black text-lg text-kinetic-neon mt-0.5"
         x-text="minWeight !== null ? minWeight.toFixed(1) : '—'"
       ></p>
     </div>
     <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Moy</p>
+      <p class="text-xs text-gray-500 font-semibold">Moy</p>
       <p
         class="font-display font-black text-lg text-white mt-0.5"
         x-text="avgWeight !== null ? avgWeight.toFixed(1) : '—'"
       ></p>
     </div>
     <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Max</p>
+      <p class="text-xs text-gray-500 font-semibold">Max</p>
       <p
         class="font-display font-black text-lg text-kinetic-electric mt-0.5"
         x-text="maxWeight !== null ? maxWeight.toFixed(1) : '—'"
@@ -141,7 +135,7 @@
             @click="period = p.v"
             class="text-[10px] px-2 py-1 rounded-lg font-semibold transition-all"
             :class="period === p.v
-                    ? 'bg-kinetic-electric text-white shadow-[0_0_10px_rgba(255,106,0,0.4)]'
+                    ? 'bg-kinetic-electric text-white'
                     : 'text-gray-500 hover:text-gray-300'"
           >
             <span x-text="p.l"></span>
@@ -154,9 +148,7 @@
 
   <!-- Formulaire ajout -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-3">
-      Enregistrer
-    </p>
+    <p class="text-xs text-gray-500 font-semibold mb-3">Enregistrer</p>
     <div class="flex gap-3 mb-3">
       <div class="flex-1">
         <label class="text-xs text-gray-500 mb-1 block">Poids (kg)</label>
@@ -211,7 +203,7 @@
       type="button"
       @click="addEntry()"
       :disabled="!newWeight || newWeight < 30"
-      class="w-full py-3 bg-kinetic-neon text-gray-950 font-bold rounded-xl text-sm shadow-[0_0_20px_rgba(168,255,0,0.3)] hover:shadow-[0_0_28px_rgba(168,255,0,0.5)] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all"
+      class="w-full py-3 bg-kinetic-neon text-gray-950 font-bold rounded-xl text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all"
     >
       Enregistrer
     </button>
@@ -222,14 +214,14 @@
     <div class="flex items-center justify-between p-4 border-b border-white/5">
       <h2 class="font-display font-bold text-white tracking-tight text-sm">Historique</h2>
       <span
-        class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
+        class="text-xs text-gray-500 font-semibold"
         x-text="filteredEntries.length + ' entrées'"
       ></span>
     </div>
 
     <template x-if="entries.length === 0">
       <div class="p-8 text-center">
-        <div class="text-4xl mb-2">⚖️</div>
+        <div class="text-4xl mb-2"></div>
         <p class="text-sm text-gray-500">Aucune pesée. Commence à te suivre !</p>
       </div>
     </template>
@@ -266,7 +258,7 @@
               x-text="entry.weight.toFixed(1) + ' kg'"
             ></p>
             <p
-              class="text-[10px] text-gray-600 font-mono"
+              class="text-[10px] text-gray-600 tabular-nums"
               x-show="entryDelta(entry, i) !== 0"
               x-text="entryDelta(entry, i) > 0 ? '+' + entryDelta(entry, i).toFixed(1) : entryDelta(entry, i).toFixed(1)"
             ></p>

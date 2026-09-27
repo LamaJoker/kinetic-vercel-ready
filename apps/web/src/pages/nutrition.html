@@ -18,7 +18,7 @@
     x-show="!$store.nutrition.plan"
     class="bg-kinetic-surface rounded-2xl p-5 mb-4 ring-1 ring-white/5 text-center"
   >
-    <p class="text-3xl mb-2">🥗</p>
+    <p class="text-3xl mb-2"></p>
     <p class="text-white font-semibold mb-1">Aucun plan nutritionnel</p>
     <p class="text-gray-500 text-sm mb-3">Complète ton profil pour obtenir tes objectifs macro.</p>
     <a
@@ -43,7 +43,7 @@
               cy="40"
               r="30"
               fill="none"
-              stroke="#A8FF00"
+              stroke="#F2C230"
               stroke-width="8"
               :stroke-dasharray="Math.min(188, ($store.nutrition.progress ? ($store.nutrition.progress.kcalPct || 0) : 0) * 1.88) + ' 188'"
               stroke-linecap="round"
@@ -88,8 +88,8 @@
       <div class="space-y-2">
         <template
           x-for="macro in [
-          { label: 'Protéines', key: 'proteinG', pctKey: 'proteinPct', color: '#A8FF00', unit: 'g' },
-          { label: 'Glucides',  key: 'carbsG',   pctKey: 'carbsPct',   color: '#FF6A00', unit: 'g' },
+          { label: 'Protéines', key: 'proteinG', pctKey: 'proteinPct', color: '#F2C230', unit: 'g' },
+          { label: 'Glucides',  key: 'carbsG',   pctKey: 'carbsPct',   color: '#D93A34', unit: 'g' },
           { label: 'Lipides',   key: 'fatG',     pctKey: 'fatPct',     color: '#FFFFFF', unit: 'g' }
         ]"
         >
@@ -135,10 +135,10 @@
           x-model="newMeal.mealName"
           class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm mb-3 text-white"
         >
-          <option value="Matin">🌅 Matin</option>
-          <option value="Déjeuner">☀️ Déjeuner</option>
-          <option value="Collation">🍎 Collation</option>
-          <option value="Dîner">🌙 Dîner</option>
+          <option value="Matin">Matin</option>
+          <option value="Déjeuner">Déjeuner</option>
+          <option value="Collation">Collation</option>
+          <option value="Dîner">Dîner</option>
         </select>
 
         <!-- Recherche aliment -->
@@ -149,7 +149,7 @@
                 x-model="foodQuery"
                 @input.debounce.200ms="searchFood()"
                 @focus="searchFood()"
-                placeholder="🔍 Rechercher un aliment…"
+                placeholder="Rechercher un aliment…"
                 class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 pr-8"
               />
               <button
@@ -211,7 +211,7 @@
               x-model="barcode"
               @keydown.enter.prevent="scanProduct()"
               inputmode="numeric"
-              placeholder="📷 Code-barres (OpenFoodFacts)…"
+              placeholder="Code-barres (OpenFoodFacts)…"
               class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600"
             />
             <span
@@ -238,9 +238,7 @@
             />
             <div class="grid grid-cols-2 gap-2 mb-2">
               <div>
-                <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1"
-                  >Kcal/100g</label
-                >
+                <label class="text-xs text-gray-500 block mb-1">Kcal/100g</label>
                 <input
                   x-model.number="newMeal.kcal"
                   type="number"
@@ -249,9 +247,7 @@
                 />
               </div>
               <div>
-                <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1"
-                  >Protéines/100g</label
-                >
+                <label class="text-xs text-gray-500 block mb-1">Protéines/100g</label>
                 <input
                   x-model.number="newMeal.protein"
                   type="number"
@@ -261,9 +257,7 @@
                 />
               </div>
               <div>
-                <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1"
-                  >Glucides/100g</label
-                >
+                <label class="text-xs text-gray-500 block mb-1">Glucides/100g</label>
                 <input
                   x-model.number="newMeal.carbs"
                   type="number"
@@ -273,9 +267,7 @@
                 />
               </div>
               <div>
-                <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1"
-                  >Lipides/100g</label
-                >
+                <label class="text-xs text-gray-500 block mb-1">Lipides/100g</label>
                 <input
                   x-model.number="newMeal.fat"
                   type="number"
@@ -291,15 +283,13 @@
         <!-- Quantité -->
         <div class="flex items-center gap-3 mb-3">
           <div class="flex-1">
-            <label class="text-[10px] uppercase tracking-wide text-gray-500 block mb-1"
-              >Quantité (g)</label
-            >
+            <label class="text-xs text-gray-500 block mb-1">Quantité (g)</label>
             <input
               x-model.number="newMeal.grams"
               type="number"
               min="1"
               step="5"
-              class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white font-mono text-center text-lg font-bold"
+              class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white tabular-nums text-center text-lg font-bold"
             />
           </div>
           <!-- Aperçu macros dynamique -->
@@ -332,10 +322,7 @@
 
       <template x-for="meal in $store.nutrition.todayLog" :key="meal.id">
         <div class="mb-3">
-          <p
-            class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5"
-            x-text="meal.mealName"
-          ></p>
+          <p class="text-xs font-semibold text-gray-400 mb-1.5" x-text="meal.mealName"></p>
           <template x-for="(item, idx) in meal.items" :key="idx">
             <div class="flex items-center justify-between py-2 border-b border-white/10/50">
               <div>

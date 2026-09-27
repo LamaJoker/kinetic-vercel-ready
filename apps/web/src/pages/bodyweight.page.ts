@@ -222,8 +222,8 @@ export function bodyweight() {
         const gy = sy(this.goalWeight).toFixed(1);
         goalLine = `
           <line x1="${padX}" y1="${gy}" x2="${W - padX}" y2="${gy}"
-                stroke="#A8FF00" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
-          <text x="${W - padX + 2}" y="${+gy + 4}" fill="#A8FF00" font-size="8" opacity="0.6">${this.goalWeight}</text>`;
+                stroke="#F2C230" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
+          <text x="${W - padX + 2}" y="${+gy + 4}" fill="#F2C230" font-size="8" opacity="0.6">${this.goalWeight}</text>`;
       }
 
       const startLabel = this.formatDate(pts[0]!.date);
@@ -232,9 +232,9 @@ export function bodyweight() {
       const svg = `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe de poids">
         ${gridLines}
         ${goalLine}
-        <path d="${areaPath}" fill="#A8FF00" fill-opacity="0.07"/>
-        <path d="${linePath}" fill="none" stroke="#A8FF00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="${lastCx}" cy="${lastCy}" r="5" fill="#A8FF00" filter="drop-shadow(0 0 4px rgba(168,255,0,0.8))"/>
+        <path d="${areaPath}" fill="#F2C230" fill-opacity="0.07"/>
+        <path d="${linePath}" fill="none" stroke="#F2C230" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="${lastCx}" cy="${lastCy}" r="5" fill="#F2C230" filter="drop-shadow(0 0 4px rgba(242,194,48,0.8))"/>
         <circle cx="${lastCx}" cy="${lastCy}" r="2.5" fill="#0A0A0F"/>
         <text x="${padX}" y="${H - 2}" fill="#4B5563" font-size="9">${startLabel}</text>
         <text x="${W - padX}" y="${H - 2}" text-anchor="end" fill="#4B5563" font-size="9">${endLabel}</text>

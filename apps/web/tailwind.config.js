@@ -5,10 +5,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        'kinetic-purple': '#7F77DD',
-        'kinetic-teal': '#00C2A0',
-        'kinetic-coral': '#FF6B6B',
-        'kinetic-gold': '#FFD166',
+        'kinetic-purple': '#3E6FD8',
+        'kinetic-teal': '#1E9E5A',
+        'kinetic-coral': '#D93A34',
+        'kinetic-gold': '#F2C230',
         // Couleurs thématiques pilotées par variables CSS (cf. styles.css)
         'kinetic-neon': 'rgb(var(--kinetic-neon) / <alpha-value>)',
         'kinetic-electric': 'rgb(var(--kinetic-electric) / <alpha-value>)',
@@ -19,15 +19,17 @@ export default {
         'kinetic-raised': 'rgb(var(--raised) / <alpha-value>)',
       },
       fontFamily: {
-        sans: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['Space Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
+        display: ['Barlow Condensed', 'Arial Narrow', 'sans-serif'],
       },
+      // Barlow Condensed est chargée jusqu'à 700 : évite un faux-gras synthétisé.
+      fontWeight: { black: '700', extrabold: '700' },
       borderRadius: {
         k: '20px',
       },
       boxShadow: {
-        'glow-p': '0 0 20px rgb(var(--kinetic-neon) / 0.38)',
-        'glow-e': '0 0 20px rgb(var(--kinetic-electric) / 0.42)',
+        'glow-p': 'none',
+        'glow-e': 'none',
       },
       scale: { 98: '0.98' },
       keyframes: {

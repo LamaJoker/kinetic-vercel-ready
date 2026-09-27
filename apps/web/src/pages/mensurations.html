@@ -15,7 +15,7 @@
       <p class="text-xs text-gray-500 mt-0.5">Tour de corps &amp; évolution (cm)</p>
     </div>
     <div class="text-right">
-      <p class="text-[10px] uppercase tracking-widest text-gray-600 font-semibold">Entrées</p>
+      <p class="text-xs text-gray-600 font-semibold">Entrées</p>
       <p
         class="font-display font-black text-lg text-white leading-none"
         x-text="entries.length"
@@ -35,7 +35,7 @@
                 : 'bg-kinetic-surface ring-white/5 hover:ring-white/10'"
       >
         <p
-          class="text-[9px] uppercase tracking-widest font-bold mb-1 truncate transition-colors"
+          class="text-[11px] font-bold mb-1 truncate transition-colors"
           :style="'color: ' + (hasData(m.key) ? m.color : '#4B5563')"
           x-text="m.label"
         ></p>
@@ -45,7 +45,7 @@
         ></p>
         <p
           x-show="currentValue(m.key) !== null"
-          class="text-[9px] mt-0.5 font-mono"
+          class="text-[9px] mt-0.5 tabular-nums"
           :class="metricDelta(m.key) > 0 ? 'text-kinetic-electric'
              : metricDelta(m.key) < 0 ? 'text-kinetic-neon'
              : 'text-gray-600'"
@@ -91,7 +91,7 @@
             @click="period = p.v"
             class="text-[10px] px-2 py-1 rounded-lg font-semibold transition-all"
             :class="period === p.v
-                    ? 'bg-kinetic-electric text-white shadow-[0_0_10px_rgba(255,106,0,0.4)]'
+                    ? 'bg-kinetic-electric text-white'
                     : 'text-gray-500 hover:text-gray-300'"
           >
             <span x-text="p.l"></span>
@@ -131,14 +131,14 @@
     <template x-if="chartPoints().length >= 2">
       <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/5">
         <div class="text-center">
-          <p class="text-[9px] uppercase tracking-widest text-gray-600 font-semibold">Départ</p>
+          <p class="text-[11px] text-gray-600 font-semibold">Départ</p>
           <p
             class="font-display font-black text-sm text-white mt-0.5"
             x-text="chartPoints()[0] ? chartPoints()[0].y.toFixed(1) + ' cm' : '—'"
           ></p>
         </div>
         <div class="text-center">
-          <p class="text-[9px] uppercase tracking-widest text-gray-600 font-semibold">Actuel</p>
+          <p class="text-[11px] text-gray-600 font-semibold">Actuel</p>
           <p
             class="font-display font-black text-sm mt-0.5"
             :style="'color: ' + activeMetricDef.color"
@@ -146,7 +146,7 @@
           ></p>
         </div>
         <div class="text-center">
-          <p class="text-[9px] uppercase tracking-widest text-gray-600 font-semibold">Mesures</p>
+          <p class="text-[11px] text-gray-600 font-semibold">Mesures</p>
           <p
             class="font-display font-black text-sm text-white mt-0.5"
             x-text="chartPoints().length"
@@ -158,14 +158,10 @@
 
   <!-- Formulaire d'enregistrement -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-4">
-      Enregistrer
-    </p>
+    <p class="text-xs text-gray-500 font-semibold mb-4">Enregistrer</p>
 
     <!-- Haut du corps -->
-    <p
-      class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"
-    >
+    <p class="text-xs text-gray-600 font-bold mb-2 flex items-center gap-1.5">
       <span class="w-1 h-1 rounded-full bg-kinetic-teal inline-block"></span> Haut du corps
     </p>
     <div class="grid grid-cols-2 gap-3 mb-4">
@@ -208,9 +204,7 @@
     </div>
 
     <!-- Bras -->
-    <p
-      class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"
-    >
+    <p class="text-xs text-gray-600 font-bold mb-2 flex items-center gap-1.5">
       <span class="w-1 h-1 rounded-full bg-kinetic-gold inline-block"></span> Bras
     </p>
     <div class="grid grid-cols-2 gap-3 mb-4">
@@ -241,9 +235,7 @@
     </div>
 
     <!-- Milieu -->
-    <p
-      class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"
-    >
+    <p class="text-xs text-gray-600 font-bold mb-2 flex items-center gap-1.5">
       <span class="w-1 h-1 rounded-full bg-kinetic-electric inline-block"></span> Milieu
     </p>
     <div class="grid grid-cols-2 gap-3 mb-4">
@@ -274,9 +266,7 @@
     </div>
 
     <!-- Jambes -->
-    <p
-      class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"
-    >
+    <p class="text-xs text-gray-600 font-bold mb-2 flex items-center gap-1.5">
       <span class="w-1 h-1 rounded-full bg-kinetic-coral inline-block"></span> Jambes
     </p>
     <div class="grid grid-cols-2 gap-3 mb-4">
@@ -341,7 +331,7 @@
       type="button"
       @click="addEntry()"
       :disabled="!hasFormData"
-      class="w-full py-3 bg-kinetic-neon text-gray-950 font-bold rounded-xl text-sm shadow-[0_0_20px_rgba(168,255,0,0.3)] hover:shadow-[0_0_28px_rgba(168,255,0,0.5)] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all"
+      class="w-full py-3 bg-kinetic-neon text-gray-950 font-bold rounded-xl text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all"
     >
       Enregistrer les mensurations
     </button>
@@ -352,7 +342,7 @@
     <div class="flex items-center justify-between p-4 border-b border-white/5">
       <h2 class="font-display font-bold text-white tracking-tight text-sm">Historique</h2>
       <span
-        class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
+        class="text-xs text-gray-500 font-semibold"
         x-text="entries.length + ' entrée' + (entries.length > 1 ? 's' : '')"
       ></span>
     </div>
@@ -419,9 +409,7 @@
       <div class="flex items-center gap-3">
         <div
           class="w-8 h-8 rounded-xl bg-kinetic-neon/10 flex items-center justify-center text-base"
-        >
-          📸
-        </div>
+        ></div>
         <div class="text-left">
           <p class="text-sm font-bold text-white">Photos de progression</p>
           <p
@@ -451,8 +439,8 @@
         :disabled="takingPhoto"
         class="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-kinetic-neon/10 ring-1 ring-kinetic-neon/30 text-kinetic-neon font-semibold text-sm hover:bg-kinetic-neon/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-4"
       >
-        <span x-show="!takingPhoto">📷 Prendre une photo</span>
-        <span x-show="takingPhoto">⏳ Chargement…</span>
+        <span x-show="!takingPhoto">Prendre une photo</span>
+        <span x-show="takingPhoto">Chargement…</span>
       </button>
 
       <!-- Galerie -->
@@ -506,7 +494,7 @@
                 @click="deletePhoto(photo.id)"
                 class="text-xs text-kinetic-electric font-semibold hover:text-red-400 transition-colors px-3 py-1.5 rounded-lg bg-kinetic-electric/10 ring-1 ring-kinetic-electric/20"
               >
-                🗑 Supprimer
+                Supprimer
               </button>
             </div>
           </div>

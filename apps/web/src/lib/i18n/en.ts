@@ -120,9 +120,9 @@ export const en: Record<string, string> = {
   'tools.ai_coach_sub': 'Ask a question about your progress',
 
   // ─── Dashboard greeting ───────────────────────────────────────
-  'greeting.morning': 'Good morning 👋',
-  'greeting.afternoon': 'Good afternoon 🌤️',
-  'greeting.evening': 'Good evening 🌙',
+  'greeting.morning': 'Good morning',
+  'greeting.afternoon': 'Good afternoon',
+  'greeting.evening': 'Good evening',
 
   // ─── Login full ───────────────────────────────────────────────
   'login.subtitle': 'Passwordless magic login',

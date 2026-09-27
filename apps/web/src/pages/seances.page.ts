@@ -123,7 +123,7 @@ interface GoalPreset {
 const COACH_GOALS: Record<CoachGoal, GoalPreset> = {
   force: {
     label: 'Force',
-    emoji: '🏋️',
+    emoji: '',
     targetReps: 4,
     targetRpe: 8.5,
     rpeZone: '3–5 reps @ RPE 8–9',
@@ -131,7 +131,7 @@ const COACH_GOALS: Record<CoachGoal, GoalPreset> = {
   },
   hypertrophie: {
     label: 'Hypertrophie',
-    emoji: '💪',
+    emoji: '',
     targetReps: 9,
     targetRpe: 8,
     rpeZone: '6–12 reps @ RPE 7–9',
@@ -139,7 +139,7 @@ const COACH_GOALS: Record<CoachGoal, GoalPreset> = {
   },
   endurance: {
     label: 'Endurance musculaire',
-    emoji: '🔄',
+    emoji: '',
     targetReps: 15,
     targetRpe: 7,
     rpeZone: '15–20 reps @ RPE 6–8',
@@ -410,7 +410,7 @@ export function seances() {
               new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
                 detail: {
                   kind: 'info',
-                  message: `Séance "${t.name}" chargée depuis ton programme 🎯`,
+                  message: `Séance "${t.name}" chargée depuis ton programme`,
                 },
               }),
             );
@@ -715,7 +715,7 @@ export function seances() {
         this.fullscreenRest = false;
         if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
           try {
-            new Notification('⏱ Repos terminé !', {
+            new Notification('Repos terminé !', {
               body: 'Prêt pour la série suivante',
               icon: '/icons/icon-96.png',
               tag: 'rest',
@@ -1133,16 +1133,16 @@ export function seances() {
         message = `🆕 Commence léger pour calibrer — vise ${preset.rpeZone}.`;
       } else if (rpeDelta <= -1.5) {
         const higher = Math.round((suggestedWeight + inc) / inc) * inc;
-        message = `💪 Trop facile la dernière fois (RPE ${last.rpe} vs cible ${preset.targetRpe}). Monte à **${higher} kg × ${preset.targetReps}**.`;
+        message = `Trop facile la dernière fois (RPE ${last.rpe} vs cible ${preset.targetRpe}). Monte à **${higher} kg × ${preset.targetReps}**.`;
       } else if (rpeDelta <= -0.5) {
-        message = `✅ Légèrement en dessous de la cible (RPE ${last.rpe}). Essaie **${suggestedWeight + inc} kg × ${preset.targetReps}** ou reste sur ${suggestedWeight} kg.`;
+        message = `Légèrement en dessous de la cible (RPE ${last.rpe}). Essaie **${suggestedWeight + inc} kg × ${preset.targetReps}** ou reste sur ${suggestedWeight} kg.`;
       } else if (rpeDelta <= 0.5) {
-        message = `🎯 Tu es exactement dans la zone (RPE ${last.rpe}). Maintiens **${suggestedWeight} kg × ${preset.targetReps} @ RPE ${preset.targetRpe}**.`;
+        message = `Tu es exactement dans la zone (RPE ${last.rpe}). Maintiens **${suggestedWeight} kg × ${preset.targetReps} @ RPE ${preset.targetRpe}**.`;
       } else if (rpeDelta <= 1.5) {
-        message = `⚠️ Un peu au-dessus de la cible (RPE ${last.rpe}). Reste sur **${suggestedWeight} kg** et cible ${preset.targetRpe} de RPE.`;
+        message = `Un peu au-dessus de la cible (RPE ${last.rpe}). Reste sur **${suggestedWeight} kg** et cible ${preset.targetRpe} de RPE.`;
       } else {
         const lower = Math.max(0, Math.round((suggestedWeight - inc) / inc) * inc);
-        message = `🔴 RPE ${last.rpe} — c'était trop lourd pour cet objectif. Recule à **${lower} kg × ${preset.targetReps}** pour rester dans la zone ${preset.rpeZone}.`;
+        message = `RPE ${last.rpe} — c'était trop lourd pour cet objectif. Recule à **${lower} kg × ${preset.targetReps}** pour rester dans la zone ${preset.rpeZone}.`;
       }
 
       // ── Note de périodisation (Coach Avancé, niveau 3+) ─────────────────
@@ -1155,12 +1155,12 @@ export function seances() {
 
         if (avgRpe >= 9.0) {
           periodizationNote =
-            '📉 Fatigue accumulée détectée (RPE moyen ≥ 9 sur 3 séances). Envisage une semaine de décharge à 60 % du volume habituel.';
+            'Fatigue accumulée détectée (RPE moyen ≥ 9 sur 3 séances). Envisage une semaine de décharge à 60 % du volume habituel.';
         } else if (e1rmProgression > 0 && avgRpe < preset.targetRpe + 0.5) {
-          periodizationNote = `📈 Bonne progression : +${e1rmProgression.toFixed(1)} kg d'e1RM sur les 3 dernières séances. Continue la surcharge progressive.`;
+          periodizationNote = `Bonne progression : +${e1rmProgression.toFixed(1)} kg d'e1RM sur les 3 dernières séances. Continue la surcharge progressive.`;
         } else if (Math.abs(e1rmProgression) < 1.5 && history.length >= 4) {
           periodizationNote =
-            "🔄 Stagnation possible : l'e1RM évolue peu depuis 3–4 séances. Envisage de changer le schéma de répétitions ou d'ajouter une série.";
+            "Stagnation possible : l'e1RM évolue peu depuis 3–4 séances. Envisage de changer le schéma de répétitions ou d'ajouter une série.";
         }
       }
 
@@ -1244,7 +1244,7 @@ export function seances() {
       const circles = pts
         .map(
           (p) =>
-            `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#FFD166' : '#7F77DD'}"><title>${p.label}: ${p.y.toFixed(1)}</title></circle>`,
+            `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#FFD166' : '#3E6FD8'}"><title>${p.label}: ${p.y.toFixed(1)}</title></circle>`,
         )
         .join('');
       const metric =
@@ -1254,8 +1254,8 @@ export function seances() {
             ? 'Volume (kg·reps)'
             : 'e1RM (kg)';
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="${metric}">
-        <path d="${area}" fill="#7F77DD" fill-opacity="0.15"/>
-        <path d="${line}" fill="none" stroke="#7F77DD" stroke-width="2" stroke-linecap="round"/>
+        <path d="${area}" fill="#3E6FD8" fill-opacity="0.15"/>
+        <path d="${line}" fill="none" stroke="#3E6FD8" stroke-width="2" stroke-linecap="round"/>
         ${circles}
         <text x="${padX}" y="${H - 2}" fill="#6B7280" font-size="9">${minY.toFixed(0)}</text>
         <text x="${padX}" y="14" fill="#6B7280" font-size="9">${maxY.toFixed(0)}</text>

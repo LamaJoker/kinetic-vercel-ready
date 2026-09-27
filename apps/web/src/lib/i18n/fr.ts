@@ -123,9 +123,9 @@ export const fr: Record<string, string> = {
   'tools.ai_coach_sub': 'Pose une question sur ta progression',
 
   // ─── Dashboard greeting ───────────────────────────────────────
-  'greeting.morning': 'Bonjour 👋',
-  'greeting.afternoon': 'Bon après-midi 🌤️',
-  'greeting.evening': 'Bonsoir 🌙',
+  'greeting.morning': 'Bonjour',
+  'greeting.afternoon': 'Bon après-midi',
+  'greeting.evening': 'Bonsoir',
 
   // ─── Login full ───────────────────────────────────────────────
   'login.subtitle': 'Connexion magique sans mot de passe',

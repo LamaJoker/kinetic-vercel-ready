@@ -40,16 +40,16 @@ interface MetricDef {
 }
 
 const METRICS: readonly MetricDef[] = [
-  { key: 'chest', label: 'Poitrine', color: '#A8FF00' },
-  { key: 'waist', label: 'Taille', color: '#FF6A00' },
-  { key: 'hips', label: 'Hanches', color: '#7F77DD' },
-  { key: 'shoulders', label: 'Épaules', color: '#00C2A0' },
+  { key: 'chest', label: 'Poitrine', color: '#F2C230' },
+  { key: 'waist', label: 'Taille', color: '#D93A34' },
+  { key: 'hips', label: 'Hanches', color: '#3E6FD8' },
+  { key: 'shoulders', label: 'Épaules', color: '#1E9E5A' },
   { key: 'leftBicep', label: 'Bras G', color: '#FFD166' },
   { key: 'rightBicep', label: 'Bras D', color: '#FFD166' },
   { key: 'leftThigh', label: 'Cuisse G', color: '#FF6B6B' },
   { key: 'rightThigh', label: 'Cuisse D', color: '#FF6B6B' },
-  { key: 'leftCalf', label: 'Mollet G', color: '#00C2A0' },
-  { key: 'rightCalf', label: 'Mollet D', color: '#00C2A0' },
+  { key: 'leftCalf', label: 'Mollet G', color: '#1E9E5A' },
+  { key: 'rightCalf', label: 'Mollet D', color: '#1E9E5A' },
   { key: 'neck', label: 'Cou', color: '#FFD166' },
 ] as const;
 

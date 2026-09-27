@@ -16,7 +16,7 @@
   <!-- État vide -->
   <template x-if="!loading && totalSessions === 0">
     <div class="bg-kinetic-surface rounded-2xl p-8 text-center ring-1 ring-white/5">
-      <div class="text-5xl mb-3">📈</div>
+      <div class="text-5xl mb-3"></div>
       <p class="text-white font-semibold mb-1">Pas encore de données</p>
       <p class="text-sm text-gray-500 mb-5">
         Termine une première séance pour voir ta progression apparaître ici.
@@ -59,7 +59,7 @@
     class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5 mb-4"
   >
     <div class="flex items-center justify-between mb-3">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Ta semaine</p>
+      <p class="text-xs text-gray-500 font-semibold">Ta semaine</p>
       <span
         class="text-[11px] font-medium"
         :class="weeklyReview.trend === 'up' ? 'text-kinetic-neon' : weeklyReview.trend === 'down' ? 'text-kinetic-electric' : 'text-gray-400'"
@@ -76,18 +76,18 @@
     <div class="grid grid-cols-4 gap-2 text-center">
       <div>
         <p class="font-display font-black text-lg text-white" x-text="weeklyReview.sessions"></p>
-        <p class="text-[9px] uppercase tracking-wide text-gray-500">séances</p>
+        <p class="text-[11px] text-gray-500">séances</p>
       </div>
       <div>
         <p
           class="font-display font-black text-lg text-white"
           x-text="weeklyReview.trainingDays"
         ></p>
-        <p class="text-[9px] uppercase tracking-wide text-gray-500">jours</p>
+        <p class="text-[11px] text-gray-500">jours</p>
       </div>
       <div>
         <p class="font-display font-black text-lg text-white" x-text="weeklyReview.totalSets"></p>
-        <p class="text-[9px] uppercase tracking-wide text-gray-500">sets</p>
+        <p class="text-[11px] text-gray-500">sets</p>
       </div>
       <div>
         <p
@@ -95,7 +95,7 @@
           :class="weeklyReview.prCount > 0 ? 'text-kinetic-neon' : 'text-white'"
           x-text="weeklyReview.prCount"
         ></p>
-        <p class="text-[9px] uppercase tracking-wide text-gray-500">PR 🏆</p>
+        <p class="text-[11px] text-gray-500">PR</p>
       </div>
     </div>
   </div>
@@ -103,18 +103,18 @@
   <!-- Stats globales -->
   <div x-show="totalSessions > 0" class="grid grid-cols-3 gap-2 mb-4">
     <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Séances</p>
+      <p class="text-xs text-gray-500 font-semibold">Séances</p>
       <p class="font-display font-black text-xl text-white mt-1" x-text="totalSessions"></p>
     </div>
     <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Tonnage</p>
+      <p class="text-xs text-gray-500 font-semibold">Tonnage</p>
       <p class="font-display font-black text-xl text-white mt-1">
         <span x-text="formatNumber(totalTonnage)"></span
         ><span class="text-xs text-gray-500 font-medium ml-0.5">kg</span>
       </p>
     </div>
     <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Régularité</p>
+      <p class="text-xs text-gray-500 font-semibold">Régularité</p>
       <p class="font-display font-black text-xl text-kinetic-neon mt-1">
         <span x-text="consistency"></span
         ><span class="text-xs text-gray-500 font-medium ml-0.5">%</span>
@@ -125,18 +125,18 @@
   <!-- Stats avancées -->
   <div x-show="totalSessions > 0" class="grid grid-cols-3 gap-2 mb-4">
     <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Série max</p>
+      <p class="text-xs text-gray-500 font-semibold">Série max</p>
       <p class="font-display font-black text-xl text-kinetic-electric mt-1">
         <span x-text="longestStreak"></span
         ><span class="text-xs text-gray-500 font-medium ml-0.5">j</span>
       </p>
     </div>
     <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Moy/sem</p>
+      <p class="text-xs text-gray-500 font-semibold">Moy/sem</p>
       <p class="font-display font-black text-xl text-white mt-1" x-text="avgSessionsPerWeek"></p>
     </div>
     <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Durée moy</p>
+      <p class="text-xs text-gray-500 font-semibold">Durée moy</p>
       <p class="font-display font-black text-xl text-white mt-1">
         <span x-text="avgDurationMin"></span
         ><span class="text-xs text-gray-500 font-medium ml-0.5">min</span>
@@ -152,7 +152,7 @@
     <button
       type="button"
       @click="setTab('force')"
-      :class="activeTab === 'force' ? 'bg-kinetic-electric text-white shadow-[0_0_14px_rgba(255,106,0,0.45)]' : 'text-gray-400 hover:text-white'"
+      :class="activeTab === 'force' ? 'bg-kinetic-electric text-white' : 'text-gray-400 hover:text-white'"
       class="text-xs font-semibold py-2 rounded-xl transition-all"
     >
       Force
@@ -160,7 +160,7 @@
     <button
       type="button"
       @click="setTab('volume')"
-      :class="activeTab === 'volume' ? 'bg-kinetic-electric text-white shadow-[0_0_14px_rgba(255,106,0,0.45)]' : 'text-gray-400 hover:text-white'"
+      :class="activeTab === 'volume' ? 'bg-kinetic-electric text-white' : 'text-gray-400 hover:text-white'"
       class="text-xs font-semibold py-2 rounded-xl transition-all"
     >
       Volume
@@ -168,7 +168,7 @@
     <button
       type="button"
       @click="setTab('muscles')"
-      :class="activeTab === 'muscles' ? 'bg-kinetic-electric text-white shadow-[0_0_14px_rgba(255,106,0,0.45)]' : 'text-gray-400 hover:text-white'"
+      :class="activeTab === 'muscles' ? 'bg-kinetic-electric text-white' : 'text-gray-400 hover:text-white'"
       class="text-xs font-semibold py-2 rounded-xl transition-all"
     >
       Muscles
@@ -176,7 +176,7 @@
     <button
       type="button"
       @click="setTab('records')"
-      :class="activeTab === 'records' ? 'bg-kinetic-electric text-white shadow-[0_0_14px_rgba(255,106,0,0.45)]' : 'text-gray-400 hover:text-white'"
+      :class="activeTab === 'records' ? 'bg-kinetic-electric text-white' : 'text-gray-400 hover:text-white'"
       class="text-xs font-semibold py-2 rounded-xl transition-all"
     >
       Records
@@ -184,7 +184,7 @@
     <button
       type="button"
       @click="setTab('heatmap')"
-      :class="activeTab === 'heatmap' ? 'bg-kinetic-electric text-white shadow-[0_0_14px_rgba(255,106,0,0.45)]' : 'text-gray-400 hover:text-white'"
+      :class="activeTab === 'heatmap' ? 'bg-kinetic-electric text-white' : 'text-gray-400 hover:text-white'"
       class="text-xs font-semibold py-2 rounded-xl transition-all"
     >
       Activité
@@ -197,9 +197,7 @@
     x-transition
   >
     <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5 mb-3">
-      <label class="block text-xs uppercase tracking-widest text-gray-500 font-semibold mb-2"
-        >Exercice</label
-      >
+      <label class="block text-xs text-gray-500 font-semibold mb-2">Exercice</label>
       <select
         x-model="selectedExerciseId"
         class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm"
@@ -213,9 +211,7 @@
     <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
       <div class="flex items-center justify-between mb-3">
         <h2 class="font-display font-bold text-white tracking-tight text-sm">Courbe e1RM</h2>
-        <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
-          >kg estimés</span
-        >
+        <span class="text-xs text-gray-500 font-semibold">kg estimés</span>
       </div>
       <template x-if="forceHasData()">
         <div x-svg="forceSvg()" class="w-full"></div>
@@ -239,9 +235,7 @@
         <h2 class="font-display font-bold text-white tracking-tight text-sm">
           Tonnage hebdomadaire
         </h2>
-        <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
-          >12 dernières S</span
-        >
+        <span class="text-xs text-gray-500 font-semibold">12 dernières S</span>
       </div>
 
       <template x-if="weeklyBuckets.length === 0">
@@ -255,11 +249,14 @@
         <template x-for="b in weeklyBuckets" :key="b.isoWeek">
           <div class="flex-1 flex flex-col items-center gap-1 group">
             <div
-              class="w-full bg-gradient-to-t from-kinetic-electric to-orange-500 rounded-t-md transition-all shadow-[0_0_8px_rgba(255,106,0,0.35)]"
+              class="w-full bg-kinetic-electric rounded-t-md transition-all"
               :style="'height: ' + barHeightPct(b.tonnageKg) + '%; min-height: 2px'"
               :title="formatWeek(b.isoWeek) + ' — ' + formatNumber(b.tonnageKg) + ' kg'"
             ></div>
-            <span class="text-[9px] text-gray-500 font-mono" x-text="formatWeek(b.isoWeek)"></span>
+            <span
+              class="text-[9px] text-gray-500 tabular-nums"
+              x-text="formatWeek(b.isoWeek)"
+            ></span>
           </div>
         </template>
       </div>
@@ -267,21 +264,21 @@
       <template x-if="weeklyBuckets.length > 0">
         <div class="grid grid-cols-3 gap-2 pt-3 border-t border-white/5 text-center">
           <div>
-            <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Semaine</p>
+            <p class="text-xs text-gray-500 font-semibold">Semaine</p>
             <p
               class="text-sm font-bold text-white"
               x-text="formatWeek(weeklyBuckets.at(-1).isoWeek)"
             ></p>
           </div>
           <div>
-            <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Tonnage</p>
+            <p class="text-xs text-gray-500 font-semibold">Tonnage</p>
             <p class="text-sm font-bold text-white">
               <span x-text="formatNumber(weeklyBuckets.at(-1).tonnageKg)"></span>
               <span class="text-[10px] text-gray-500">kg</span>
             </p>
           </div>
           <div>
-            <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Sets</p>
+            <p class="text-xs text-gray-500 font-semibold">Sets</p>
             <p class="text-sm font-bold text-white" x-text="weeklyBuckets.at(-1).totalSets"></p>
           </div>
         </div>
@@ -311,13 +308,13 @@
             <div class="flex items-center justify-between mb-1">
               <span class="text-sm font-medium text-white" x-text="muscleLabel(m.muscle)"></span>
               <span
-                class="text-xs text-gray-500 font-mono"
+                class="text-xs text-gray-500 tabular-nums"
                 x-text="Math.round(m.share * 100) + '%'"
               ></span>
             </div>
             <div class="h-2 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
               <div
-                class="h-full bg-gradient-to-r from-kinetic-neon to-lime-300 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(168,255,0,0.4)]"
+                class="h-full bg-kinetic-neon rounded-full transition-all duration-500"
                 :style="'width: ' + Math.round(m.share * 100) + '%'"
               ></div>
             </div>
@@ -371,25 +368,23 @@
       </div>
 
       <!-- Légende mois -->
-      <p class="text-[9px] text-gray-600 mt-2 text-center">← passé · futur →</p>
+      <p class="text-[9px] text-gray-600 mt-2 text-center">← passé · futur</p>
 
       <!-- Résumé période -->
       <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-white/5 text-center">
         <div>
-          <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">20 sem.</p>
+          <p class="text-xs text-gray-500 font-semibold">20 sem.</p>
           <p
             class="text-sm font-bold text-white"
             x-text="sessions.filter(s => Date.parse(s.startedAt) >= Date.now() - 20*7*86400000).length + ' séances'"
           ></p>
         </div>
         <div>
-          <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Total</p>
+          <p class="text-xs text-gray-500 font-semibold">Total</p>
           <p class="text-sm font-bold text-white" x-text="totalSessions + ' séances'"></p>
         </div>
         <div>
-          <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">
-            Régularité
-          </p>
+          <p class="text-xs text-gray-500 font-semibold">Régularité</p>
           <p class="text-sm font-bold text-kinetic-neon" x-text="consistency + '%'"></p>
         </div>
       </div>
@@ -404,10 +399,7 @@
     <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
       <div class="flex items-center justify-between mb-4">
         <h2 class="font-display font-bold text-white tracking-tight text-sm">Records personnels</h2>
-        <span
-          class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
-          x-text="records.length + ' PR'"
-        ></span>
+        <span class="text-xs text-gray-500 font-semibold" x-text="records.length + ' PR'"></span>
       </div>
 
       <template x-if="records.length === 0">
@@ -419,10 +411,11 @@
           <li class="py-3 flex items-center gap-3">
             <div
               class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              :class="i === 0 ? 'bg-kinetic-neon text-gray-950 shadow-[0_0_12px_rgba(168,255,0,0.5)]' : 'bg-kinetic-ink ring-1 ring-white/10 text-gray-400'"
+              :class="i === 0 ? 'bg-kinetic-neon text-gray-950' : 'bg-kinetic-ink ring-1 ring-white/10 text-gray-400'"
             >
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z" />
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="3" fill="rgb(var(--ink))" />
               </svg>
             </div>
             <div class="flex-1 min-w-0">
@@ -440,7 +433,7 @@
                 class="text-sm font-display font-black text-kinetic-electric"
                 x-text="formatNumber(pr.e1rmKg, 1)"
               ></p>
-              <p class="text-[10px] text-gray-500 font-mono">e1RM kg</p>
+              <p class="text-[10px] text-gray-500 tabular-nums">e1RM kg</p>
             </div>
           </li>
         </template>

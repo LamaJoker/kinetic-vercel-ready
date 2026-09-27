@@ -32,19 +32,19 @@
       <div
         class="w-16 h-16 rounded-full flex items-center justify-center text-white font-display font-black text-xl select-none ring-2 transition-all"
         :class="$store.rewards.hasLegendBadge
-             ? 'bg-gradient-to-br from-yellow-400 to-amber-600 shadow-[0_0_22px_rgba(250,204,21,0.5)] ring-yellow-400/40'
-             : 'bg-gradient-to-br from-kinetic-electric to-orange-600 shadow-[0_0_22px_rgba(255,106,0,0.4)] ring-white/10'"
+             ? 'bg-kinetic-neon ring-yellow-400/40'
+             : 'bg-kinetic-electric ring-white/10'"
         x-text="$store.auth.initials"
       ></div>
       <!-- Badge niveau ou couronne Légende -->
       <div
         class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center shadow-md ring-1 ring-black/40 transition-all"
         :class="$store.rewards.hasLegendBadge
-             ? 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.7)]'
-             : 'bg-kinetic-electric shadow-[0_0_8px_rgba(255,106,0,0.6)]'"
+             ? 'bg-yellow-400'
+             : 'bg-kinetic-electric'"
       >
         <template x-if="$store.rewards.hasLegendBadge">
-          <span class="text-[11px]">👑</span>
+          <span class="text-[11px]"></span>
         </template>
         <template x-if="!$store.rewards.hasLegendBadge">
           <svg
@@ -53,7 +53,8 @@
             class="w-3 h-3 text-white"
             aria-hidden="true"
           >
-            <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z" />
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="3" fill="rgb(var(--ink))" />
           </svg>
         </template>
       </div>
@@ -97,7 +98,7 @@
   <!-- Abonnement -->
   <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5 mb-4">
     <div class="flex items-center justify-between mb-2">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Abonnement</p>
+      <p class="text-xs text-gray-500 font-semibold">Abonnement</p>
       <span
         class="text-xs font-bold"
         :class="$store.entitlement.isPro ? 'text-kinetic-neon' : 'text-gray-400'"
@@ -143,15 +144,15 @@
   <div class="grid grid-cols-3 gap-3 mb-6">
     <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
       <p class="font-display font-black text-2xl text-kinetic-neon" x-text="$store.xp.xp"></p>
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 mt-0.5">XP total</p>
+      <p class="text-xs text-gray-500 mt-0.5">XP total</p>
     </div>
     <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
-      <p class="font-display font-black text-2xl text-kinetic-electric" x-text="streak + ' 🔥'"></p>
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 mt-0.5">Streak</p>
+      <p class="font-display font-black text-2xl text-kinetic-electric" x-text="streak + ''"></p>
+      <p class="text-xs text-gray-500 mt-0.5">Série</p>
     </div>
     <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
       <p class="font-display font-black text-2xl text-kinetic-neon" x-text="tasksCompleted"></p>
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 mt-0.5">Tâches</p>
+      <p class="text-xs text-gray-500 mt-0.5">Tâches</p>
     </div>
   </div>
 
@@ -159,41 +160,36 @@
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2">
-        <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
-          >Niveau</span
-        >
+        <span class="text-xs text-gray-500 font-semibold">Niveau</span>
         <span
           class="font-display font-black text-kinetic-neon text-xl leading-none"
           x-text="$store.xp.currentLevel"
         ></span>
         <span class="text-xs text-gray-400 font-medium" x-text="$store.xp.title"></span>
       </div>
-      <span class="text-sm font-mono font-bold text-white" x-text="$store.xp.xp + ' XP'"></span>
+      <span class="text-sm tabular-nums font-bold text-white" x-text="$store.xp.xp + ' XP'"></span>
     </div>
     <div class="h-2 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
       <div
-        class="h-full bg-gradient-to-r from-kinetic-neon to-lime-300 rounded-full transition-all duration-700 ease-out shadow-[0_0_14px_rgba(168,255,0,0.7)]"
+        class="h-full bg-kinetic-neon rounded-full transition-all duration-700 ease-out"
         :style="'width: ' + $store.xp.progressPercent + '%'"
       ></div>
     </div>
     <div class="flex justify-between mt-2">
-      <p
-        class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold"
-        x-text="'LV.' + $store.xp.currentLevel"
-      ></p>
+      <p class="text-xs text-gray-500 font-semibold" x-text="'LV.' + $store.xp.currentLevel"></p>
       <p
         class="text-xs text-gray-500"
         x-show="!$store.xp.isMaxLevel"
         x-text="$store.xp.remaining + ' XP → LV.' + ($store.xp.currentLevel + 1)"
       ></p>
-      <p class="text-xs text-kinetic-electric font-medium" x-show="$store.xp.isMaxLevel">🏆 MAX</p>
+      <p class="text-xs text-kinetic-electric font-medium" x-show="$store.xp.isMaxLevel">MAX</p>
     </div>
   </div>
 
   <!-- Récompenses par niveau -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Récompenses</h2>
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-4">Progression par niveau</p>
+    <p class="text-xs text-gray-500 mb-4">Progression par niveau</p>
 
     <div class="space-y-2">
       <template x-for="reward in $store.rewards.allRewards" :key="reward.level">
@@ -206,12 +202,23 @@
           <!-- Icône + état -->
           <div class="relative shrink-0">
             <div
-              class="w-10 h-10 rounded-xl flex items-center justify-center text-xl font-bold"
-              :class="$store.rewards.isUnlocked(reward.level)
-                   ? 'bg-kinetic-neon/15 ring-1 ring-kinetic-neon/30'
-                   : 'bg-white/5 ring-1 ring-white/10'"
-              x-text="reward.emoji"
-            ></div>
+              class="w-10 h-10"
+              :class="$store.rewards.isUnlocked(reward.level) ? 'text-kinetic-neon' : 'text-white/10'"
+            >
+              <svg viewBox="0 0 24 24" class="w-full h-full" aria-hidden="true">
+                <circle cx="12" cy="12" r="10.5" fill="currentColor" />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="6.5"
+                  fill="none"
+                  stroke="rgb(var(--surface))"
+                  stroke-opacity="0.35"
+                  stroke-width="1.2"
+                />
+                <circle cx="12" cy="12" r="2.6" fill="rgb(var(--surface))" />
+              </svg>
+            </div>
             <!-- badge niveau -->
             <div
               class="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black"
@@ -238,11 +245,11 @@
           <!-- Statut -->
           <div class="shrink-0">
             <template x-if="$store.rewards.isUnlocked(reward.level)">
-              <span class="text-[10px] font-bold text-kinetic-neon uppercase tracking-wide">✓</span>
+              <span class="text-xs font-bold text-kinetic-neon">✓</span>
             </template>
             <template x-if="!$store.rewards.isUnlocked(reward.level)">
               <span
-                class="text-[10px] text-gray-600 font-mono"
+                class="text-[10px] text-gray-600 tabular-nums"
                 x-text="'LV.' + reward.level"
               ></span>
             </template>
@@ -257,7 +264,7 @@
         <div class="flex items-center justify-between gap-3">
           <div>
             <p class="text-xs font-bold text-white flex items-center gap-1.5">
-              🧊 Gel de Streak
+              Gel de Streak
               <span
                 class="text-kinetic-neon font-black text-sm"
                 x-text="$store.rewards.freezeTokens"
@@ -285,7 +292,7 @@
   <template x-if="$store.rewards.hasColorThemes">
     <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
       <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Thème de couleur</h2>
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-4">Récompense Niveau 7</p>
+      <p class="text-xs text-gray-500 mb-4">Récompense Niveau 7</p>
 
       <div class="grid grid-cols-5 gap-2">
         <template x-for="theme in $store.rewards.allThemes" :key="theme.id">
@@ -302,11 +309,6 @@
               <div class="w-1/2 h-full" :style="'background: ' + theme.neon"></div>
               <div class="w-1/2 h-full" :style="'background: ' + theme.accent"></div>
             </div>
-            <span
-              class="text-[9px] text-gray-400 font-medium text-center leading-tight"
-              :class="$store.rewards.currentTheme === theme.id ? 'text-white' : ''"
-              x-text="theme.emoji"
-            ></span>
           </button>
         </template>
       </div>
@@ -319,17 +321,15 @@
   </template>
 
   <!-- Meilleur streak -->
-  <div
-    class="bg-gradient-to-r from-kinetic-electric/20 to-kinetic-electric/10 ring-1 ring-kinetic-electric/20 rounded-2xl p-4 mb-6"
-  >
+  <div class="bg-kinetic-electric/15 ring-1 ring-kinetic-electric/20 rounded-2xl p-4 mb-6">
     <h2 class="font-display font-bold text-white tracking-tight mb-3">Best Streak</h2>
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-[10px] uppercase tracking-widest text-gray-500">Meilleur</p>
-        <p class="font-display font-black text-2xl text-white" x-text="bestStreak + ' 🔥'"></p>
+        <p class="text-xs text-gray-500">Meilleur</p>
+        <p class="font-display font-black text-2xl text-white" x-text="bestStreak + ''"></p>
       </div>
       <div class="text-right">
-        <p class="text-[10px] uppercase tracking-widest text-gray-500">Actuel</p>
+        <p class="text-xs text-gray-500">Actuel</p>
         <p class="font-display font-black text-2xl text-kinetic-electric" x-text="streak"></p>
       </div>
     </div>
@@ -338,7 +338,7 @@
   <!-- Nom affiché -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Nom affiché</h2>
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Personnalisation</p>
+    <p class="text-xs text-gray-500 mb-3">Personnalisation</p>
     <input
       type="text"
       x-model="displayNameInput"
@@ -352,7 +352,7 @@
   <!-- Sync / Compte -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Sync</h2>
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Compte</p>
+    <p class="text-xs text-gray-500 mb-3">Compte</p>
 
     <div x-show="$store.auth.isAuthenticated">
       <p class="text-sm text-gray-300 mb-3">
@@ -388,7 +388,7 @@
   <template x-if="pushSupported">
     <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
       <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Notifications push</h2>
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Rappels d'entraînement</p>
+      <p class="text-xs text-gray-500 mb-3">Rappels d'entraînement</p>
       <p class="text-xs text-gray-500 mb-3">
         Reçois un rappel quand tu n'as pas ouvert l'app depuis 24 h ou quand un objectif hebdo est
         proche. 1 push max par jour, désactivable en 1 tap.
@@ -411,7 +411,7 @@
   <!-- Apparence -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Apparence</h2>
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Thème · clair / foncé</p>
+    <p class="text-xs text-gray-500 mb-3">Thème · clair / foncé</p>
     <div class="grid grid-cols-3 gap-2">
       <button
         @click="setTheme('dark')"
@@ -420,7 +420,7 @@
           ? 'bg-kinetic-neon text-gray-950'
           : 'bg-kinetic-elevated text-white hover:bg-white/10'"
       >
-        <span class="text-xl">🌙</span>
+        <span class="text-xl"></span>
         <span>Foncé</span>
       </button>
       <button
@@ -430,7 +430,7 @@
           ? 'bg-kinetic-neon text-gray-950'
           : 'bg-kinetic-elevated text-white hover:bg-white/10'"
       >
-        <span class="text-xl">☀️</span>
+        <span class="text-xl"></span>
         <span>Clair</span>
       </button>
       <button
@@ -440,7 +440,7 @@
           ? 'bg-kinetic-neon text-gray-950'
           : 'bg-kinetic-elevated text-white hover:bg-white/10'"
       >
-        <span class="text-xl">⚙️</span>
+        <span class="text-xl"></span>
         <span>Auto</span>
       </button>
     </div>
@@ -452,7 +452,7 @@
   <!-- Niveau d'affichage (Simple / Avancé) -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Affichage</h2>
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Simple / Avancé</p>
+    <p class="text-xs text-gray-500 mb-3">Simple / Avancé</p>
     <div class="grid grid-cols-2 gap-2">
       <button
         @click="setDensity('simple')"
@@ -461,7 +461,7 @@
           ? 'bg-kinetic-neon text-gray-950'
           : 'bg-kinetic-elevated text-white hover:bg-white/10'"
       >
-        <span class="text-xl">🌱</span>
+        <span class="text-xl"></span>
         <span>Simple</span>
       </button>
       <button
@@ -471,7 +471,7 @@
           ? 'bg-kinetic-neon text-gray-950'
           : 'bg-kinetic-elevated text-white hover:bg-white/10'"
       >
-        <span class="text-xl">🔬</span>
+        <span class="text-xl"></span>
         <span>Avancé</span>
       </button>
     </div>
@@ -487,7 +487,7 @@
     class="block bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5 hover:ring-kinetic-neon/30 transition-all"
   >
     <div class="flex items-center gap-3">
-      <span class="text-2xl">📖</span>
+      <span class="text-2xl"></span>
       <div class="flex-1">
         <h2 class="font-bold text-white">Glossaire</h2>
         <p class="text-xs text-gray-500">RPE, e1RM, deload, tonnage… tout expliqué simplement</p>
@@ -499,7 +499,7 @@
   <!-- Langue / Language -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Langue / Language</h2>
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">UI</p>
+    <p class="text-xs text-gray-500 mb-3">UI</p>
     <div class="grid grid-cols-2 gap-2">
       <button
         @click="setUiLocale('fr')"
@@ -528,7 +528,7 @@
     class="block bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5 hover:ring-kinetic-neon/30 transition-all"
   >
     <div class="flex items-center gap-3">
-      <span class="text-2xl">📷</span>
+      <span class="text-2xl"></span>
       <div class="flex-1">
         <h2 class="font-bold text-white">Photos de progrès</h2>
         <p class="text-xs text-gray-500">Timeline avant/après stockée localement</p>
@@ -543,7 +543,7 @@
     class="block bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5 hover:ring-kinetic-neon/30 transition-all"
   >
     <div class="flex items-center gap-3">
-      <span class="text-2xl">📋</span>
+      <span class="text-2xl"></span>
       <div class="flex-1">
         <h2 class="font-bold text-white">Programmes pré-écrits</h2>
         <p class="text-xs text-gray-500">5/3/1, Starting Strength, GZCLP, Madcow, nSuns</p>
@@ -555,9 +555,7 @@
   <!-- Partage profil public -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Profil partagé</h2>
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">
-      Best lifts · streak · niveau
-    </p>
+    <p class="text-xs text-gray-500 mb-3">Best lifts · streak · niveau</p>
     <p class="text-xs text-gray-500 mb-3">
       Génère un lien public avec tes records — partage avec ton coach ou tes potes. Les données sont
       encodées dans l'URL, aucun serveur n'est appelé.
@@ -595,7 +593,7 @@
         >PRO</span
       >
     </div>
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Mes données</p>
+    <p class="text-xs text-gray-500 mb-3">Mes données</p>
     <p class="text-xs text-gray-500 mb-3">
       Télécharge tout ton historique d'entraînement — aucun lock-in.
     </p>
@@ -623,7 +621,7 @@
   <!-- Import des données -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Import</h2>
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Strong · Hevy · Kinetic</p>
+    <p class="text-xs text-gray-500 mb-3">Strong · Hevy · Kinetic</p>
     <p class="text-xs text-gray-500 mb-3">
       Importe ton historique depuis un export Strong, Hevy ou une sauvegarde Kinetic. Les doublons
       sont automatiquement ignorés.
@@ -667,7 +665,7 @@
   <!-- Stockage local -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Stockage</h2>
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Espace local</p>
+    <p class="text-xs text-gray-500 mb-3">Espace local</p>
     <div class="mb-3">
       <div class="flex justify-between text-xs mb-1">
         <span class="text-gray-400">Utilisé</span>
@@ -676,7 +674,7 @@
       <div class="h-2 bg-kinetic-elevated rounded-full overflow-hidden">
         <div
           class="h-full rounded-full transition-all duration-500"
-          :style="'width: ' + (storagePercent !== null ? storagePercent : 0) + '%; background: ' + (storagePercent !== null && storagePercent > 80 ? '#FF6A00' : '#A8FF00')"
+          :style="'width: ' + (storagePercent !== null ? storagePercent : 0) + '%; background: ' + (storagePercent !== null && storagePercent > 80 ? '#D93A34' : '#F2C230')"
         ></div>
       </div>
     </div>
@@ -689,7 +687,7 @@
         :disabled="compacting"
         class="bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:ring-kinetic-neon/30 transition-all disabled:opacity-40 whitespace-nowrap"
       >
-        <span x-show="!compacting">⚡ Compacter</span>
+        <span x-show="!compacting">Compacter</span>
         <span x-show="compacting">…</span>
       </button>
     </div>
@@ -701,7 +699,7 @@
     class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5"
   >
     <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Cloud</h2>
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Synchronisation</p>
+    <p class="text-xs text-gray-500 mb-3">Synchronisation</p>
     <div class="flex items-center justify-between gap-3">
       <p class="text-xs text-gray-500 flex-1">
         Récupère tes données depuis le cloud (utile sur un nouvel appareil).
@@ -720,7 +718,7 @@
   <!-- Reset -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-6 ring-1 ring-white/5">
     <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Reset</h2>
-    <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Réinitialisation</p>
+    <p class="text-xs text-gray-500 mb-3">Réinitialisation</p>
     <div class="flex items-center justify-between">
       <p class="text-xs text-gray-500">Supprime toute la progression locale</p>
       <button
@@ -732,7 +730,7 @@
     </div>
   </div>
 
-  <p class="text-center text-xs text-gray-700">Kinetic v1.0.0 — Built with 🔥</p>
+  <p class="text-center text-xs text-gray-700">Kinetic v1.0.0 — Built with</p>
 
   <!-- Modale confirmation reset -->
   <div
@@ -747,7 +745,7 @@
     <div
       class="relative bg-kinetic-surface ring-1 ring-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
     >
-      <p class="text-xl mb-2">⚠️</p>
+      <p class="text-xl mb-2"></p>
       <h3 class="font-display font-bold text-lg text-white mb-2">Réinitialiser ?</h3>
       <p class="text-sm text-gray-400 mb-5">
         Cette action supprimera toute ta progression locale. Irréversible.

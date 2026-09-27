@@ -20,21 +20,17 @@
   <!-- Entrées -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5 space-y-3">
     <div>
-      <label class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold block mb-1">
-        Charge totale (kg)
-      </label>
+      <label class="text-xs text-gray-500 font-semibold block mb-1"> Charge totale (kg) </label>
       <input
         type="number"
         x-model.number="targetKg"
         min="0"
         step="0.5"
-        class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-electric rounded-lg px-3 py-2.5 text-2xl font-mono font-bold text-white outline-none"
+        class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-electric rounded-lg px-3 py-2.5 text-2xl tabular-nums font-bold text-white outline-none"
       />
     </div>
     <div>
-      <label class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold block mb-1">
-        Barre (kg)
-      </label>
+      <label class="text-xs text-gray-500 font-semibold block mb-1"> Barre (kg) </label>
       <div class="grid grid-cols-4 gap-2">
         <template x-for="bar in BAR_PRESETS" :key="bar">
           <button
@@ -53,16 +49,13 @@
   <!-- Résultat visuel -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <div class="flex items-center justify-between mb-3">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Par côté</p>
-      <span
-        class="text-[10px] uppercase tracking-widest text-kinetic-neon font-bold"
-        x-text="resultLabel"
-      ></span>
+      <p class="text-xs text-gray-500 font-semibold">Par côté</p>
+      <span class="text-xs text-kinetic-neon font-bold" x-text="resultLabel"></span>
     </div>
 
     <template x-if="result.underBar">
       <p class="text-sm text-kinetic-electric">
-        ⚠️ La barre seule est plus lourde que la cible — réduis la cible ou change de barre.
+        La barre seule est plus lourde que la cible — réduis la cible ou change de barre.
       </p>
     </template>
 
@@ -98,7 +91,7 @@
 
     <template x-if="result.inexact && !result.underBar">
       <p class="mt-3 text-xs text-kinetic-electric">
-        ⚠️ Charge la plus proche :
+        Charge la plus proche :
         <span class="font-bold" x-text="result.achievedKg + ' kg'"></span> (manque
         <span class="font-bold" x-text="result.deltaKg.toFixed(2) + ' kg'"></span>)
       </p>
@@ -111,9 +104,7 @@
       @click="showPlates = !showPlates"
       class="flex items-center justify-between w-full text-left"
     >
-      <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">
-        Disques disponibles
-      </span>
+      <span class="text-xs text-gray-500 font-semibold"> Disques disponibles </span>
       <span class="text-gray-500 text-xs" x-text="showPlates ? '−' : '+'"></span>
     </button>
     <div x-show="showPlates" x-transition class="mt-3 flex flex-wrap gap-1.5">

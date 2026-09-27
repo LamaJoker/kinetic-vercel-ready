@@ -5,7 +5,8 @@
       <div class="flex items-center gap-3">
         <div class="w-7 h-7 text-kinetic-neon flex-shrink-0">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z" />
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="3" fill="rgb(var(--ink))" />
           </svg>
         </div>
         <span class="text-2xl font-display font-black tracking-tight text-white">Démarrage</span>
@@ -19,7 +20,7 @@
 
     <!-- Objectif -->
     <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-4">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-3">Objectif</p>
+      <p class="text-xs text-gray-500 font-semibold mb-3">Objectif</p>
       <div class="grid grid-cols-2 gap-2">
         <button
           @click="goal = 'lose_fat'"
@@ -28,7 +29,7 @@
                   ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
                   : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'"
         >
-          <p class="text-lg mb-1">🔥</p>
+          <p class="text-lg mb-1"></p>
           <p class="font-semibold text-sm leading-tight">Perte de gras</p>
           <p class="text-xs text-gray-500 mt-0.5">Déficit contrôlé</p>
         </button>
@@ -40,7 +41,7 @@
                   ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
                   : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'"
         >
-          <p class="text-lg mb-1">💪</p>
+          <p class="text-lg mb-1"></p>
           <p class="font-semibold text-sm leading-tight">Prise de masse</p>
           <p class="text-xs text-gray-500 mt-0.5">Surplus modéré</p>
         </button>
@@ -52,7 +53,7 @@
                   ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
                   : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'"
         >
-          <p class="text-lg mb-1">⚡</p>
+          <p class="text-lg mb-1"></p>
           <p class="font-semibold text-sm leading-tight">Recomposition</p>
           <p class="text-xs text-gray-500 mt-0.5">Déficit léger</p>
         </button>
@@ -64,7 +65,7 @@
                   ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
                   : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'"
         >
-          <p class="text-lg mb-1">🏆</p>
+          <p class="text-lg mb-1"></p>
           <p class="font-semibold text-sm leading-tight">Performance</p>
           <p class="text-xs text-gray-500 mt-0.5">Maintien énergie</p>
         </button>
@@ -73,7 +74,7 @@
 
     <!-- Profil -->
     <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-4">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-3">Profil</p>
+      <p class="text-xs text-gray-500 font-semibold mb-3">Profil</p>
 
       <div class="grid grid-cols-2 gap-2 mb-4">
         <button
@@ -133,7 +134,7 @@
 
     <!-- Activité -->
     <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-4">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-3">Activité</p>
+      <p class="text-xs text-gray-500 font-semibold mb-3">Activité</p>
       <select
         x-model="activity"
         class="w-full bg-kinetic-ink ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon"
@@ -150,16 +151,14 @@
     <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-6">
       <div class="flex items-end justify-between mb-3">
         <div>
-          <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-1">
-            Calories cible
-          </p>
+          <p class="text-xs text-gray-500 font-semibold mb-1">Calories cible</p>
           <p
             class="text-4xl font-display font-black text-kinetic-neon leading-none"
             x-text="targetCalories ? targetCalories + ' kcal' : '--'"
           ></p>
         </div>
         <div class="text-right">
-          <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-1">TDEE</p>
+          <p class="text-xs text-gray-500 font-semibold mb-1">TDEE</p>
           <p
             class="text-xl font-display font-bold text-gray-300 leading-none"
             x-text="tdee ? tdee + ' kcal' : '--'"
@@ -201,7 +200,7 @@
           type="button"
           @click="enableNotifications()"
           :disabled="notifPerm !== 'default'"
-          class="text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg ring-1 transition-all flex-shrink-0"
+          class="text-xs font-bold px-3 py-1.5 rounded-lg ring-1 transition-all flex-shrink-0"
           :class="notifPerm === 'granted'
                   ? 'bg-kinetic-neon/15 text-kinetic-neon ring-kinetic-neon/30'
                   : notifPerm === 'denied'
@@ -219,7 +218,7 @@
     <button
       @click="save()"
       :disabled="saving"
-      class="w-full py-4 rounded-2xl bg-gradient-to-r from-kinetic-neon to-lime-300 text-gray-950 font-display font-black text-base tracking-tight hover:brightness-110 transition-all shadow-[0_0_24px_rgba(168,255,0,0.45)] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+      class="w-full py-4 rounded-2xl bg-kinetic-neon text-gray-950 font-display font-black text-base tracking-tight hover:brightness-110 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
     >
       <span x-show="!saving">Créer mon profil</span>
       <span x-show="saving">Enregistrement…</span>

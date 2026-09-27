@@ -6,8 +6,8 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#7F77DD",
-  "background_color": "#111827",
+  "theme_color": "#16171A",
+  "background_color": "#16171A",
   "lang": "fr",
   "categories": ["health", "fitness", "lifestyle", "productivity"],
   "icons": [

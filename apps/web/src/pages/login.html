@@ -5,7 +5,7 @@
       <div class="w-20 h-20 mx-auto relative mb-6">
         <div class="absolute inset-0 rounded-3xl bg-kinetic-neon/20 blur-2xl"></div>
         <div
-          class="relative w-20 h-20 bg-gradient-to-br from-kinetic-neon to-lime-400 rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(168,255,0,0.5)] ring-1 ring-white/10"
+          class="relative w-20 h-20 bg-kinetic-neon rounded-3xl flex items-center justify-center ring-1 ring-white/10"
         >
           <svg
             class="w-10 h-10 text-gray-950"
@@ -13,13 +13,12 @@
             fill="currentColor"
             aria-hidden="true"
           >
-            <path d="M13 2L4 14H10L11 22L20 10H14L13 2Z" />
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="3" fill="rgb(var(--ink))" />
           </svg>
         </div>
       </div>
-      <p class="text-[10px] uppercase tracking-[0.35em] text-kinetic-neon font-bold mt-3">
-        Performance OS
-      </p>
+      <p class="text-xs text-kinetic-neon font-bold mt-3">Performance OS</p>
       <h1 class="text-4xl font-display font-black tracking-tight text-white mt-1">Kinetic</h1>
       <p class="text-gray-500 text-sm mt-2">Transforme tes habitudes en résultats.</p>
     </div>
@@ -38,7 +37,7 @@
       x-transition
       class="mb-4 bg-kinetic-neon/10 border border-kinetic-neon/20 rounded-2xl p-6 text-center"
     >
-      <p class="text-4xl mb-3">📬</p>
+      <p class="text-4xl mb-3"></p>
       <p class="text-kinetic-neon font-display font-black text-lg">Lien envoyé !</p>
       <p class="text-gray-500 text-sm mt-2">Vérifie ta boîte mail pour te connecter.</p>
     </div>
@@ -117,7 +116,7 @@
         />
         <button
           @click="$store.auth.loginWithEmail()"
-          class="w-full px-5 py-3.5 bg-gradient-to-r from-kinetic-neon to-lime-300 text-gray-950 rounded-2xl hover:brightness-110 transition-all font-display font-bold shadow-[0_0_24px_rgba(168,255,0,0.4)] active:scale-[0.98]"
+          class="w-full px-5 py-3.5 bg-kinetic-neon text-gray-950 rounded-2xl hover:brightness-110 transition-all font-display font-bold active:scale-[0.98]"
         >
           Envoyer le lien magique
         </button>
@@ -139,7 +138,7 @@
     <div
       x-data="authDebugPanel"
       x-show="log"
-      class="mt-6 p-3 bg-black/40 border border-white/10 rounded-xl text-[10px] font-mono text-gray-400"
+      class="mt-6 p-3 bg-black/40 border border-white/10 rounded-xl text-[10px] tabular-nums text-gray-400"
     >
       <div class="flex gap-3">
         <button @click="show = !show" class="text-kinetic-neon underline">
@@ -153,10 +152,10 @@
     <!-- Diagnostic config auth (toujours visible) -->
     <div
       x-data="authDiagPanel"
-      class="mt-4 p-3 bg-kinetic-surface/50 border border-white/5 rounded-xl text-[10px] font-mono text-gray-500"
+      class="mt-4 p-3 bg-kinetic-surface/50 border border-white/5 rounded-xl text-[10px] tabular-nums text-gray-500"
     >
       <button @click="show = !show" class="text-gray-400 hover:text-white underline">
-        <span x-text="show ? 'Masquer diagnostic' : '🔍 Diagnostic config'"></span>
+        <span x-text="show ? 'Masquer diagnostic' : 'Diagnostic config'"></span>
       </button>
       <div x-show="show" class="mt-2 space-y-1 break-all">
         <p>
@@ -176,7 +175,7 @@
           <span class="text-gray-300" x-text="supabaseUrl"></span>
         </p>
         <p class="text-gray-600 text-[9px] mt-2">
-          ⚠️ Sur Supabase → Authentication → URL Configuration → Redirect URLs, ajoute
+          Sur Supabase → Authentication → URL Configuration → Redirect URLs, ajoute
           <span class="text-kinetic-neon">https://kinetic-prod.vercel.app/auth-callback**</span>
           (les ** autorisent le suffixe ?from=apk requis pour APK).
         </p>

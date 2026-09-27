@@ -93,7 +93,7 @@ export function renderBarbellSvg(plates: readonly PlateVisual[], barKg: number):
       if (p.label && w >= 8) {
         const tx = (x + w / 2).toFixed(1);
         parts.push(
-          `<text x="${tx}" y="${cy}" fill="${p.text}" font-size="8.5" font-weight="700" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 ${tx} ${cy})" font-family="Space Grotesk, sans-serif">${p.label}</text>`,
+          `<text x="${tx}" y="${cy}" fill="${p.text}" font-size="8.5" font-weight="700" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 ${tx} ${cy})" font-family="Barlow Condensed, Arial Narrow, sans-serif">${p.label}</text>`,
         );
       }
     }
