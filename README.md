@@ -14,6 +14,16 @@ Application mobile PWA progressive pour la productivité et le fitness, construi
 
 ---
 
+## 👀 Aperçu
+
+| Séance du jour                                                                                                                                                                             | Chargement de barre                                                                                                                                                          | Progression                                                                                                                                                                | Poids corporel                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <img src="https://raw.githubusercontent.com/LamaJoker/kinetic-vercel-ready/ux-shots/f790951/demo/01-dashboard.png" width="200" alt="Tableau de bord : séance du jour et semaine en cours"> | <img src="https://raw.githubusercontent.com/LamaJoker/kinetic-vercel-ready/ux-shots/f790951/demo/12-plates.png" width="200" alt="Barre chargée aux couleurs de compétition"> | <img src="https://raw.githubusercontent.com/LamaJoker/kinetic-vercel-ready/ux-shots/f790951/demo/07-progression.png" width="200" alt="Courbe e1RM et bilan de la semaine"> | <img src="https://raw.githubusercontent.com/LamaJoker/kinetic-vercel-ready/ux-shots/f790951/demo/09-bodyweight.png" width="200" alt="Courbe de poids corporel"> |
+
+**Essayer sans compte :** ouvre l'app, puis sur l'écran de démarrage choisis **Voir la démo**. Kinetic se remplit avec 8 semaines d'entraînement fictives (Push/Pull/Legs, pesées, mensurations). Tout s'efface depuis le profil.
+
+Les captures sont régénérées automatiquement à chaque push sur une branche `ux/**` (workflow `ux-screenshots`).
+
 ## 🏗️ Architecture
 
 ```

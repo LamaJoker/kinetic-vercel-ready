@@ -76,6 +76,24 @@
     </div>
   </div>
 
+  <!-- Mode démo -->
+  <template x-if="demoActive">
+    <div class="rounded-2xl p-4 mb-4 ring-1 ring-kinetic-neon/30 bg-kinetic-neon/[0.06]">
+      <p class="text-sm font-semibold text-white">Tu explores des données de démo</p>
+      <p class="text-xs text-gray-400 mt-1">
+        Séances, pesées et mensurations sont fictives. Efface-les pour commencer avec ton propre
+        profil ; tes autres réglages sont conservés.
+      </p>
+      <button
+        type="button"
+        @click="exitDemo()"
+        class="mt-3 w-full rounded-xl py-2.5 text-sm font-semibold bg-kinetic-neon text-gray-950 hover:brightness-110"
+      >
+        Effacer la démo et créer mon profil
+      </button>
+    </div>
+  </template>
+
   <!-- Abonnement -->
   <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5 mb-4">
     <div class="flex items-center justify-between mb-2">
@@ -549,7 +567,7 @@
         x-model="profilePseudo"
         placeholder="Ton pseudo"
         maxlength="32"
-        class="flex-1 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
+        class="flex-1 min-w-0 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
       />
       <button
         @click="shareProfile()"

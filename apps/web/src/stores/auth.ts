@@ -236,6 +236,11 @@ export function authStore() {
       return this.user !== null;
     },
 
+    /** Mode invité (aucun compte) : données uniquement sur cet appareil. */
+    get isGuest(): boolean {
+      return this.user?.id === 'guest';
+    },
+
     get initials(): string {
       const name = this.user?.full_name ?? this.user?.email ?? '?';
       return (

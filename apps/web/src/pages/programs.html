@@ -26,23 +26,20 @@
           <div class="flex items-center justify-between mb-1">
             <h2 class="text-white font-bold" x-text="p.name"></h2>
             <span
-              class="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full"
+              class="text-[11px] font-medium px-2 py-0.5 rounded-full"
               :class="p.level === 'beginner'
                 ? 'bg-kinetic-neon/20 text-kinetic-neon'
                 : p.level === 'intermediate'
                 ? 'bg-kinetic-electric/20 text-kinetic-electric'
                 : 'bg-purple-500/20 text-purple-300'"
-              x-text="p.level"
+              x-text="levelLabel(p.level)"
             ></span>
           </div>
           <p class="text-xs text-gray-400 leading-relaxed mb-2" x-text="p.description"></p>
-          <div class="flex gap-3 text-[10px] text-gray-500">
-            <span x-text="p.durationWeeks + ' semaines'"></span>
-            <span>·</span>
-            <span x-text="p.daysPerWeek + ' jours/sem'"></span>
-            <span>·</span>
-            <span x-text="p.goal"></span>
-          </div>
+          <p
+            class="text-[11px] text-gray-500"
+            x-text="goalLabel(p.goal) + ', ' + p.daysPerWeek + ' jours par semaine pendant ' + p.durationWeeks + ' semaines'"
+          ></p>
           <p class="text-[10px] text-gray-600 italic mt-1.5" x-text="'Source : ' + p.citation"></p>
         </button>
       </template>

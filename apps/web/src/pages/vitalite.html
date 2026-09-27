@@ -327,12 +327,12 @@
   <!-- ── Liste des tâches ───────────────────────────────────────────────────── -->
   <div class="space-y-2.5" x-data>
     <template x-for="task in $store.vitalite.tasks" :key="task.id">
-      <div class="relative">
+      <div class="flex items-stretch gap-2">
         <!-- Carte principale -->
         <button
           @click="!task.done && $store.vitalite.complete(task.id)"
           :disabled="task.done || $store.vitalite.isLocked(task.id)"
-          class="w-full flex items-center gap-4 p-4 bg-kinetic-surface rounded-2xl transition-all duration-300 text-left active:scale-[0.98] disabled:cursor-not-allowed"
+          class="flex-1 min-w-0 flex items-center gap-4 p-4 bg-kinetic-surface rounded-2xl transition-all duration-300 text-left active:scale-[0.98] disabled:cursor-not-allowed"
           :class="task.done
             ? 'ring-1 ring-kinetic-neon/30 opacity-75'
             : 'ring-1 ring-white/5 hover:ring-kinetic-electric/30 hover:shadow-[0_0_18px_rgba(255,106,0,0.15)]'"
@@ -388,37 +388,73 @@
           ></div>
         </button>
 
-        <!-- Boutons secondaires : Annuler (cochée) / Supprimer (custom) / Masquer (défaut) -->
-        <div class="absolute right-2 -bottom-2.5 flex gap-1 z-10">
-          <!-- Annuler (undo) — quand la tâche est cochée -->
+        <!-- Actions secondaires : colonne d'icônes (cibles tactiles de 40 px) -->
+        <div class="flex flex-col justify-center gap-1 flex-shrink-0">
           <button
             x-show="task.done && !$store.vitalite.isLocked(task.id)"
             @click.stop="$store.vitalite.undo(task.id)"
-            title="Annuler cette tâche"
+            title="Annuler"
             aria-label="Annuler la complétion de cette tâche"
-            class="text-[10px] px-2 py-0.5 rounded-full bg-kinetic-ink ring-1 ring-white/10 text-gray-400 hover:text-kinetic-electric hover:ring-kinetic-electric/40 transition-colors"
+            class="w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/5"
           >
-            ↩ Annuler
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11"
+              />
+            </svg>
           </button>
-          <!-- Supprimer (custom seulement, irréversible) -->
           <button
             x-show="$store.vitalite.isCustom(task.id)"
             @click.stop="$store.vitalite.deleteCustomTask(task.id)"
-            title="Supprimer cette tâche personnalisée"
+            title="Supprimer"
             aria-label="Supprimer cette tâche personnalisée"
-            class="text-[10px] px-2 py-0.5 rounded-full bg-kinetic-ink ring-1 ring-white/10 text-gray-400 hover:text-kinetic-electric hover:ring-kinetic-electric/40 transition-colors"
+            class="w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 hover:text-kinetic-coral hover:bg-white/5"
           >
-            ✕ Suppr.
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14"
+              />
+            </svg>
           </button>
-          <!-- Masquer (défaut seulement, réversible via panel "Masquées") -->
           <button
-            x-show="!$store.vitalite.isCustom(task.id) && !$store.vitalite.isLocked(task.id)"
+            x-show="!$store.vitalite.isCustom(task.id) && !$store.vitalite.isLocked(task.id) && !task.done"
             @click.stop="$store.vitalite.hideTask(task.id)"
-            title="Masquer cette tâche (réversible)"
-            aria-label="Masquer cette tâche par défaut"
-            class="text-[10px] px-2 py-0.5 rounded-full bg-kinetic-ink ring-1 ring-white/10 text-gray-400 hover:text-white hover:ring-white/30 transition-colors"
+            title="Masquer"
+            aria-label="Masquer cette tâche (réversible)"
+            class="w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/5"
           >
-            🙈 Masquer
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 5c5 0 9 4.5 10 7a13 13 0 0 1-3.2 4.3M6.6 6.6C4.3 8 2.7 10 2 12c1 2.5 5 7 10 7 1.6 0 3.1-.4 4.4-1.1"
+              />
+            </svg>
           </button>
         </div>
       </div>

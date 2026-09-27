@@ -2,11 +2,19 @@
  * Composant Alpine pour la page dashboard.
  * Enregistré dans main.ts via Alpine.data('dashboard', dashboard).
  */
+import Alpine from 'alpinejs';
 import { STORAGE_KEYS, muscleBalance } from '@kinetic/core';
 import type { BalanceReport, StreakState } from '@kinetic/core';
 import { getDeps } from '../deps';
 import type { WorkoutSession, Exercise } from '../lib/training/types';
-import { loadSessions, loadExercises } from '../lib/training/storage';
+import { loadSessions, loadExercises, loadTemplates } from '../lib/training/storage';
+import {
+  buildTrainingSnapshot,
+  formatVolume,
+  relativeDayLabel,
+  type TrainingSnapshot,
+} from '../lib/training/next-session';
+import { navigate } from '../router';
 import { hapticLight } from '../lib/haptics';
 
 interface ActivityDay {
@@ -43,6 +51,54 @@ export function dashboard() {
       'Quel exercice je devrais ajouter ?',
     ] as string[],
     _allSessions: [] as WorkoutSession[],
+    training: null as TrainingSnapshot | null,
+
+    /** « 3 exercices, 10 séries » */
+    get nextDetail(): string {
+      const n = this.training?.next;
+      if (!n) return '';
+      return `${n.exerciseCount} exercices, ${n.setCount} séries`;
+    },
+
+    /** « Push A, hier : 4,2 t en 52 min » */
+    get lastDetail(): string {
+      const l = this.training?.last;
+      if (!l) return '';
+      const when = relativeDayLabel(this.training?.daysSinceLast ?? null);
+      const dur = l.durationMin ? ` en ${l.durationMin} min` : '';
+      return `${l.name}, ${when} : ${formatVolume(l.volumeKg)} soulevées${dur}`;
+    },
+
+    get weekDetail(): string {
+      const w = this.training?.week;
+      if (!w) return '';
+      const goals = Alpine.store('goals') as { targetSessions?: number } | undefined;
+      const target = goals?.targetSessions;
+      return target ? `${w.count} / ${target} cette semaine` : `${w.count} cette semaine`;
+    },
+
+    weekDayClass(day: { trained: boolean; isToday: boolean; isFuture: boolean }): string {
+      if (day.trained) return 'bg-kinetic-neon text-gray-950 font-bold';
+      if (day.isToday) return 'ring-2 ring-kinetic-neon/70 text-white font-semibold';
+      if (day.isFuture) return 'text-gray-600';
+      return 'bg-white/[0.04] text-gray-500';
+    },
+
+    /** Démarre la séance proposée (même mécanisme que « Programme du jour »). */
+    startNextSession(): void {
+      const next = this.training?.next;
+      if (!next) {
+        navigate('/seances');
+        return;
+      }
+      try {
+        sessionStorage.setItem(STORAGE_KEYS.PROGRAM_AUTO_TEMPLATE, next.templateId);
+      } catch {
+        /* sessionStorage indisponible : on ouvre simplement la page séances */
+      }
+      hapticLight();
+      navigate('/seances');
+    },
 
     openCoachModal(): void {
       this.showCoachModal = true;
@@ -122,6 +178,8 @@ export function dashboard() {
         this.activityDays = await this._buildActivityDays();
         this.balance = await this._buildBalanceReport();
         this._allSessions = await loadSessions(deps.storage);
+        const templates = await loadTemplates(deps.storage);
+        this.training = buildTrainingSnapshot(this._allSessions, templates);
 
         // AI Coach disponibilité (config Supabase + clé VAPID indépendantes)
         try {

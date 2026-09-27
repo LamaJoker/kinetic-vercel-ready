@@ -146,6 +146,12 @@ export function mensurations() {
 
     // ── Per-metric helpers ────────────────────────────────────
 
+    /** 37.099999 → « 37,1 » ; null → « — » */
+    formatCm(value: number | null): string {
+      if (value === null || !Number.isFinite(value)) return '—';
+      return value.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+    },
+
     currentValue(key: MetricKey): number | null {
       for (let i = this.entries.length - 1; i >= 0; i--) {
         const v = val(this.entries[i]!, key);

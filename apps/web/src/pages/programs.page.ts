@@ -86,6 +86,23 @@ export function programsPage() {
       }
     },
 
+    levelLabel(level: string): string {
+      return (
+        { beginner: 'Débutant', intermediate: 'Intermédiaire', advanced: 'Avancé' }[level] ?? level
+      );
+    },
+
+    goalLabel(goal: string): string {
+      return (
+        {
+          strength: 'Force',
+          hypertrophy: 'Hypertrophie',
+          powerlifting: 'Powerlifting',
+          general: 'Général',
+        }[goal] ?? goal
+      );
+    },
+
     liftLabel(key: LiftKey): string {
       return LIFT_LABELS[key] ?? key;
     },

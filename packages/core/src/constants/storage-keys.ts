@@ -75,6 +75,8 @@ export const STORAGE_KEYS = {
 
   // ─── Profil utilisateur ───────────────────────────────────────
   USER_PROFILE: 'kinetic:userProfile' as const,
+  /** Mode démo : liste des clés écrites par le jeu de données de démo (pour le retirer proprement). */
+  DEMO_MANIFEST: 'kinetic:demo:manifest' as const,
   PROFILE: 'kinetic:profile' as const, // displayName et préférences UI
   STATS: 'kinetic:stats' as const, // stats agrégées en cache (totalSessions, etc.)
   ENTITLEMENT: 'kinetic:entitlement' as const, // plan free/Pro + essai (cf. entitlements.domain)

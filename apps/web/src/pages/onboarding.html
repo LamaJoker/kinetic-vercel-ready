@@ -17,13 +17,6 @@
       >
     </div>
 
-    <!-- Progress dots -->
-    <div class="flex justify-center gap-2 mb-6">
-      <div class="h-1 w-8 bg-kinetic-neon rounded-full"></div>
-      <div class="h-1 w-8 bg-kinetic-neon rounded-full"></div>
-      <div class="h-1 w-8 bg-kinetic-neon/30 rounded-full"></div>
-    </div>
-
     <!-- Objectif -->
     <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-4">
       <p class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-3">Objectif</p>
@@ -228,8 +221,29 @@
       :disabled="saving"
       class="w-full py-4 rounded-2xl bg-gradient-to-r from-kinetic-neon to-lime-300 text-gray-950 font-display font-black text-base tracking-tight hover:brightness-110 transition-all shadow-[0_0_24px_rgba(168,255,0,0.45)] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
     >
-      <span x-show="!saving">Continuer →</span>
-      <span x-show="saving">Sauvegarde…</span>
+      <span x-show="!saving">Créer mon profil</span>
+      <span x-show="saving">Enregistrement…</span>
     </button>
+
+    <!-- Démo : explorer l'app remplie sans rien saisir (mode invité uniquement) -->
+    <template x-if="$store.auth.isGuest">
+      <div class="mt-4 rounded-2xl ring-1 ring-white/10 p-4 flex items-center gap-4">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-white">Juste curieux ?</p>
+          <p class="text-xs text-gray-400 mt-0.5">
+            Parcours Kinetic avec 8 semaines d'entraînement fictives. Tu pourras tout effacer depuis
+            ton profil.
+          </p>
+        </div>
+        <button
+          type="button"
+          @click="startDemo()"
+          :disabled="saving"
+          class="flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/20 hover:bg-white/5 disabled:opacity-40"
+        >
+          Voir la démo
+        </button>
+      </div>
+    </template>
   </div>
 </div>

@@ -1,0 +1,51 @@
+# Captures d'écran de revue UX : poussées sur la branche orpheline `ux-shots`
+# (dossier = SHA court du commit). Déclenché sur les branches ux/**.
+name: UX screenshots
+
+on:
+  push:
+    branches: ['ux/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kinetic/core build && pnpm --filter @kinetic/adapters-web build
+      - run: pnpm build:e2e
+        env:
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_ANON_KEY: ''
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Captures (état vide)
+        run: pnpm exec playwright test -c playwright.visual.config.ts
+      - name: Captures (données de démo)
+        run: |
+          mkdir -p empty && mv ux-shots/* empty/
+          UX_DEMO=1 pnpm exec playwright test -c playwright.visual.config.ts || true
+          mkdir -p demo && mv ux-shots/* demo/ 2>/dev/null || true
+      - name: Publier sur la branche ux-shots
+        run: |
+          SHORT=${GITHUB_SHA::7}
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@users.noreply.github.com"
+          git clone --depth 1 --branch ux-shots "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" shots \
+            || (git init shots && cd shots && git checkout -b ux-shots && git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git")
+          mkdir -p "shots/$SHORT"
+          cp -r empty "shots/$SHORT/empty"
+          [ -d demo ] && cp -r demo "shots/$SHORT/demo" || true
+          cd shots && git add -A && git commit -q -m "shots $SHORT" && git push -q origin ux-shots
+          echo "::notice title=shots::$SHORT"

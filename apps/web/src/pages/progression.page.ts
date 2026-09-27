@@ -38,6 +38,9 @@ export function progression() {
         const deps = await getDeps();
         this.exercises = await loadExercises(deps.storage);
         this.sessions = await loadSessions(deps.storage);
+        // Le premier rendu (avant chargement) a mis en cache une liste vide :
+        // sans cette invalidation, bilan hebdo, régularité et courbes restaient à 0.
+        this._cachedSets = null;
 
         const stats = this._stats();
         if (stats.length > 0) this.selectedExerciseId = stats[0]!.exerciseId;
