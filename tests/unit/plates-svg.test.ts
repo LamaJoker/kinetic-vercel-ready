@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { writeFileSync } from 'node:fs';
 import { plates, renderBarbellSvg, plateGeometry } from '../../apps/web/src/pages/plates.page.js';
 
 describe('barre chargée (SVG)', () => {
@@ -12,7 +11,6 @@ describe('barre chargée (SVG)', () => {
     expect((svg.match(/<rect /g) ?? []).length).toBe(4 + 3 * 2);
     expect(svg).toContain('#dc2626'); // rouge 25 kg
     expect(svg).toContain('aria-label="Barre de 20 kg');
-    if (process.env['WRITE_SVG']) writeFileSync('/tmp/barbell.svg', svg);
   });
 
   it('les disques de 10 à 25 kg ont le même diamètre', () => {
