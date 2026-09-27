@@ -19,15 +19,17 @@ export default {
         'kinetic-raised': 'rgb(var(--raised) / <alpha-value>)',
       },
       fontFamily: {
-        sans: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['Space Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
+        display: ['Barlow Condensed', 'Arial Narrow', 'sans-serif'],
       },
+      // Barlow Condensed est chargée jusqu'à 700 : évite un faux-gras synthétisé.
+      fontWeight: { black: '700', extrabold: '700' },
       borderRadius: {
         k: '20px',
       },
       boxShadow: {
-        'glow-p': '0 0 20px rgb(var(--kinetic-neon) / 0.38)',
-        'glow-e': '0 0 20px rgb(var(--kinetic-electric) / 0.42)',
+        'glow-p': 'none',
+        'glow-e': 'none',
       },
       scale: { 98: '0.98' },
       keyframes: {

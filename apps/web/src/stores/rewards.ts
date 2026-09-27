@@ -31,11 +31,11 @@ export interface Theme {
 }
 
 export const THEMES: readonly Theme[] = [
-  { id: 'electrique', label: 'Électrique', emoji: '⚡', neon: '#A8FF00', accent: '#FF6A00' },
-  { id: 'cyber', label: 'Cyber', emoji: '🩵', neon: '#00E0FF', accent: '#0070FF' },
-  { id: 'violet', label: 'Violet', emoji: '💜', neon: '#C060FF', accent: '#FF40A0' },
-  { id: 'phoenix', label: 'Phoenix', emoji: '🔴', neon: '#FFD200', accent: '#FF3C32' },
-  { id: 'fantome', label: 'Fantôme', emoji: '🩶', neon: '#DCDCE6', accent: '#8C8CA0' },
+  { id: 'electrique', label: 'Électrique', emoji: '', neon: '#A8FF00', accent: '#FF6A00' },
+  { id: 'cyber', label: 'Cyber', emoji: '', neon: '#00E0FF', accent: '#0070FF' },
+  { id: 'violet', label: 'Violet', emoji: '', neon: '#C060FF', accent: '#FF40A0' },
+  { id: 'phoenix', label: 'Phoenix', emoji: '', neon: '#FFD200', accent: '#FF3C32' },
+  { id: 'fantome', label: 'Fantôme', emoji: '', neon: '#DCDCE6', accent: '#8C8CA0' },
 ] as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -169,7 +169,7 @@ export function rewardsStore() {
 
         notify(
           'success',
-          `🧊 Streak protégé ! Il te reste ${newCount} jeton${newCount !== 1 ? 's' : ''}.`,
+          `Streak protégé ! Il te reste ${newCount} jeton${newCount !== 1 ? 's' : ''}.`,
         );
       } catch (err) {
         console.error('[rewards] useStreakFreeze failed:', err);

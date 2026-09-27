@@ -359,7 +359,7 @@ export function program() {
             );
             window.dispatchEvent(
               new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-                detail: { kind: 'success', message: 'Séance complète ! 🏆 +50 XP' },
+                detail: { kind: 'success', message: 'Séance complète !+50 XP' },
               }),
             );
           }

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#A8FF00" />
+    <meta name="theme-color" content="#16171A" />
     <meta
       name="description"
       content="Kinetic — ton système d'exploitation quotidien pour la performance"
@@ -74,13 +74,13 @@
       <div
         :class="$store.offline.isOffline
                  ? 'bg-kinetic-surface text-white ring-1 ring-white/10'
-                 : 'bg-gradient-to-r from-kinetic-neon to-lime-400 text-gray-950 shadow-[0_0_20px_rgba(168,255,0,0.4)]'"
+                 : 'bg-kinetic-neon text-gray-950'"
         class="rounded-2xl px-4 py-3 flex items-center gap-3 shadow-xl text-sm"
       >
         <span
           class="text-lg flex-shrink-0"
           aria-hidden="true"
-          x-text="$store.offline.isOffline ? '📡' : '✅'"
+          x-text="$store.offline.isOffline ? '' : ''"
         ></span>
         <div class="flex-1">
           <p
@@ -113,7 +113,7 @@
             aria-hidden="true"
             focusable="false"
             class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="currentPath === '/' ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
+            :class="currentPath === '/' ? '' : ''"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -131,7 +131,7 @@
           ></span>
           <span
             x-show="currentPath === '/'"
-            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"
+            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon"
           ></span>
         </a>
 
@@ -145,7 +145,7 @@
             aria-hidden="true"
             focusable="false"
             class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="currentPath === '/seances' ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
+            :class="currentPath === '/seances' ? '' : ''"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -164,7 +164,7 @@
           ></span>
           <span
             x-show="currentPath === '/seances'"
-            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"
+            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon"
           ></span>
         </a>
 
@@ -178,7 +178,7 @@
             aria-hidden="true"
             focusable="false"
             class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="isBodyPage() ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
+            :class="isBodyPage() ? '' : ''"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -194,7 +194,7 @@
           <span class="text-[10px]" :class="isBodyPage() ? 'font-bold' : 'font-medium'">Corps</span>
           <span
             x-show="isBodyPage()"
-            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"
+            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon"
           ></span>
         </a>
 
@@ -208,7 +208,7 @@
             aria-hidden="true"
             focusable="false"
             class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="currentPath === '/vitalite' ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
+            :class="currentPath === '/vitalite' ? '' : ''"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -227,7 +227,7 @@
           >
           <span
             x-show="currentPath === '/vitalite'"
-            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"
+            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon"
           ></span>
         </a>
 
@@ -241,7 +241,7 @@
             aria-hidden="true"
             focusable="false"
             class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="currentPath === '/profile' ? 'drop-shadow-[0_0_8px_rgb(var(--kinetic-neon)/0.6)]' : ''"
+            :class="currentPath === '/profile' ? '' : ''"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -259,7 +259,7 @@
           ></span>
           <span
             x-show="currentPath === '/profile'"
-            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon shadow-[0_0_6px_rgb(var(--kinetic-neon)/0.8)]"
+            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon"
           ></span>
         </a>
       </div>
@@ -304,9 +304,7 @@
       <div class="flex items-start gap-3">
         <div
           class="flex-shrink-0 w-10 h-10 bg-kinetic-neon/20 rounded-xl flex items-center justify-center text-xl"
-        >
-          ⬇️
-        </div>
+        ></div>
         <div class="flex-1 min-w-0">
           <p class="text-white font-bold text-sm mb-0.5">Installer Kinetic</p>
           <p class="text-xs text-gray-400 leading-relaxed" x-show="!isIos">

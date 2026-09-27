@@ -26,16 +26,14 @@
       class="absolute -top-10 -right-10 w-32 h-32 bg-kinetic-neon/10 rounded-full blur-3xl pointer-events-none"
     ></div>
     <div class="relative flex items-center justify-between mb-2">
-      <span class="text-[10px] uppercase tracking-widest text-kinetic-neon font-semibold"
-        >Progression du jour</span
-      >
+      <span class="text-xs text-kinetic-neon font-semibold">Progression du jour</span>
       <div class="flex items-center gap-2">
         <!-- Indicateur bonus XP (niveau 5+) -->
         <template x-if="$store.rewards.hasXpBonus">
           <span
             class="text-[10px] font-bold text-yellow-400 bg-yellow-400/10 ring-1 ring-yellow-400/30 px-2 py-0.5 rounded-full"
           >
-            ⚡ +20% XP
+            +20% XP
           </span>
         </template>
         <span
@@ -46,7 +44,7 @@
     </div>
     <div class="relative h-2.5 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
       <div
-        class="h-full bg-gradient-to-r from-kinetic-neon to-lime-300 rounded-full transition-all duration-500 ease-out shadow-[0_0_14px_rgba(168,255,0,0.65)]"
+        class="h-full bg-kinetic-neon rounded-full transition-all duration-500 ease-out"
         :style="'width: ' + $store.vitalite.progress + '%'"
       ></div>
     </div>
@@ -72,7 +70,7 @@
       :aria-label="'Voir les ' + $store.vitalite.hiddenIds.length + ' tâches masquées'"
       class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-kinetic-surface ring-1 ring-white/10 text-sm text-gray-300 hover:text-white hover:bg-kinetic-elevated transition-colors"
     >
-      <span>🙈</span>
+      <span></span>
       <span x-text="$store.vitalite.hiddenIds.length"></span>
     </button>
     <button
@@ -80,7 +78,7 @@
       aria-label="Voir l'historique des 7 derniers jours"
       class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-kinetic-surface ring-1 ring-white/10 text-sm text-gray-300 hover:text-white hover:bg-kinetic-elevated transition-colors"
     >
-      <span>📅</span>
+      <span></span>
       <span>Historique</span>
     </button>
   </div>
@@ -211,7 +209,7 @@
     <div
       class="flex items-center gap-3 p-3 bg-kinetic-elevated/60 rounded-xl mb-3 ring-1 ring-white/5"
     >
-      <span class="text-2xl" x-text="$store.vitalite.newTaskIcon || '⭐'"></span>
+      <span class="text-2xl" x-text="$store.vitalite.newTaskIcon || ''"></span>
       <div>
         <p
           class="text-white text-sm font-medium"
@@ -335,13 +333,13 @@
           class="flex-1 min-w-0 flex items-center gap-4 p-4 bg-kinetic-surface rounded-2xl transition-all duration-300 text-left active:scale-[0.98] disabled:cursor-not-allowed"
           :class="task.done
             ? 'ring-1 ring-kinetic-neon/30 opacity-75'
-            : 'ring-1 ring-white/5 hover:ring-kinetic-electric/30 hover:shadow-[0_0_18px_rgba(255,106,0,0.15)]'"
+            : 'ring-1 ring-white/5 hover:ring-kinetic-electric/30'"
         >
           <!-- Icône / Checkmark -->
           <div
             class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 transition-all duration-300"
             :class="task.done
-                 ? 'bg-kinetic-neon/15 ring-1 ring-kinetic-neon/30 shadow-[0_0_14px_rgba(168,255,0,0.4)]'
+                 ? 'bg-kinetic-neon/15 ring-1 ring-kinetic-neon/30'
                  : 'bg-kinetic-elevated ring-1 ring-white/5'"
           >
             <span x-show="!task.done" x-text="task.icon"></span>
@@ -371,7 +369,7 @@
 
           <!-- Badge priorité -->
           <span
-            class="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 font-bold uppercase tracking-wider"
+            class="text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-bold"
             :class="{
                   'bg-kinetic-electric/15 text-kinetic-electric ring-1 ring-kinetic-electric/30': task.priority === 'high',
                   'bg-kinetic-electric/10 text-kinetic-electric ring-1 ring-kinetic-electric/20': task.priority === 'med',
@@ -467,13 +465,11 @@
     x-transition:enter="transition ease-out duration-500"
     x-transition:enter-start="opacity-0 translate-y-4"
     x-transition:enter-end="opacity-100 translate-y-0"
-    class="mt-6 p-6 bg-gradient-to-br from-kinetic-neon to-lime-400 rounded-2xl text-gray-950 text-center shadow-2xl shadow-kinetic-neon/30"
+    class="mt-6 p-6 bg-kinetic-neon rounded-2xl text-gray-950 text-center shadow-2xl shadow-kinetic-neon/30"
   >
-    <p class="text-5xl mb-3">🏆</p>
+    <p class="text-5xl mb-3"></p>
     <p class="font-display font-black text-2xl tracking-tight">Routine complète !</p>
-    <p class="text-gray-900/80 text-sm mt-2 font-medium">
-      Incroyable. Continue comme ça demain. 🔥
-    </p>
+    <p class="text-gray-900/80 text-sm mt-2 font-medium">Incroyable. Continue comme ça demain.</p>
     <a
       href="/"
       class="mt-4 inline-block px-6 py-2.5 bg-kinetic-ink/15 hover:bg-kinetic-ink/25 transition-colors rounded-xl text-sm font-semibold"

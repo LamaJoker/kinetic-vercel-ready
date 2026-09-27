@@ -163,13 +163,13 @@ export function progression() {
       const r = this.weeklyReview;
       switch (r.trend) {
         case 'up':
-          return `📈 +${r.tonnageDeltaPct}% vs semaine dernière`;
+          return `+${r.tonnageDeltaPct}% vs semaine dernière`;
         case 'down':
-          return `📉 ${r.tonnageDeltaPct}% vs semaine dernière`;
+          return `${r.tonnageDeltaPct}% vs semaine dernière`;
         case 'first':
-          return '✨ Première semaine de données';
+          return 'Première semaine de données';
         default:
-          return '➡️ Stable vs semaine dernière';
+          return 'Stable vs semaine dernière';
       }
     },
 

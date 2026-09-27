@@ -71,10 +71,7 @@
         <div class="grid grid-cols-2 gap-2">
           <template x-for="lift in requiredLifts" :key="lift">
             <div>
-              <label
-                class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold"
-                x-text="liftLabel(lift)"
-              ></label>
+              <label class="text-xs text-gray-500 font-semibold" x-text="liftLabel(lift)"></label>
               <input
                 type="number"
                 step="2.5"
@@ -137,8 +134,8 @@
                     :class="set.amrap ? 'bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30' : ''"
                   >
                     <span class="text-gray-400" x-text="setIdx + 1"></span>
-                    <span class="font-mono font-bold" x-text="set.weightKg + ' kg'"></span>
-                    <span class="font-mono">
+                    <span class="tabular-nums font-bold" x-text="set.weightKg + ' kg'"></span>
+                    <span class="tabular-nums">
                       <span x-text="set.reps"></span>
                       <span x-show="set.amrap" class="text-kinetic-electric">+</span>
                     </span>

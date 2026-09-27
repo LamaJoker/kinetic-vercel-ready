@@ -21,17 +21,15 @@
   <!-- Progress global -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
     <div class="flex items-center justify-between mb-2">
-      <span class="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">
-        Progression globale
-      </span>
+      <span class="text-xs text-gray-500 font-semibold"> Progression globale </span>
       <span
-        class="text-sm font-mono font-bold text-kinetic-neon"
+        class="text-sm tabular-nums font-bold text-kinetic-neon"
         x-text="$store.achievements.progressPercent + '%'"
       ></span>
     </div>
     <div class="h-2 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
       <div
-        class="h-full bg-gradient-to-r from-kinetic-neon to-lime-300 rounded-full transition-all duration-700"
+        class="h-full bg-kinetic-neon rounded-full transition-all duration-700"
         :style="'width: ' + $store.achievements.progressPercent + '%'"
       ></div>
     </div>
@@ -75,12 +73,12 @@
           ></p>
           <p class="text-[11px] text-gray-500 leading-tight mt-0.5" x-text="ach.description"></p>
         </div>
-        <span class="text-[10px] uppercase tracking-widest text-gray-600 font-bold shrink-0">
+        <span class="text-xs text-gray-600 font-bold shrink-0">
           <template x-for="i in ach.tier" :key="i">
-            <span class="text-kinetic-neon" x-show="$store.achievements.isUnlocked(ach.id)">★</span>
+            <span class="text-kinetic-neon" x-show="$store.achievements.isUnlocked(ach.id)"></span>
           </template>
           <template x-for="i in ach.tier" :key="i">
-            <span class="text-gray-700" x-show="!$store.achievements.isUnlocked(ach.id)">★</span>
+            <span class="text-gray-700" x-show="!$store.achievements.isUnlocked(ach.id)"></span>
           </template>
         </span>
       </div>

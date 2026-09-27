@@ -132,7 +132,7 @@ export function dashboard() {
         } catch {
           /* noop */
         }
-        this.coachAnswer = `❌ ${msg}`;
+        this.coachAnswer = `${msg}`;
       } finally {
         this.coachLoading = false;
       }
