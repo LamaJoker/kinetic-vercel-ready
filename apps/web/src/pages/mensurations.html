@@ -34,18 +34,22 @@
                 ? 'bg-kinetic-elevated ring-white/20'
                 : 'bg-kinetic-surface ring-white/5 hover:ring-white/10'"
       >
-        <p
-          class="text-[11px] font-bold mb-1 truncate transition-colors"
-          :style="'color: ' + (hasData(m.key) ? m.color : '#4B5563')"
-          x-text="m.label"
-        ></p>
+        <p class="flex items-center gap-1.5 text-[11px] font-bold mb-1 text-gray-300">
+          <!-- La couleur de la mesure est portée par une pastille, pas par le texte (contraste) -->
+          <span
+            class="w-2 h-2 rounded-full flex-shrink-0"
+            :style="hasData(m.key) ? metricDotStyle(m.color) : metricDotStyle('#4B5563')"
+            aria-hidden="true"
+          ></span>
+          <span class="truncate" x-text="m.label"></span>
+        </p>
         <p
           class="font-display font-black text-base text-white leading-none"
           x-text="formatCm(currentValue(m.key))"
         ></p>
         <p
           x-show="currentValue(m.key) !== null"
-          class="text-[9px] mt-0.5 tabular-nums"
+          class="text-[11px] mt-0.5 tabular-nums"
           :class="metricDelta(m.key) > 0 ? 'text-kinetic-electric'
              : metricDelta(m.key) < 0 ? 'text-kinetic-neon'
              : 'text-gray-600'"
@@ -53,7 +57,7 @@
              ? (metricDelta(m.key) > 0 ? '+' : '') + metricDelta(m.key).toFixed(1)
              : ''"
         ></p>
-        <p x-show="currentValue(m.key) === null" class="text-[9px] mt-0.5 text-gray-700">
+        <p x-show="currentValue(m.key) === null" class="text-[11px] mt-0.5 text-gray-400">
           non mesuré
         </p>
       </button>

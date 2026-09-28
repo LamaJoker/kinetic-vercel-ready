@@ -141,6 +141,11 @@ test('rapport accessibilité (axe) de toutes les pages', async ({ page }) => {
       impact: v.impact ?? null,
       nodes: v.nodes.length,
       help: v.help,
+      samples: v.nodes.slice(0, 12).map((n) => ({
+        target: n.target.join(' '),
+        html: n.html.slice(0, 160),
+        data: (n.any[0]?.data as Record<string, unknown> | undefined) ?? null,
+      })),
     }));
   }
   mkdirSync('ux-shots', { recursive: true });
