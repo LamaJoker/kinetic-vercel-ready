@@ -319,6 +319,7 @@ describe('initAnalytics — PROD mode (buffer + flushMetrics via visibilitychang
     vi.stubGlobal('PerformanceObserver', makePerformanceObserverStub());
     vi.stubEnv('PROD', 'true');
     vi.stubEnv('DEV', '');
+    vi.stubEnv('VITE_VITALS_ENDPOINT', 'https://collect.example/vitals');
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -346,7 +347,10 @@ describe('initAnalytics — PROD mode (buffer + flushMetrics via visibilitychang
     visibilityHandler?.();
 
     // In PROD mode, sendBeacon should have been called with the buffered metric
-    expect(sendBeacon).toHaveBeenCalledWith('/api/vitals', expect.stringContaining('"metrics"'));
+    expect(sendBeacon).toHaveBeenCalledWith(
+      'https://collect.example/vitals',
+      expect.stringContaining('"metrics"'),
+    );
 
     vi.useRealTimers();
   });
@@ -365,6 +369,20 @@ describe('initAnalytics — PROD mode (buffer + flushMetrics via visibilitychang
     vi.advanceTimersByTime(5100);
 
     expect(sendBeacon).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it("n'envoie rien sans point de collecte configuré (plus de 404 /api/vitals)", () => {
+    vi.stubEnv('VITE_VITALS_ENDPOINT', '');
+    vi.useFakeTimers();
+    const sendBeacon = vi.fn().mockReturnValue(true);
+    vi.stubGlobal('navigator', { sendBeacon });
+    vi.stubGlobal('location', { pathname: '/x' });
+    vi.stubGlobal('document', { addEventListener: vi.fn() });
+    initAnalytics();
+    fireObserver(0, [{ startTime: 1200 }]);
+    vi.advanceTimersByTime(5100);
+    expect(sendBeacon).not.toHaveBeenCalled();
     vi.useRealTimers();
   });
 });
