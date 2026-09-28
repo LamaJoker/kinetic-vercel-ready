@@ -94,3 +94,21 @@ test('séance en cours', async ({ page }) => {
   await page.waitForTimeout(1500);
   await page.screenshot({ path: 'ux-shots/23-seance-terminee.png', fullPage: true });
 });
+
+test('mode clair', async ({ page }) => {
+  test.skip(!DEMO, 'capturé avec les données de démo');
+  await page.addInitScript(() => localStorage.setItem('kinetic:theme-mode', 'light'));
+  await boot(page, '/onboarding', false);
+  await page.getByRole('button', { name: 'Voir la démo' }).click();
+  await page.waitForURL('http://localhost:3000/', { timeout: 15_000 });
+  await page.waitForTimeout(1200);
+  for (const [path, name] of [
+    ['/', 'dashboard'],
+    ['/nutrition', 'nutrition'],
+    ['/progression', 'progression'],
+    ['/profile', 'profile'],
+  ] as const) {
+    await boot(page, path);
+    await page.screenshot({ path: `ux-shots/30-clair-${name}.png`, fullPage: true });
+  }
+});

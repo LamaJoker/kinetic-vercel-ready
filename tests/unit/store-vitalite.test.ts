@@ -59,11 +59,11 @@ describe('vitaliteStore.init', () => {
 
   it('marks tasks as done based on stored done-IDs', async () => {
     const today = new Date().toISOString().slice(0, 10);
-    await storage.set(`kinetic:vitalite:done:${today}`, ['morning-stretch', 'cold-shower']);
+    await storage.set(`kinetic:vitalite:done:${today}`, ['morning-stretch', 'protein-target']);
     const store = vitaliteStore();
     await store.init();
     const stretch = store.tasks.find((t) => t.id === 'morning-stretch');
-    const shower = store.tasks.find((t) => t.id === 'cold-shower');
+    const shower = store.tasks.find((t) => t.id === 'protein-target');
     expect(stretch?.done).toBe(true);
     expect(shower?.done).toBe(true);
   });
@@ -319,12 +319,12 @@ describe('vitaliteStore.hideTask / unhideTask', () => {
   });
 
   it('init() filters out previously hidden default tasks', async () => {
-    await storage.set('kinetic:vitalite:hiddenIds', ['morning-stretch', 'cold-shower']);
+    await storage.set('kinetic:vitalite:hiddenIds', ['morning-stretch', 'protein-target']);
     const store = vitaliteStore();
     await store.init();
     expect(store.tasks.some((t) => t.id === 'morning-stretch')).toBe(false);
-    expect(store.tasks.some((t) => t.id === 'cold-shower')).toBe(false);
-    expect(store.hiddenIds).toEqual(['morning-stretch', 'cold-shower']);
+    expect(store.tasks.some((t) => t.id === 'protein-target')).toBe(false);
+    expect(store.hiddenIds).toEqual(['morning-stretch', 'protein-target']);
   });
 
   it('unhideTask restores a previously hidden task and persists', async () => {
@@ -410,11 +410,11 @@ describe('vitaliteStore.hideTask / unhideTask', () => {
     const store = vitaliteStore();
     await store.init();
     await store.hideTask('morning-stretch');
-    await store.hideTask('cold-shower');
+    await store.hideTask('protein-target');
     const specs = store.hiddenSpecsList;
     expect(specs).toHaveLength(2);
-    expect(specs.map((s) => s.id).sort()).toEqual(['cold-shower', 'morning-stretch']);
-    expect(specs.find((s) => s.id === 'morning-stretch')?.icon).toBe('🧘');
+    expect(specs.map((s) => s.id).sort()).toEqual(['morning-stretch', 'protein-target']);
+    expect(specs.find((s) => s.id === 'morning-stretch')?.title).toBe('Mobilité 10 minutes');
     expect(specs.find((s) => s.id === 'morning-stretch')?.xp).toBeGreaterThan(0);
   });
 
@@ -422,11 +422,11 @@ describe('vitaliteStore.hideTask / unhideTask', () => {
     const store = vitaliteStore();
     await store.init();
     await store.hideTask('morning-stretch');
-    await store.hideTask('cold-shower');
+    await store.hideTask('protein-target');
     expect(store.hiddenSpecsList).toHaveLength(2);
     await store.unhideTask('morning-stretch');
     expect(store.hiddenSpecsList).toHaveLength(1);
-    expect(store.hiddenSpecsList[0]?.id).toBe('cold-shower');
+    expect(store.hiddenSpecsList[0]?.id).toBe('protein-target');
   });
 });
 

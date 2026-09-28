@@ -192,7 +192,10 @@ Alpine.data('navShell', () => ({
   },
   /** Écrans plein cadre (onboarding, connexion) : pas de barre de navigation. */
   isChromeless(this: { currentPath: string }) {
-    return ['/onboarding', '/login', '/auth-callback', '/auth/callback'].includes(this.currentPath);
+    return (
+      ['/onboarding', '/login', '/auth-callback', '/auth/callback'].includes(this.currentPath) ||
+      this.currentPath.startsWith('/legal/')
+    );
   },
 }));
 
@@ -201,7 +204,19 @@ Alpine.data('navShell', () => ({
 // les templates HTML. Le build CSP interdit eval() / new Function() ; toute
 // logique JS doit être pré-enregistrée ici.
 
+/** Lit (et consomme) le drapeau posé après la suppression du compte. */
+function consumeAccountDeletedFlag(): boolean {
+  try {
+    const v = sessionStorage.getItem(STORAGE_KEYS.ACCOUNT_DELETED) === '1';
+    sessionStorage.removeItem(STORAGE_KEYS.ACCOUNT_DELETED);
+    return v;
+  } catch {
+    return false;
+  }
+}
+
 Alpine.data('loginPage', () => ({
+  accountDeleted: consumeAccountDeletedFlag(),
   emailMode: false,
 }));
 

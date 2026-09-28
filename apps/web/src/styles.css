@@ -91,13 +91,14 @@
 [data-mode='light'] {
   /* Fond cassé blanc avec nuances légères, jamais 100% pur pour éviter
      la fatigue oculaire en plein soleil */
-  --ink: 248 249 252; /* body */
-  --surface: 255 255 255; /* cards */
-  --elevated: 244 245 249; /* panneaux internes */
-  --raised: 234 236 243; /* niveaux supérieurs */
-  --tx-rgb: 18 19 26; /* texte principal */
-  --border: rgba(15, 16, 24, 0.08);
-  --border-hi: rgba(15, 16, 24, 0.16);
+  /* Mode clair « craie » : papier chaud, jamais blanc pur */
+  --ink: 241 239 234; /* body */
+  --surface: 252 251 248; /* cards */
+  --elevated: 233 230 224; /* panneaux internes */
+  --raised: 222 218 210; /* niveaux supérieurs */
+  --tx-rgb: 28 29 32; /* texte principal */
+  --border: rgba(28, 29, 32, 0.1);
+  --border-hi: rgba(28, 29, 32, 0.2);
   color-scheme: light;
 }
 
@@ -784,4 +785,23 @@ body {
     Roboto,
     'Helvetica Neue',
     sans-serif;
+}
+
+/* ─── Contraste (WCAG AA, texte 4,5:1) ──────────────────────────────────
+   Sur le gris « fonte » #1F2124, gray-500 (#6B7280) ne fait que ~3,3:1 et
+   gray-600 ~2,3:1 : on les éclaircit en mode sombre. */
+:root:not([data-mode='light']) .text-gray-500 {
+  color: #9aa0a8;
+}
+:root:not([data-mode='light']) .text-gray-600,
+:root:not([data-mode='light']) .text-gray-700 {
+  color: #868c95;
+}
+/* Mode clair : le jaune 15 kg n'est pas lisible en texte sur fond clair ;
+   on garde le jaune pour les aplats et on passe le texte en ocre foncé. */
+[data-mode='light'] .text-kinetic-neon {
+  color: #8a6400;
+}
+[data-mode='light'] .text-kinetic-electric {
+  color: #b52a24;
 }

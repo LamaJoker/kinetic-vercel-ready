@@ -32,6 +32,21 @@ const CACHE_KEY = STORAGE_KEYS.ENTITLEMENT_SERVER_CACHE;
 
 export type EntitlementSource = 'server' | 'server-cache' | 'local';
 
+/**
+ * Offre Pro activée ? Désactivée par défaut tant qu'aucun paiement n'est branché :
+ * toutes les fonctionnalités sont alors gratuites et aucun écran d'offre n'apparaît.
+ * Réactiver : VITE_ENABLE_PRO=true (Vercel) + AI_COACH_REQUIRE_PRO=true (secret Supabase).
+ */
+export const proOffer = {
+  enabled(): boolean {
+    return import.meta.env.VITE_ENABLE_PRO === 'true';
+  },
+};
+
+export function proOfferEnabled(): boolean {
+  return proOffer.enabled();
+}
+
 function demoUnlockEnabled(): boolean {
   const env = (import.meta as ImportMeta & { env?: Record<string, unknown> }).env ?? {};
   return env['DEV'] === true || env['VITE_DEMO_UNLOCK_PRO'] === 'true';
@@ -118,6 +133,11 @@ export function entitlementStore() {
       }
     },
 
+    /** L'offre Pro est-elle active (sinon tout est gratuit) ? */
+    get enabled(): boolean {
+      return proOfferEnabled();
+    },
+
     get tier(): 'free' | 'pro' {
       return effectiveTier(this.entitlement);
     },
@@ -144,6 +164,7 @@ export function entitlementStore() {
 
     /** L'utilisateur a-t-il accès à cette feature Pro ? */
     can(feature: ProFeature): boolean {
+      if (!proOfferEnabled()) return true;
       return canUse(this.entitlement, feature);
     },
 

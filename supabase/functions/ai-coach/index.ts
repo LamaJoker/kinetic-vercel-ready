@@ -10,6 +10,7 @@
  * Secrets :
  *   supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
  *   supabase secrets set ANTHROPIC_MODEL=claude-sonnet-5            (optionnel)
+ *   supabase secrets set AI_COACH_REQUIRE_PRO=true                   (optionnel : réserver aux abonnés)
  *   supabase secrets set ALLOWED_ORIGINS=https://kinetic.vercel.app,capacitor://localhost,https://localhost
  *
  * Contrat :
@@ -34,6 +35,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const HOURLY_LIMIT = 10;
+const REQUIRE_PRO = Deno.env.get('AI_COACH_REQUIRE_PRO') === 'true';
 const MAX_QUESTION_CHARS = 500;
 const MAX_CONTEXT_CHARS = 20_000;
 
@@ -114,13 +116,17 @@ Deno.serve(async (req: Request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // ── Droits : plan Pro (ou essai) vérifié côté serveur ──────────────────
-  const { data: pro, error: proErr } = await admin.rpc('is_pro', { p_user: userId });
-  if (proErr) {
-    console.error('[ai-coach] is_pro failed:', proErr.message);
-    return json(req, { error: 'entitlement_check_failed' }, 503);
+  // ── Droits : plan Pro (ou essai) exigé seulement si l'offre Pro est active ──
+  // AI_COACH_REQUIRE_PRO=true pour réserver le coach aux abonnés ; sinon tout
+  // utilisateur connecté y a accès, dans la limite du quota horaire.
+  if (REQUIRE_PRO) {
+    const { data: pro, error: proErr } = await admin.rpc('is_pro', { p_user: userId });
+    if (proErr) {
+      console.error('[ai-coach] is_pro failed:', proErr.message);
+      return json(req, { error: 'entitlement_check_failed' }, 503);
+    }
+    if (pro !== true) return json(req, { error: 'pro_required' }, 403);
   }
-  if (pro !== true) return json(req, { error: 'pro_required' }, 403);
 
   // ── Quota atomique, fail-closed ────────────────────────────────────────
   const { data: allowed, error: quotaErr } = await admin.rpc('consume_ai_coach_quota', {
