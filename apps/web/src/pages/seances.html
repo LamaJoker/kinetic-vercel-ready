@@ -1,13 +1,11 @@
 <div x-data="seances" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
   <!-- ── Overlay Rest Timer Plein écran ─────────────────────────────────── -->
+  <!-- Pas de x-transition ici : le minuteur réévalue x-show chaque seconde, ce qui
+       relançait la transition de sortie en boucle et laissait un calque invisible
+       (opacity-0) qui bloquait tous les boutons après « Passer ». -->
   <div
     x-show="fullscreenRest && restRemainingSec() > 0"
-    x-transition:enter="transition ease-out duration-200"
-    x-transition:enter-start="opacity-0"
-    x-transition:enter-end="opacity-100"
-    x-transition:leave="transition ease-in duration-150"
-    x-transition:leave-start="opacity-100"
-    x-transition:leave-end="opacity-0"
+    :class="fullscreenRest ? '' : 'pointer-events-none'"
     class="fixed inset-0 z-[60] flex flex-col items-center justify-center p-6 bg-black/85 backdrop-blur-md"
     @keydown.escape.window="fullscreenRest = false"
   >
