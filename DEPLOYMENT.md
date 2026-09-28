@@ -160,7 +160,7 @@ Symptômes : connexion impossible, requêtes en **HTTP 540**, l'app retombe en m
 1. Dashboard Supabase → sélectionner le projet → **Restore project**. Les données et la configuration reviennent en quelques minutes.
 2. Si la restauration en un clic n'est plus proposée (pause trop ancienne) : télécharger la sauvegarde depuis _Project Overview_, créer un nouveau projet, restaurer la base, réappliquer les migrations manquantes (`supabase db push`), redéployer les Edge Functions, puis mettre à jour `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` dans Vercel **et** dans les secrets GitHub, et redéployer.
 3. Reconfigurer _Authentication → URL Configuration_ (Site URL + Redirect URLs) sur le nouveau projet.
-4. Pour éviter la prochaine pause : le workflow `.github/workflows/supabase-keep-alive.yml` appelle la RPC `keep_alive` tous les 3 jours (déclenchable à la main via _Actions → Supabase keep-alive → Run workflow_). Un plan payant n'est jamais mis en pause.
+4. Pour éviter la prochaine pause : le workflow `.github/workflows/supabase-keep-alive.yml` appelle la RPC `keep_alive` chaque jour (déclenchable à la main via _Actions → Supabase keep-alive → Run workflow_). Un plan payant n'est jamais mis en pause.
 
 ### `No Output Directory named "dist" found`
 
