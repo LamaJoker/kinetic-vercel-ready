@@ -810,3 +810,16 @@ body {
 [data-mode='light'] nav[aria-label='Navigation principale'] {
   border-top-color: rgba(28, 29, 32, 0.12);
 }
+
+/* Couleurs d'accent utilisées EN TEXTE sur fond sombre : versions éclaircies
+   pour atteindre 4,5:1 (le rouge 25 kg brut ne fait que ~3,4:1 en petit texte).
+   Les aplats (bg-*) gardent les couleurs exactes des disques. */
+:root:not([data-mode='light']) .text-kinetic-electric {
+  color: #f0655e;
+}
+:root:not([data-mode='light']) .text-kinetic-purple {
+  color: #86a6f0;
+}
+:root:not([data-mode='light']) .text-kinetic-teal {
+  color: #45c985;
+}

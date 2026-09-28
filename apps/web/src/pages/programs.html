@@ -71,8 +71,13 @@
         <div class="grid grid-cols-2 gap-2">
           <template x-for="lift in requiredLifts" :key="lift">
             <div>
-              <label class="text-xs text-gray-500 font-semibold" x-text="liftLabel(lift)"></label>
+              <label
+                :for="'f-programs-' + lift"
+                class="text-xs text-gray-500 font-semibold"
+                x-text="liftLabel(lift)"
+              ></label>
               <input
+                :id="'f-programs-' + lift"
                 type="number"
                 step="2.5"
                 min="0"

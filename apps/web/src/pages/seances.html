@@ -518,7 +518,7 @@
           <!-- Inputs nouvelle série + raccourcis +/- -->
           <div class="grid grid-cols-[1fr_1.45fr_1fr] gap-1.5 mb-2">
             <div>
-              <label class="text-xs text-gray-400 font-medium">Reps</label>
+              <label for="f-seances-1" class="text-xs text-gray-400 font-medium">Reps</label>
               <div class="flex items-stretch gap-1">
                 <button
                   type="button"
@@ -639,6 +639,7 @@
               <div>
                 <label class="text-xs text-gray-500">Note (optionnel)</label>
                 <input
+                  id="f-seances-1"
                   type="text"
                   x-model="draft.note"
                   maxlength="200"
@@ -647,8 +648,9 @@
                 />
               </div>
               <div>
-                <label class="text-xs text-gray-500">Tempo (ex: 4-1-2-0)</label>
+                <label for="f-seances-2" class="text-xs text-gray-500">Tempo (ex: 4-1-2-0)</label>
                 <input
+                  id="f-seances-2"
                   type="text"
                   x-model="draft.tempo"
                   maxlength="9"

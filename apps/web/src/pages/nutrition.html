@@ -232,8 +232,11 @@
             />
             <div class="grid grid-cols-2 gap-2 mb-2">
               <div>
-                <label class="text-xs text-gray-500 block mb-1">Kcal/100g</label>
+                <label for="f-nutrition-1" class="text-xs text-gray-500 block mb-1"
+                  >Kcal/100g</label
+                >
                 <input
+                  id="f-nutrition-1"
                   x-model.number="newMeal.kcal"
                   type="number"
                   min="0"
@@ -241,8 +244,11 @@
                 />
               </div>
               <div>
-                <label class="text-xs text-gray-500 block mb-1">Protéines/100g</label>
+                <label for="f-nutrition-2" class="text-xs text-gray-500 block mb-1"
+                  >Protéines/100g</label
+                >
                 <input
+                  id="f-nutrition-2"
                   x-model.number="newMeal.protein"
                   type="number"
                   min="0"
@@ -251,8 +257,11 @@
                 />
               </div>
               <div>
-                <label class="text-xs text-gray-500 block mb-1">Glucides/100g</label>
+                <label for="f-nutrition-3" class="text-xs text-gray-500 block mb-1"
+                  >Glucides/100g</label
+                >
                 <input
+                  id="f-nutrition-3"
                   x-model.number="newMeal.carbs"
                   type="number"
                   min="0"
@@ -261,8 +270,11 @@
                 />
               </div>
               <div>
-                <label class="text-xs text-gray-500 block mb-1">Lipides/100g</label>
+                <label for="f-nutrition-4" class="text-xs text-gray-500 block mb-1"
+                  >Lipides/100g</label
+                >
                 <input
+                  id="f-nutrition-4"
                   x-model.number="newMeal.fat"
                   type="number"
                   min="0"
@@ -277,8 +289,9 @@
         <!-- Quantité -->
         <div class="flex items-center gap-3 mb-3">
           <div class="flex-1">
-            <label class="text-xs text-gray-500 block mb-1">Quantité (g)</label>
+            <label for="f-nutrition-5" class="text-xs text-gray-500 block mb-1">Quantité (g)</label>
             <input
+              id="f-nutrition-5"
               x-model.number="newMeal.grams"
               type="number"
               min="1"

@@ -96,8 +96,9 @@
       <template x-if="showScoresEditor">
         <div class="grid grid-cols-2 gap-2 mb-3">
           <div>
-            <label class="text-xs text-gray-500 font-semibold">Poids (kg)</label>
+            <label for="f-records-1" class="text-xs text-gray-500 font-semibold">Poids (kg)</label>
             <input
+              id="f-records-1"
               type="number"
               step="0.1"
               :value="scoreBodyweightKg || ''"
