@@ -162,22 +162,18 @@ test.describe('Parcours fonctionnels', () => {
   });
 
   test('séance : 3 séries puis sauvegarde apparaît dans l historique', async ({ page }) => {
-    await goto(page, '/seances');
-    await page.getByRole('button', { name: /Libre/ }).click();
-    const select = page.locator('#app-outlet select').first();
-    await select.selectOption({ index: 1 });
-    await page
-      .getByRole('button', { name: '+' })
-      .first()
-      .click()
-      .catch(() => undefined);
+    await goto(page, '/');
+    await page.getByRole('button', { name: 'Commencer la séance' }).click();
+    await page.waitForURL('**/seances', { timeout: 10_000 });
+    await waitForApp(page);
     const addSet = page.getByRole('button', { name: '+ Série' }).first();
     await expect(addSet).toBeVisible();
     const skip = page.getByRole('button', { name: 'Passer' });
     for (let i = 0; i < 3; i++) {
-      await addSet.click();
       if (await skip.isVisible()) await skip.click();
+      await addSet.click();
     }
+    if (await skip.isVisible()) await skip.click();
     await page.getByRole('button', { name: 'Sauver' }).click();
     await expect(page.getByText('1 séance', { exact: true })).toBeVisible({ timeout: 5_000 });
   });

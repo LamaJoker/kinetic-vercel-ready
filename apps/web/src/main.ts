@@ -84,6 +84,7 @@ import { achievementsStore } from './stores/achievements';
 import { entitlementStore } from './stores/entitlement';
 import { registerSvgDirective } from './lib/svg-directive';
 import { plural } from './lib/plural';
+import { num } from './lib/num';
 
 import { dashboard } from './pages/dashboard.page';
 import { seances } from './pages/seances.page';
@@ -130,8 +131,8 @@ registerSvgDirective(Alpine as never);
   () => plural,
 );
 // Le build CSP n'expose pas les globales (Math, Date) aux expressions :
-// $math.round(x) et $today les rendent disponibles sans eval.
-(Alpine as unknown as { magic(name: string, cb: () => unknown): void }).magic('math', () => Math);
+// $num.round(x) (nos propres fonctions, pas l'objet Math) et $today.
+(Alpine as unknown as { magic(name: string, cb: () => unknown): void }).magic('num', () => num);
 (Alpine as unknown as { magic(name: string, cb: () => unknown): void }).magic('today', () =>
   new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }),
 );

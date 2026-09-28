@@ -268,12 +268,12 @@
             <div class="w-16 h-1.5 bg-black/40 rounded-full overflow-hidden">
               <div
                 class="h-full bg-kinetic-neon rounded-full transition-all"
-                :style="'width: ' + $math.min(100, $math.round(day.doneIds.length / $math.max(1, $store.vitalite.totalCount) * 100)) + '%'"
+                :style="'width: ' + $num.min(100, $num.round(day.doneIds.length / $num.max(1, $store.vitalite.totalCount) * 100)) + '%'"
               ></div>
             </div>
             <span
               class="text-xs font-bold text-kinetic-neon"
-              x-text="$math.min(100, $math.round(day.doneIds.length / $math.max(1,$store.vitalite.totalCount) * 100)) + '%'"
+              x-text="$num.min(100, $num.round(day.doneIds.length / $num.max(1,$store.vitalite.totalCount) * 100)) + '%'"
             ></span>
             <svg
               class="w-4 h-4 text-gray-500 flex-shrink-0 transition-transform"

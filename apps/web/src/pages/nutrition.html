@@ -290,7 +290,7 @@
           <div class="flex-1 min-w-0 bg-kinetic-ink rounded-xl p-2.5 text-center">
             <p
               class="text-kinetic-neon font-black text-lg leading-none"
-              x-text="$math.round(newMeal.kcal * newMeal.grams / 100)"
+              x-text="$num.round(newMeal.kcal * newMeal.grams / 100)"
             ></p>
             <p class="text-[10px] text-gray-500 mt-0.5">kcal</p>
             <p
@@ -329,7 +329,7 @@
               <div class="flex items-center gap-2">
                 <span
                   class="text-xs font-semibold text-white"
-                  x-text="$math.round(item.food.kcalPer100 * item.grams / 100) + ' kcal'"
+                  x-text="$num.round(item.food.kcalPer100 * item.grams / 100) + ' kcal'"
                 ></span>
                 <button
                   @click="$store.nutrition.removeMealItem(meal.mealName, idx)"

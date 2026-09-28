@@ -77,7 +77,7 @@
           x-show="metricDelta(activeMetric) !== null"
           x-text="metricDelta(activeMetric) !== null
              ? (metricDelta(activeMetric) > 0 ? '↑ +' : '↓ ')
-               + $math.abs(metricDelta(activeMetric)).toFixed(1) + ' cm sur la période'
+               + $num.abs(metricDelta(activeMetric)).toFixed(1) + ' cm sur la période'
              : ''"
         ></p>
       </div>
