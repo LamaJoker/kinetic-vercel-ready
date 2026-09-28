@@ -153,6 +153,10 @@ export function mensurations() {
 
     // ── Per-metric helpers ────────────────────────────────────
 
+    metricDotStyle(color: string): { backgroundColor: string } {
+      return { backgroundColor: color };
+    },
+
     /** 37.099999 → « 37,1 » ; null → « — » */
     formatCm(value: number | null): string {
       if (value === null || !Number.isFinite(value)) return '—';

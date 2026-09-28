@@ -795,7 +795,7 @@ body {
 }
 :root:not([data-mode='light']) .text-gray-600,
 :root:not([data-mode='light']) .text-gray-700 {
-  color: #868c95;
+  color: #979da6;
 }
 /* Mode clair : le jaune 15 kg n'est pas lisible en texte sur fond clair ;
    on garde le jaune pour les aplats et on passe le texte en ocre foncé. */
@@ -815,7 +815,7 @@ body {
    pour atteindre 4,5:1 (le rouge 25 kg brut ne fait que ~3,4:1 en petit texte).
    Les aplats (bg-*) gardent les couleurs exactes des disques. */
 :root:not([data-mode='light']) .text-kinetic-electric {
-  color: #f0655e;
+  color: #f5847d;
 }
 :root:not([data-mode='light']) .text-kinetic-purple {
   color: #86a6f0;
