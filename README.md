@@ -22,6 +22,10 @@ Application mobile PWA progressive pour la productivité et le fitness, construi
 
 **Essayer sans compte :** ouvre l'app, puis sur l'écran de démarrage choisis **Voir la démo**. Kinetic se remplit avec 8 semaines d'entraînement fictives (Push/Pull/Legs, pesées, mensurations). Tout s'efface depuis le profil.
 
+**Étude de cas :** [comment la synchro hors-ligne a été rendue fiable](docs/case-study-sync.md).
+
+**Android :** l'APK est publié dans les [Releases](https://github.com/LamaJoker/kinetic-vercel-ready/releases/latest).
+
 Les captures sont régénérées automatiquement à chaque push sur une branche `ux/**` (workflow `ux-screenshots`).
 
 ## 🏗️ Architecture
