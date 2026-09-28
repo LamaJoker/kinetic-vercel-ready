@@ -170,7 +170,7 @@ export const REWARDS: readonly Reward[] = [
   {
     level: 6,
     emoji: '🧊',
-    title: 'Gel de Streak',
+    title: 'Gel de série',
     description: '1 jeton par semaine pour protéger ton streak sans activité ce jour-là.',
     kind: 'streak_freeze',
   },

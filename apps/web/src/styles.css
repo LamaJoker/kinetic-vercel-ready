@@ -805,3 +805,8 @@ body {
 [data-mode='light'] .text-kinetic-electric {
   color: #b52a24;
 }
+
+/* Mode clair : barre de navigation claire, bordure visible */
+[data-mode='light'] nav[aria-label='Navigation principale'] {
+  border-top-color: rgba(28, 29, 32, 0.12);
+}
