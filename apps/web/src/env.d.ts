@@ -11,6 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_DEMO_UNLOCK_PRO?: string;
   /** 'true' pour activer l'offre Pro (sinon tout est gratuit). */
   readonly VITE_ENABLE_PRO?: string;
+  /** URL de collecte des Web Vitals (optionnel ; sinon rien n'est envoyé). */
+  readonly VITE_VITALS_ENDPOINT?: string;
 }
 
 interface ImportMeta {

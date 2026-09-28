@@ -173,8 +173,9 @@
     <!-- XP + Priorité -->
     <div class="grid grid-cols-2 gap-3 mb-4">
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">XP (10–200)</label>
+        <label for="f-vitalite-1" class="text-xs text-gray-500 mb-1 block">XP (10–200)</label>
         <input
+          id="f-vitalite-1"
           type="number"
           min="10"
           max="200"
@@ -184,8 +185,9 @@
         />
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">Priorité</label>
+        <label for="f-vitalite-2" class="text-xs text-gray-500 mb-1 block">Priorité</label>
         <select
+          id="f-vitalite-2"
           x-model="$store.vitalite.newTaskPriority"
           class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-white text-sm"
         >
@@ -268,12 +270,12 @@
             <div class="w-16 h-1.5 bg-black/40 rounded-full overflow-hidden">
               <div
                 class="h-full bg-kinetic-neon rounded-full transition-all"
-                :style="'width: ' + $math.min(100, $math.round(day.doneIds.length / $math.max(1, $store.vitalite.totalCount) * 100)) + '%'"
+                :style="'width: ' + $num.min(100, $num.round(day.doneIds.length / $num.max(1, $store.vitalite.totalCount) * 100)) + '%'"
               ></div>
             </div>
             <span
               class="text-xs font-bold text-kinetic-neon"
-              x-text="$math.min(100, $math.round(day.doneIds.length / $math.max(1,$store.vitalite.totalCount) * 100)) + '%'"
+              x-text="$num.min(100, $num.round(day.doneIds.length / $num.max(1,$store.vitalite.totalCount) * 100)) + '%'"
             ></span>
             <svg
               class="w-4 h-4 text-gray-500 flex-shrink-0 transition-transform"

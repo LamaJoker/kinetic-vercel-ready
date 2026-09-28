@@ -76,12 +76,12 @@
           <div
             class="h-full rounded-full transition-all duration-700"
             :class="goalProgress >= 100 ? 'bg-kinetic-neon' : 'bg-kinetic-electric/70'"
-            :style="'width: ' + $math.min(100, goalProgress) + '%'"
+            :style="'width: ' + $num.min(100, goalProgress) + '%'"
           ></div>
         </div>
         <p
           class="text-[10px] text-gray-500 mt-1"
-          x-text="goalProgress >= 100 ? 'Objectif atteint !' : $math.round(goalProgress) + '% accompli'"
+          x-text="goalProgress >= 100 ? 'Objectif atteint !' : $num.round(goalProgress) + '% accompli'"
         ></p>
       </div>
     </template>
@@ -145,8 +145,9 @@
     <p class="text-xs text-gray-500 font-semibold mb-3">Enregistrer</p>
     <div class="flex gap-3 mb-3">
       <div class="flex-1">
-        <label class="text-xs text-gray-500 mb-1 block">Poids (kg)</label>
+        <label for="f-bodyweight-1" class="text-xs text-gray-500 mb-1 block">Poids (kg)</label>
         <input
+          id="f-bodyweight-1"
           type="number"
           x-model.number="newWeight"
           min="30"

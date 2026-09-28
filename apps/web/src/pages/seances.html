@@ -1,13 +1,11 @@
 <div x-data="seances" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
   <!-- ── Overlay Rest Timer Plein écran ─────────────────────────────────── -->
+  <!-- Pas de x-transition ici : le minuteur réévalue x-show chaque seconde, ce qui
+       relançait la transition de sortie en boucle et laissait un calque invisible
+       (opacity-0) qui bloquait tous les boutons après « Passer ». -->
   <div
     x-show="fullscreenRest && restRemainingSec() > 0"
-    x-transition:enter="transition ease-out duration-200"
-    x-transition:enter-start="opacity-0"
-    x-transition:enter-end="opacity-100"
-    x-transition:leave="transition ease-in duration-150"
-    x-transition:leave-start="opacity-100"
-    x-transition:leave-end="opacity-0"
+    :class="fullscreenRest ? '' : 'pointer-events-none'"
     class="fixed inset-0 z-[60] flex flex-col items-center justify-center p-6 bg-black/85 backdrop-blur-md"
     @keydown.escape.window="fullscreenRest = false"
   >
@@ -464,7 +462,7 @@
                       <p class="text-sm font-semibold text-white" x-text="alt.exercise.name"></p>
                       <span
                         class="text-[10px] text-kinetic-neon font-bold flex-shrink-0"
-                        x-text="$math.round(alt.score * 100) + ' %'"
+                        x-text="$num.round(alt.score * 100) + ' %'"
                       ></span>
                     </div>
                     <p
@@ -520,7 +518,7 @@
           <!-- Inputs nouvelle série + raccourcis +/- -->
           <div class="grid grid-cols-[1fr_1.45fr_1fr] gap-1.5 mb-2">
             <div>
-              <label class="text-xs text-gray-400 font-medium">Reps</label>
+              <label for="f-seances-1" class="text-xs text-gray-400 font-medium">Reps</label>
               <div class="flex items-stretch gap-1">
                 <button
                   type="button"
@@ -641,6 +639,7 @@
               <div>
                 <label class="text-xs text-gray-500">Note (optionnel)</label>
                 <input
+                  id="f-seances-1"
                   type="text"
                   x-model="draft.note"
                   maxlength="200"
@@ -649,8 +648,9 @@
                 />
               </div>
               <div>
-                <label class="text-xs text-gray-500">Tempo (ex: 4-1-2-0)</label>
+                <label for="f-seances-2" class="text-xs text-gray-500">Tempo (ex: 4-1-2-0)</label>
                 <input
+                  id="f-seances-2"
                   type="text"
                   x-model="draft.tempo"
                   maxlength="9"

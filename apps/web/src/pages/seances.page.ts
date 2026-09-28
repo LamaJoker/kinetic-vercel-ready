@@ -852,6 +852,9 @@ export function seances() {
 
       // ── Détecter PR AVANT d'ajouter la série ─────────────────────────────
       const isPr = this.isNewPr(exerciseId, weightKg, reps);
+      // Pas de célébration plein écran pour la toute première série d'un
+      // exercice : ce n'est pas un record battu, juste une première référence.
+      const hadRecord = this.pr(exerciseId) !== null;
 
       const note = (this.draft.note ?? '').toString().trim().slice(0, 200);
       this.currentSession = {
@@ -877,7 +880,7 @@ export function seances() {
       // Vide la note après ajout (le tempo reste pour les sets suivants)
       this.draft.note = '';
 
-      if (isPr) {
+      if (isPr && hadRecord) {
         const e1rmKg = Math.round(estimateE1rmKg(weightKg, reps) * 10) / 10;
         this.prCelebration = {
           exerciseName: this.exerciseName(exerciseId),

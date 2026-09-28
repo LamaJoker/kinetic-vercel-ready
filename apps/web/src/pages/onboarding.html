@@ -9,7 +9,7 @@
             <circle cx="12" cy="12" r="3" fill="rgb(var(--ink))" />
           </svg>
         </div>
-        <span class="text-2xl font-display font-black tracking-tight text-white">Démarrage</span>
+        <h1 class="text-2xl font-display font-black tracking-tight text-white">Démarrage</h1>
       </div>
       <a
         href="/"
@@ -95,8 +95,9 @@
 
       <div class="grid grid-cols-3 gap-3">
         <div>
-          <label class="text-xs text-gray-500 mb-1 block">Âge</label>
+          <label for="f-onboarding-1" class="text-xs text-gray-500 mb-1 block">Âge</label>
           <input
+            id="f-onboarding-1"
             x-model.number="ageYears"
             type="number"
             min="12"
@@ -105,8 +106,9 @@
           />
         </div>
         <div>
-          <label class="text-xs text-gray-500 mb-1 block">Taille</label>
+          <label for="f-onboarding-2" class="text-xs text-gray-500 mb-1 block">Taille</label>
           <input
+            id="f-onboarding-2"
             x-model.number="heightCm"
             type="number"
             min="120"
@@ -115,8 +117,9 @@
           />
         </div>
         <div>
-          <label class="text-xs text-gray-500 mb-1 block">Poids</label>
+          <label for="f-onboarding-3" class="text-xs text-gray-500 mb-1 block">Poids</label>
           <input
+            id="f-onboarding-3"
             x-model.number="weightKg"
             type="number"
             min="30"
