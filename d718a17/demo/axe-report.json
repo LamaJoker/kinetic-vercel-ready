@@ -1,0 +1,39 @@
+{
+  "/": [],
+  "/seances": [],
+  "/vitalite": [],
+  "/nutrition": [],
+  "/program": [],
+  "/programs": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 4,
+      "help": "Elements must meet minimum color contrast ratio thresholds"
+    }
+  ],
+  "/progression": [],
+  "/records": [],
+  "/bodyweight": [],
+  "/mensurations": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 6,
+      "help": "Elements must meet minimum color contrast ratio thresholds"
+    }
+  ],
+  "/photos": [],
+  "/plates": [],
+  "/achievements": [],
+  "/glossaire": [],
+  "/profile": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 9,
+      "help": "Elements must meet minimum color contrast ratio thresholds"
+    }
+  ],
+  "/login": []
+}
