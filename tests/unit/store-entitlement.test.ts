@@ -15,7 +15,7 @@ vi.mock('../../apps/web/src/deps.js', () => ({
   getDeps: vi.fn().mockResolvedValue({ storage: storageMock }),
 }));
 
-import { entitlementStore } from '../../apps/web/src/stores/entitlement.js';
+import { entitlementStore, proOffer } from '../../apps/web/src/stores/entitlement.js';
 
 describe('entitlementStore', () => {
   let store: ReturnType<typeof entitlementStore>;
@@ -68,11 +68,22 @@ describe('entitlementStore', () => {
     expect(store.can('nutrition_scanner')).toBe(true);
   });
 
-  it('can() bloque les features Pro en gratuit', async () => {
+  it('offre Pro active : can() bloque les features Pro en gratuit', async () => {
+    const spy = vi.spyOn(proOffer, 'enabled').mockReturnValue(true);
     storageMock.get.mockResolvedValueOnce({ tier: 'free' });
     await store.init();
+    expect(store.enabled).toBe(true);
     expect(store.can('advanced_analytics')).toBe(false);
     expect(store.can('data_export')).toBe(false);
+    spy.mockRestore();
+  });
+
+  it('offre Pro désactivée (défaut) : tout est accessible', async () => {
+    storageMock.get.mockResolvedValueOnce({ tier: 'free' });
+    await store.init();
+    expect(store.enabled).toBe(false);
+    expect(store.can('advanced_analytics')).toBe(true);
+    expect(store.can('data_export')).toBe(true);
   });
 
   it('setTier bascule en Pro et persiste', async () => {

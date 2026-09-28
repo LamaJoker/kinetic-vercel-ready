@@ -238,13 +238,13 @@
   <template x-if="aiCoachAvailable">
     <button
       @click="openCoachModal()"
-      class="w-full mb-3 bg-kinetic-surface ring-1 ring-purple-400/30 rounded-2xl p-3 flex items-center gap-3 hover:ring-purple-300/60 transition-all active:scale-[0.98]"
+      class="w-full mb-3 bg-kinetic-surface ring-1 ring-white/10 rounded-2xl p-3 flex items-center gap-3 hover:ring-white/10 transition-all active:scale-[0.98]"
     >
       <div class="flex-1 text-left min-w-0">
         <p class="text-sm font-bold text-white">Coach IA</p>
-        <p class="text-[10px] text-purple-200 truncate">Pose une question sur ta progression</p>
+        <p class="text-[10px] text-gray-200 truncate">Pose une question sur ta progression</p>
       </div>
-      <span class="text-purple-300 text-lg">→</span>
+      <span class="text-gray-200 text-lg">→</span>
     </button>
   </template>
 
@@ -263,7 +263,7 @@
     style="display: none"
   >
     <div
-      class="w-full max-w-md bg-kinetic-surface rounded-3xl ring-1 ring-purple-400/30 p-5 shadow-2xl"
+      class="w-full max-w-md bg-kinetic-surface rounded-3xl ring-1 ring-white/10 p-5 shadow-2xl"
       @click.stop
     >
       <div class="flex items-center justify-between mb-3">
@@ -288,7 +288,7 @@
         <template x-for="suggestion in coachSuggestions" :key="suggestion">
           <button
             @click="coachQuestion = suggestion"
-            class="text-left text-xs text-purple-200 bg-purple-900/30 ring-1 ring-purple-500/20 rounded-lg px-3 py-2 hover:ring-purple-400/40"
+            class="text-left text-xs text-gray-200 bg-white/5 ring-1 ring-white/10 rounded-lg px-3 py-2 hover:ring-white/10"
             x-text="suggestion"
           ></button>
         </template>
@@ -316,7 +316,7 @@
 
       <!-- Réponse -->
       <template x-if="coachAnswer">
-        <div class="bg-kinetic-ink/60 ring-1 ring-purple-500/20 rounded-xl p-3 mb-3">
+        <div class="bg-kinetic-ink/60 ring-1 ring-white/10 rounded-xl p-3 mb-3">
           <p
             class="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap"
             x-text="coachAnswer"
@@ -344,7 +344,7 @@
   <!-- Routine vitalité -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-3 ring-1 ring-white/5">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="font-display font-bold text-white tracking-tight">Routine vitalité</h2>
+      <h2 class="font-display font-bold text-white tracking-tight">Récupération</h2>
       <span
         class="text-xs bg-kinetic-neon/10 text-kinetic-neon px-2.5 py-0.5 rounded-full font-semibold ring-1 ring-kinetic-neon/20"
         x-text="$store.vitalite.doneCount + '/' + $store.vitalite.totalCount"

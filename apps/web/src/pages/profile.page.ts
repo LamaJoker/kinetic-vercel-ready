@@ -84,6 +84,40 @@ export function profile() {
       window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_LOCALE_RELOAD));
     },
 
+    showDeleteAccount: false,
+    deleteConfirmText: '',
+    deletingAccount: false,
+    deleteAccountError: '',
+
+    /** Suppression définitive : serveur (cascade) puis appareil, puis déconnexion. */
+    async confirmDeleteAccount(): Promise<void> {
+      if (this.deleteConfirmText.trim().toUpperCase() !== 'SUPPRIMER') return;
+      this.deletingAccount = true;
+      this.deleteAccountError = '';
+      try {
+        const env = (import.meta as ImportMeta & { env: Record<string, string | undefined> }).env;
+        const { supabase, signOut } = await import('@kinetic/adapters-web');
+        const { deleteAccount, ACCOUNT_DELETED_FLAG } = await import('../lib/account');
+        await deleteAccount({
+          supabaseUrl: env['VITE_SUPABASE_URL'] ?? '',
+          anonKey: env['VITE_SUPABASE_ANON_KEY'] ?? '',
+          client: supabase as never,
+        });
+        const deps = await getDeps();
+        await deps.storage.clear().catch(() => undefined);
+        await signOut().catch(() => undefined);
+        try {
+          sessionStorage.setItem(ACCOUNT_DELETED_FLAG, '1');
+        } catch {
+          /* ignore */
+        }
+        window.location.assign('/login');
+      } catch (err) {
+        this.deleteAccountError = err instanceof Error ? err.message : 'La suppression a échoué.';
+        this.deletingAccount = false;
+      }
+    },
+
     demoActive: false,
 
     /** Retire le jeu de démo puis relance l'onboarding (rechargement complet). */

@@ -411,7 +411,7 @@ export function seances() {
               new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
                 detail: {
                   kind: 'info',
-                  message: `Séance "${t.name}" chargée depuis ton programme`,
+                  message: `Séance « ${t.name} » prête`,
                 },
               }),
             );
@@ -1111,7 +1111,7 @@ export function seances() {
           rpe: preset.targetRpe,
           goalLabel: preset.label,
           science: preset.science,
-          message: `🆕 Première séance. Commence léger (RPE 6–7) pour trouver ta charge, puis vise ${preset.rpeZone}.`,
+          message: `Première séance. Commence léger (RPE 6–7) pour trouver ta charge, puis vise ${preset.rpeZone}.`,
           periodizationNote: '',
         };
       }
@@ -1131,19 +1131,19 @@ export function seances() {
       let message = '';
 
       if (!history.length || last.weightKg === 0) {
-        message = `🆕 Commence léger pour calibrer — vise ${preset.rpeZone}.`;
+        message = `Commence léger pour calibrer — vise ${preset.rpeZone}.`;
       } else if (rpeDelta <= -1.5) {
         const higher = Math.round((suggestedWeight + inc) / inc) * inc;
-        message = `Trop facile la dernière fois (RPE ${last.rpe} vs cible ${preset.targetRpe}). Monte à **${higher} kg × ${preset.targetReps}**.`;
+        message = `Trop facile la dernière fois (RPE ${last.rpe} vs cible ${preset.targetRpe}). Monte à ${higher} kg × ${preset.targetReps}.`;
       } else if (rpeDelta <= -0.5) {
-        message = `Légèrement en dessous de la cible (RPE ${last.rpe}). Essaie **${suggestedWeight + inc} kg × ${preset.targetReps}** ou reste sur ${suggestedWeight} kg.`;
+        message = `Légèrement en dessous de la cible (RPE ${last.rpe}). Essaie ${suggestedWeight + inc} kg × ${preset.targetReps} ou reste sur ${suggestedWeight} kg.`;
       } else if (rpeDelta <= 0.5) {
-        message = `Tu es exactement dans la zone (RPE ${last.rpe}). Maintiens **${suggestedWeight} kg × ${preset.targetReps} @ RPE ${preset.targetRpe}**.`;
+        message = `Tu es exactement dans la zone (RPE ${last.rpe}). Maintiens ${suggestedWeight} kg × ${preset.targetReps} @ RPE ${preset.targetRpe}.`;
       } else if (rpeDelta <= 1.5) {
-        message = `Un peu au-dessus de la cible (RPE ${last.rpe}). Reste sur **${suggestedWeight} kg** et cible ${preset.targetRpe} de RPE.`;
+        message = `Un peu au-dessus de la cible (RPE ${last.rpe}). Reste sur ${suggestedWeight} kg et cible ${preset.targetRpe} de RPE.`;
       } else {
         const lower = Math.max(0, Math.round((suggestedWeight - inc) / inc) * inc);
-        message = `RPE ${last.rpe} — c'était trop lourd pour cet objectif. Recule à **${lower} kg × ${preset.targetReps}** pour rester dans la zone ${preset.rpeZone}.`;
+        message = `RPE ${last.rpe} — c'était trop lourd pour cet objectif. Recule à ${lower} kg × ${preset.targetReps} pour rester dans la zone ${preset.rpeZone}.`;
       }
 
       // ── Note de périodisation (Coach Avancé, niveau 3+) ─────────────────

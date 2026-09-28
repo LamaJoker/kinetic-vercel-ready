@@ -76,6 +76,8 @@ export const STORAGE_KEYS = {
   // ─── Profil utilisateur ───────────────────────────────────────
   USER_PROFILE: 'kinetic:userProfile' as const,
   /** Mode démo : liste des clés écrites par le jeu de données de démo (pour le retirer proprement). */
+  /** sessionStorage : compte supprimé (message sur l'écran de connexion). */
+  ACCOUNT_DELETED: 'kinetic:account-deleted' as const,
   DEMO_MANIFEST: 'kinetic:demo:manifest' as const,
   PROFILE: 'kinetic:profile' as const, // displayName et préférences UI
   STATS: 'kinetic:stats' as const, // stats agrégées en cache (totalSessions, etc.)

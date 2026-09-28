@@ -21,6 +21,11 @@
       </p>
     </div>
 
+    <!-- Confirmation après suppression du compte -->
+    <p x-show="accountDeleted" class="mb-4 rounded-xl bg-kinetic-surface p-3 text-sm text-gray-300">
+      Ton compte et tes données ont été supprimés.
+    </p>
+
     <!-- Erreur -->
     <div
       x-show="$store.auth.error"

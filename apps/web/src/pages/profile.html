@@ -85,8 +85,11 @@
     </div>
   </template>
 
-  <!-- Abonnement -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5 mb-4">
+  <!-- Abonnement (masqué tant que l'offre Pro n'est pas activée) -->
+  <div
+    x-show="$store.entitlement.enabled"
+    class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5 mb-4"
+  >
     <div class="flex items-center justify-between mb-2">
       <p class="text-xs text-gray-500 font-semibold">Abonnement</p>
       <span
@@ -257,7 +260,7 @@
         <div class="flex items-center justify-between gap-3">
           <div>
             <p class="text-xs font-bold text-white flex items-center gap-1.5">
-              Gel de Streak
+              Gel de série
               <span
                 class="text-kinetic-neon font-black text-sm"
                 x-text="$store.rewards.freezeTokens"
@@ -315,7 +318,7 @@
 
   <!-- Meilleur streak -->
   <div class="bg-kinetic-electric/15 ring-1 ring-kinetic-electric/20 rounded-2xl p-4 mb-6">
-    <h2 class="font-display font-bold text-white tracking-tight mb-3">Best Streak</h2>
+    <h2 class="font-display font-bold text-white tracking-tight mb-3">Meilleure série</h2>
     <div class="flex items-center justify-between">
       <div>
         <p class="text-xs text-gray-500">Meilleur</p>
@@ -495,7 +498,7 @@
           ? 'bg-kinetic-neon text-gray-950'
           : 'bg-kinetic-elevated text-white hover:bg-white/10'"
       >
-        🇫🇷 Français
+        Français
       </button>
       <button
         @click="setUiLocale('en')"
@@ -504,7 +507,7 @@
           ? 'bg-kinetic-neon text-gray-950'
           : 'bg-kinetic-elevated text-white hover:bg-white/10'"
       >
-        🇬🇧 English
+        English
       </button>
     </div>
   </div>
@@ -715,6 +718,74 @@
       </button>
     </div>
   </div>
+
+  <!-- Suppression du compte (RGPD) : comptes connectés uniquement -->
+  <div
+    x-show="$store.auth.isAuthenticated && !$store.auth.isGuest"
+    class="bg-kinetic-surface rounded-2xl p-4 mb-4"
+  >
+    <p class="text-sm font-semibold text-white">Supprimer mon compte</p>
+    <p class="text-xs text-gray-400 mt-1">
+      Efface définitivement ton compte et toutes tes données sur le serveur, puis sur cet appareil.
+      Pense à exporter tes données avant.
+    </p>
+    <button
+      type="button"
+      @click="showDeleteAccount = true; deleteConfirmText = ''; deleteAccountError = ''"
+      class="mt-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-kinetic-electric ring-1 ring-kinetic-electric/40 hover:bg-kinetic-electric/10"
+    >
+      Supprimer mon compte
+    </button>
+
+    <div
+      x-show="showDeleteAccount"
+      class="mt-4 rounded-xl bg-kinetic-ink p-4 ring-1 ring-kinetic-electric/40"
+      role="alertdialog"
+      aria-labelledby="delete-account-title"
+    >
+      <p id="delete-account-title" class="text-sm font-semibold text-white">
+        Cette action est irréversible.
+      </p>
+      <label for="delete-confirm" class="block text-xs text-gray-400 mt-2">
+        Tape SUPPRIMER pour confirmer
+      </label>
+      <input
+        id="delete-confirm"
+        x-model="deleteConfirmText"
+        autocomplete="off"
+        class="mt-1 w-full bg-kinetic-surface rounded-xl px-3 py-2.5 text-white ring-1 ring-white/10 focus:outline-none focus:ring-kinetic-neon"
+      />
+      <p
+        x-show="deleteAccountError"
+        class="text-xs text-kinetic-electric mt-2"
+        x-text="deleteAccountError"
+      ></p>
+      <div class="flex gap-2 mt-3">
+        <button
+          type="button"
+          @click="showDeleteAccount = false"
+          class="flex-1 rounded-xl py-2.5 text-sm text-gray-300 ring-1 ring-white/15"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          @click="confirmDeleteAccount()"
+          :disabled="deletingAccount || deleteConfirmText.trim().toUpperCase() !== 'SUPPRIMER'"
+          class="flex-1 rounded-xl py-2.5 text-sm font-semibold bg-kinetic-electric text-white disabled:opacity-40"
+        >
+          <span x-show="!deletingAccount">Supprimer définitivement</span>
+          <span x-show="deletingAccount">Suppression…</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="text-center text-xs text-gray-400 mb-3">
+    <a href="/legal/confidentialite" class="underline">Confidentialité</a>
+    <span class="mx-2" aria-hidden="true">·</span>
+    <a href="/legal/cgu" class="underline">Conditions d'utilisation</a>
+  </nav>
 
   <p class="text-center text-xs text-gray-700">Kinetic v1.0.0 — Built with</p>
 

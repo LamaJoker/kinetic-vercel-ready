@@ -100,7 +100,7 @@
     <nav
       x-show="$store.auth.isAuthenticated && !isChromeless()"
       aria-label="Navigation principale"
-      class="fixed bottom-0 inset-x-0 bg-[rgba(7,7,11,0.88)] backdrop-blur-[28px] border-t border-white/[0.07] z-40 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
+      class="fixed bottom-0 inset-x-0 bg-kinetic-ink/90 backdrop-blur-[28px] border-t border-white/[0.07] z-40 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
     >
       <div class="max-w-md mx-auto flex items-center justify-around px-1">
         <a
@@ -223,7 +223,7 @@
           <span
             class="text-[10px]"
             :class="currentPath === '/vitalite' ? 'font-bold' : 'font-medium'"
-            >Vitalité</span
+            >Récup</span
           >
           <span
             x-show="currentPath === '/vitalite'"

@@ -11,7 +11,7 @@ name: Supabase keep-alive
 
 on:
   schedule:
-    - cron: '17 7 */3 * *' # tous les 3 jours à 07:17 UTC
+    - cron: '17 7 * * *' # tous les jours à 07:17 UTC (un ping tous les 3 jours n'a pas suffi)
   workflow_dispatch:
 
 permissions:
@@ -32,15 +32,16 @@ jobs:
             echo "::warning::Secrets Supabase absents — ping ignoré."
             exit 0
           fi
-          status=$(curl -sS -o response.txt -w '%{http_code}' -X POST \
+          status=$(curl -sS --max-time 20 -o response.txt -w '%{http_code}' -X POST \
             "$SUPABASE_URL/rest/v1/rpc/keep_alive" \
             -H "apikey: $SUPABASE_ANON_KEY" \
             -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
             -H "Content-Type: application/json" \
-            -d '{}')
+            -d '{}') || status="000"
           echo "HTTP $status — $(cat response.txt)"
           case "$status" in
             200) echo "Projet Supabase actif." ;;
+            000) echo "::error::Supabase injoignable (projet en pause ou supprimé) — le restaurer depuis le dashboard." ; exit 1 ;;
             540) echo "::error::Projet Supabase EN PAUSE — le restaurer depuis le dashboard (voir DEPLOYMENT.md)." ; exit 1 ;;
             404) echo "::error::RPC keep_alive introuvable — appliquer la migration 009." ; exit 1 ;;
             *)   echo "::error::Réponse inattendue de Supabase." ; exit 1 ;;

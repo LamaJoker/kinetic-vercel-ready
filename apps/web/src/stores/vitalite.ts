@@ -21,27 +21,42 @@ interface DefaultTaskSpec {
   intervalDays?: number;
 }
 
+/**
+ * Routine de récupération : ce qui fait progresser entre deux séances.
+ * Les ids historiques (morning-stretch, sleep-routine, hydration, evening-walk,
+ * journaling) sont conservés pour garder l'historique des jours passés.
+ */
 const DEFAULT_TASKS_SPEC: DefaultTaskSpec[] = [
+  { id: 'sleep-routine', title: 'Dormir 7 h ou plus', icon: '', xp: 50, priority: 'high' as const },
   {
-    id: 'morning-stretch',
-    title: 'Etirements matin',
-    icon: '🧘',
+    id: 'protein-target',
+    title: 'Atteindre ton objectif de protéines',
+    icon: '',
     xp: 50,
     priority: 'high' as const,
   },
-  { id: 'cold-shower', title: 'Douche froide', icon: '🚿', xp: 50, priority: 'high' as const },
-  { id: 'breakfast', title: 'Petit-dejeuner sain', icon: '🥗', xp: 50, priority: 'med' as const },
-  { id: 'hydration', title: "Boire 2L d'eau", icon: '💧', xp: 50, priority: 'low' as const },
-  { id: 'evening-walk', title: 'Promenade du soir', icon: '🚶', xp: 40, priority: 'low' as const },
-  { id: 'journaling', title: 'Journaling', icon: '📝', xp: 40, priority: 'med' as const },
-  { id: 'sleep-routine', title: 'Routine sommeil', icon: '🌙', xp: 50, priority: 'high' as const },
   {
-    id: 'coiffeur',
-    title: 'Aller chez le coiffeur',
-    icon: '✂️',
+    id: 'morning-stretch',
+    title: 'Mobilité 10 minutes',
+    icon: '',
+    xp: 40,
+    priority: 'med' as const,
+  },
+  { id: 'hydration', title: "Boire 2 L d'eau", icon: '', xp: 40, priority: 'med' as const },
+  { id: 'evening-walk', title: 'Marcher 8 000 pas', icon: '', xp: 40, priority: 'med' as const },
+  {
+    id: 'journaling',
+    title: 'Noter ton énergie et tes courbatures',
+    icon: '',
     xp: 30,
     priority: 'low' as const,
-    intervalDays: 20,
+  },
+  {
+    id: 'screen-off',
+    title: "Pas d'écran 30 min avant de dormir",
+    icon: '',
+    xp: 30,
+    priority: 'low' as const,
   },
 ];
 

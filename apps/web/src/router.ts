@@ -37,7 +37,9 @@ type RouteKey =
   | '/achievements'
   | '/photos'
   | '/programs'
-  | '/glossaire';
+  | '/glossaire'
+  | '/legal/cgu'
+  | '/legal/confidentialite';
 
 const ROUTES: Record<RouteKey, string> = {
   '/': './pages/dashboard.html',
@@ -58,9 +60,17 @@ const ROUTES: Record<RouteKey, string> = {
   '/photos': './pages/photos.html',
   '/programs': './pages/programs.html',
   '/glossaire': './pages/glossaire.html',
+  '/legal/cgu': './pages/legal-cgu.html',
+  '/legal/confidentialite': './pages/legal-confidentialite.html',
 };
 
-const ONBOARDING_EXEMPT: readonly RouteKey[] = ['/onboarding', '/login', '/auth-callback'];
+const ONBOARDING_EXEMPT: readonly RouteKey[] = [
+  '/onboarding',
+  '/login',
+  '/auth-callback',
+  '/legal/cgu',
+  '/legal/confidentialite',
+];
 
 const outlet = (): HTMLElement => {
   const el = document.getElementById('app-outlet');
