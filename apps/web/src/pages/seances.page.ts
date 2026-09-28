@@ -696,6 +696,25 @@ export function seances() {
       return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
     },
 
+    /** Résumé d'une ligne du conseil : « 62,5 kg × 9 · RPE 8 » (visible replié). */
+    coachSummary(exerciseId: string): string {
+      const a = this.coachAdvice(exerciseId) as
+        | { weightKg?: number; reps?: number; rpe?: number }
+        | null
+        | undefined;
+      if (!a || !a.weightKg || !a.reps) return 'Voir le conseil';
+      const kg = a.weightKg.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+      return `${kg} kg × ${a.reps}${a.rpe ? ` · RPE ${a.rpe}` : ''}`;
+    },
+
+    /** Largeur de la barre de progression du repos (objet style, compatible CSP). */
+    restProgressStyle(): { width: string } {
+      const total = Math.max(1, Number(this.restPresetSec) || 90);
+      const left = this.restRemainingSec();
+      const pct = Math.max(0, Math.min(100, Math.round(((total - left) / total) * 100)));
+      return { width: `${pct}%` };
+    },
+
     startRest(): void {
       const sec = Math.max(15, Math.min(600, Math.floor(Number(this.restPresetSec)) || 90));
       this.restPresetSec = sec;

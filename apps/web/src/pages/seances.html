@@ -1,53 +1,55 @@
-<div x-data="seances" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
-  <!-- ── Overlay Rest Timer Plein écran ─────────────────────────────────── -->
-  <!-- Pas de x-transition ici : le minuteur réévalue x-show chaque seconde, ce qui
-       relançait la transition de sortie en boucle et laissait un calque invisible
-       (opacity-0) qui bloquait tous les boutons après « Passer ». -->
-  <div
+<div x-data="seances" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-40">
+  <!-- ── Minuteur de repos : bandeau en bas, la séance reste visible ───── -->
+  <!-- Pas de x-transition : le minuteur réévalue x-show chaque seconde, ce qui
+       relançait la transition de sortie en boucle (calque invisible bloquant). -->
+  <section
     x-show="fullscreenRest && restRemainingSec() > 0"
     :class="fullscreenRest ? '' : 'pointer-events-none'"
-    class="fixed inset-0 z-[60] flex flex-col items-center justify-center p-6 bg-black/85 backdrop-blur-md"
+    class="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-[60] mx-auto max-w-md rounded-2xl bg-kinetic-raised ring-1 ring-white/10 shadow-2xl shadow-black/50 px-4 py-3"
+    role="timer"
+    aria-live="off"
+    aria-label="Minuteur de repos"
     @keydown.escape.window="fullscreenRest = false"
   >
-    <p class="text-xs font-bold text-kinetic-neon mb-4">Repos</p>
-    <div
-      class="text-[7rem] sm:text-[9rem] leading-none font-black text-white tabular-nums tabular-nums select-none"
-      :class="restRemainingSec() <= 5 ? 'text-kinetic-electric animate-pulse' : ''"
-      x-text="restLabel()"
-    ></div>
-    <p
-      class="mt-2 text-sm text-gray-400"
-      x-text="'Prochaine série dans ' + restRemainingSec() + ' s'"
-    ></p>
-
-    <div class="mt-10 grid grid-cols-3 gap-3 w-full max-w-xs">
-      <button
-        @click="addRestSec(-15)"
-        class="bg-kinetic-surface ring-1 ring-white/10 rounded-2xl py-3 text-white text-sm font-bold hover:ring-white/30 active:scale-95"
-      >
-        −15 s
-      </button>
-      <button
-        @click="skipRest()"
-        class="bg-kinetic-neon text-gray-950 rounded-2xl py-3 font-black text-sm hover:brightness-110 active:scale-95"
-      >
-        Passer
-      </button>
-      <button
-        @click="addRestSec(15)"
-        class="bg-kinetic-surface ring-1 ring-white/10 rounded-2xl py-3 text-white text-sm font-bold hover:ring-white/30 active:scale-95"
-      >
-        +15 s
-      </button>
+    <div class="flex items-center gap-3">
+      <div class="min-w-0">
+        <p class="text-xs text-gray-400">Repos</p>
+        <p
+          class="text-4xl leading-none font-display font-bold tabular-nums text-white select-none"
+          :class="restRemainingSec() <= 5 ? 'text-kinetic-electric' : ''"
+          x-text="restLabel()"
+        ></p>
+      </div>
+      <div class="ml-auto flex items-center gap-2">
+        <button
+          type="button"
+          @click="addRestSec(-15)"
+          aria-label="Retirer 15 secondes"
+          class="h-11 px-3 rounded-xl bg-kinetic-surface ring-1 ring-white/10 text-white text-sm font-semibold active:scale-95"
+        >
+          −15
+        </button>
+        <button
+          type="button"
+          @click="addRestSec(15)"
+          aria-label="Ajouter 15 secondes"
+          class="h-11 px-3 rounded-xl bg-kinetic-surface ring-1 ring-white/10 text-white text-sm font-semibold active:scale-95"
+        >
+          +15
+        </button>
+        <button
+          type="button"
+          @click="skipRest()"
+          class="h-11 px-4 rounded-xl bg-kinetic-neon text-gray-950 text-sm font-bold active:scale-95"
+        >
+          Passer
+        </button>
+      </div>
     </div>
-
-    <button
-      @click="fullscreenRest = false"
-      class="mt-6 text-xs text-gray-500 hover:text-white underline underline-offset-4"
-    >
-      Réduire (le timer continue)
-    </button>
-  </div>
+    <div class="mt-3 h-1 rounded-full bg-white/10 overflow-hidden" aria-hidden="true">
+      <div class="h-full bg-kinetic-neon" :style="restProgressStyle()"></div>
+    </div>
+  </section>
 
   <!-- ── Overlay Nouveau PR ──────────────────────────────────────────────── -->
   <div
@@ -663,16 +665,27 @@
 
           <!-- ── Coach IA ────────────────────────────────────────────────── -->
           <template x-if="coachAdvice(entry.exerciseId)">
-            <div class="mb-3 rounded-xl overflow-hidden ring-1 ring-white/10">
-              <!-- En-tête coach -->
-              <div class="flex items-center gap-2 px-3 py-2 bg-kinetic-surface">
-                <span class="text-base"></span>
-                <span class="text-xs font-bold text-white">Coach IA</span>
+            <details class="group mb-3 rounded-xl overflow-hidden ring-1 ring-white/10">
+              <!-- Replié par défaut : la cible du coach reste lisible sans ouvrir -->
+              <summary
+                class="flex items-center gap-2 px-3 py-2.5 bg-kinetic-surface cursor-pointer list-none [&::-webkit-details-marker]:hidden"
+              >
+                <span class="text-xs font-semibold text-white">Coach</span>
                 <span
-                  class="ml-auto text-[10px] text-gray-400"
-                  x-text="coachGoals[coachGoal].emoji + ' ' + coachGoals[coachGoal].label"
+                  class="text-xs text-gray-300 tabular-nums truncate"
+                  x-text="coachSummary(entry.exerciseId)"
                 ></span>
-              </div>
+                <svg
+                  class="ml-auto w-4 h-4 text-gray-400 transition-transform group-open:rotate-180"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
+                </svg>
+              </summary>
               <!-- Conseil principal -->
               <div class="px-3 py-2 bg-kinetic-elevated/40">
                 <!-- Cible recommandée -->
@@ -738,7 +751,7 @@
                   </div>
                 </template>
               </div>
-            </div>
+            </details>
           </template>
 
           <!-- Alerte deload -->
