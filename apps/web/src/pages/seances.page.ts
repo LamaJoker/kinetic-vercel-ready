@@ -1111,7 +1111,7 @@ export function seances() {
           rpe: preset.targetRpe,
           goalLabel: preset.label,
           science: preset.science,
-          message: `🆕 Première séance. Commence léger (RPE 6–7) pour trouver ta charge, puis vise ${preset.rpeZone}.`,
+          message: `Première séance. Commence léger (RPE 6–7) pour trouver ta charge, puis vise ${preset.rpeZone}.`,
           periodizationNote: '',
         };
       }
@@ -1131,7 +1131,7 @@ export function seances() {
       let message = '';
 
       if (!history.length || last.weightKg === 0) {
-        message = `🆕 Commence léger pour calibrer — vise ${preset.rpeZone}.`;
+        message = `Commence léger pour calibrer — vise ${preset.rpeZone}.`;
       } else if (rpeDelta <= -1.5) {
         const higher = Math.round((suggestedWeight + inc) / inc) * inc;
         message = `Trop facile la dernière fois (RPE ${last.rpe} vs cible ${preset.targetRpe}). Monte à **${higher} kg × ${preset.targetReps}**.`;
