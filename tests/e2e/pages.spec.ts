@@ -170,10 +170,12 @@ test.describe('Parcours fonctionnels', () => {
     await expect(addSet).toBeVisible();
     const skip = page.getByRole('button', { name: 'Passer' });
     for (let i = 0; i < 3; i++) {
-      if (await skip.isVisible()) await skip.click();
       await addSet.click();
+      // Première série d'un exercice : aucune célébration plein écran attendue
+      await expect(page.getByText('Nouveau Record', { exact: true })).toBeHidden();
+      await page.waitForTimeout(300);
+      if (await skip.isVisible()) await skip.click();
     }
-    if (await skip.isVisible()) await skip.click();
     await page.getByRole('button', { name: 'Sauver' }).click();
     await expect(page.getByText('1 séance', { exact: true })).toBeVisible({ timeout: 5_000 });
   });

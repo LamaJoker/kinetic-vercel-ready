@@ -148,11 +148,13 @@ function flushMetrics(): void {
   const batch = [..._metricsBuffer];
   _metricsBuffer = [];
 
-  // En prod : envoyer à une Edge Function Supabase / Vercel
-  if (import.meta.env.PROD) {
+  // En prod, seulement si un point de collecte est configuré : l'ancien
+  // '/api/vitals' n'existait pas sur Vercel (404 sur chaque page).
+  const endpoint = import.meta.env.VITE_VITALS_ENDPOINT;
+  if (import.meta.env.PROD && endpoint && typeof navigator.sendBeacon === 'function') {
     // sendBeacon est fire-and-forget, parfait pour les analytics
     navigator.sendBeacon(
-      '/api/vitals',
+      endpoint,
       JSON.stringify({
         metrics: batch,
         url: location.pathname,
