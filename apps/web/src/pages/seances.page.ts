@@ -411,7 +411,7 @@ export function seances() {
               new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
                 detail: {
                   kind: 'info',
-                  message: `Séance "${t.name}" chargée depuis ton programme`,
+                  message: `Séance « ${t.name} » prête`,
                 },
               }),
             );

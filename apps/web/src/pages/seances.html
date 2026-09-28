@@ -518,7 +518,7 @@
           </template>
 
           <!-- Inputs nouvelle série + raccourcis +/- -->
-          <div class="grid grid-cols-3 gap-2 mb-2">
+          <div class="grid grid-cols-[1fr_1.45fr_1fr] gap-1.5 mb-2">
             <div>
               <label class="text-xs text-gray-400 font-medium">Reps</label>
               <div class="flex items-stretch gap-1">
@@ -534,7 +534,7 @@
                   type="number"
                   min="1"
                   x-model.number="draft.reps"
-                  class="w-full min-w-0 bg-kinetic-ink border border-white/10 px-2 py-2 text-white text-sm text-center"
+                  class="w-full min-w-0 bg-kinetic-ink border border-white/10 px-0.5 py-2 text-white text-base font-semibold tabular-nums text-center"
                 />
                 <button
                   type="button"
@@ -562,7 +562,7 @@
                   min="0"
                   step="0.5"
                   x-model.number="draft.weightKg"
-                  class="w-full min-w-0 bg-kinetic-ink border border-white/10 px-2 py-2 text-white text-sm text-center"
+                  class="w-full min-w-0 bg-kinetic-ink border border-white/10 px-0.5 py-2 text-white text-base font-semibold tabular-nums text-center"
                 />
                 <button
                   type="button"
@@ -613,7 +613,7 @@
                   max="10"
                   step="0.5"
                   x-model.number="draft.rpe"
-                  class="w-full min-w-0 bg-kinetic-ink border border-white/10 px-2 py-2 text-white text-sm text-center"
+                  class="w-full min-w-0 bg-kinetic-ink border border-white/10 px-0.5 py-2 text-white text-base font-semibold tabular-nums text-center"
                 />
                 <button
                   type="button"
@@ -728,11 +728,11 @@
                   x-if="$store.rewards.hasAdvancedCoach && coachAdvice(entry.exerciseId) && coachAdvice(entry.exerciseId).periodizationNote"
                 >
                   <div
-                    class="mt-2 flex items-start gap-1.5 bg-purple-900/30 ring-1 ring-purple-500/20 rounded-lg px-2.5 py-2"
+                    class="mt-2 flex items-start gap-1.5 bg-white/5 ring-1 ring-white/10 rounded-lg px-2.5 py-2"
                   >
-                    <span class="text-xs text-purple-300 font-semibold mr-1">Périodisation</span>
+                    <span class="text-xs text-kinetic-neon font-semibold mr-1">Périodisation</span>
                     <p
-                      class="text-xs text-purple-200 leading-relaxed"
+                      class="text-xs text-gray-200 leading-relaxed"
                       x-text="coachAdvice(entry.exerciseId) ? coachAdvice(entry.exerciseId).periodizationNote : ''"
                     ></p>
                   </div>

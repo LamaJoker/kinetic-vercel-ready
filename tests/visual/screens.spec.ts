@@ -81,13 +81,18 @@ test('séance en cours', async ({ page }) => {
   await page.screenshot({ path: 'ux-shots/20-seance-debut.png', fullPage: true });
 
   const addSet = page.getByRole('button', { name: '+ Série' }).first();
+  const skipRest = page.getByRole('button', { name: 'Passer' });
   await addSet.click();
   await page.waitForTimeout(600);
-  await page.screenshot({ path: 'ux-shots/21-seance-repos.png', fullPage: true });
-  await addSet.click();
-  await page.waitForTimeout(300);
-  await addSet.click();
-  await page.waitForTimeout(600);
+  await page.screenshot({ path: 'ux-shots/21-seance-repos.png' });
+  for (let i = 0; i < 2; i++) {
+    if (await skipRest.isVisible()) await skipRest.click();
+    await page.waitForTimeout(300);
+    await addSet.click();
+    await page.waitForTimeout(400);
+  }
+  if (await skipRest.isVisible()) await skipRest.click();
+  await page.waitForTimeout(400);
   await page.screenshot({ path: 'ux-shots/22-seance-3-series.png', fullPage: true });
 
   await page.getByRole('button', { name: 'Sauver' }).click();
