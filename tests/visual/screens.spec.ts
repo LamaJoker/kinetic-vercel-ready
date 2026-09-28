@@ -3,6 +3,8 @@
  * workflow `ux-screenshots` — pas par la CI E2E.
  */
 import { test, type Page } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+import { writeFileSync, mkdirSync } from 'node:fs';
 
 const ROUTES: Array<[string, string]> = [
   ['/', 'dashboard'],
@@ -116,4 +118,31 @@ test('mode clair', async ({ page }) => {
     await boot(page, path);
     await page.screenshot({ path: `ux-shots/30-clair-${name}.png`, fullPage: true });
   }
+});
+
+test('rapport accessibilité (axe) de toutes les pages', async ({ page }) => {
+  test.skip(!DEMO, 'avec les données de démo');
+  test.setTimeout(240_000);
+  await boot(page, '/onboarding', false);
+  await page.getByRole('button', { name: 'Voir la démo' }).click();
+  await page.waitForURL('http://localhost:3000/', { timeout: 15_000 });
+  const report: Record<
+    string,
+    Array<{ id: string; impact: string | null; nodes: number; help: string }>
+  > = {};
+  for (const [path] of ROUTES) {
+    await boot(page, path);
+    const res = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .include('#app-outlet')
+      .analyze();
+    report[path] = res.violations.map((v) => ({
+      id: v.id,
+      impact: v.impact ?? null,
+      nodes: v.nodes.length,
+      help: v.help,
+    }));
+  }
+  mkdirSync('ux-shots', { recursive: true });
+  writeFileSync('ux-shots/axe-report.json', JSON.stringify(report, null, 2));
 });
