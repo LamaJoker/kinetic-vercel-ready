@@ -1,0 +1,93 @@
+{
+  "/": [],
+  "/seances": [],
+  "/vitalite": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 2,
+      "help": "Elements must meet minimum color contrast ratio thresholds"
+    }
+  ],
+  "/nutrition": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 4,
+      "help": "Elements must meet minimum color contrast ratio thresholds"
+    }
+  ],
+  "/program": [],
+  "/programs": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 4,
+      "help": "Elements must meet minimum color contrast ratio thresholds"
+    }
+  ],
+  "/progression": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 1,
+      "help": "Elements must meet minimum color contrast ratio thresholds"
+    },
+    {
+      "id": "select-name",
+      "impact": "critical",
+      "nodes": 1,
+      "help": "Select element must have an accessible name"
+    }
+  ],
+  "/records": [],
+  "/bodyweight": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 1,
+      "help": "Elements must meet minimum color contrast ratio thresholds"
+    }
+  ],
+  "/mensurations": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 12,
+      "help": "Elements must meet minimum color contrast ratio thresholds"
+    }
+  ],
+  "/photos": [
+    {
+      "id": "label",
+      "impact": "critical",
+      "nodes": 1,
+      "help": "Form elements must have labels"
+    },
+    {
+      "id": "select-name",
+      "impact": "critical",
+      "nodes": 1,
+      "help": "Select element must have an accessible name"
+    }
+  ],
+  "/plates": [
+    {
+      "id": "label",
+      "impact": "critical",
+      "nodes": 1,
+      "help": "Form elements must have labels"
+    }
+  ],
+  "/achievements": [],
+  "/glossaire": [],
+  "/profile": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 10,
+      "help": "Elements must meet minimum color contrast ratio thresholds"
+    }
+  ],
+  "/login": []
+}
