@@ -15,7 +15,7 @@
   "dependencies": {
     "@kinetic/core": "workspace:*",
     "@supabase/supabase-js": "^2.106.2",
-    "idb-keyval": "^6.2.1"
+    "idb-keyval": "^6.2.5"
   },
   "devDependencies": {
     "typescript": "^5.5.0",
