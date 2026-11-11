@@ -140,8 +140,18 @@ jobs:
       - name: Build packages/adapter-web
         run: pnpm --filter @kinetic/adapters-web build
 
+      # Jusqu'à 3 tentatives : les miroirs apt du runner tombent parfois en panne
+      # DNS (« Temporary failure resolving azure.archive.ubuntu.com »), ce qui
+      # faisait échouer le job avant le moindre test.
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps ${{ matrix.project == 'mobile-safari' && 'webkit' || 'chromium' }}
+        run: |
+          for attempt in 1 2 3; do
+            pnpm exec playwright install --with-deps ${{ matrix.project == 'mobile-safari' && 'webkit' || 'chromium' }} && exit 0
+            echo "::warning::Installation Playwright échouée (tentative $attempt/3), nouvel essai dans 30 s"
+            sleep 30
+            sudo apt-get update -q || true
+          done
+          exit 1
 
       - name: Build app (needed for E2E)
         run: pnpm build:e2e
