@@ -161,6 +161,7 @@ h5,
 }
 /* Grand titre de page */
 #app-outlet h1 {
+  font-variant-numeric: normal;
   font-size: 2.125rem;
   line-height: 2.5625rem;
   font-weight: 700;

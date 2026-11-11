@@ -1,75 +1,42 @@
 <div x-data="profile" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
   <!-- En-tête -->
   <div class="k-nav">
-    <h1 class="font-display font-black text-2xl tracking-tight text-white">Mon profil</h1>
-    <span
-      class="ml-auto text-xs text-kinetic-neon"
-      x-show="savedAt"
-      x-text="savedAt"
-      x-transition
-    ></span>
+    <h1 class="font-display font-bold text-white">Profil</h1>
+    <span class="text-kinetic-neon" x-show="savedAt" x-text="savedAt" x-transition></span>
   </div>
 
-  <!-- Avatar + identité -->
-  <div class="flex items-center gap-4 mb-8">
-    <div class="relative">
-      <div
-        class="w-16 h-16 rounded-full flex items-center justify-center text-white font-display font-black text-xl select-none ring-2 transition-all"
-        :class="$store.rewards.hasLegendBadge
-             ? 'bg-kinetic-neon text-gray-950 ring-kinetic-neon/40'
-             : 'bg-kinetic-raised ring-white/10'"
-        x-text="$store.auth.initials"
-      ></div>
-      <!-- Badge niveau ou couronne Légende -->
-      <div
-        class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center shadow-md ring-1 ring-black/40 transition-all"
-        :class="$store.rewards.hasLegendBadge
-             ? 'bg-kinetic-neon'
-             : 'bg-kinetic-neon'"
-      >
-        <template x-if="!$store.rewards.hasLegendBadge">
-          <svg
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            class="w-3 h-3 text-white"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <circle cx="12" cy="12" r="3" fill="rgb(var(--ink))" />
-          </svg>
-        </template>
-      </div>
-    </div>
-    <div>
+  <!-- Identité -->
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-3 flex items-center gap-4">
+    <div
+      class="w-[3.75rem] h-[3.75rem] flex-shrink-0 rounded-full flex items-center justify-center font-display font-semibold text-xl select-none"
+      :class="$store.rewards.hasLegendBadge ? 'bg-kinetic-neon text-gray-950' : 'bg-kinetic-raised text-white'"
+      x-text="$store.auth.initials"
+    ></div>
+    <div class="min-w-0">
       <p
-        class="font-display font-bold text-lg flex items-center gap-2"
-        :class="$store.rewards.hasLegendBadge ? 'text-yellow-400' : 'text-white'"
+        class="font-display font-semibold text-lg text-white truncate"
         x-text="displayName || 'Anonyme'"
       ></p>
       <p
-        class="text-sm text-gray-400"
+        class="text-sm text-gray-500 truncate"
         x-text="$store.auth.user ? $store.auth.user.email : 'Mode invité'"
       ></p>
-      <p
-        class="text-xs mt-0.5 font-medium"
-        :class="$store.rewards.hasLegendBadge ? 'text-yellow-400' : 'text-kinetic-neon'"
-        x-text="$store.xp.title"
-      ></p>
+      <p class="text-xs text-kinetic-neon font-medium mt-0.5" x-text="$store.xp.title"></p>
     </div>
   </div>
 
   <!-- Mode démo -->
   <template x-if="demoActive">
-    <div class="rounded-2xl p-4 mb-4 ring-1 ring-kinetic-neon/30 bg-kinetic-neon/[0.06]">
-      <p class="text-sm font-semibold text-white">Tu explores des données de démo</p>
-      <p class="text-xs text-gray-400 mt-1">
+    <div class="bg-kinetic-surface rounded-2xl p-4 mb-3">
+      <p class="text-base font-semibold text-white">Tu explores des données de démo</p>
+      <p class="text-sm text-gray-500 mt-1">
         Séances, pesées et mensurations sont fictives. Efface-les pour commencer avec ton propre
         profil ; tes autres réglages sont conservés.
       </p>
       <button
         type="button"
         @click="exitDemo()"
-        class="mt-3 w-full rounded-xl py-2.5 text-sm font-semibold bg-kinetic-neon text-gray-950 hover:brightness-110"
+        class="mt-4 w-full h-11 rounded-xl text-base font-semibold bg-kinetic-neon text-gray-950 active:brightness-90"
       >
         Effacer la démo et créer mon profil
       </button>
@@ -77,10 +44,7 @@
   </template>
 
   <!-- Abonnement (masqué tant que l'offre Pro n'est pas activée) -->
-  <div
-    x-show="$store.entitlement.enabled"
-    class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5 mb-4"
-  >
+  <div x-show="$store.entitlement.enabled" class="bg-kinetic-surface rounded-2xl p-4 mb-3">
     <div class="flex items-center justify-between mb-2">
       <p class="text-xs text-gray-500 font-semibold">Abonnement</p>
       <span
@@ -124,162 +88,126 @@
     </p>
   </div>
 
-  <!-- Stats -->
-  <div class="grid grid-cols-3 gap-3 mb-6">
-    <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
-      <p class="font-display font-black text-2xl text-kinetic-neon" x-text="$store.xp.xp"></p>
-      <p class="text-xs text-gray-500 mt-0.5">XP total</p>
+  <!-- Chiffres clés -->
+  <div class="bg-kinetic-surface rounded-2xl py-4 mb-3 grid grid-cols-3 divide-x divide-white/10">
+    <div class="px-3 text-center">
+      <p class="font-display font-bold text-2xl text-white tabular-nums" x-text="$store.xp.xp"></p>
+      <p class="text-xs text-gray-500 mt-0.5">XP</p>
     </div>
-    <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
-      <p class="font-display font-black text-2xl text-kinetic-electric" x-text="streak + ''"></p>
-      <p class="text-xs text-gray-500 mt-0.5">Série</p>
+    <div class="px-3 text-center">
+      <p class="font-display font-bold text-2xl text-white tabular-nums" x-text="streak + ''"></p>
+      <p class="text-xs text-gray-500 mt-0.5">
+        Série · record <span class="tabular-nums" x-text="bestStreak + ''"></span>
+      </p>
     </div>
-    <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
-      <p class="font-display font-black text-2xl text-kinetic-neon" x-text="tasksCompleted"></p>
+    <div class="px-3 text-center">
+      <p
+        class="font-display font-bold text-2xl text-white tabular-nums"
+        x-text="tasksCompleted"
+      ></p>
       <p class="text-xs text-gray-500 mt-0.5">Tâches</p>
     </div>
   </div>
 
-  <!-- XP Progress -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <div class="flex items-center justify-between mb-2">
-      <div class="flex items-center gap-2">
-        <span class="text-xs text-gray-500 font-semibold">Niveau</span>
-        <span
-          class="font-display font-black text-kinetic-neon text-xl leading-none"
-          x-text="$store.xp.currentLevel"
-        ></span>
-        <span class="text-xs text-gray-400 font-medium" x-text="$store.xp.title"></span>
-      </div>
-      <span class="text-sm tabular-nums font-bold text-white" x-text="$store.xp.xp + ' XP'"></span>
+  <!-- Niveau -->
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-8">
+    <div class="flex items-baseline justify-between mb-3">
+      <h2 class="font-display text-white">
+        Niveau <span x-text="$store.xp.currentLevel"></span>
+        <span class="font-normal text-gray-500" x-text="'· ' + $store.xp.title"></span>
+      </h2>
+      <span
+        class="text-sm tabular-nums font-semibold text-white"
+        x-text="$store.xp.xp + ' XP'"
+      ></span>
     </div>
-    <div class="h-2 bg-kinetic-ink rounded-full overflow-hidden">
+    <div class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
       <div
         class="h-full bg-kinetic-neon rounded-full transition-all duration-700 ease-out"
         :style="'width: ' + $store.xp.progressPercent + '%'"
       ></div>
     </div>
-    <div class="flex justify-between mt-2">
-      <p
-        class="text-xs text-gray-500 font-semibold"
-        x-text="'Niveau ' + $store.xp.currentLevel"
-      ></p>
-      <p
-        class="text-xs text-gray-500"
-        x-show="!$store.xp.isMaxLevel"
-        x-text="'Encore ' + $store.xp.remaining + ' XP pour le niveau ' + ($store.xp.currentLevel + 1)"
-      ></p>
-      <p class="text-xs text-kinetic-electric font-medium" x-show="$store.xp.isMaxLevel">MAX</p>
-    </div>
+    <p
+      class="text-xs text-gray-500 mt-2.5 tabular-nums"
+      x-show="!$store.xp.isMaxLevel"
+      x-text="'Encore ' + $store.xp.remaining + ' XP pour le niveau ' + ($store.xp.currentLevel + 1)"
+    ></p>
+    <p class="text-xs text-kinetic-neon font-medium mt-2.5" x-show="$store.xp.isMaxLevel">
+      Niveau maximum atteint
+    </p>
   </div>
 
   <!-- Récompenses par niveau -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Récompenses</h2>
-    <p class="text-xs text-gray-500 mb-4">Progression par niveau</p>
-
-    <div class="space-y-2">
-      <template x-for="reward in $store.rewards.allRewards" :key="reward.level">
-        <div
-          class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
-          :class="$store.rewards.isUnlocked(reward.level)
-               ? 'bg-kinetic-elevated ring-1 ring-white/10'
-               : 'ring-1 ring-dashed ring-white/10'"
-        >
-          <!-- Icône + état -->
-          <div class="relative shrink-0">
-            <div
-              class="w-10 h-10"
-              :class="$store.rewards.isUnlocked(reward.level) ? 'text-kinetic-neon' : 'text-white/10'"
-            >
-              <svg viewBox="0 0 24 24" class="w-full h-full" aria-hidden="true">
-                <circle cx="12" cy="12" r="10.5" fill="currentColor" />
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="6.5"
-                  fill="none"
-                  stroke="rgb(var(--surface))"
-                  stroke-opacity="0.35"
-                  stroke-width="1.2"
-                />
-                <circle cx="12" cy="12" r="2.6" fill="rgb(var(--surface))" />
-              </svg>
-            </div>
-            <!-- badge niveau -->
-            <div
-              class="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black"
-              :class="$store.rewards.isUnlocked(reward.level)
-                   ? 'bg-kinetic-neon text-gray-950'
-                   : 'bg-gray-700 text-gray-400'"
-              x-text="reward.level"
-            ></div>
-          </div>
-
-          <!-- Texte -->
-          <div class="flex-1 min-w-0">
-            <p
-              class="text-sm font-semibold leading-tight"
-              :class="$store.rewards.isUnlocked(reward.level) ? 'text-white' : 'text-gray-500'"
-              x-text="reward.title"
-            ></p>
-            <p
-              class="text-[11px] text-gray-500 leading-tight mt-0.5 line-clamp-1"
-              x-text="reward.description"
-            ></p>
-          </div>
-
-          <!-- Statut -->
-          <div class="shrink-0">
-            <template x-if="$store.rewards.isUnlocked(reward.level)">
-              <span class="text-xs font-bold text-kinetic-neon">✓</span>
-            </template>
-            <template x-if="!$store.rewards.isUnlocked(reward.level)">
-              <span
-                class="text-[10px] text-gray-600 tabular-nums"
-                x-text="'Niv. ' + reward.level"
-              ></span>
-            </template>
-          </div>
-        </div>
-      </template>
-    </div>
-
-    <!-- Gel de streak (si débloqué) -->
-    <template x-if="$store.rewards.hasStreakFreeze">
-      <div class="mt-4 bg-kinetic-elevated rounded-xl p-3 ring-1 ring-kinetic-neon/20">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <p class="text-xs font-bold text-white flex items-center gap-1.5">
-              Gel de série
-              <span
-                class="text-kinetic-neon font-black text-sm"
-                x-text="$store.rewards.freezeTokens"
-              ></span>
-              jeton<span x-text="$store.rewards.freezeTokens !== 1 ? 's' : ''"></span>
-            </p>
-            <p class="text-[10px] text-gray-500 mt-0.5">
-              Protège ton streak sans compléter de tâche aujourd'hui. Renouvellement hebdomadaire.
-            </p>
-          </div>
-          <button
-            @click="$store.rewards.useStreakFreeze()"
-            :disabled="$store.rewards.freezeTokens <= 0 || $store.rewards.freezeLoading"
-            class="shrink-0 bg-kinetic-neon/10 ring-1 ring-kinetic-neon/30 text-kinetic-neon rounded-xl px-3 py-2 text-xs font-bold hover:bg-kinetic-neon/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+  <h2 class="k-section mb-2.5">Récompenses</h2>
+  <div class="k-list mb-3">
+    <template x-for="reward in $store.rewards.allRewards" :key="reward.level">
+      <div class="k-row">
+        <span
+          class="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center text-sm font-semibold tabular-nums"
+          :class="$store.rewards.isUnlocked(reward.level) ? 'bg-kinetic-neon text-gray-950' : 'bg-kinetic-elevated text-gray-500'"
+          x-text="reward.level"
+        ></span>
+        <span class="flex-1 min-w-0">
+          <span
+            class="block text-base truncate"
+            :class="$store.rewards.isUnlocked(reward.level) ? 'text-white' : 'text-gray-500'"
+            x-text="reward.title"
+          ></span>
+          <span class="block text-xs text-gray-500 truncate" x-text="reward.description"></span>
+        </span>
+        <template x-if="$store.rewards.isUnlocked(reward.level)">
+          <svg
+            class="w-5 h-5 flex-shrink-0 text-kinetic-neon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            role="img"
+            aria-label="Débloquée"
           >
-            <span x-show="!$store.rewards.freezeLoading">Utiliser</span>
-            <span x-show="$store.rewards.freezeLoading">…</span>
-          </button>
-        </div>
+            <path d="m5 12.5 4.5 4.5L19 7.5" />
+          </svg>
+        </template>
+        <template x-if="!$store.rewards.isUnlocked(reward.level)">
+          <span
+            class="text-sm text-gray-500 tabular-nums flex-shrink-0"
+            x-text="'Niv. ' + reward.level"
+          ></span>
+        </template>
       </div>
     </template>
   </div>
 
+  <!-- Gel de série (si débloqué) -->
+  <template x-if="$store.rewards.hasStreakFreeze">
+    <div class="bg-kinetic-surface rounded-2xl p-4 mb-3 flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <p class="text-base text-white">
+          Gel de série ·
+          <span class="tabular-nums" x-text="$store.rewards.freezeTokens"></span>
+          jeton<span x-text="$store.rewards.freezeTokens !== 1 ? 's' : ''"></span>
+        </p>
+        <p class="text-xs text-gray-500 mt-0.5">
+          Protège ta série sans compléter de tâche aujourd'hui. Renouvelé chaque semaine.
+        </p>
+      </div>
+      <button
+        @click="$store.rewards.useStreakFreeze()"
+        :disabled="$store.rewards.freezeTokens <= 0 || $store.rewards.freezeLoading"
+        class="flex-shrink-0 h-9 px-4 rounded-full bg-kinetic-elevated text-kinetic-neon text-sm font-semibold active:bg-kinetic-raised disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        <span x-show="!$store.rewards.freezeLoading">Utiliser</span>
+        <span x-show="$store.rewards.freezeLoading">…</span>
+      </button>
+    </div>
+  </template>
+
   <!-- Thème de couleur (niveau 7+) -->
   <template x-if="$store.rewards.hasColorThemes">
-    <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-      <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Thème de couleur</h2>
-      <p class="text-xs text-gray-500 mb-4">Récompense Niveau 7</p>
+    <div class="bg-kinetic-surface rounded-2xl p-4 mb-8">
+      <h2 class="font-display text-white mb-3">Couleur d'accent</h2>
 
       <div class="grid grid-cols-5 gap-2">
         <template x-for="theme in $store.rewards.allThemes" :key="theme.id">
@@ -301,316 +229,274 @@
       </div>
 
       <p
-        class="text-[10px] text-gray-600 mt-3 text-center"
+        class="text-xs text-gray-500 mt-3"
         x-text="'Thème actif : ' + $store.rewards.currentThemeLabel"
       ></p>
     </div>
   </template>
 
-  <!-- Meilleur streak -->
-  <div class="bg-kinetic-electric/15 ring-1 ring-kinetic-electric/20 rounded-2xl p-4 mb-6">
-    <h2 class="font-display font-bold text-white tracking-tight mb-3">Meilleure série</h2>
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-xs text-gray-500">Meilleur</p>
-        <p class="font-display font-black text-2xl text-white" x-text="bestStreak + ''"></p>
-      </div>
-      <div class="text-right">
-        <p class="text-xs text-gray-500">Actuel</p>
-        <p class="font-display font-black text-2xl text-kinetic-electric" x-text="streak"></p>
-      </div>
-    </div>
-  </div>
+  <div class="mb-5" aria-hidden="true"></div>
 
-  <!-- Nom affiché -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Nom affiché</h2>
-    <p class="text-xs text-gray-500 mb-3">Personnalisation</p>
-    <input
-      type="text"
-      x-model="displayNameInput"
-      @input.debounce.800ms="saveName()"
-      placeholder="Ton prénom ou pseudo"
-      maxlength="40"
-      class="w-full bg-kinetic-elevated rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon placeholder-gray-600 ring-1 ring-white/5"
-    />
-  </div>
-
-  <!-- Sync / Compte -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Sync</h2>
-    <p class="text-xs text-gray-500 mb-3">Compte</p>
-
-    <div x-show="$store.auth.isAuthenticated">
-      <p class="text-sm text-gray-300 mb-3">
-        Connecté ·
+  <!-- Compte -->
+  <h2 class="k-section mb-2.5">Compte</h2>
+  <div class="k-list mb-8">
+    <label class="k-row">
+      <span class="text-base text-white flex-shrink-0">Nom affiché</span>
+      <input
+        type="text"
+        x-model="displayNameInput"
+        @input.debounce.800ms="saveName()"
+        placeholder="Prénom ou pseudo"
+        maxlength="40"
+        class="flex-1 min-w-0 bg-transparent text-right text-base text-white focus:outline-none"
+      />
+    </label>
+    <div class="k-row" x-show="$store.auth.isAuthenticated">
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Connecté</span>
         <span
-          class="font-medium text-white"
+          class="block text-xs text-gray-500 truncate"
           x-text="$store.auth.user ? $store.auth.user.email : ''"
         ></span>
-      </p>
+      </span>
       <button
         @click="$store.auth.logout()"
-        class="w-full py-2.5 bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl text-sm font-semibold hover:ring-kinetic-neon/40 transition-all"
+        class="flex-shrink-0 h-9 px-4 rounded-full bg-kinetic-elevated text-white text-sm font-medium active:bg-kinetic-raised"
       >
         Se déconnecter
       </button>
     </div>
-
-    <div x-show="!$store.auth.isAuthenticated">
-      <p class="text-sm text-gray-300 mb-1">
-        Mode <span class="text-kinetic-electric font-semibold">invité</span>
-      </p>
-      <p class="text-xs text-gray-500 mb-3">Connecte-toi pour sauvegarder dans le cloud.</p>
+    <div class="k-row" x-show="!$store.auth.isAuthenticated">
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Mode invité</span>
+        <span class="block text-xs text-gray-500">Connecte-toi pour sauvegarder dans le cloud</span>
+      </span>
       <a
         href="/login"
-        class="block w-full py-2.5 bg-kinetic-neon text-gray-950 rounded-xl text-sm font-semibold text-center hover:brightness-105 transition-all"
+        class="flex-shrink-0 h-9 px-4 inline-flex items-center rounded-full bg-kinetic-neon text-gray-950 text-sm font-semibold"
       >
         Se connecter
       </a>
     </div>
-  </div>
-
-  <!-- Notifications push -->
-  <template x-if="pushSupported">
-    <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-      <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Notifications push</h2>
-      <p class="text-xs text-gray-500 mb-3">Rappels d'entraînement</p>
-      <p class="text-xs text-gray-500 mb-3">
-        Reçois un rappel quand tu n'as pas ouvert l'app depuis 24 h ou quand un objectif hebdo est
-        proche. 1 push max par jour, désactivable en 1 tap.
-      </p>
+    <div class="k-row" x-show="pushSupported">
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Rappels d'entraînement</span>
+        <span class="block text-xs text-gray-500">Une notification par jour au maximum</span>
+      </span>
       <button
         @click="togglePush()"
         :disabled="pushBusy"
-        class="w-full px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-40"
-        :class="pushSubscribed
-                  ? 'bg-kinetic-surface ring-1 ring-kinetic-electric/40 text-kinetic-electric hover:ring-kinetic-electric'
-                  : 'bg-kinetic-neon text-gray-950 hover:brightness-110'"
+        class="flex-shrink-0 h-9 px-4 rounded-full text-sm font-semibold disabled:opacity-40"
+        :class="pushSubscribed ? 'bg-kinetic-elevated text-white' : 'bg-kinetic-neon text-gray-950'"
       >
         <span x-show="pushBusy">…</span>
-        <span x-show="!pushBusy && !pushSubscribed">Activer les notifications</span>
+        <span x-show="!pushBusy && !pushSubscribed">Activer</span>
         <span x-show="!pushBusy && pushSubscribed">Désactiver</span>
       </button>
     </div>
-  </template>
-
-  <!-- Apparence -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Apparence</h2>
-    <p class="text-xs text-gray-500 mb-3">Thème · clair / foncé</p>
-    <div class="grid grid-cols-3 gap-2">
+    <div
+      class="k-row"
+      x-show="$store.auth.isAuthenticated && $store.auth.user && $store.auth.user.id !== 'guest'"
+    >
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Restaurer depuis le cloud</span>
+        <span class="block text-xs text-gray-500">Utile sur un nouvel appareil</span>
+      </span>
       <button
-        @click="setTheme('dark')"
-        class="flex flex-col items-center gap-1 px-2 py-3 rounded-xl text-xs font-bold transition-all active:scale-95"
-        :class="themeMode === 'dark'
-          ? 'k-on'
-          : 'k-off'"
+        @click="restoreFromCloud()"
+        :disabled="restoring"
+        class="flex-shrink-0 h-9 px-4 rounded-full bg-kinetic-elevated text-white text-sm font-medium active:bg-kinetic-raised disabled:opacity-40"
       >
-        <span>Foncé</span>
-      </button>
-      <button
-        @click="setTheme('light')"
-        class="flex flex-col items-center gap-1 px-2 py-3 rounded-xl text-xs font-bold transition-all active:scale-95"
-        :class="themeMode === 'light'
-          ? 'k-on'
-          : 'k-off'"
-      >
-        <span>Clair</span>
-      </button>
-      <button
-        @click="setTheme('system')"
-        class="flex flex-col items-center gap-1 px-2 py-3 rounded-xl text-xs font-bold transition-all active:scale-95"
-        :class="themeMode === 'system'
-          ? 'k-on'
-          : 'k-off'"
-      >
-        <span>Auto</span>
-      </button>
-    </div>
-    <p class="text-[10px] text-gray-500 mt-2 leading-snug">
-      Auto suit la préférence de ton appareil. Le foncé est le réglage par défaut.
-    </p>
-  </div>
-
-  <!-- Niveau d'affichage (Simple / Avancé) -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Affichage</h2>
-    <p class="text-xs text-gray-500 mb-3">Simple / Avancé</p>
-    <div class="grid grid-cols-2 gap-2">
-      <button
-        @click="setDensity('simple')"
-        class="flex flex-col items-center gap-1 px-2 py-3 rounded-xl text-xs font-bold transition-all active:scale-95"
-        :class="density === 'simple'
-          ? 'k-on'
-          : 'k-off'"
-      >
-        <span>Simple</span>
-      </button>
-      <button
-        @click="setDensity('advanced')"
-        class="flex flex-col items-center gap-1 px-2 py-3 rounded-xl text-xs font-bold transition-all active:scale-95"
-        :class="density === 'advanced'
-          ? 'k-on'
-          : 'k-off'"
-      >
-        <span>Avancé</span>
-      </button>
-    </div>
-    <p class="text-[10px] text-gray-500 mt-2 leading-snug">
-      Mode Simple : on masque les détails poussés (coach périodisation, scores Wilks/IPF GL,
-      équilibre musculaire…) pour une interface épurée. Avancé : tout est affiché.
-    </p>
-  </div>
-
-  <!-- Glossaire -->
-  <a
-    href="/glossaire"
-    class="block bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5 hover:ring-kinetic-neon/30 transition-all"
-  >
-    <div class="flex items-center gap-3">
-      <div class="flex-1">
-        <h2 class="font-bold text-white">Glossaire</h2>
-        <p class="text-xs text-gray-500">RPE, e1RM, deload, tonnage… tout expliqué simplement</p>
-      </div>
-      <span class="text-gray-400">→</span>
-    </div>
-  </a>
-
-  <!-- Langue / Language -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Langue / Language</h2>
-    <p class="text-xs text-gray-500 mb-3">UI</p>
-    <div class="grid grid-cols-2 gap-2">
-      <button
-        @click="setUiLocale('fr')"
-        class="px-3 py-2 rounded-xl text-sm font-bold transition-all active:scale-95"
-        :class="locale === 'fr'
-          ? 'k-on'
-          : 'k-off'"
-      >
-        Français
-      </button>
-      <button
-        @click="setUiLocale('en')"
-        class="px-3 py-2 rounded-xl text-sm font-bold transition-all active:scale-95"
-        :class="locale === 'en'
-          ? 'k-on'
-          : 'k-off'"
-      >
-        English
+        <span x-show="!restoring">Restaurer</span>
+        <span x-show="restoring">…</span>
       </button>
     </div>
   </div>
 
-  <!-- Photos progrès lien -->
-  <a
-    href="/photos"
-    class="block bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5 hover:ring-kinetic-neon/30 transition-all"
-  >
-    <div class="flex items-center gap-3">
-      <div class="flex-1">
-        <h2 class="font-bold text-white">Photos de progrès</h2>
-        <p class="text-xs text-gray-500">Timeline avant/après stockée localement</p>
+  <!-- Préférences -->
+  <h2 class="k-section mb-2.5">Préférences</h2>
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-8 space-y-5">
+    <div>
+      <p class="text-sm font-semibold text-white mb-2">Apparence</p>
+      <div class="k-seg" role="group" aria-label="Apparence">
+        <button
+          type="button"
+          @click="setTheme('dark')"
+          class="k-seg-item"
+          :aria-pressed="themeMode === 'dark' ? 'true' : 'false'"
+        >
+          Foncé
+        </button>
+        <button
+          type="button"
+          @click="setTheme('light')"
+          class="k-seg-item"
+          :aria-pressed="themeMode === 'light' ? 'true' : 'false'"
+        >
+          Clair
+        </button>
+        <button
+          type="button"
+          @click="setTheme('system')"
+          class="k-seg-item"
+          :aria-pressed="themeMode === 'system' ? 'true' : 'false'"
+        >
+          Auto
+        </button>
       </div>
-      <span class="text-gray-400">→</span>
+      <p class="text-xs text-gray-500 mt-2">Auto suit le réglage de ton appareil.</p>
     </div>
-  </a>
-
-  <!-- Programmes pré-écrits lien -->
-  <a
-    href="/programs"
-    class="block bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5 hover:ring-kinetic-neon/30 transition-all"
-  >
-    <div class="flex items-center gap-3">
-      <div class="flex-1">
-        <h2 class="font-bold text-white">Programmes pré-écrits</h2>
-        <p class="text-xs text-gray-500">5/3/1, Starting Strength, GZCLP, Madcow, nSuns</p>
+    <div>
+      <p class="text-sm font-semibold text-white mb-2">Affichage</p>
+      <div class="k-seg" role="group" aria-label="Affichage">
+        <button
+          type="button"
+          @click="setDensity('simple')"
+          class="k-seg-item"
+          :aria-pressed="density === 'simple' ? 'true' : 'false'"
+        >
+          Simple
+        </button>
+        <button
+          type="button"
+          @click="setDensity('advanced')"
+          class="k-seg-item"
+          :aria-pressed="density === 'advanced' ? 'true' : 'false'"
+        >
+          Avancé
+        </button>
       </div>
-      <span class="text-gray-400">→</span>
-    </div>
-  </a>
-
-  <!-- Partage profil public -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Profil partagé</h2>
-    <p class="text-xs text-gray-500 mb-3">Best lifts · streak · niveau</p>
-    <p class="text-xs text-gray-500 mb-3">
-      Génère un lien public avec tes records — partage avec ton coach ou tes potes. Les données sont
-      encodées dans l'URL, aucun serveur n'est appelé.
-    </p>
-    <div class="flex gap-2">
-      <input
-        x-model="profilePseudo"
-        placeholder="Ton pseudo"
-        maxlength="32"
-        class="flex-1 min-w-0 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
-      />
-      <button
-        @click="shareProfile()"
-        :disabled="sharingProfile"
-        class="px-4 py-2 rounded-xl bg-kinetic-neon text-gray-950 text-sm font-bold hover:brightness-110 disabled:opacity-40 active:scale-95"
-      >
-        <span x-show="!sharingProfile">↗ Partager</span>
-        <span x-show="sharingProfile">…</span>
-      </button>
-    </div>
-    <template x-if="profileShareUrl">
-      <p class="text-[10px] text-gray-500 mt-2 break-all">
-        <span x-text="profileShareUrl"></span>
+      <p class="text-xs text-gray-500 mt-2">
+        Simple masque les détails poussés (périodisation, scores Wilks / IPF GL, équilibre
+        musculaire).
       </p>
-    </template>
+    </div>
+    <div>
+      <p class="text-sm font-semibold text-white mb-2">Langue</p>
+      <div class="k-seg" role="group" aria-label="Langue">
+        <button
+          type="button"
+          @click="setUiLocale('fr')"
+          class="k-seg-item"
+          :aria-pressed="locale === 'fr' ? 'true' : 'false'"
+        >
+          Français
+        </button>
+        <button
+          type="button"
+          @click="setUiLocale('en')"
+          class="k-seg-item"
+          :aria-pressed="locale === 'en' ? 'true' : 'false'"
+        >
+          English
+        </button>
+      </div>
+    </div>
   </div>
 
-  <!-- Export des données -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <div class="flex items-center gap-2 mb-0.5">
-      <h2 class="font-display font-bold text-white tracking-tight">Export</h2>
-      <span
-        x-show="!$store.entitlement.can('data_export')"
-        class="text-[9px] font-bold bg-kinetic-neon/15 text-kinetic-neon ring-1 ring-kinetic-neon/30 rounded px-1.5 py-0.5"
-        >PRO</span
-      >
-    </div>
-    <p class="text-xs text-gray-500 mb-3">Mes données</p>
-    <p class="text-xs text-gray-500 mb-3">
-      Télécharge tout ton historique d'entraînement — aucun lock-in.
-    </p>
-    <div class="flex gap-2 mb-2">
+  <!-- Explorer -->
+  <h2 class="k-section mb-2.5">Explorer</h2>
+  <div class="k-list mb-8">
+    <a href="/programs" class="k-row">
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Programmes</span>
+        <span class="block text-xs text-gray-500"
+          >5/3/1, Starting Strength, GZCLP, Madcow, nSuns</span
+        >
+      </span>
+      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </a>
+    <a href="/photos" class="k-row">
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Photos de progrès</span>
+        <span class="block text-xs text-gray-500">Avant / après, stockées sur ton appareil</span>
+      </span>
+      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </a>
+    <a href="/glossaire" class="k-row">
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Glossaire</span>
+        <span class="block text-xs text-gray-500"
+          >RPE, e1RM, deload, tonnage… expliqués simplement</span
+        >
+      </span>
+      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </a>
+  </div>
+
+  <!-- Données -->
+  <h2 class="k-section mb-2.5">Données</h2>
+  <div class="k-list mb-3">
+    <div class="k-row">
+      <span class="flex-1 min-w-0">
+        <span class="flex items-center gap-2 text-base text-white">
+          Exporter
+          <span
+            x-show="!$store.entitlement.can('data_export')"
+            class="text-[10px] font-semibold text-kinetic-neon"
+            >PRO</span
+          >
+        </span>
+        <span class="block text-xs text-gray-500">JSON : sauvegarde complète · CSV : tableur</span>
+      </span>
       <button
         @click="exportJson()"
         :disabled="exportLoading"
-        class="flex-1 bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:ring-kinetic-neon/30 transition-all disabled:opacity-40"
+        class="flex-shrink-0 h-9 px-3.5 rounded-full bg-kinetic-elevated text-white text-sm font-medium active:bg-kinetic-raised disabled:opacity-40"
       >
-        <span x-show="!exportLoading">↓ JSON</span>
+        <span x-show="!exportLoading">JSON</span>
         <span x-show="exportLoading">…</span>
       </button>
       <button
         @click="exportCsv()"
         :disabled="exportLoading"
-        class="flex-1 bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:ring-kinetic-neon/30 transition-all disabled:opacity-40"
+        class="flex-shrink-0 h-9 px-3.5 rounded-full bg-kinetic-elevated text-white text-sm font-medium active:bg-kinetic-raised disabled:opacity-40"
       >
-        <span x-show="!exportLoading">↓ CSV</span>
+        <span x-show="!exportLoading">CSV</span>
         <span x-show="exportLoading">…</span>
       </button>
     </div>
-    <p class="text-xs text-gray-500">JSON = sauvegarde complète · CSV = tableur (1 ligne/série)</p>
-  </div>
-
-  <!-- Import des données -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Import</h2>
-    <p class="text-xs text-gray-500 mb-3">Strong · Hevy · Kinetic</p>
-    <p class="text-xs text-gray-500 mb-3">
-      Importe ton historique depuis un export Strong, Hevy ou une sauvegarde Kinetic. Les doublons
-      sont automatiquement ignorés.
-    </p>
-    <label
-      class="block w-full bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:ring-kinetic-neon/30 transition-all cursor-pointer text-center"
-      :class="importing ? 'opacity-40 pointer-events-none' : ''"
-    >
-      <span x-show="!importing">↑ Choisir un fichier (.json / .csv)</span>
-      <span x-show="importing">Analyse en cours…</span>
+    <label class="k-row cursor-pointer" :class="importing ? 'opacity-40 pointer-events-none' : ''">
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white" x-show="!importing">Importer un fichier</span>
+        <span class="block text-base text-white" x-show="importing">Analyse en cours…</span>
+        <span class="block text-xs text-gray-500"
+          >Strong, Hevy ou sauvegarde Kinetic (.json, .csv)</span
+        >
+      </span>
+      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
       <input
         type="file"
         accept=".csv,.json,text/csv,application/json"
@@ -618,167 +504,153 @@
         @change="importFile($event)"
       />
     </label>
-    <template x-if="lastImportReport">
-      <div
-        class="mt-3 text-xs text-gray-400 bg-kinetic-elevated rounded-xl p-3 ring-1 ring-white/5"
-      >
-        <p class="font-semibold text-white mb-1" x-text="'Source : ' + lastImportReport.source"></p>
-        <p>
+    <div class="k-row">
+      <span class="flex-1 min-w-0">
+        <span class="flex items-baseline justify-between gap-2">
+          <span class="text-base text-white">Stockage</span>
+          <span class="text-xs text-gray-500 tabular-nums" x-text="storageLabel"></span>
+        </span>
+        <span class="block h-1.5 mt-2 bg-kinetic-ink rounded-full overflow-hidden">
           <span
-            class="text-kinetic-neon font-bold"
-            x-text="$plural(lastImportReport.importedSessions, 'séance ajoutée', 'séances ajoutées')"
-          ></span
-          >, <span x-text="$plural(lastImportReport.duplicateSessions, 'doublon')"></span>,
-          <span
-            x-text="$plural(lastImportReport.createdExercises, 'exercice créé', 'exercices créés')"
+            class="block h-full rounded-full transition-all duration-500"
+            :style="'width: ' + (storagePercent !== null ? storagePercent : 0) + '%; background: ' + (storagePercent !== null && storagePercent > 80 ? '#FF453A' : '#FFD60A')"
           ></span>
-        </p>
-        <p
-          x-show="lastImportReport.skippedRows > 0"
-          class="text-gray-500 mt-1"
-          x-text="$plural(lastImportReport.skippedRows, 'ligne ignorée', 'lignes ignorées') + ' (champs manquants)'"
-        ></p>
-      </div>
-    </template>
-  </div>
-
-  <!-- Stockage local -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Stockage</h2>
-    <p class="text-xs text-gray-500 mb-3">Espace local</p>
-    <div class="mb-3">
-      <div class="flex justify-between text-xs mb-1">
-        <span class="text-gray-400">Utilisé</span>
-        <span class="text-white font-medium" x-text="storageLabel"></span>
-      </div>
-      <div class="h-2 bg-kinetic-elevated rounded-full overflow-hidden">
-        <div
-          class="h-full rounded-full transition-all duration-500"
-          :style="'width: ' + (storagePercent !== null ? storagePercent : 0) + '%; background: ' + (storagePercent !== null && storagePercent > 80 ? '#FF453A' : '#FFD60A')"
-        ></div>
-      </div>
-    </div>
-    <div class="flex items-center justify-between gap-3">
-      <p class="text-xs text-gray-500 flex-1">
-        Compacte les données journalières de plus de 90 jours.
-      </p>
+        </span>
+      </span>
       <button
         @click="compactNow()"
         :disabled="compacting"
-        class="bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:ring-kinetic-neon/30 transition-all disabled:opacity-40 whitespace-nowrap"
+        class="flex-shrink-0 h-9 px-4 rounded-full bg-kinetic-elevated text-white text-sm font-medium active:bg-kinetic-raised disabled:opacity-40"
       >
         <span x-show="!compacting">Compacter</span>
         <span x-show="compacting">…</span>
       </button>
     </div>
   </div>
-
-  <!-- Sync cloud -->
-  <div
-    x-show="$store.auth.isAuthenticated && $store.auth.user && $store.auth.user.id !== 'guest'"
-    class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5"
-  >
-    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Cloud</h2>
-    <p class="text-xs text-gray-500 mb-3">Synchronisation</p>
-    <div class="flex items-center justify-between gap-3">
-      <p class="text-xs text-gray-500 flex-1">
-        Récupère tes données depuis le cloud (utile sur un nouvel appareil).
+  <template x-if="lastImportReport">
+    <div class="bg-kinetic-surface rounded-2xl p-4 mb-3 text-sm text-gray-400">
+      <p class="font-semibold text-white mb-1" x-text="'Source : ' + lastImportReport.source"></p>
+      <p>
+        <span
+          class="text-white font-semibold"
+          x-text="$plural(lastImportReport.importedSessions, 'séance ajoutée', 'séances ajoutées')"
+        ></span
+        >, <span x-text="$plural(lastImportReport.duplicateSessions, 'doublon')"></span>,
+        <span
+          x-text="$plural(lastImportReport.createdExercises, 'exercice créé', 'exercices créés')"
+        ></span>
       </p>
-      <button
-        @click="restoreFromCloud()"
-        :disabled="restoring"
-        class="bg-kinetic-surface ring-1 ring-white/10 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:ring-kinetic-neon/30 transition-all disabled:opacity-40 whitespace-nowrap"
-      >
-        <span x-show="!restoring">↓ Restaurer</span>
-        <span x-show="restoring">…</span>
-      </button>
+      <p
+        x-show="lastImportReport.skippedRows > 0"
+        class="text-gray-500 mt-1"
+        x-text="$plural(lastImportReport.skippedRows, 'ligne ignorée', 'lignes ignorées') + ' (champs manquants)'"
+      ></p>
     </div>
-  </div>
+  </template>
 
-  <!-- Reset -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-6 ring-1 ring-white/5">
-    <h2 class="font-display font-bold text-white tracking-tight mb-0.5">Reset</h2>
-    <p class="text-xs text-gray-500 mb-3">Réinitialisation</p>
-    <div class="flex items-center justify-between">
-      <p class="text-xs text-gray-500">Supprime toute la progression locale</p>
-      <button
-        @click="showResetModal = true"
-        class="bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30 text-kinetic-electric rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-kinetic-electric/20 transition-all"
-      >
-        Reset
-      </button>
-    </div>
-  </div>
-
-  <!-- Suppression du compte (RGPD) : comptes connectés uniquement -->
-  <div
-    x-show="$store.auth.isAuthenticated && !$store.auth.isGuest"
-    class="bg-kinetic-surface rounded-2xl p-4 mb-4"
-  >
-    <p class="text-sm font-semibold text-white">Supprimer mon compte</p>
-    <p class="text-xs text-gray-400 mt-1">
-      Efface définitivement ton compte et toutes tes données sur le serveur, puis sur cet appareil.
-      Pense à exporter tes données avant.
+  <!-- Profil partagé -->
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-8">
+    <h2 class="font-display text-white">Partager mon profil</h2>
+    <p class="text-sm text-gray-500 mt-1 mb-3">
+      Un lien public avec tes records, ta série et ton niveau. Tout est encodé dans le lien, aucun
+      serveur n'est appelé.
     </p>
+    <div class="flex gap-2">
+      <input
+        x-model="profilePseudo"
+        placeholder="Ton pseudo"
+        aria-label="Pseudo affiché sur le profil partagé"
+        maxlength="32"
+        class="flex-1 min-w-0 h-11 bg-kinetic-ink rounded-xl px-3 text-base text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon"
+      />
+      <button
+        @click="shareProfile()"
+        :disabled="sharingProfile"
+        class="h-11 px-5 rounded-xl bg-kinetic-neon text-gray-950 text-base font-semibold active:brightness-90 disabled:opacity-40"
+      >
+        <span x-show="!sharingProfile">Partager</span>
+        <span x-show="sharingProfile">…</span>
+      </button>
+    </div>
+    <template x-if="profileShareUrl">
+      <p class="text-xs text-gray-500 mt-2 break-all">
+        <span x-text="profileShareUrl"></span>
+      </p>
+    </template>
+  </div>
+
+  <!-- Zone sensible -->
+  <div class="k-list mb-8">
+    <button type="button" @click="showResetModal = true" class="k-row">
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-kinetic-electric">Réinitialiser la progression</span>
+        <span class="block text-xs text-gray-500">Supprime toutes les données de cet appareil</span>
+      </span>
+    </button>
     <button
       type="button"
+      x-show="$store.auth.isAuthenticated && !$store.auth.isGuest"
       @click="showDeleteAccount = true; deleteConfirmText = ''; deleteAccountError = ''"
-      class="mt-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-kinetic-electric ring-1 ring-kinetic-electric/40 hover:bg-kinetic-electric/10"
+      class="k-row"
     >
-      Supprimer mon compte
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-kinetic-electric">Supprimer mon compte</span>
+        <span class="block text-xs text-gray-500">
+          Efface définitivement le compte et ses données. Pense à exporter avant.
+        </span>
+      </span>
     </button>
+  </div>
 
-    <div
-      x-show="showDeleteAccount"
-      class="mt-4 rounded-xl bg-kinetic-ink p-4 ring-1 ring-kinetic-electric/40"
-      role="alertdialog"
-      aria-labelledby="delete-account-title"
-    >
-      <p id="delete-account-title" class="text-sm font-semibold text-white">
-        Cette action est irréversible.
-      </p>
-      <label for="delete-confirm" class="block text-xs text-gray-400 mt-2">
-        Tape SUPPRIMER pour confirmer
-      </label>
-      <input
-        id="delete-confirm"
-        x-model="deleteConfirmText"
-        autocomplete="off"
-        class="mt-1 w-full bg-kinetic-surface rounded-xl px-3 py-2.5 text-white ring-1 ring-white/10 focus:outline-none focus:ring-kinetic-neon"
-      />
-      <p
-        x-show="deleteAccountError"
-        class="text-xs text-kinetic-electric mt-2"
-        x-text="deleteAccountError"
-      ></p>
-      <div class="flex gap-2 mt-3">
-        <button
-          type="button"
-          @click="showDeleteAccount = false"
-          class="flex-1 rounded-xl py-2.5 text-sm text-gray-300 ring-1 ring-white/15"
-        >
-          Annuler
-        </button>
-        <button
-          type="button"
-          @click="confirmDeleteAccount()"
-          :disabled="deletingAccount || deleteConfirmText.trim().toUpperCase() !== 'SUPPRIMER'"
-          class="flex-1 rounded-xl py-2.5 text-sm font-semibold bg-kinetic-electric text-white disabled:opacity-40"
-        >
-          <span x-show="!deletingAccount">Supprimer définitivement</span>
-          <span x-show="deletingAccount">Suppression…</span>
-        </button>
-      </div>
+  <div
+    x-show="showDeleteAccount"
+    class="bg-kinetic-surface rounded-2xl p-4 mb-8 -mt-5"
+    role="alertdialog"
+    aria-labelledby="delete-account-title"
+  >
+    <p id="delete-account-title" class="text-sm font-semibold text-white">
+      Cette action est irréversible.
+    </p>
+    <label for="delete-confirm" class="block text-xs text-gray-400 mt-2">
+      Tape SUPPRIMER pour confirmer
+    </label>
+    <input
+      id="delete-confirm"
+      x-model="deleteConfirmText"
+      autocomplete="off"
+      class="mt-1 w-full bg-kinetic-ink rounded-xl px-3 py-2.5 text-base text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon"
+    />
+    <p
+      x-show="deleteAccountError"
+      class="text-xs text-kinetic-electric mt-2"
+      x-text="deleteAccountError"
+    ></p>
+    <div class="flex gap-2 mt-3">
+      <button
+        type="button"
+        @click="showDeleteAccount = false"
+        class="flex-1 h-11 rounded-xl text-base font-medium text-white bg-kinetic-elevated"
+      >
+        Annuler
+      </button>
+      <button
+        type="button"
+        @click="confirmDeleteAccount()"
+        :disabled="deletingAccount || deleteConfirmText.trim().toUpperCase() !== 'SUPPRIMER'"
+        class="flex-1 h-11 rounded-xl text-sm font-semibold bg-kinetic-electric text-white disabled:opacity-40"
+      >
+        <span x-show="!deletingAccount">Supprimer définitivement</span>
+        <span x-show="deletingAccount">Suppression…</span>
+      </button>
     </div>
   </div>
 
-  <nav class="text-center text-xs text-gray-400 mb-3">
+  <nav class="text-center text-xs text-gray-500 mb-2" aria-label="Mentions légales">
     <a href="/legal/confidentialite" class="underline">Confidentialité</a>
     <span class="mx-2" aria-hidden="true">·</span>
     <a href="/legal/cgu" class="underline">Conditions d'utilisation</a>
   </nav>
-
-  <p class="text-center text-xs text-gray-700">Kinetic v1.0.0 — Built with</p>
+  <p class="text-center text-xs text-gray-500">Kinetic</p>
 
   <!-- Modale confirmation reset -->
   <div
@@ -790,9 +662,7 @@
     class="fixed inset-0 z-50 flex items-end justify-center px-4 pb-4"
   >
     <div class="absolute inset-0 bg-black/70"></div>
-    <div
-      class="relative bg-kinetic-surface ring-1 ring-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
-    >
+    <div class="relative bg-kinetic-surface rounded-3xl p-6 max-w-sm w-full shadow-2xl">
       <h3 class="font-display font-bold text-lg text-white mb-2">Réinitialiser ?</h3>
       <p class="text-sm text-gray-400 mb-5">
         Cette action supprimera toute ta progression locale. Irréversible.
@@ -800,13 +670,13 @@
       <div class="flex gap-3">
         <button
           @click="showResetModal = false"
-          class="flex-1 py-2.5 bg-kinetic-surface ring-1 ring-white/10 text-gray-300 rounded-xl text-sm font-semibold hover:ring-white/20 transition-all"
+          class="flex-1 h-11 bg-kinetic-elevated text-white rounded-xl text-base font-medium active:bg-kinetic-raised transition-colors"
         >
           Annuler
         </button>
         <button
           @click="doReset()"
-          class="flex-1 py-2.5 bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30 text-kinetic-electric rounded-xl text-sm font-semibold hover:bg-kinetic-electric/20 transition-all"
+          class="flex-1 h-11 bg-kinetic-electric text-white rounded-xl text-base font-semibold active:brightness-90 transition-all"
         >
           Supprimer
         </button>

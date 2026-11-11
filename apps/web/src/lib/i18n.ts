@@ -14,7 +14,8 @@
  *   <span x-text="$t('login.title')"></span>
  *
  * Persistance : la locale choisie est stockée en localStorage. Au boot,
- * on lit localStorage > navigator.language > fallback 'fr'.
+ * on lit localStorage, sinon 'fr'. L'app est d'abord française : la langue du
+ * navigateur n'est pas consultée, l'anglais se choisit dans Profil → Langue.
  */
 
 import { STORAGE_KEYS } from '@kinetic/core';
@@ -33,12 +34,6 @@ function detectLocale(): Locale {
     if (stored === 'fr' || stored === 'en') return stored;
   } catch {
     /* localStorage indisponible */
-  }
-  try {
-    const nav = navigator.language?.slice(0, 2).toLowerCase();
-    if (nav === 'en') return 'en';
-  } catch {
-    /* noop */
   }
   return 'fr';
 }
