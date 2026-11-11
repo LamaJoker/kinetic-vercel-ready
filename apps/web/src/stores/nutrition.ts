@@ -229,9 +229,13 @@ export function nutritionStore() {
         const deps = await getDeps();
         const today = todayIso();
         const rawLog = (await deps.storage.get<LoggedMeal[]>(KEY_LOG(today))) ?? [];
-        const nextLog = rawLog.map((m) =>
-          m.mealName !== mealName ? m : { ...m, items: m.items.filter((_, i) => i !== idx) },
-        );
+        // Un repas vidé de son dernier aliment disparaît du journal (sinon l'écran
+        // garde un titre de repas sans aucune ligne et l'état vide ne revient pas).
+        const nextLog = rawLog
+          .map((m) =>
+            m.mealName !== mealName ? m : { ...m, items: m.items.filter((_, i) => i !== idx) },
+          )
+          .filter((m) => m.items.length > 0);
         await deps.storage.set(KEY_LOG(today), nextLog);
         // Mutate in-memory only after storage succeeds
         this.todayLog = nextLog;

@@ -530,17 +530,6 @@ button.k-row:active {
   line-height: 1.125rem;
   color: var(--tx2);
 }
-/* Pastille d'icône colorée (réglages, raccourcis) */
-.k-glyph {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 1.875rem;
-  height: 1.875rem;
-  border-radius: 7px;
-  color: #fff;
-}
 
 /* ═══════════════════════════════════════════════════════════════════════
    Composants standard — à utiliser plutôt que des classes ad hoc
@@ -604,6 +593,29 @@ button.k-row:active {
   }
   .k-empty > :first-child {
     @apply text-base font-semibold text-white;
+  }
+  /* Pastille d'icône colorée (réglages, raccourcis). Dans le calque
+     « components » pour qu'une classe text-* puisse remplacer le blanc. */
+  .k-glyph {
+    @apply inline-flex h-[1.875rem] w-[1.875rem] flex-shrink-0 items-center justify-center rounded-[7px] text-white;
+  }
+  /* Rangée défilant horizontalement (filtres) sans barre de défilement */
+  .k-scroll-x {
+    @apply -mx-4 flex gap-2 overflow-x-auto px-4 py-1;
+    scrollbar-width: none;
+  }
+  .k-scroll-x::-webkit-scrollbar {
+    display: none;
+  }
+  /* Bouton ±, 44 px, regroupé par paires dans un .k-stepper */
+  .k-stepper {
+    @apply inline-flex h-11 overflow-hidden rounded-xl bg-kinetic-raised;
+  }
+  .k-stepper > button {
+    @apply flex w-12 items-center justify-center text-xl font-medium text-white transition-colors active:bg-white/10;
+  }
+  .k-stepper > button + button {
+    box-shadow: inset 0.5px 0 0 var(--separator);
   }
   /* Badge discret (statut, compteur) */
   .k-badge {
@@ -714,11 +726,15 @@ button.k-row:active {
 #app-outlet.k-enter > * > :nth-child(n + 7) {
   animation-delay: 180ms;
 }
-/* Les calques fixes (modales, minuteur) n'entrent pas en cascade */
+/* Les calques fixes (modales, minuteur) n'entrent pas en cascade ; un fond de
+   feuille modale garde son propre fondu */
 #app-outlet.k-enter > * > .fixed,
 #app-outlet.k-enter > * > [class*='fixed '],
 #app-outlet.k-enter > * > template {
   animation: none;
+}
+#app-outlet.k-enter > * > .k-backdrop {
+  animation: k-fade-in 200ms ease both;
 }
 
 /* Retour tactile : les cartes cliquables s'enfoncent légèrement */

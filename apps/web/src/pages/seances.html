@@ -1,113 +1,123 @@
 <div x-data="seances" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-40">
-  <!-- ── Minuteur de repos : bandeau en bas, la séance reste visible ───── -->
+  <!-- ── Minuteur de repos : capsule flottante, la séance reste visible ───── -->
   <!-- Pas de x-transition : le minuteur réévalue x-show chaque seconde, ce qui
        relançait la transition de sortie en boucle (calque invisible bloquant). -->
   <section
     x-show="fullscreenRest && restRemainingSec() > 0"
     :class="fullscreenRest ? '' : 'pointer-events-none'"
-    class="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-[60] mx-auto max-w-md rounded-2xl bg-kinetic-raised ring-1 ring-white/10 shadow-2xl shadow-black/50 px-4 py-3"
+    class="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-[60] mx-auto max-w-md k-toast rounded-[22px] overflow-hidden"
     role="timer"
     aria-live="off"
     aria-label="Minuteur de repos"
     @keydown.escape.window="fullscreenRest = false"
   >
-    <div class="flex items-center gap-3">
-      <div class="min-w-0">
-        <p class="text-xs text-gray-400">Repos</p>
+    <!-- Progression du repos, en liseré sur le bord haut -->
+    <div class="h-1 bg-white/10" aria-hidden="true">
+      <div
+        class="h-full rounded-r-full bg-kinetic-neon transition-[width] duration-1000 ease-linear"
+        :style="restProgressStyle()"
+      ></div>
+    </div>
+    <div class="flex items-center gap-2 pl-5 pr-3 py-3">
+      <div class="min-w-0 mr-auto">
+        <p class="text-xs font-medium text-gray-500">Repos</p>
         <p
-          class="text-4xl leading-none font-display font-bold tabular-nums text-white select-none"
-          :class="restRemainingSec() <= 5 ? 'text-kinetic-electric' : ''"
+          class="font-display text-4xl leading-none font-semibold tabular-nums select-none transition-colors"
+          :class="restRemainingSec() <= 5 ? 'text-kinetic-electric' : 'text-white'"
           x-text="restLabel()"
         ></p>
       </div>
-      <div class="ml-auto flex items-center gap-2">
-        <button
-          type="button"
-          @click="addRestSec(-15)"
-          aria-label="Retirer 15 secondes"
-          class="h-11 px-3 rounded-xl bg-kinetic-surface ring-1 ring-white/10 text-white text-sm font-semibold active:scale-95"
-        >
-          −15
-        </button>
-        <button
-          type="button"
-          @click="addRestSec(15)"
-          aria-label="Ajouter 15 secondes"
-          class="h-11 px-3 rounded-xl bg-kinetic-surface ring-1 ring-white/10 text-white text-sm font-semibold active:scale-95"
-        >
-          +15
-        </button>
-        <button
-          type="button"
-          @click="skipRest()"
-          class="h-11 px-4 rounded-xl bg-kinetic-neon text-gray-950 text-sm font-bold active:scale-95"
-        >
-          Passer
-        </button>
-      </div>
-    </div>
-    <div class="mt-3 h-1 rounded-full bg-white/10 overflow-hidden" aria-hidden="true">
-      <div class="h-full bg-kinetic-neon" :style="restProgressStyle()"></div>
+      <button
+        type="button"
+        @click="addRestSec(-15)"
+        aria-label="Retirer 15 secondes"
+        class="h-11 w-11 flex-shrink-0 rounded-full bg-white/10 text-sm font-semibold tabular-nums text-white transition active:scale-90"
+      >
+        −15
+      </button>
+      <button
+        type="button"
+        @click="addRestSec(15)"
+        aria-label="Ajouter 15 secondes"
+        class="h-11 w-11 flex-shrink-0 rounded-full bg-white/10 text-sm font-semibold tabular-nums text-white transition active:scale-90"
+      >
+        +15
+      </button>
+      <button
+        type="button"
+        @click="skipRest()"
+        class="h-11 flex-shrink-0 rounded-full bg-kinetic-neon px-5 text-base font-semibold text-gray-950 transition active:scale-95 active:brightness-90"
+      >
+        Passer
+      </button>
     </div>
   </section>
 
-  <!-- ── Overlay Nouveau PR ──────────────────────────────────────────────── -->
+  <!-- ── Nouveau record : feuille de célébration ────────────────────────── -->
   <div
     x-show="prCelebration !== null"
-    x-transition:enter="transition ease-out duration-300"
-    x-transition:enter-start="opacity-0 scale-90"
-    x-transition:enter-end="opacity-100 scale-100"
-    x-transition:leave="transition ease-in duration-200"
-    x-transition:leave-start="opacity-100 scale-100"
-    x-transition:leave-end="opacity-0 scale-90"
     @click="dismissPrCelebration()"
-    class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm cursor-pointer"
+    @keydown.escape.window="dismissPrCelebration()"
+    class="k-backdrop fixed cursor-pointer"
+    style="display: none"
   >
     <div
-      class="relative w-full max-w-xs bg-kinetic-ink border-2 border-kinetic-electric rounded-3xl p-6 text-center overflow-hidden"
+      class="k-sheet text-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="seances-pr-titre"
     >
-      <!-- Particules decoratives -->
-      <div class="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl"></div>
-      <!-- Contenu -->
-      <div class="relative z-10">
-        <p class="text-xs font-bold text-kinetic-electric mb-1">Nouveau Record</p>
-        <p
-          class="text-white font-black text-xl mb-3 leading-tight"
-          x-text="prCelebration ? prCelebration.exerciseName : ''"
-        ></p>
-        <div class="flex items-center justify-center gap-3 mb-4">
-          <div class="text-center">
-            <p class="text-xs text-gray-400">Charge</p>
-            <p
-              class="text-3xl font-black text-white"
-              x-text="(prCelebration ? prCelebration.weightKg : 0) + ' kg'"
-            ></p>
-          </div>
-          <div class="text-gray-500 text-xl">×</div>
-          <div class="text-center">
-            <p class="text-xs text-gray-400">Reps</p>
-            <p
-              class="text-3xl font-black text-white"
-              x-text="prCelebration ? prCelebration.reps : 0"
-            ></p>
-          </div>
-        </div>
-        <div
-          class="bg-kinetic-electric/15 ring-1 ring-kinetic-electric/40 rounded-2xl px-4 py-2.5 mb-4"
+      <div
+        class="k-pop mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-kinetic-electric text-white"
+        aria-hidden="true"
+      >
+        <svg
+          class="h-8 w-8"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         >
-          <p class="text-xs text-gray-400">e1RM estimé</p>
-          <p
-            class="text-2xl font-black text-kinetic-electric"
-            x-text="(prCelebration ? prCelebration.e1rmKg : 0) + ' kg'"
-          ></p>
-        </div>
-        <p class="text-xs text-gray-500">Appuie n'importe où pour fermer</p>
+          <path
+            d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"
+          />
+        </svg>
       </div>
+      <p id="seances-pr-titre" class="mt-4 text-sm font-semibold text-kinetic-electric">
+        Nouveau Record
+      </p>
+      <p
+        class="mt-1 text-xl font-bold text-white leading-tight"
+        x-text="prCelebration ? prCelebration.exerciseName : ''"
+      ></p>
+
+      <div class="mt-5 flex items-baseline justify-center gap-2 tabular-nums">
+        <span class="k-metric text-4xl" x-text="prCelebration ? prCelebration.weightKg : 0"></span>
+        <span class="text-lg text-gray-500">kg</span>
+        <span class="mx-1 text-2xl text-gray-500" aria-hidden="true">×</span>
+        <span class="k-metric text-4xl" x-text="prCelebration ? prCelebration.reps : 0"></span>
+        <span class="text-lg text-gray-500">reps</span>
+      </div>
+
+      <div class="mt-5 flex items-center justify-between rounded-xl bg-kinetic-elevated px-4 py-3">
+        <span class="text-base text-gray-400">e1RM estimé</span>
+        <span
+          class="text-xl font-bold tabular-nums text-kinetic-electric"
+          x-text="(prCelebration ? prCelebration.e1rmKg : 0) + ' kg'"
+        ></span>
+      </div>
+
+      <button type="button" class="k-btn-2 mt-5" @click.stop="dismissPrCelebration()">
+        Continuer
+      </button>
+      <p class="mt-3 text-xs text-gray-500">Appuie n'importe où pour fermer</p>
     </div>
   </div>
 
   <div class="k-nav">
-    <h1 class="text-2xl font-display font-black tracking-tight text-white">Séances</h1>
+    <h1 class="font-display font-bold text-white">Séances</h1>
     <span class="ml-auto text-xs text-gray-500" x-text="$today"></span>
   </div>
 
@@ -263,18 +273,43 @@
             </div>
           </button>
           <button
+            type="button"
             @click.stop="shareTemplate(t.id)"
-            class="text-gray-400 hover:text-kinetic-neon p-2 text-xs"
+            class="k-icon-btn"
             aria-label="Partager ce modèle"
             title="Partager"
           >
-            ↗
+            <svg
+              class="h-[18px] w-[18px]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 15V3m0 0L8 7m4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
+            </svg>
           </button>
           <button
+            type="button"
             @click="deleteTemplate(t.id)"
-            class="text-gray-400 hover:text-kinetic-electric p-2 text-xs"
+            class="k-icon-btn"
+            aria-label="Supprimer ce modèle"
+            title="Supprimer"
           >
-            ✕
+            <svg
+              class="h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
           </button>
         </div>
       </template>
@@ -301,83 +336,901 @@
     </p>
   </div>
 
-  <!-- Session en cours -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4">
-    <div class="flex items-center justify-between mb-3">
-      <div>
-        <h2 class="font-semibold text-white">Séance en cours</h2>
-        <p class="text-xs text-gray-500" x-show="!currentSession">Aucune</p>
-        <div x-show="currentSession" class="flex items-center gap-2 mt-0.5">
-          <span class="text-xs tabular-nums text-white" x-text="elapsedLabel()"></span>
-          <span class="text-gray-400 text-xs">·</span>
-          <span
-            class="text-xs text-gray-400"
-            x-show="estimateCurrentCalories() !== null"
-            x-text="'~' + estimateCurrentCalories() + ' kcal'"
-          ></span>
-        </div>
-      </div>
-
-      <!-- Chrono de repos -->
-      <div x-show="currentSession" class="flex items-center gap-2">
-        <!-- Presets repos -->
-        <div class="relative">
-          <button
-            @click="showRestPresets = !showRestPresets"
-            class="text-xs px-2 py-1.5 rounded-lg bg-kinetic-elevated text-gray-400 hover:text-white"
-            x-text="restPresetSec + 's'"
-          ></button>
-          <div
-            x-show="showRestPresets"
-            @click.outside="showRestPresets = false"
-            class="absolute right-0 top-8 bg-kinetic-surface border border-white/10 rounded-xl p-2 z-10 flex flex-col gap-1 min-w-20"
-          >
-            <template x-for="p in restPresets">
-              <button
-                @click="restPresetSec = p.sec; showRestPresets = false"
-                class="text-xs text-gray-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-kinetic-surface text-left"
-                x-text="p.label"
-              ></button>
-            </template>
-          </div>
-        </div>
-
-        <!-- Bouton chrono repos -->
-        <button
-          @click="restRemainingSec() > 0 ? stopRest() : startRest()"
-          class="text-xs px-3 py-2 rounded-xl font-bold transition-colors"
-          :class="restRemainingSec() > 0
-                  ? 'bg-kinetic-neon text-gray-950 animate-pulse'
-                  : 'bg-kinetic-elevated text-white hover:bg-white/10'"
-        >
-          <span x-show="restRemainingSec() === 0">Repos</span>
-          <span x-show="restRemainingSec() > 0" x-text="restLabel()"></span>
-        </button>
-
-        <button
-          @click="saveCurrentSession()"
-          :disabled="!currentSession || currentEntries.length === 0"
-          class="text-xs px-3 py-2 rounded-xl bg-kinetic-neon text-gray-950 font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Sauver
-        </button>
-      </div>
-    </div>
+  <!-- ── Séance en cours ─────────────────────────────────────────────────── -->
+  <section class="mb-8">
+    <h2 class="k-section mb-2.5">Séance en cours</h2>
 
     <template x-if="!currentSession">
-      <p class="text-sm text-gray-500">Démarre une séance libre ou un modèle.</p>
+      <div class="bg-kinetic-surface rounded-2xl px-6 py-7 text-center">
+        <p class="text-base font-semibold text-white">Aucune séance en cours</p>
+        <p class="mt-1 text-sm text-gray-500">Démarre une séance libre ou un modèle.</p>
+      </div>
     </template>
 
-    <div x-show="currentSession" class="space-y-4">
-      <!-- Ajouter un exercice -->
-      <div class="bg-kinetic-elevated/50 border border-white/10 rounded-xl p-3">
-        <p class="text-xs text-gray-500 mb-2">Ajouter un exercice</p>
-        <div class="flex gap-2">
-          <select
-            x-model="selectedExerciseId"
-            class="flex-1 min-w-0 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
+    <div x-show="currentSession" class="space-y-3">
+      <!-- Tableau de bord : chrono, totaux, repos, fin de séance -->
+      <div class="bg-kinetic-surface rounded-2xl p-4">
+        <div class="flex items-start gap-3">
+          <div class="min-w-0 flex-1">
+            <p
+              class="text-sm text-gray-500 truncate"
+              x-text="currentSession ? currentSession.name : ''"
+            ></p>
+            <p class="k-metric mt-1 text-[2.75rem]" x-text="elapsedLabel()"></p>
+            <p class="mt-1.5 text-xs text-gray-500 tabular-nums">
+              <span>Durée</span>
+              <span
+                x-show="estimateCurrentCalories() !== null"
+                x-text="' · ~' + estimateCurrentCalories() + ' kcal'"
+              ></span>
+            </p>
+          </div>
+          <button
+            type="button"
+            @click="saveCurrentSession()"
+            :disabled="!currentSession || currentEntries.length === 0"
+            class="k-pill h-11 px-5 font-semibold"
           >
-            <option value="">Choisir un exercice...</option>
+            <svg
+              class="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m5 12.5 4.5 4.5L19 7.5" />
+            </svg>
+            Sauver
+          </button>
+        </div>
+
+        <dl class="mt-4 grid grid-cols-3 gap-2">
+          <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
+            <dt class="text-xs text-gray-500">Exercices</dt>
+            <dd
+              class="mt-0.5 text-lg font-semibold tabular-nums text-white"
+              x-text="currentEntries.length"
+            ></dd>
+          </div>
+          <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
+            <dt class="text-xs text-gray-500">Séries</dt>
+            <dd
+              class="mt-0.5 text-lg font-semibold tabular-nums text-white"
+              x-text="sessionSetCount()"
+            ></dd>
+          </div>
+          <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
+            <dt class="text-xs text-gray-500">Volume</dt>
+            <dd
+              class="mt-0.5 text-lg font-semibold tabular-nums text-white truncate"
+              x-text="sessionVolumeLabel()"
+            ></dd>
+          </div>
+        </dl>
+
+        <!-- Repos : durée par défaut + lancement manuel -->
+        <div
+          class="mt-4 -mx-4 -mb-4 border-t border-white/10 px-4 py-2.5"
+          @click.outside="showRestPresets = false"
+        >
+          <div class="flex items-center gap-2">
+            <svg
+              class="h-5 w-5 flex-shrink-0 text-gray-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="13" r="8" />
+              <path d="M12 9v4l2.5 2.5M9 2h6" />
+            </svg>
+            <span class="text-base text-white">Repos</span>
+            <button
+              type="button"
+              @click="showRestPresets = !showRestPresets"
+              :aria-expanded="showRestPresets ? 'true' : 'false'"
+              class="ml-auto inline-flex h-11 items-center gap-1 rounded-full px-3 text-base tabular-nums text-gray-400 transition active:opacity-60"
+            >
+              <span class="sr-only">Durée du repos :</span>
+              <span x-text="restPresetSec + ' s'"></span>
+              <svg
+                class="h-4 w-4 transition-transform"
+                :class="showRestPresets ? 'rotate-180' : ''"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              @click="restRemainingSec() > 0 ? stopRest() : startRest()"
+              :aria-label="restRemainingSec() > 0 ? 'Arrêter le repos' : 'Lancer le repos'"
+              class="k-pill h-11 min-w-[6rem] tabular-nums"
+              :class="restRemainingSec() > 0 ? 'k-on' : ''"
+            >
+              <svg
+                x-show="restRemainingSec() === 0"
+                class="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M7 4.5v15l12-7.5z" fill="currentColor" />
+              </svg>
+              <svg
+                x-show="restRemainingSec() > 0"
+                class="h-3 w-3"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <rect x="5" y="5" width="14" height="14" rx="2.5" fill="currentColor" />
+              </svg>
+              <span x-show="restRemainingSec() === 0">Lancer</span>
+              <span x-show="restRemainingSec() > 0" x-text="restLabel()"></span>
+            </button>
+          </div>
+          <div x-show="showRestPresets" x-transition.opacity class="pb-1.5 pt-1">
+            <div class="k-seg" role="group" aria-label="Durée du repos">
+              <template x-for="p in restPresets" :key="p.sec">
+                <button
+                  type="button"
+                  @click="restPresetSec = p.sec; showRestPresets = false"
+                  class="k-seg-item"
+                  :aria-pressed="restPresetSec === p.sec ? 'true' : 'false'"
+                  x-text="p.label"
+                ></button>
+              </template>
+            </div>
+            <p class="mt-2 text-xs text-gray-500">
+              Après chaque série, le repos démarre seul et s'ajuste à ton RPE.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Exercices de la séance : un seul est ouvert à la saisie à la fois -->
+      <template x-for="entry in currentEntries" :key="entry.exerciseId">
+        <article class="bg-kinetic-surface rounded-2xl p-4">
+          <!-- En-tête : nom (touche pour saisir) + actions -->
+          <div class="flex items-start gap-2">
+            <h3 class="flex-1 min-w-0">
+              <button
+                type="button"
+                @click="setActiveEntry(entry.exerciseId)"
+                :aria-expanded="isActiveEntry(entry.exerciseId) ? 'true' : 'false'"
+                class="flex w-full min-h-11 items-center gap-2 text-left transition active:opacity-60"
+              >
+                <span class="min-w-0 flex-1">
+                  <span class="flex items-center gap-2">
+                    <span
+                      x-show="isActiveEntry(entry.exerciseId)"
+                      class="k-pop h-2 w-2 flex-shrink-0 rounded-full bg-kinetic-purple"
+                      aria-hidden="true"
+                    ></span>
+                    <span
+                      class="k-card-title truncate"
+                      x-text="exerciseName(entry.exerciseId)"
+                    ></span>
+                  </span>
+                  <span class="mt-0.5 block text-xs font-normal text-gray-500 tabular-nums">
+                    <span x-text="$plural(entry.sets.length, 'série')"></span>
+                    <template x-if="pr(entry.exerciseId)">
+                      <span>
+                        · Record
+                        <span
+                          class="text-gray-400"
+                          x-text="(pr(entry.exerciseId) ? pr(entry.exerciseId).toFixed(1) : '0') + ' kg e1RM'"
+                        ></span>
+                      </span>
+                    </template>
+                  </span>
+                </span>
+                <svg
+                  x-show="!isActiveEntry(entry.exerciseId)"
+                  class="k-chevron rotate-90"
+                  viewBox="0 0 8 14"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="m1 1 6 6-6 6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </h3>
+            <div class="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                x-show="cues(entry.exerciseId)"
+                class="k-icon-btn"
+                :class="cuesFor === entry.exerciseId ? 'k-on' : ''"
+                @click="toggleCues(entry.exerciseId)"
+                aria-label="Voir comment exécuter cet exercice"
+                title="Comment exécuter ?"
+              >
+                <svg
+                  class="h-[18px] w-[18px]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.5M12 17h.01" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="k-icon-btn"
+                :class="substitutionFor === entry.exerciseId ? 'k-on' : ''"
+                @click="openSubstitution(entry.exerciseId)"
+                aria-label="Remplacer cet exercice"
+                title="Remplacer"
+              >
+                <svg
+                  class="h-[18px] w-[18px]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="k-icon-btn"
+                @click="removeExercise(entry.exerciseId)"
+                aria-label="Retirer cet exercice"
+                title="Retirer"
+              >
+                <svg
+                  class="h-[18px] w-[18px]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Alternatives (substitution) -->
+          <template x-if="substitutionFor === entry.exerciseId">
+            <div class="mt-3 rounded-xl bg-kinetic-elevated overflow-hidden">
+              <div class="flex items-center justify-between gap-2 pl-4 pr-2 pt-2">
+                <p class="text-sm font-semibold text-white">Alternatives suggérées</p>
+                <button
+                  type="button"
+                  @click="substitutionFor = null"
+                  class="k-icon-btn bg-kinetic-raised"
+                  aria-label="Fermer les alternatives"
+                >
+                  <svg
+                    class="h-3.5 w-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.6"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M6 6l12 12M18 6 6 18" />
+                  </svg>
+                </button>
+              </div>
+              <template x-if="substitutionResults.length === 0">
+                <p class="px-4 pb-3 pt-1 text-sm text-gray-500">Aucune alternative trouvée.</p>
+              </template>
+              <div>
+                <template x-for="alt in substitutionResults" :key="alt.exercise.id">
+                  <button
+                    type="button"
+                    @click="applySubstitution(entry.exerciseId, alt.exercise.id)"
+                    class="k-row active:!bg-kinetic-raised"
+                  >
+                    <span class="min-w-0 flex-1">
+                      <span class="block text-base text-white" x-text="alt.exercise.name"></span>
+                      <span
+                        class="mt-0.5 block text-xs text-gray-500 leading-snug"
+                        x-text="alt.rationale"
+                      ></span>
+                    </span>
+                    <span
+                      class="flex-shrink-0 text-sm font-semibold tabular-nums text-kinetic-teal"
+                      x-text="$num.round(alt.score * 100) + ' %'"
+                    ></span>
+                    <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+                      <path
+                        d="m1 1 6 6-6 6"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- Consignes d'exécution -->
+          <template x-if="cuesFor === entry.exerciseId && cues(entry.exerciseId)">
+            <div class="mt-3 rounded-xl bg-kinetic-elevated p-4 space-y-4">
+              <div class="flex items-center justify-between gap-2 -mr-2 -mt-2">
+                <p class="text-sm font-semibold text-white">Comment exécuter</p>
+                <button
+                  type="button"
+                  @click="cuesFor = null"
+                  class="k-icon-btn bg-kinetic-raised"
+                  aria-label="Fermer les consignes"
+                >
+                  <svg
+                    class="h-3.5 w-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.6"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M6 6l12 12M18 6 6 18" />
+                  </svg>
+                </button>
+              </div>
+              <div>
+                <p class="mb-1.5 text-xs font-semibold text-gray-500">Exécution</p>
+                <ol class="space-y-1.5">
+                  <template x-for="(step, i) in cues(entry.exerciseId).execution" :key="i">
+                    <li class="flex gap-2.5 text-sm text-gray-300 leading-snug">
+                      <span
+                        class="mt-px flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-kinetic-raised text-[11px] font-semibold tabular-nums text-white"
+                        x-text="i + 1"
+                      ></span>
+                      <span x-text="step"></span>
+                    </li>
+                  </template>
+                </ol>
+              </div>
+              <div>
+                <p class="mb-1.5 text-xs font-semibold text-gray-500">Erreurs courantes</p>
+                <ul class="space-y-1.5">
+                  <template x-for="(m, i) in cues(entry.exerciseId).mistakes" :key="i">
+                    <li class="flex gap-2.5 text-sm text-gray-300 leading-snug">
+                      <svg
+                        class="mt-0.5 h-4 w-4 flex-shrink-0 text-kinetic-electric"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.4"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M7 7l10 10M17 7 7 17" />
+                      </svg>
+                      <span x-text="m"></span>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+              <div>
+                <p class="mb-1.5 text-xs font-semibold text-gray-500">Conseils</p>
+                <ul class="space-y-1.5">
+                  <template x-for="(t, i) in cues(entry.exerciseId).tips" :key="i">
+                    <li class="flex gap-2.5 text-sm text-gray-300 leading-snug">
+                      <svg
+                        class="mt-0.5 h-4 w-4 flex-shrink-0 text-kinetic-teal"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.4"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="m5 12.5 4.5 4.5L19 7.5" />
+                      </svg>
+                      <span x-text="t"></span>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+            </div>
+          </template>
+
+          <!-- Alerte deload -->
+          <div
+            x-show="exerciseNeedsDeload(entry.exerciseId)"
+            class="mt-3 flex items-start gap-2.5 rounded-xl bg-kinetic-elevated px-3.5 py-3"
+          >
+            <svg
+              class="mt-px h-5 w-5 flex-shrink-0 text-kinetic-electric"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"
+              />
+            </svg>
+            <p class="text-sm text-gray-300 leading-snug">
+              <span class="font-semibold text-kinetic-electric">Deload recommandé</span> — RPE très
+              élevé sur plusieurs séances sans progression d'e1RM.
+            </p>
+          </div>
+
+          <!-- Séries faites -->
+          <div x-show="entry.sets.length > 0" class="mt-3">
+            <div
+              class="grid grid-cols-[1.75rem_1fr_2.75rem_3.25rem] items-center gap-2 px-3 pb-1.5 text-xs text-gray-500"
+              aria-hidden="true"
+            >
+              <span>#</span>
+              <span>kg × reps</span>
+              <span class="text-right">RPE</span>
+              <span class="text-right">e1RM</span>
+            </div>
+            <ol class="rounded-xl bg-kinetic-elevated">
+              <template x-for="s in entry.sets" :key="s.setIndex">
+                <li class="k-item animate-slide-up">
+                  <div
+                    class="grid grid-cols-[1.75rem_1fr_2.75rem_3.25rem] items-center gap-2 px-3 min-h-11 py-2"
+                  >
+                    <span class="text-sm text-gray-500 tabular-nums" x-text="s.setIndex + 1"></span>
+                    <span class="flex min-w-0 items-baseline gap-1 tabular-nums text-white">
+                      <span class="text-lg font-semibold" x-text="s.weightKg"></span>
+                      <span class="text-sm text-gray-500">kg</span>
+                      <span class="mx-0.5 text-gray-500" aria-hidden="true">×</span>
+                      <span class="text-lg font-semibold" x-text="s.reps"></span>
+                      <span
+                        x-show="isSetPr(entry.exerciseId, s.weightKg, s.reps)"
+                        class="ml-1.5 self-center text-[11px] font-bold text-kinetic-electric"
+                        >PR</span
+                      >
+                    </span>
+                    <span
+                      class="text-right text-sm tabular-nums text-gray-400"
+                      x-text="s.rpe"
+                    ></span>
+                    <span
+                      class="text-right text-sm tabular-nums"
+                      :class="isSetPr(entry.exerciseId, s.weightKg, s.reps) ? 'font-semibold text-kinetic-electric' : 'text-gray-500'"
+                      x-text="e1rm(s.weightKg, s.reps).toFixed(0)"
+                    ></span>
+                  </div>
+                  <template x-if="s.note">
+                    <p class="-mt-1 pb-2 pl-[3rem] pr-3 text-xs italic text-gray-500 leading-snug">
+                      <span x-text="s.note"></span>
+                    </p>
+                  </template>
+                </li>
+              </template>
+            </ol>
+          </div>
+
+          <!-- Saisie de la série suivante (exercice actif uniquement) -->
+          <template x-if="isActiveEntry(entry.exerciseId)">
+            <div class="mt-4">
+              <!-- Coach IA (replié : la cible reste lisible sans ouvrir) -->
+              <template x-if="coachAdvice(entry.exerciseId)">
+                <details class="group mb-3 rounded-xl bg-kinetic-elevated">
+                  <summary
+                    class="flex min-h-11 items-center gap-2 px-3.5 py-2.5 cursor-pointer list-none rounded-xl [&::-webkit-details-marker]:hidden"
+                  >
+                    <svg
+                      class="h-4 w-4 flex-shrink-0 text-kinetic-purple"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9Z" />
+                      <path d="M18.5 15.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8Z" />
+                    </svg>
+                    <span class="text-sm font-semibold text-white">Coach</span>
+                    <span
+                      class="min-w-0 truncate text-sm text-gray-400 tabular-nums"
+                      x-text="coachSummary(entry.exerciseId)"
+                    ></span>
+                    <svg
+                      class="ml-auto h-4 w-4 flex-shrink-0 text-gray-500 transition-transform group-open:rotate-180"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.2"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
+                    </svg>
+                  </summary>
+                  <div class="px-3.5 pb-3.5">
+                    <!-- Cible recommandée -->
+                    <template
+                      x-if="coachAdvice(entry.exerciseId) && coachAdvice(entry.exerciseId).weightKg > 0"
+                    >
+                      <div class="flex items-center gap-3 border-t border-white/10 pt-3">
+                        <div class="min-w-0">
+                          <p class="text-xs text-gray-500">Cible du coach</p>
+                          <p class="mt-0.5 flex items-baseline gap-1 tabular-nums">
+                            <span
+                              class="text-xl font-semibold text-white"
+                              x-text="coachAdvice(entry.exerciseId).weightKg + ' kg'"
+                            ></span>
+                            <span class="text-gray-500" aria-hidden="true">×</span>
+                            <span
+                              class="text-xl font-semibold text-white"
+                              x-text="coachAdvice(entry.exerciseId).reps"
+                            ></span>
+                            <span class="ml-1 text-sm text-gray-400">
+                              @ RPE
+                              <span x-text="coachAdvice(entry.exerciseId).rpe"></span>
+                            </span>
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          @click="draft.weightKg = coachAdvice(entry.exerciseId).weightKg; draft.reps = coachAdvice(entry.exerciseId).reps; draft.rpe = coachAdvice(entry.exerciseId).rpe"
+                          class="k-pill ml-auto h-11 bg-kinetic-raised"
+                        >
+                          Appliquer
+                        </button>
+                      </div>
+                    </template>
+                    <!-- Message conseil -->
+                    <p
+                      class="mt-3 text-sm text-gray-300 leading-relaxed"
+                      x-text="coachAdvice(entry.exerciseId) ? coachAdvice(entry.exerciseId).message : ''"
+                    ></p>
+                    <!-- Source scientifique -->
+                    <p
+                      class="mt-2 text-xs text-gray-500"
+                      x-text="'Source : ' + (coachAdvice(entry.exerciseId) ? coachAdvice(entry.exerciseId).science : '')"
+                    ></p>
+
+                    <!-- Note de périodisation (Coach Avancé — niveau 3+) -->
+                    <template
+                      x-if="$store.rewards.hasAdvancedCoach && coachAdvice(entry.exerciseId) && coachAdvice(entry.exerciseId).periodizationNote"
+                    >
+                      <div class="mt-3 border-t border-white/10 pt-3">
+                        <p class="text-xs font-semibold text-white">Périodisation</p>
+                        <p
+                          class="mt-0.5 text-sm text-gray-300 leading-relaxed"
+                          x-text="coachAdvice(entry.exerciseId) ? coachAdvice(entry.exerciseId).periodizationNote : ''"
+                        ></p>
+                      </div>
+                    </template>
+                  </div>
+                </details>
+              </template>
+
+              <!-- Suggestion d'auto-progression — avancé -->
+              <template
+                x-if="progressionSuggestion(entry.exerciseId) !== null && progressionSuggestion(entry.exerciseId).strategy !== 'first_time'"
+              >
+                <div class="adv-only mb-3 rounded-xl bg-kinetic-elevated px-3.5 py-2.5">
+                  <p class="text-xs text-gray-500">Cible</p>
+                  <p class="mt-0.5 text-base font-semibold text-white tabular-nums leading-tight">
+                    <span
+                      x-text="progressionSuggestion(entry.exerciseId).suggestedWeight + ' kg × ' + progressionSuggestion(entry.exerciseId).suggestedReps"
+                    ></span>
+                    <span
+                      class="ml-1 text-sm font-normal text-gray-400"
+                      x-text="'@ RPE ' + progressionSuggestion(entry.exerciseId).suggestedRpe"
+                    ></span>
+                  </p>
+                  <p
+                    class="mt-1 text-xs text-gray-500 leading-snug"
+                    x-text="progressionSuggestion(entry.exerciseId) ? progressionSuggestion(entry.exerciseId).rationale : ''"
+                  ></p>
+                </div>
+              </template>
+
+              <div class="mb-2 flex items-baseline justify-between gap-2 px-1">
+                <p
+                  class="text-sm font-semibold text-white"
+                  x-text="'Série ' + (entry.sets.length + 1)"
+                ></p>
+                <p
+                  class="text-sm font-semibold text-kinetic-electric"
+                  x-show="isNewPr(entry.exerciseId, draft.weightKg, draft.reps)"
+                >
+                  Nouveau PR !
+                </p>
+              </div>
+
+              <!-- Charge × reps : gros chiffres, stepper iOS dessous -->
+              <div class="grid grid-cols-2 gap-2">
+                <div class="rounded-xl bg-kinetic-elevated p-1.5">
+                  <label for="f-seances-kg" class="block pt-1 text-center text-xs text-gray-500"
+                    >Charge (kg)</label
+                  >
+                  <input
+                    id="f-seances-kg"
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    inputmode="decimal"
+                    x-model.number="draft.weightKg"
+                    class="block h-14 w-full min-w-0 rounded-lg bg-transparent text-center font-display text-4xl font-semibold tabular-nums text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
+                  <div
+                    class="flex h-11 overflow-hidden rounded-lg bg-kinetic-raised divide-x divide-white/10"
+                  >
+                    <button
+                      type="button"
+                      @click="bumpWeight(-1)"
+                      aria-label="Diminuer la charge"
+                      class="flex flex-1 items-center justify-center text-white transition active:opacity-60"
+                    >
+                      <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M5 12h14" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      @click="bumpWeight(1)"
+                      aria-label="Augmenter la charge"
+                      class="flex flex-1 items-center justify-center text-white transition active:opacity-60"
+                    >
+                      <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="rounded-xl bg-kinetic-elevated p-1.5">
+                  <label for="f-seances-reps" class="block pt-1 text-center text-xs text-gray-500"
+                    >Reps</label
+                  >
+                  <input
+                    id="f-seances-reps"
+                    type="number"
+                    min="1"
+                    inputmode="numeric"
+                    x-model.number="draft.reps"
+                    class="block h-14 w-full min-w-0 rounded-lg bg-transparent text-center font-display text-4xl font-semibold tabular-nums text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
+                  <div
+                    class="flex h-11 overflow-hidden rounded-lg bg-kinetic-raised divide-x divide-white/10"
+                  >
+                    <button
+                      type="button"
+                      @click="bumpReps(-1)"
+                      aria-label="Diminuer les reps"
+                      class="flex flex-1 items-center justify-center text-white transition active:opacity-60"
+                    >
+                      <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M5 12h14" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      @click="bumpReps(1)"
+                      aria-label="Augmenter les reps"
+                      class="flex flex-1 items-center justify-center text-white transition active:opacity-60"
+                    >
+                      <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- RPE : secondaire, sur une rangée -->
+              <div
+                class="mt-2 flex items-center gap-2 rounded-xl bg-kinetic-elevated py-1.5 pl-3.5 pr-1.5"
+              >
+                <label for="f-seances-rpe" class="text-base text-white">RPE</label>
+                <span x-data="helpTip" data-term="rpe" class="relative inline-flex">
+                  <button
+                    type="button"
+                    @click="toggle()"
+                    @click.outside="close()"
+                    aria-label="Qu'est-ce que le RPE ?"
+                    class="relative flex h-6 w-6 items-center justify-center rounded-full text-gray-500 transition active:opacity-60 after:absolute after:-inset-2.5 after:content-['']"
+                  >
+                    <svg
+                      class="h-[18px] w-[18px]"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      aria-hidden="true"
+                    >
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M12 11v5M12 7.6h.01" />
+                    </svg>
+                  </button>
+                  <span
+                    x-show="open"
+                    x-transition
+                    class="absolute left-0 bottom-full mb-2 z-50 w-60 rounded-xl bg-kinetic-surface p-3 text-xs text-gray-300 leading-snug font-normal normal-case tracking-normal"
+                    style="display: none"
+                  >
+                    <span class="mb-0.5 block font-semibold text-white" x-text="label"></span>
+                    <span x-text="def"></span>
+                  </span>
+                </span>
+                <input
+                  id="f-seances-rpe"
+                  type="number"
+                  min="6"
+                  max="10"
+                  step="0.5"
+                  inputmode="decimal"
+                  x-model.number="draft.rpe"
+                  class="ml-auto h-11 w-16 min-w-0 rounded-lg bg-transparent text-center text-xl font-semibold tabular-nums text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+                <div
+                  class="flex h-11 w-[6.5rem] flex-shrink-0 overflow-hidden rounded-lg bg-kinetic-raised divide-x divide-white/10"
+                >
+                  <button
+                    type="button"
+                    @click="bumpRpe(-0.5)"
+                    aria-label="Diminuer le RPE"
+                    class="flex flex-1 items-center justify-center text-white transition active:opacity-60"
+                  >
+                    <svg
+                      class="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.2"
+                      stroke-linecap="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 12h14" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    @click="bumpRpe(0.5)"
+                    aria-label="Augmenter le RPE"
+                    class="flex flex-1 items-center justify-center text-white transition active:opacity-60"
+                  >
+                    <svg
+                      class="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.2"
+                      stroke-linecap="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Note + tempo (optionnel, repliable) -->
+              <button
+                type="button"
+                @click="showSetExtras = !showSetExtras"
+                :aria-expanded="showSetExtras ? 'true' : 'false'"
+                class="mt-1 inline-flex h-11 items-center gap-1.5 px-1 text-sm font-medium text-gray-400 transition active:opacity-60"
+              >
+                <svg
+                  class="h-4 w-4 transition-transform"
+                  :class="showSetExtras ? 'rotate-45' : ''"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span x-show="!showSetExtras">Note ou tempo</span>
+                <span x-show="showSetExtras">Masquer</span>
+              </button>
+              <div x-show="showSetExtras" x-transition class="mb-3 grid grid-cols-2 gap-2">
+                <div>
+                  <label for="f-seances-1" class="k-label">Note</label>
+                  <input
+                    id="f-seances-1"
+                    type="text"
+                    x-model="draft.note"
+                    maxlength="200"
+                    placeholder="Ceinture, gêne…"
+                    class="k-field"
+                  />
+                </div>
+                <div>
+                  <label for="f-seances-2" class="k-label">Tempo</label>
+                  <input
+                    id="f-seances-2"
+                    type="text"
+                    x-model="draft.tempo"
+                    maxlength="9"
+                    placeholder="3-0-X-0"
+                    class="k-field tabular-nums"
+                  />
+                </div>
+              </div>
+
+              <button type="button" @click="addSet(entry.exerciseId)" class="k-btn">+ Série</button>
+            </div>
+          </template>
+        </article>
+      </template>
+
+      <!-- Ajouter un exercice -->
+      <div class="bg-kinetic-surface rounded-2xl p-4">
+        <label for="f-seances-add" class="k-card-title mb-3 block">Ajouter un exercice</label>
+        <div class="flex gap-2">
+          <select id="f-seances-add" x-model="selectedExerciseId" class="k-field flex-1">
+            <option value="">Choisir un exercice…</option>
             <template x-for="group in exercisesByGroup" :key="group.category">
               <optgroup :label="group.category">
                 <template x-for="ex in group.exercises" :key="ex.id">
@@ -387,482 +1240,51 @@
             </template>
           </select>
           <button
+            type="button"
             @click="addExerciseToSession()"
             :disabled="!selectedExerciseId"
-            class="px-3 py-2 rounded-xl bg-kinetic-elevated text-white text-sm font-semibold hover:bg-white/10 disabled:opacity-40"
+            class="k-pill h-11"
           >
-            +
+            <svg
+              class="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Ajouter
           </button>
         </div>
       </div>
 
-      <!-- Exercices de la séance -->
-      <template x-for="entry in currentEntries" :key="entry.exerciseId">
-        <div class="bg-kinetic-elevated/60 border border-white/10 rounded-2xl p-4">
-          <div class="flex items-center justify-between mb-3">
-            <div>
-              <p class="text-white font-semibold" x-text="exerciseName(entry.exerciseId)"></p>
-              <p class="text-xs text-gray-500">
-                <span x-text="$plural(entry.sets.length, 'série')"></span>
-                <template x-if="pr(entry.exerciseId)">
-                  <span class="ml-2 text-kinetic-electric"
-                    >PR :
-                    <span
-                      x-text="pr(entry.exerciseId) ? pr(entry.exerciseId).toFixed(1) : '0'"
-                    ></span>
-                    kg e1RM</span
-                  >
-                </template>
-              </p>
-            </div>
-            <div class="flex items-center gap-1">
-              <button
-                x-show="cues(entry.exerciseId)"
-                class="text-xs text-gray-400 hover:text-kinetic-neon p-1.5 rounded-lg hover:bg-kinetic-elevated"
-                @click="toggleCues(entry.exerciseId)"
-                aria-label="Voir comment exécuter cet exercice"
-                title="Comment exécuter ?"
-              >
-                ?
-              </button>
-              <button
-                class="text-xs text-gray-400 hover:text-kinetic-neon p-1.5 rounded-lg hover:bg-kinetic-elevated"
-                @click="openSubstitution(entry.exerciseId)"
-                aria-label="Remplacer cet exercice"
-                title="Remplacer"
-              >
-                ⇄
-              </button>
-              <button
-                class="text-xs text-gray-400 hover:text-white"
-                @click="removeExercise(entry.exerciseId)"
-              >
-                Retirer
-              </button>
-            </div>
-          </div>
-
-          <!-- Panneau de substitution -->
-          <template x-if="substitutionFor === entry.exerciseId">
-            <div class="mb-3 bg-kinetic-ink/60 ring-1 ring-kinetic-neon/30 rounded-xl p-3">
-              <div class="flex items-center justify-between mb-2">
-                <p class="text-xs font-bold text-kinetic-neon">Alternatives suggérées</p>
-                <button
-                  @click="substitutionFor = null"
-                  class="text-xs text-gray-500 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
-              <template x-if="substitutionResults.length === 0">
-                <p class="text-xs text-gray-500">Aucune alternative trouvée.</p>
-              </template>
-              <div class="space-y-1.5">
-                <template x-for="alt in substitutionResults" :key="alt.exercise.id">
-                  <button
-                    @click="applySubstitution(entry.exerciseId, alt.exercise.id)"
-                    class="w-full text-left bg-kinetic-elevated rounded-lg px-3 py-2 hover:bg-kinetic-elevated/80 ring-1 ring-white/5 hover:ring-kinetic-neon/40"
-                  >
-                    <div class="flex items-center justify-between gap-2">
-                      <p class="text-sm font-semibold text-white" x-text="alt.exercise.name"></p>
-                      <span
-                        class="text-[10px] text-kinetic-neon font-bold flex-shrink-0"
-                        x-text="$num.round(alt.score * 100) + ' %'"
-                      ></span>
-                    </div>
-                    <p
-                      class="text-[10px] text-gray-500 leading-snug mt-0.5"
-                      x-text="alt.rationale"
-                    ></p>
-                  </button>
-                </template>
-              </div>
-            </div>
-          </template>
-
-          <!-- Panneau consignes d'exécution -->
-          <template x-if="cuesFor === entry.exerciseId && cues(entry.exerciseId)">
-            <div
-              class="mb-3 bg-kinetic-ink/60 ring-1 ring-kinetic-neon/30 rounded-xl p-3 space-y-2.5"
-            >
-              <div class="flex items-center justify-between">
-                <p class="text-xs font-bold text-kinetic-neon">Comment exécuter</p>
-                <button @click="cuesFor = null" class="text-xs text-gray-500 hover:text-white">
-                  ✕
-                </button>
-              </div>
-              <div>
-                <p class="text-xs text-gray-500 mb-1">Exécution</p>
-                <ol class="list-decimal list-inside space-y-1">
-                  <template x-for="(step, i) in cues(entry.exerciseId).execution" :key="i">
-                    <li class="text-xs text-gray-300 leading-snug" x-text="step"></li>
-                  </template>
-                </ol>
-              </div>
-              <div>
-                <p class="text-xs text-gray-500 mb-1">Erreurs courantes</p>
-                <ul class="space-y-0.5">
-                  <template x-for="(m, i) in cues(entry.exerciseId).mistakes" :key="i">
-                    <li class="text-xs text-gray-400 leading-snug"><span x-text="m"></span></li>
-                  </template>
-                </ul>
-              </div>
-              <div>
-                <p class="text-xs text-gray-500 mb-1">Conseils</p>
-                <ul class="space-y-0.5">
-                  <template x-for="(t, i) in cues(entry.exerciseId).tips" :key="i">
-                    <li class="text-xs text-kinetic-neon/90 leading-snug">
-                      <span x-text="t"></span>
-                    </li>
-                  </template>
-                </ul>
-              </div>
-            </div>
-          </template>
-
-          <!-- Inputs nouvelle série + raccourcis +/- -->
-          <div class="grid grid-cols-[1fr_1.45fr_1fr] gap-1.5 mb-2">
-            <div>
-              <label for="f-seances-1" class="text-xs text-gray-400 font-medium">Reps</label>
-              <div class="flex items-stretch gap-1">
-                <button
-                  type="button"
-                  @click="bumpReps(-1)"
-                  aria-label="Diminuer les reps"
-                  class="px-2 bg-kinetic-elevated text-white rounded-l-xl text-sm font-bold hover:bg-white/10 active:scale-95"
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  min="1"
-                  x-model.number="draft.reps"
-                  class="w-full min-w-0 bg-kinetic-ink border border-white/10 px-0.5 py-2 text-white text-base font-semibold tabular-nums text-center"
-                />
-                <button
-                  type="button"
-                  @click="bumpReps(1)"
-                  aria-label="Augmenter les reps"
-                  class="px-2 bg-kinetic-elevated text-white rounded-r-xl text-sm font-bold hover:bg-white/10 active:scale-95"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-            <div>
-              <label class="text-xs text-gray-400 font-medium">Kg</label>
-              <div class="flex items-stretch gap-1">
-                <button
-                  type="button"
-                  @click="bumpWeight(-1)"
-                  aria-label="Diminuer la charge"
-                  class="px-2 bg-kinetic-elevated text-white rounded-l-xl text-sm font-bold hover:bg-white/10 active:scale-95"
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  x-model.number="draft.weightKg"
-                  class="w-full min-w-0 bg-kinetic-ink border border-white/10 px-0.5 py-2 text-white text-base font-semibold tabular-nums text-center"
-                />
-                <button
-                  type="button"
-                  @click="bumpWeight(1)"
-                  aria-label="Augmenter la charge"
-                  class="px-2 bg-kinetic-elevated text-white rounded-r-xl text-sm font-bold hover:bg-white/10 active:scale-95"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-            <div>
-              <label class="text-xs text-gray-400 font-medium inline-flex items-center gap-1">
-                RPE
-                <span x-data="helpTip" data-term="rpe" class="relative inline-flex">
-                  <button
-                    type="button"
-                    @click="toggle()"
-                    @click.outside="close()"
-                    aria-label="Qu'est-ce que le RPE ?"
-                    class="w-4 h-4 rounded-full bg-kinetic-elevated text-gray-400 text-[9px] font-bold flex items-center justify-center hover:text-white"
-                  >
-                    i
-                  </button>
-                  <span
-                    x-show="open"
-                    x-transition
-                    class="absolute left-0 bottom-6 z-50 w-56 bg-kinetic-raised ring-1 ring-white/15 rounded-xl p-3 shadow-2xl text-[11px] text-gray-200 leading-snug font-normal normal-case tracking-normal"
-                    style="display: none"
-                  >
-                    <span class="block font-bold text-white mb-0.5" x-text="label"></span>
-                    <span x-text="def"></span>
-                  </span>
-                </span>
-              </label>
-              <div class="flex items-stretch gap-1">
-                <button
-                  type="button"
-                  @click="bumpRpe(-0.5)"
-                  aria-label="Diminuer le RPE"
-                  class="px-2 bg-kinetic-elevated text-white rounded-l-xl text-sm font-bold hover:bg-white/10 active:scale-95"
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  min="6"
-                  max="10"
-                  step="0.5"
-                  x-model.number="draft.rpe"
-                  class="w-full min-w-0 bg-kinetic-ink border border-white/10 px-0.5 py-2 text-white text-base font-semibold tabular-nums text-center"
-                />
-                <button
-                  type="button"
-                  @click="bumpRpe(0.5)"
-                  aria-label="Augmenter le RPE"
-                  class="px-2 bg-kinetic-elevated text-white rounded-r-xl text-sm font-bold hover:bg-white/10 active:scale-95"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Note + tempo (optionnel, collapsible) -->
-          <div class="mb-2">
-            <button
-              type="button"
-              @click="showSetExtras = !showSetExtras"
-              class="text-xs text-gray-500 hover:text-gray-300 font-semibold"
-            >
-              <span x-show="!showSetExtras">＋ note / tempo</span>
-              <span x-show="showSetExtras">− masquer</span>
-            </button>
-            <div x-show="showSetExtras" x-transition class="mt-2 grid grid-cols-2 gap-2">
-              <div>
-                <label class="text-xs text-gray-500">Note (optionnel)</label>
-                <input
-                  id="f-seances-1"
-                  type="text"
-                  x-model="draft.note"
-                  maxlength="200"
-                  placeholder="ex: déséquilibré, ceinture..."
-                  class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-2 py-1.5 text-xs text-white mt-1"
-                />
-              </div>
-              <div>
-                <label for="f-seances-2" class="text-xs text-gray-500">Tempo (ex: 4-1-2-0)</label>
-                <input
-                  id="f-seances-2"
-                  type="text"
-                  x-model="draft.tempo"
-                  maxlength="9"
-                  placeholder="3-0-X-0"
-                  class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-2 py-1.5 text-xs text-white mt-1 tabular-nums"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- ── Coach IA ────────────────────────────────────────────────── -->
-          <template x-if="coachAdvice(entry.exerciseId)">
-            <details class="group mb-3 rounded-xl overflow-hidden ring-1 ring-white/10">
-              <!-- Replié par défaut : la cible du coach reste lisible sans ouvrir -->
-              <summary
-                class="flex items-center gap-2 px-3 py-2.5 bg-kinetic-surface cursor-pointer list-none [&::-webkit-details-marker]:hidden"
-              >
-                <span class="text-xs font-semibold text-white">Coach</span>
-                <span
-                  class="text-xs text-gray-300 tabular-nums truncate"
-                  x-text="coachSummary(entry.exerciseId)"
-                ></span>
-                <svg
-                  class="ml-auto w-4 h-4 text-gray-400 transition-transform group-open:rotate-180"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
-                </svg>
-              </summary>
-              <!-- Conseil principal -->
-              <div class="px-3 py-2 bg-kinetic-elevated/40">
-                <!-- Cible recommandée -->
-                <template
-                  x-if="coachAdvice(entry.exerciseId) && coachAdvice(entry.exerciseId).weightKg > 0"
-                >
-                  <div class="flex items-center gap-3 mb-2">
-                    <div class="text-center">
-                      <p class="text-xs text-gray-500">Poids cible</p>
-                      <p
-                        class="text-2xl font-black text-white leading-none"
-                        x-text="coachAdvice(entry.exerciseId).weightKg + ' kg'"
-                      ></p>
-                    </div>
-                    <div class="text-gray-500">×</div>
-                    <div class="text-center">
-                      <p class="text-xs text-gray-500">Reps</p>
-                      <p
-                        class="text-2xl font-black text-white leading-none"
-                        x-text="coachAdvice(entry.exerciseId).reps"
-                      ></p>
-                    </div>
-                    <div class="text-gray-500">@</div>
-                    <div class="text-center">
-                      <p class="text-xs text-gray-500">RPE</p>
-                      <p
-                        class="text-2xl font-black text-kinetic-electric leading-none"
-                        x-text="coachAdvice(entry.exerciseId).rpe"
-                      ></p>
-                    </div>
-                    <!-- Bouton appliquer -->
-                    <button
-                      @click="draft.weightKg = coachAdvice(entry.exerciseId).weightKg; draft.reps = coachAdvice(entry.exerciseId).reps; draft.rpe = coachAdvice(entry.exerciseId).rpe"
-                      class="ml-auto text-xs px-2.5 py-1.5 rounded-lg bg-kinetic-neon text-gray-950 font-bold hover:brightness-110 active:scale-95 flex-shrink-0"
-                    >
-                      Appliquer
-                    </button>
-                  </div>
-                </template>
-                <!-- Message conseil -->
-                <p
-                  class="text-xs text-gray-300 leading-relaxed"
-                  x-text="coachAdvice(entry.exerciseId) ? coachAdvice(entry.exerciseId).message : ''"
-                ></p>
-                <!-- Source scientifique -->
-                <p
-                  class="text-[10px] text-gray-600 italic mt-1"
-                  x-text="'Source : ' + (coachAdvice(entry.exerciseId) ? coachAdvice(entry.exerciseId).science : '')"
-                ></p>
-
-                <!-- Note de périodisation (Coach Avancé — niveau 3+) -->
-                <template
-                  x-if="$store.rewards.hasAdvancedCoach && coachAdvice(entry.exerciseId) && coachAdvice(entry.exerciseId).periodizationNote"
-                >
-                  <div
-                    class="mt-2 flex items-start gap-1.5 bg-white/5 ring-1 ring-white/10 rounded-lg px-2.5 py-2"
-                  >
-                    <span class="text-xs text-kinetic-neon font-semibold mr-1">Périodisation</span>
-                    <p
-                      class="text-xs text-gray-200 leading-relaxed"
-                      x-text="coachAdvice(entry.exerciseId) ? coachAdvice(entry.exerciseId).periodizationNote : ''"
-                    ></p>
-                  </div>
-                </template>
-              </div>
-            </details>
-          </template>
-
-          <!-- Alerte deload -->
-          <div
-            x-show="exerciseNeedsDeload(entry.exerciseId)"
-            class="mb-2 flex items-center gap-2 bg-kinetic-electric/10 border border-kinetic-electric/30 rounded-xl px-3 py-2"
-          >
-            <span class="text-kinetic-electric text-base"></span>
-            <p class="text-xs text-kinetic-electric font-semibold">
-              Deload recommandé — RPE très élevé sur plusieurs séances sans progression d'e1RM.
-            </p>
-          </div>
-
-          <div class="flex items-center gap-3 mb-2">
-            <button
-              @click="addSet(entry.exerciseId)"
-              class="flex-shrink-0 px-4 py-2 rounded-xl bg-kinetic-neon text-gray-950 text-sm font-black hover:brightness-110 active:scale-95"
-            >
-              + Série
-            </button>
-            <!-- PR potentiel -->
-            <p
-              class="text-xs text-kinetic-electric font-semibold"
-              x-show="isNewPr(entry.exerciseId, draft.weightKg, draft.reps)"
-            >
-              Nouveau PR !
-            </p>
-          </div>
-          <!-- Suggestion auto-progression (bloc indépendant, full width) — avancé -->
-          <template
-            x-if="progressionSuggestion(entry.exerciseId) !== null && progressionSuggestion(entry.exerciseId).strategy !== 'first_time'"
-          >
-            <div class="adv-only bg-kinetic-elevated/60 rounded-xl px-3 py-2 mb-2">
-              <p class="text-xs text-gray-500 font-semibold mb-0.5">Cible</p>
-              <p class="text-sm text-white font-bold leading-tight">
-                <span
-                  x-text="progressionSuggestion(entry.exerciseId).suggestedWeight + ' kg × ' + progressionSuggestion(entry.exerciseId).suggestedReps"
-                ></span>
-                <span
-                  class="text-gray-400 font-normal text-xs ml-1"
-                  x-text="'@ RPE ' + progressionSuggestion(entry.exerciseId).suggestedRpe"
-                ></span>
-              </p>
-              <p
-                class="text-xs text-gray-400 mt-0.5 leading-snug"
-                x-text="progressionSuggestion(entry.exerciseId) ? progressionSuggestion(entry.exerciseId).rationale : ''"
-              ></p>
-            </div>
-          </template>
-
-          <!-- Tableau des séries -->
-          <div
-            x-show="entry.sets.length > 0"
-            class="mt-3 overflow-hidden rounded-xl border border-white/10"
-          >
-            <div class="grid grid-cols-5 bg-kinetic-ink text-xs text-gray-500 px-3 py-2">
-              <div>#</div>
-              <div>Reps</div>
-              <div>Kg</div>
-              <div>RPE</div>
-              <div>e1RM</div>
-            </div>
-            <template x-for="s in entry.sets" :key="s.setIndex">
-              <div class="border-t border-white/10">
-                <div
-                  class="grid grid-cols-5 px-3 py-2 text-sm"
-                  :class="isSetPr(entry.exerciseId, s.weightKg, s.reps) ? 'bg-kinetic-electric/10' : ''"
-                >
-                  <div class="text-gray-400" x-text="s.setIndex + 1"></div>
-                  <div class="text-white" x-text="s.reps"></div>
-                  <div class="text-white" x-text="s.weightKg"></div>
-                  <div class="text-white" x-text="s.rpe"></div>
-                  <div
-                    class="text-kinetic-electric font-medium"
-                    x-text="e1rm(s.weightKg, s.reps).toFixed(0)"
-                  ></div>
-                </div>
-                <template x-if="s.note">
-                  <p class="text-[11px] text-gray-400 italic px-3 pb-1.5 leading-snug">
-                    <span x-text="s.note"></span>
-                  </p>
-                </template>
-              </div>
-            </template>
-          </div>
-        </div>
-      </template>
-
       <!-- Enregistrer comme modèle -->
-      <div class="bg-kinetic-elevated/50 border border-white/10 rounded-xl p-3">
-        <p class="text-xs text-gray-500 mb-2">Enregistrer comme modèle</p>
+      <div class="bg-kinetic-surface rounded-2xl p-4">
+        <label for="f-seances-template" class="k-card-title mb-3 block"
+          >Enregistrer comme modèle</label
+        >
         <div class="flex gap-2">
           <input
+            id="f-seances-template"
             x-model="templateName"
-            placeholder="Nom du modèle (ex: Push A)"
-            class="flex-1 min-w-0 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
+            placeholder="Nom (ex : Push A)"
+            class="k-field flex-1"
           />
           <button
+            type="button"
             @click="saveTemplateFromCurrent()"
             :disabled="!templateName.trim()"
-            class="px-3 py-2 rounded-xl bg-kinetic-elevated text-white text-sm font-semibold hover:bg-white/10 disabled:opacity-40"
+            class="k-pill h-11"
           >
             Enregistrer
           </button>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
   <!-- Historique -->
   <div class="mb-6">
@@ -959,11 +1381,11 @@
                           <span class="tabular-nums" x-text="set.reps + ' reps'"></span>
                         </span>
                         <span
-                          class="text-kinetic-electric text-[10px] font-bold w-12 text-right"
+                          class="text-gray-400 text-[11px] tabular-nums w-12 text-right"
                           x-text="'RPE ' + set.rpe"
                         ></span>
                         <span
-                          class="text-gray-600 text-[10px] tabular-nums w-14 text-right"
+                          class="text-gray-500 text-[11px] tabular-nums w-14 text-right"
                           x-text="setE1rm(set.weightKg, set.reps) + ' kg'"
                           :title="'e1RM estimé'"
                         ></span>
@@ -1017,17 +1439,12 @@
     </div>
   </div>
 
-  <!-- Progression / Records -->
-  <div class="bg-kinetic-surface rounded-2xl p-4">
-    <h2 class="font-semibold text-white mb-3">Progression & Records</h2>
-
-    <div class="flex gap-2 mb-3">
-      <select
-        x-model="progressExerciseId"
-        aria-label="Exercice"
-        class="flex-1 min-w-0 bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
-      >
-        <option value="">Choisir un exercice...</option>
+  <!-- ── Progression & records ──────────────────────────────────────────── -->
+  <section>
+    <h2 class="k-section mb-2.5">Progression &amp; records</h2>
+    <div class="bg-kinetic-surface rounded-2xl p-4">
+      <select x-model="progressExerciseId" aria-label="Exercice" class="k-field">
+        <option value="">Choisir un exercice…</option>
         <template x-for="group in exercisesByGroup" :key="group.category">
           <optgroup :label="group.category">
             <template x-for="ex in group.exercises" :key="ex.id">
@@ -1036,53 +1453,75 @@
           </optgroup>
         </template>
       </select>
-      <select
-        x-model="progressMetric"
-        aria-label="Métrique"
-        class="bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
-      >
-        <option value="e1rm">e1RM</option>
-        <option value="weight">Charge max</option>
-        <option value="volume">Volume</option>
-      </select>
-    </div>
+      <div class="k-seg mt-3" role="group" aria-label="Métrique">
+        <button
+          type="button"
+          @click="progressMetric = 'e1rm'"
+          class="k-seg-item"
+          :aria-pressed="progressMetric === 'e1rm' ? 'true' : 'false'"
+        >
+          e1RM
+        </button>
+        <button
+          type="button"
+          @click="progressMetric = 'weight'"
+          class="k-seg-item"
+          :aria-pressed="progressMetric === 'weight' ? 'true' : 'false'"
+        >
+          Charge max
+        </button>
+        <button
+          type="button"
+          @click="progressMetric = 'volume'"
+          class="k-seg-item"
+          :aria-pressed="progressMetric === 'volume' ? 'true' : 'false'"
+        >
+          Volume
+        </button>
+      </div>
 
-    <template x-if="!progressExerciseId">
-      <p class="text-sm text-gray-500">Sélectionne un exercice pour voir la courbe.</p>
-    </template>
+      <template x-if="!progressExerciseId">
+        <p class="pb-2 pt-6 text-center text-sm text-gray-500">
+          Choisis un exercice pour voir sa courbe.
+        </p>
+      </template>
 
-    <template x-if="progressExerciseId && progressPoints().length === 0">
-      <p class="text-sm text-gray-500">Pas encore de données pour cet exercice.</p>
-    </template>
+      <template x-if="progressExerciseId && progressPoints().length === 0">
+        <p class="pb-2 pt-6 text-center text-sm text-gray-500">
+          Pas encore de données pour cet exercice.
+        </p>
+      </template>
 
-    <div x-show="progressExerciseId && progressPoints().length > 0">
-      <!-- Record -->
-      <div class="flex items-center justify-between mb-3 bg-kinetic-electric/10 rounded-xl p-3">
-        <div>
-          <p class="text-xs text-gray-500">Record (e1RM)</p>
-          <p
-            class="text-2xl font-black text-kinetic-electric"
-            x-text="progressMax().toFixed(1) + ' kg'"
-          ></p>
+      <div x-show="progressExerciseId && progressPoints().length > 0" class="mt-5">
+        <!-- Record + dernière valeur -->
+        <div class="flex items-end justify-between gap-3">
+          <div>
+            <p
+              class="text-xs text-gray-500"
+              x-text="progressMetric === 'volume' ? 'Record (volume)' : (progressMetric === 'weight' ? 'Record (charge max)' : 'Record (e1RM)')"
+            ></p>
+            <p class="mt-1 flex items-baseline gap-1">
+              <span class="k-metric text-kinetic-electric" x-text="progressMax().toFixed(1)"></span>
+              <span class="text-base text-gray-500">kg</span>
+            </p>
+          </div>
+          <div class="text-right">
+            <p class="text-xs text-gray-500">Dernier</p>
+            <p
+              class="mt-1 text-lg font-semibold tabular-nums text-white"
+              x-text="(progressPoints().at(-1) ? (progressPoints().at(-1).y ? progressPoints().at(-1).y.toFixed(1) : '0') : '0') + ' kg'"
+            ></p>
+          </div>
         </div>
-        <div class="text-right">
-          <p class="text-xs text-gray-500">Dernier</p>
-          <p
-            class="text-lg font-bold text-white"
-            x-text="(progressPoints().at(-1) ? (progressPoints().at(-1).y ? progressPoints().at(-1).y.toFixed(1) : '0') : '0') + ' kg'"
-          ></p>
+
+        <div x-svg="progressSvg()" class="mt-4 overflow-hidden text-gray-500"></div>
+
+        <div class="mt-2 flex items-center justify-between text-xs tabular-nums text-gray-500">
+          <span x-text="'Min ' + progressMin().toFixed(1) + ' kg'"></span>
+          <span x-text="'sur ' + $plural(progressPoints().length, 'séance')"></span>
+          <span x-text="'Max ' + progressMax().toFixed(1) + ' kg'"></span>
         </div>
       </div>
-
-      <div class="bg-kinetic-elevated/60 border border-white/10 rounded-2xl p-3">
-        <div x-svg="progressSvg()" class="overflow-hidden"></div>
-      </div>
-
-      <div class="mt-2 flex items-center justify-between text-xs text-gray-500">
-        <span x-text="'Min: ' + progressMin().toFixed(1) + ' kg'"></span>
-        <span x-text="progressPoints().length + ' sessions'"></span>
-        <span x-text="'Max: ' + progressMax().toFixed(1) + ' kg'"></span>
-      </div>
     </div>
-  </div>
+  </section>
 </div>

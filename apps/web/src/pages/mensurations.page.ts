@@ -94,6 +94,13 @@ export function mensurations() {
     activeMetric: 'chest' as MetricKey,
     period: 90,
     metrics: METRICS as MetricDef[],
+    /** Options du contrôle segmenté de période (valeur en jours). */
+    periods: [
+      { v: 30, l: '30 j' },
+      { v: 90, l: '90 j' },
+      { v: 365, l: '1 an' },
+      { v: 9999, l: 'Tout' },
+    ] as Array<{ v: number; l: string }>,
 
     // ── Photos ────────────────────────────────────────────────
     photos: [] as ProgressPhoto[],
@@ -135,6 +142,24 @@ export function mensurations() {
       );
     },
 
+    /** « sur 90 jours », « depuis le début »… (suffixe de l'évolution). */
+    get periodLabel(): string {
+      if (this.period >= 9999) return 'depuis le début';
+      if (this.period === 365) return 'sur 1 an';
+      return 'sur ' + this.period + ' jours';
+    },
+
+    /** Repères de la courbe active, déjà formatés (« 92,5 cm »). */
+    get chartStats(): { start: string; min: string } {
+      const pts = this.chartPoints();
+      if (pts.length === 0) return { start: '—', min: '—' };
+      const ys = pts.map((p) => p.y);
+      return {
+        start: this.formatCm(pts[0]!.y) + ' cm',
+        min: this.formatCm(Math.min(...ys)) + ' cm',
+      };
+    },
+
     get hasFormData(): boolean {
       return !!(
         this.fNeck ||
@@ -161,6 +186,18 @@ export function mensurations() {
     formatCm(value: number | null): string {
       if (value === null || !Number.isFinite(value)) return '—';
       return value.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+    },
+
+    /** Évolution signée sur la période : « +1,2 », « −0,5 », « 0,0 » ; '' sans données. */
+    formatDelta(key: MetricKey): string {
+      const d = this.metricDelta(key);
+      if (d === null) return '';
+      const abs = Math.abs(d).toLocaleString('fr-FR', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      });
+      if (abs === '0,0') return abs;
+      return (d > 0 ? '+' : '\u2212') + abs;
     },
 
     currentValue(key: MetricKey): number | null {
@@ -564,13 +601,16 @@ export function mensurations() {
       if (pts.length < 2) return '';
 
       const metricDef = this.activeMetricDef;
+      // Les textes et la grille utilisent currentColor (gris système du conteneur),
+      // ce qui fonctionne en mode sombre comme en mode clair.
       const W = 320,
-        H = 140,
-        padX = 12,
-        padY = 22,
-        labelH = 16;
+        H = 150,
+        padL = 4,
+        padR = 34,
+        padY = 10,
+        labelH = 18;
       const ys = pts.map((p) => p.y);
-      const pad = Math.max(0.5, (Math.max(...ys) - Math.min(...ys)) * 0.05 + 0.5);
+      const pad = Math.max(0.5, (Math.max(...ys) - Math.min(...ys)) * 0.08);
       const minY = Math.min(...ys) - pad;
       const maxY = Math.max(...ys) + pad;
       const minX = pts[0]!.x;
@@ -578,8 +618,9 @@ export function mensurations() {
       const dx = Math.max(1, maxX - minX);
       const dy = Math.max(0.1, maxY - minY);
       const chartH = H - labelH;
+      const plotW = W - padL - padR;
 
-      const sx = (d: number) => padX + ((d - minX) / dx) * (W - padX * 2);
+      const sx = (d: number) => padL + ((d - minX) / dx) * plotW;
       const sy = (y: number) => chartH - padY - ((y - minY) / dy) * (chartH - padY * 2);
 
       const color = metricDef.color;
@@ -592,24 +633,35 @@ export function mensurations() {
       const areaPath =
         linePath +
         ` L ${sx(lastP.x).toFixed(1)} ${chartH.toFixed(1)}` +
-        ` L ${padX} ${chartH.toFixed(1)} Z`;
+        ` L ${padL} ${chartH.toFixed(1)} Z`;
 
-      const gridLines = [0, 0.25, 0.5, 0.75, 1]
+      const fmtCm = (v: number) =>
+        v.toLocaleString('fr-FR', { maximumFractionDigits: dy < 4 ? 1 : 0 });
+
+      // 3 lignes de repère (haut, milieu, bas) avec leur valeur à droite
+      const gridLines = [0, 0.5, 1]
         .map((ratio) => {
           const y = padY + ratio * (chartH - padY * 2);
-          return `<line x1="${padX}" y1="${y.toFixed(1)}" x2="${W - padX}" y2="${y.toFixed(1)}"
-          stroke="#ffffff06" stroke-width="1"/>`;
+          const v = maxY - ratio * dy;
+          return (
+            `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}"` +
+            ` stroke="currentColor" stroke-opacity="0.18" stroke-width="1"` +
+            ` stroke-dasharray="${ratio === 1 ? '0' : '2 4'}"/>` +
+            `<text x="${W}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" fill="currentColor"` +
+            ` font-size="12">${fmtCm(v)}</text>`
+          );
         })
         .join('');
 
-      // Data point dots (only for small datasets — avoids visual clutter)
+      // Points de mesure (petits jeux de données seulement — évite le bruit visuel)
       const dots =
         pts.length <= 20
           ? pts
+              .slice(0, -1)
               .map(
                 (p) =>
-                  `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="2"
-              fill="${color}" opacity="0.5"/>`,
+                  `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="2.5"` +
+                  ` fill="${color}" class="stroke-kinetic-surface" stroke-width="1.5"/>`,
               )
               .join('')
           : '';
@@ -619,21 +671,24 @@ export function mensurations() {
 
       const d0 = new Date(pts[0]!.x);
       const dN = new Date(lastP.x);
-      const fmt = (d: Date) => d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+      const fmt = (d: Date) => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
-      return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe ${metricDef.label}">
+      return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe ${metricDef.label}" class="block overflow-visible">
+        <defs>
+          <linearGradient id="mens-area" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="${color}" stop-opacity="0.28"/>
+            <stop offset="1" stop-color="${color}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
         ${gridLines}
-        <path d="${areaPath}" fill="${color}" fill-opacity="0.06"/>
-        <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2"
+        <path d="${areaPath}" fill="url(#mens-area)"/>
+        <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2.5"
               stroke-linecap="round" stroke-linejoin="round"/>
         ${dots}
-        <circle cx="${lastCx}" cy="${lastCy}" r="5" fill="${color}"
-                filter="drop-shadow(0 0 5px ${color}90)"/>
-        <circle cx="${lastCx}" cy="${lastCy}" r="2.5" fill="#0A0A0F"/>
-        <text x="${padX}" y="${H - 3}" fill="#4B5563" font-size="9">${fmt(d0)}</text>
-        <text x="${W - padX}" y="${H - 3}" text-anchor="end" fill="#4B5563" font-size="9">${fmt(dN)}</text>
-        <text x="${padX}" y="11" fill="#6B7280" font-size="9">${maxY.toFixed(0)} cm</text>
-        <text x="${padX}" y="${(chartH - 4).toFixed(0)}" fill="#6B7280" font-size="9">${minY.toFixed(0)} cm</text>
+        <circle cx="${lastCx}" cy="${lastCy}" r="5.5" fill="${color}"
+                class="stroke-kinetic-surface" stroke-width="2.5"/>
+        <text x="${padL}" y="${H - 2}" fill="currentColor" font-size="12">${fmt(d0)}</text>
+        <text x="${W - padR}" y="${H - 2}" text-anchor="end" fill="currentColor" font-size="12">${fmt(dN)}</text>
       </svg>`;
     },
   };

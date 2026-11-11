@@ -69,15 +69,38 @@ export function renderBarbellSvg(plates: readonly PlateVisual[], barKg: number):
   const k = raw > sleeve ? sleeve / raw : 1;
 
   const parts: string[] = [];
+  // Dégradés métalliques (identifiants internes uniquement)
+  parts.push(
+    '<defs>' +
+      '<linearGradient id="kb-steel" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#c7ccd3"/><stop offset=".5" stop-color="#8a8f98"/><stop offset="1" stop-color="#5f646c"/>' +
+      '</linearGradient>' +
+      '<linearGradient id="kb-collar" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#eef0f3"/><stop offset="1" stop-color="#a9aeb6"/>' +
+      '</linearGradient>' +
+      '</defs>',
+  );
+  // Ombre portée discrète sous la barre
+  parts.push(
+    `<ellipse cx="${W / 2}" cy="${H - 6}" rx="${W / 2 - 24}" ry="3" fill="#000" fill-opacity=".18"/>`,
+  );
   // Manchons + barre
-  parts.push(`<rect x="4" y="${cy - 5}" width="${W - 8}" height="10" rx="3" fill="#8a8f98"/>`);
   parts.push(
-    `<rect x="${collarL - 6}" y="${cy - 3}" width="${collarR - collarL + 12}" height="6" fill="#b9bec6"/>`,
+    `<rect x="4" y="${cy - 5}" width="${W - 8}" height="10" rx="3" fill="url(#kb-steel)"/>`,
   );
   parts.push(
-    `<rect x="${collarL - 6}" y="${cy - 13}" width="6" height="26" rx="1.5" fill="#d7dbe0"/>`,
+    `<rect x="${collarL - 6}" y="${cy - 3}" width="${collarR - collarL + 12}" height="6" rx="1" fill="url(#kb-steel)"/>`,
   );
-  parts.push(`<rect x="${collarR}" y="${cy - 13}" width="6" height="26" rx="1.5" fill="#d7dbe0"/>`);
+  parts.push(
+    `<rect x="${collarL - 6}" y="${cy - 13}" width="6" height="26" rx="1.5" fill="url(#kb-collar)"/>`,
+  );
+  parts.push(
+    `<rect x="${collarR}" y="${cy - 13}" width="6" height="26" rx="1.5" fill="url(#kb-collar)"/>`,
+  );
+  // Moletage (zone de prise)
+  parts.push(
+    `<line x1="${W / 2 - 36}" y1="${cy}" x2="${W / 2 + 36}" y2="${cy}" stroke="#5f646c" stroke-width="2" stroke-dasharray="1.5 2" stroke-opacity=".7"/>`,
+  );
 
   let xr = collarR + 6;
   let xl = collarL - 6;
@@ -90,6 +113,13 @@ export function renderBarbellSvg(plates: readonly PlateVisual[], barKg: number):
       parts.push(
         `<rect x="${x.toFixed(1)}" y="${y}" width="${w.toFixed(1)}" height="${h}" rx="2.5" fill="${p.color}" stroke="rgba(0,0,0,.35)" stroke-width="1"/>`,
       );
+      // Reflet sur la tranche du disque
+      if (w >= 4) {
+        const hx = (x + 1.6).toFixed(1);
+        parts.push(
+          `<line x1="${hx}" y1="${y + 4}" x2="${hx}" y2="${y + h - 4}" stroke="#fff" stroke-opacity=".22" stroke-width="1" stroke-linecap="round"/>`,
+        );
+      }
       if (p.label && w >= 8) {
         const tx = (x + w / 2).toFixed(1);
         parts.push(
@@ -163,6 +193,18 @@ export function plates() {
     /** Pastille de couleur (objet style — compatible build CSP d'Alpine). */
     plateSwatch(plateKg: number): Record<string, string> {
       return { backgroundColor: colorFor(plateKg).bg };
+    },
+
+    /** Ajuste la charge cible par pas (boutons − / +), jamais sous zéro. */
+    stepTarget(delta: number): void {
+      const current = Number(this.targetKg) || 0;
+      const next = Math.round((current + delta) * 4) / 4;
+      this.targetKg = next < 0 ? 0 : next;
+    },
+
+    /** Le disque est-il dans l'inventaire ? (pour aria-pressed) */
+    hasPlate(p: number): boolean {
+      return this.enabledPlates.includes(p);
     },
 
     togglePlate(p: number): void {

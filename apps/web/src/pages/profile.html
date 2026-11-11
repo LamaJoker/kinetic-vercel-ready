@@ -602,46 +602,72 @@
     </button>
   </div>
 
+  <!-- Feuille : suppression du compte -->
   <div
     x-show="showDeleteAccount"
-    class="bg-kinetic-surface rounded-2xl p-4 mb-8 -mt-5"
-    role="alertdialog"
-    aria-labelledby="delete-account-title"
+    class="k-backdrop fixed"
+    @click.self="showDeleteAccount = false"
+    @keydown.escape.window="showDeleteAccount = false"
+    style="display: none"
   >
-    <p id="delete-account-title" class="text-sm font-semibold text-white">
-      Cette action est irréversible.
-    </p>
-    <label for="delete-confirm" class="block text-xs text-gray-400 mt-2">
-      Tape SUPPRIMER pour confirmer
-    </label>
-    <input
-      id="delete-confirm"
-      x-model="deleteConfirmText"
-      autocomplete="off"
-      class="mt-1 w-full bg-kinetic-ink rounded-xl px-3 py-2.5 text-base text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon"
-    />
-    <p
-      x-show="deleteAccountError"
-      class="text-xs text-kinetic-electric mt-2"
-      x-text="deleteAccountError"
-    ></p>
-    <div class="flex gap-2 mt-3">
-      <button
-        type="button"
-        @click="showDeleteAccount = false"
-        class="flex-1 h-11 rounded-xl text-base font-medium text-white bg-kinetic-elevated"
+    <div
+      class="k-sheet"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="delete-account-title"
+      aria-describedby="delete-account-desc"
+    >
+      <div
+        class="mx-auto w-14 h-14 rounded-full bg-kinetic-ink text-kinetic-electric flex items-center justify-center"
+        aria-hidden="true"
       >
-        Annuler
-      </button>
-      <button
-        type="button"
-        @click="confirmDeleteAccount()"
-        :disabled="deletingAccount || deleteConfirmText.trim().toUpperCase() !== 'SUPPRIMER'"
-        class="flex-1 h-11 rounded-xl text-sm font-semibold bg-kinetic-electric text-white disabled:opacity-40"
-      >
-        <span x-show="!deletingAccount">Supprimer définitivement</span>
-        <span x-show="deletingAccount">Suppression…</span>
-      </button>
+        <svg
+          class="w-7 h-7"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          viewBox="0 0 24 24"
+        >
+          <path d="M4 7h16M10 11v6M14 11v6M9 7V4.5h6V7M6 7l1 13h10l1-13" />
+        </svg>
+      </div>
+      <h2 id="delete-account-title" class="mt-4 text-center text-xl font-bold text-white">
+        Supprimer mon compte
+      </h2>
+      <p id="delete-account-desc" class="mt-1.5 text-center text-sm text-gray-400">
+        Cette action est irréversible.
+      </p>
+      <label for="delete-confirm" class="k-label mt-6">
+        Tape <span class="font-semibold text-white">SUPPRIMER</span> pour confirmer
+      </label>
+      <input
+        id="delete-confirm"
+        x-model="deleteConfirmText"
+        autocomplete="off"
+        autocapitalize="characters"
+        spellcheck="false"
+        class="k-field"
+      />
+      <p
+        x-show="deleteAccountError"
+        class="text-xs text-kinetic-electric mt-2"
+        role="alert"
+        x-text="deleteAccountError"
+      ></p>
+      <div class="mt-6 space-y-2">
+        <button
+          type="button"
+          @click="confirmDeleteAccount()"
+          :disabled="deletingAccount || deleteConfirmText.trim().toUpperCase() !== 'SUPPRIMER'"
+          class="k-btn-danger"
+        >
+          <span x-show="!deletingAccount">Supprimer définitivement</span>
+          <span x-show="deletingAccount">Suppression…</span>
+        </button>
+        <button type="button" @click="showDeleteAccount = false" class="k-btn-2">Annuler</button>
+      </div>
     </div>
   </div>
 
@@ -652,34 +678,46 @@
   </nav>
   <p class="text-center text-xs text-gray-500">Kinetic</p>
 
-  <!-- Modale confirmation reset -->
+  <!-- Feuille : confirmation de réinitialisation -->
   <div
     x-show="showResetModal"
-    x-transition:enter="transition ease-out duration-200"
-    x-transition:enter-start="opacity-0"
-    x-transition:enter-end="opacity-100"
     @click.self="showResetModal = false"
-    class="fixed inset-0 z-50 flex items-end justify-center px-4 pb-4"
+    @keydown.escape.window="showResetModal = false"
+    class="k-backdrop fixed"
+    style="display: none"
   >
-    <div class="absolute inset-0 bg-black/70"></div>
-    <div class="relative bg-kinetic-surface rounded-3xl p-6 max-w-sm w-full shadow-2xl">
-      <h3 class="font-display font-bold text-lg text-white mb-2">Réinitialiser ?</h3>
-      <p class="text-sm text-gray-400 mb-5">
-        Cette action supprimera toute ta progression locale. Irréversible.
+    <div
+      class="k-sheet text-center"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="reset-title"
+      aria-describedby="reset-desc"
+    >
+      <div
+        class="mx-auto w-14 h-14 rounded-full bg-kinetic-ink text-kinetic-electric flex items-center justify-center"
+        aria-hidden="true"
+      >
+        <svg
+          class="w-7 h-7"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          viewBox="0 0 24 24"
+        >
+          <path d="M3.5 12a8.5 8.5 0 1 0 2.5-6M3.5 4v4.5H8" />
+        </svg>
+      </div>
+      <h3 id="reset-title" class="mt-4 font-display font-bold text-xl text-white">
+        Réinitialiser ?
+      </h3>
+      <p id="reset-desc" class="mt-1.5 text-sm text-gray-400">
+        Toute ta progression locale sera supprimée. Action irréversible.
       </p>
-      <div class="flex gap-3">
-        <button
-          @click="showResetModal = false"
-          class="flex-1 h-11 bg-kinetic-elevated text-white rounded-xl text-base font-medium active:bg-kinetic-raised transition-colors"
-        >
-          Annuler
-        </button>
-        <button
-          @click="doReset()"
-          class="flex-1 h-11 bg-kinetic-electric text-white rounded-xl text-base font-semibold active:brightness-90 transition-all"
-        >
-          Supprimer
-        </button>
+      <div class="mt-6 space-y-2">
+        <button type="button" @click="doReset()" class="k-btn-danger">Supprimer</button>
+        <button type="button" @click="showResetModal = false" class="k-btn-2">Annuler</button>
       </div>
     </div>
   </div>

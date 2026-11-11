@@ -11,143 +11,200 @@
         />
       </svg>
     </a>
-    <h1 class="text-2xl font-display font-black tracking-tight text-white">Progression</h1>
+    <h1 class="font-display font-bold text-white">Progression</h1>
+  </div>
+
+  <!-- Chargement : blocs fantômes -->
+  <div x-show="loading && totalSessions === 0" class="space-y-3" aria-hidden="true">
+    <div class="k-skeleton h-40 rounded-2xl"></div>
+    <div class="k-skeleton h-28 rounded-2xl"></div>
+    <div class="k-skeleton h-9 rounded-[10px]"></div>
+    <div class="k-skeleton h-56 rounded-2xl"></div>
   </div>
 
   <!-- État vide -->
   <template x-if="!loading && totalSessions === 0">
-    <div class="bg-kinetic-surface rounded-2xl p-8 text-center ring-1 ring-white/5">
-      <p class="text-white font-semibold mb-1">Pas encore de données</p>
-      <p class="text-sm text-gray-500 mb-5">
+    <div class="k-empty">
+      <p>Pas encore de données</p>
+      <svg
+        class="w-12 h-12 mx-auto mt-4 text-kinetic-purple"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M3 17l6-6 4 4 8-8M14 7h7v7" />
+      </svg>
+      <p class="text-sm text-gray-500 mt-4 mb-6">
         Termine une première séance pour voir ta progression apparaître ici.
       </p>
-      <a
-        href="/seances"
-        class="inline-block bg-kinetic-neon text-gray-950 font-semibold px-5 py-2.5 rounded-xl hover:brightness-110 transition text-sm"
-      >
-        Démarrer une séance
-      </a>
+      <a href="/seances" class="k-btn">Démarrer une séance</a>
     </div>
   </template>
 
   <!-- Upsell analytics avancées (gratuit) -->
   <div
     x-show="totalSessions > 0 && !$store.entitlement.can('advanced_analytics')"
-    class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-kinetic-neon/20 mb-4 text-center"
+    class="bg-kinetic-surface rounded-2xl p-5 mb-6"
   >
-    <div class="flex items-center justify-center gap-2 mb-1">
-      <p class="text-sm font-bold text-white">Analytics avancées</p>
-      <span
-        class="text-[9px] font-bold bg-kinetic-neon/15 text-kinetic-neon ring-1 ring-kinetic-neon/30 rounded px-1.5 py-0.5"
-        >PRO</span
+    <div class="flex items-center gap-2">
+      <svg
+        class="w-5 h-5 text-kinetic-purple flex-shrink-0"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
       >
+        <path d="M3 17l6-6 4 4 8-8M14 7h7v7" />
+      </svg>
+      <p class="k-card-title">Analytics avancées</p>
+      <span class="k-badge ml-auto">PRO</span>
     </div>
-    <p class="text-xs text-gray-500 mb-3">
+    <p class="text-sm text-gray-500 mt-2 mb-4">
       Bilan hebdo, tendances, volume par muscle et courbes de force — passe Pro pour les débloquer.
     </p>
-    <a
-      href="/profile"
-      class="inline-block bg-kinetic-neon text-gray-950 font-bold rounded-xl px-4 py-2 text-sm hover:brightness-110 active:scale-95"
-    >
-      Passer Pro
-    </a>
+    <a href="/profile" class="k-btn">Passer Pro</a>
   </div>
 
   <!-- Bilan de la semaine -->
-  <div
+  <section
     x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics')"
-    class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5 mb-4"
+    class="bg-kinetic-surface rounded-2xl p-5 mb-6"
+    aria-labelledby="prog-week-title"
   >
-    <div class="flex items-center justify-between mb-3">
-      <p class="text-xs text-gray-500 font-semibold">Ta semaine</p>
+    <div class="flex items-center justify-between gap-3">
+      <h2 id="prog-week-title" class="k-card-title">Ta semaine</h2>
       <span
-        class="text-[11px] font-medium"
-        :class="weeklyReview.trend === 'up' ? 'text-kinetic-neon' : weeklyReview.trend === 'down' ? 'text-kinetic-electric' : 'text-gray-400'"
-        x-text="weeklyTrendLabel()"
-      ></span>
+        class="inline-flex items-center gap-1 text-xs font-semibold tabular-nums"
+        :class="weeklyReview.trend === 'up' ? 'text-kinetic-teal' : weeklyReview.trend === 'down' ? 'text-kinetic-electric' : 'text-gray-500'"
+      >
+        <svg
+          x-show="weeklyReview.trend === 'up'"
+          class="w-3.5 h-3.5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          stroke-width="2.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M7 17 17 7M9 7h8v8" />
+        </svg>
+        <svg
+          x-show="weeklyReview.trend === 'down'"
+          class="w-3.5 h-3.5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          stroke-width="2.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M7 7l10 10M17 9v8H9" />
+        </svg>
+        <span x-text="weeklyTrendLabel()"></span>
+      </span>
     </div>
-    <div class="flex items-end gap-2 mb-3">
-      <span
-        class="font-display font-black text-3xl text-white"
-        x-text="formatNumber(weeklyReview.tonnageKg)"
-      ></span>
-      <span class="text-sm text-gray-500 font-medium mb-1">kg de tonnage</span>
-    </div>
-    <div class="grid grid-cols-4 gap-2 text-center">
+
+    <p class="mt-3 flex items-baseline gap-1.5">
+      <span class="k-metric" x-text="formatNumber(weeklyReview.tonnageKg)"></span>
+      <span class="text-sm text-gray-500 font-medium">kg soulevés</span>
+    </p>
+
+    <dl class="grid grid-cols-4 mt-5 pt-4 border-t border-white/10">
       <div>
-        <p class="font-display font-black text-lg text-white" x-text="weeklyReview.sessions"></p>
-        <p class="text-[11px] text-gray-500">séances</p>
+        <dt class="text-xs text-gray-500">Séances</dt>
+        <dd
+          class="text-lg font-semibold text-white tabular-nums mt-0.5"
+          x-text="weeklyReview.sessions"
+        ></dd>
       </div>
       <div>
-        <p
-          class="font-display font-black text-lg text-white"
+        <dt class="text-xs text-gray-500">Jours</dt>
+        <dd
+          class="text-lg font-semibold text-white tabular-nums mt-0.5"
           x-text="weeklyReview.trainingDays"
-        ></p>
-        <p class="text-[11px] text-gray-500">jours</p>
+        ></dd>
       </div>
       <div>
-        <p class="font-display font-black text-lg text-white" x-text="weeklyReview.totalSets"></p>
-        <p class="text-[11px] text-gray-500">sets</p>
+        <dt class="text-xs text-gray-500">Séries</dt>
+        <dd
+          class="text-lg font-semibold text-white tabular-nums mt-0.5"
+          x-text="weeklyReview.totalSets"
+        ></dd>
       </div>
       <div>
-        <p
-          class="font-display font-black text-lg"
+        <dt class="text-xs text-gray-500">Records</dt>
+        <dd
+          class="text-lg font-semibold tabular-nums mt-0.5"
           :class="weeklyReview.prCount > 0 ? 'text-kinetic-neon' : 'text-white'"
           x-text="weeklyReview.prCount"
-        ></p>
-        <p class="text-[11px] text-gray-500">PR</p>
+        ></dd>
       </div>
-    </div>
-  </div>
+    </dl>
+  </section>
 
   <!-- Stats globales -->
-  <div x-show="totalSessions > 0" class="grid grid-cols-3 gap-2 mb-4">
-    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-xs text-gray-500 font-semibold">Séances</p>
-      <p class="font-display font-black text-xl text-white mt-1" x-text="totalSessions"></p>
-    </div>
-    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-xs text-gray-500 font-semibold">Tonnage</p>
-      <p class="font-display font-black text-xl text-white mt-1">
-        <span x-text="formatNumber(totalTonnage)"></span
-        ><span class="text-xs text-gray-500 font-medium ml-0.5">kg</span>
-      </p>
-    </div>
-    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-xs text-gray-500 font-semibold">Régularité</p>
-      <p class="font-display font-black text-xl text-kinetic-neon mt-1">
-        <span x-text="consistency"></span
-        ><span class="text-xs text-gray-500 font-medium ml-0.5">%</span>
-      </p>
-    </div>
-  </div>
-
-  <!-- Stats avancées -->
-  <div x-show="totalSessions > 0" class="grid grid-cols-3 gap-2 mb-4">
-    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-xs text-gray-500 font-semibold">Série max</p>
-      <p class="font-display font-black text-xl text-kinetic-electric mt-1">
-        <span x-text="longestStreak"></span
-        ><span class="text-xs text-gray-500 font-medium ml-0.5">j</span>
-      </p>
-    </div>
-    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-xs text-gray-500 font-semibold">Moy/sem</p>
-      <p class="font-display font-black text-xl text-white mt-1" x-text="avgSessionsPerWeek"></p>
-    </div>
-    <div class="bg-kinetic-surface rounded-2xl p-3 ring-1 ring-white/5 text-center">
-      <p class="text-xs text-gray-500 font-semibold">Durée moy</p>
-      <p class="font-display font-black text-xl text-white mt-1">
-        <span x-text="avgDurationMin"></span
-        ><span class="text-xs text-gray-500 font-medium ml-0.5">min</span>
-      </p>
-    </div>
-  </div>
+  <section x-show="totalSessions > 0" class="mb-6" aria-labelledby="prog-all-title">
+    <h2 id="prog-all-title" class="k-section mb-2.5">Depuis le début</h2>
+    <dl class="bg-kinetic-surface rounded-2xl px-4 py-4 grid grid-cols-3 gap-y-5">
+      <div>
+        <dt class="text-xs text-gray-500">Séances</dt>
+        <dd
+          class="text-xl font-semibold text-white tabular-nums mt-0.5"
+          x-text="totalSessions"
+        ></dd>
+      </div>
+      <div>
+        <dt class="text-xs text-gray-500">Tonnage</dt>
+        <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
+          <span x-text="formatNumber(totalTonnage)"></span
+          ><span class="text-xs text-gray-500 font-medium ml-0.5">kg</span>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs text-gray-500">Régularité</dt>
+        <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
+          <span x-text="consistency"></span
+          ><span class="text-xs text-gray-500 font-medium ml-0.5">%</span>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs text-gray-500">Meilleure série</dt>
+        <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
+          <span x-text="longestStreak"></span
+          ><span class="text-xs text-gray-500 font-medium ml-0.5">j</span>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs text-gray-500">Séances/sem.</dt>
+        <dd
+          class="text-xl font-semibold text-white tabular-nums mt-0.5"
+          x-text="avgSessionsPerWeek"
+        ></dd>
+      </div>
+      <div>
+        <dt class="text-xs text-gray-500">Durée moy.</dt>
+        <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
+          <span x-text="avgDurationMin"></span
+          ><span class="text-xs text-gray-500 font-medium ml-0.5">min</span>
+        </dd>
+      </div>
+    </dl>
+  </section>
 
   <!-- Onglets -->
   <div
     x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics')"
-    class="k-seg mb-4"
+    class="k-seg mb-3"
   >
     <button
       type="button"
@@ -194,35 +251,56 @@
   <!-- ─── Onglet FORCE ──────────────────────────────────────── -->
   <div
     x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics') && activeTab === 'force'"
-    x-transition
+    x-transition.opacity.duration.200ms
   >
-    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5 mb-3">
-      <label for="f-progression-1" class="block text-xs text-gray-500 font-semibold mb-2"
-        >Exercice</label
-      >
-      <select
-        id="f-progression-1"
-        x-model="selectedExerciseId"
-        class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm"
-      >
+    <div class="bg-kinetic-surface rounded-2xl p-4">
+      <label for="f-progression-1" class="k-label">Exercice</label>
+      <select id="f-progression-1" x-model="selectedExerciseId" class="k-field">
         <template x-for="ex in exerciseStats" :key="ex.exerciseId">
           <option :value="ex.exerciseId" x-text="exerciseName(ex.exerciseId)"></option>
         </template>
       </select>
-    </div>
 
-    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="font-display font-bold text-white tracking-tight text-sm">Courbe e1RM</h2>
-        <span class="text-xs text-gray-500 font-semibold">kg estimés</span>
+      <div class="mt-5 flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <h2 class="k-card-title">Courbe e1RM</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Charge max estimée sur 1 répétition</p>
+        </div>
+        <div x-show="forceHasData()" class="text-right flex-shrink-0">
+          <p class="text-2xl font-bold text-white tabular-nums leading-none">
+            <span x-text="formatNumber(forceLatest(), 1)"></span
+            ><span class="text-sm text-gray-500 font-medium ml-0.5">kg</span>
+          </p>
+          <p
+            class="text-xs font-semibold tabular-nums mt-1"
+            :class="forceTrend() === 'up' ? 'text-kinetic-teal' : forceTrend() === 'down' ? 'text-kinetic-electric' : 'text-gray-500'"
+            x-text="forceDeltaLabel()"
+          ></p>
+        </div>
       </div>
+
       <template x-if="forceHasData()">
-        <div x-svg="forceSvg()" class="w-full"></div>
+        <div>
+          <div x-svg="forceSvg()" class="w-full mt-4 text-gray-500"></div>
+          <div class="flex items-center gap-4 mt-3 text-xs text-gray-500">
+            <span class="inline-flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-kinetic-purple" aria-hidden="true"></span>
+              e1RM
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-kinetic-gold" aria-hidden="true"></span>
+              Record :
+              <span
+                class="text-white font-semibold tabular-nums"
+                x-text="formatNumber(forceBest(), 1) + ' kg'"
+              ></span>
+            </span>
+          </div>
+        </div>
       </template>
       <template x-if="!forceHasData()">
-        <p class="text-sm text-gray-500 text-center py-6">
-          Pas assez de données pour tracer une courbe — il faut au moins 2 séances avec cet
-          exercice.
+        <p class="text-sm text-gray-500 text-center py-8">
+          Il faut au moins 2 séances avec cet exercice pour tracer une courbe.
         </p>
       </template>
     </div>
@@ -231,96 +309,97 @@
   <!-- ─── Onglet VOLUME ─────────────────────────────────────── -->
   <div
     x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics') && activeTab === 'volume'"
-    x-transition
+    x-transition.opacity.duration.200ms
   >
-    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="font-display font-bold text-white tracking-tight text-sm">
-          Tonnage hebdomadaire
-        </h2>
-        <span class="text-xs text-gray-500 font-semibold">12 dernières S</span>
+    <div class="bg-kinetic-surface rounded-2xl p-4">
+      <div class="flex items-baseline justify-between gap-3">
+        <h2 class="k-card-title">Tonnage hebdomadaire</h2>
+        <span class="text-xs text-gray-500">12 dernières semaines</span>
       </div>
 
       <template x-if="weeklyBuckets.length === 0">
-        <p class="text-sm text-gray-500 text-center py-6">Aucune donnée hebdomadaire.</p>
+        <p class="text-sm text-gray-500 text-center py-8">Aucune donnée hebdomadaire.</p>
+      </template>
+
+      <template x-if="weeklyBuckets.length > 0">
+        <div class="mt-3">
+          <p
+            class="text-xs text-gray-500"
+            x-text="'Semaine ' + formatWeek(weeklyBuckets.at(-1).isoWeek)"
+          ></p>
+          <p class="flex items-baseline gap-1.5 mt-0.5">
+            <span
+              class="text-2xl font-bold text-white tabular-nums leading-tight"
+              x-text="formatNumber(weeklyBuckets.at(-1).tonnageKg)"
+            ></span>
+            <span class="text-sm text-gray-500 font-medium">kg</span>
+            <span class="text-sm text-gray-500 ml-auto tabular-nums">
+              <span x-text="weeklyBuckets.at(-1).totalSets"></span> séries
+            </span>
+          </p>
+        </div>
       </template>
 
       <div
         x-show="weeklyBuckets.length > 0"
-        class="flex items-end justify-between gap-1.5 h-40 mb-2"
+        class="flex items-end justify-between gap-1.5 h-40 mt-5 border-b border-white/10"
       >
-        <template x-for="b in weeklyBuckets" :key="b.isoWeek">
-          <div class="flex-1 flex flex-col items-center gap-1 group">
+        <template x-for="(b, i) in weeklyBuckets" :key="b.isoWeek">
+          <div class="flex-1 h-full flex items-end">
             <div
-              class="w-full bg-kinetic-electric rounded-t-md transition-all"
+              class="w-full rounded-t-[4px] bg-kinetic-purple transition-all duration-500"
+              :class="i === weeklyBuckets.length - 1 ? '' : 'opacity-40'"
               :style="'height: ' + barHeightPct(b.tonnageKg) + '%; min-height: 2px'"
               :title="formatWeek(b.isoWeek) + ' — ' + formatNumber(b.tonnageKg) + ' kg'"
             ></div>
-            <span
-              class="text-[9px] text-gray-500 tabular-nums"
-              x-text="formatWeek(b.isoWeek)"
-            ></span>
           </div>
         </template>
       </div>
-
-      <template x-if="weeklyBuckets.length > 0">
-        <div class="grid grid-cols-3 gap-2 pt-3 border-t border-white/5 text-center">
-          <div>
-            <p class="text-xs text-gray-500 font-semibold">Semaine</p>
-            <p
-              class="text-sm font-bold text-white"
-              x-text="formatWeek(weeklyBuckets.at(-1).isoWeek)"
-            ></p>
-          </div>
-          <div>
-            <p class="text-xs text-gray-500 font-semibold">Tonnage</p>
-            <p class="text-sm font-bold text-white">
-              <span x-text="formatNumber(weeklyBuckets.at(-1).tonnageKg)"></span>
-              <span class="text-[10px] text-gray-500">kg</span>
-            </p>
-          </div>
-          <div>
-            <p class="text-xs text-gray-500 font-semibold">Sets</p>
-            <p class="text-sm font-bold text-white" x-text="weeklyBuckets.at(-1).totalSets"></p>
-          </div>
-        </div>
-      </template>
+      <div x-show="weeklyBuckets.length > 0" class="flex justify-between gap-1.5 mt-1.5">
+        <template x-for="(b, i) in weeklyBuckets" :key="'l-' + b.isoWeek">
+          <span
+            class="flex-1 text-center text-[11px] tabular-nums"
+            :class="i === weeklyBuckets.length - 1 ? 'text-white font-semibold' : 'text-gray-500'"
+            x-text="formatWeek(b.isoWeek)"
+          ></span>
+        </template>
+      </div>
     </div>
   </div>
 
   <!-- ─── Onglet MUSCLES ────────────────────────────────────── -->
   <div
     x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics') && activeTab === 'muscles'"
-    x-transition
+    x-transition.opacity.duration.200ms
   >
-    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
-      <h2 class="font-display font-bold text-white tracking-tight text-sm mb-4">
-        Répartition par groupe musculaire
-      </h2>
-
-      <template x-if="muscles.length === 0">
-        <p class="text-sm text-gray-500 text-center py-6">
-          Aucune donnée — vérifie que les exercices ont des muscles renseignés.
+    <template x-if="muscles.length === 0">
+      <div class="k-empty">
+        <p>Aucune donnée</p>
+        <p class="text-sm text-gray-500 mt-1">
+          Vérifie que tes exercices ont des muscles renseignés.
         </p>
-      </template>
+      </div>
+    </template>
 
-      <div x-show="muscles.length > 0" class="space-y-3">
+    <div x-show="muscles.length > 0">
+      <h2 class="k-caption mb-1.5">Répartition des séries par groupe musculaire</h2>
+      <div class="k-list">
         <template x-for="m in muscles" :key="m.muscle">
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-sm font-medium text-white" x-text="muscleLabel(m.muscle)"></span>
-              <span
-                class="text-xs text-gray-500 tabular-nums"
-                x-text="$num.round(m.share * 100) + '%'"
-              ></span>
-            </div>
-            <div class="h-2 bg-kinetic-ink rounded-full overflow-hidden">
+          <div class="k-row">
+            <span
+              class="w-28 flex-shrink-0 text-base text-white truncate"
+              x-text="muscleLabel(m.muscle)"
+            ></span>
+            <div class="flex-1 h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
               <div
-                class="h-full bg-kinetic-neon rounded-full transition-all duration-500"
+                class="h-full bg-kinetic-teal rounded-full"
                 :style="'width: ' + $num.round(m.share * 100) + '%'"
               ></div>
             </div>
+            <span
+              class="w-11 text-right text-sm text-gray-500 tabular-nums"
+              x-text="$num.round(m.share * 100) + '%'"
+            ></span>
           </div>
         </template>
       </div>
@@ -330,37 +409,31 @@
   <!-- ─── Onglet HEATMAP ──────────────────────────────────────── -->
   <div
     x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics') && activeTab === 'heatmap'"
-    x-transition
+    x-transition.opacity.duration.200ms
   >
-    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="font-display font-bold text-white tracking-tight text-sm">
-          Activité — 20 semaines
-        </h2>
-        <div class="flex items-center gap-1 text-[9px] text-gray-500">
-          <span class="w-3 h-3 rounded-sm bg-kinetic-ink ring-1 ring-white/10 inline-block"></span>0
-          <span class="w-3 h-3 rounded-sm bg-kinetic-neon/30 inline-block ml-1"></span>1
-          <span class="w-3 h-3 rounded-sm bg-kinetic-neon inline-block ml-1"></span>2+
-        </div>
+    <div class="bg-kinetic-surface rounded-2xl p-4">
+      <div class="flex items-baseline justify-between gap-3 mb-4">
+        <h2 class="k-card-title">Activité</h2>
+        <span class="text-xs text-gray-500">20 dernières semaines</span>
       </div>
 
-      <!-- Labels jours -->
-      <div class="flex gap-1 mb-1 pl-0">
-        <div class="grid grid-rows-7 gap-0.5 mr-1">
+      <div class="flex gap-1.5">
+        <!-- Labels jours -->
+        <div class="flex flex-col gap-[3px]" aria-hidden="true">
           <template x-for="d in ['D','L','M','M','J','V','S']">
             <span
-              class="text-[8px] text-gray-600 w-3 flex items-center justify-center h-3"
+              class="flex-1 w-3 flex items-center justify-center text-[11px] leading-none text-gray-500"
               x-text="d"
             ></span>
           </template>
         </div>
         <!-- Grille -->
-        <div class="flex gap-0.5 flex-1 overflow-x-auto">
+        <div class="flex gap-[3px] flex-1 min-w-0">
           <template x-for="(week, wi) in heatmapGrid" :key="wi">
-            <div class="flex flex-col gap-0.5">
+            <div class="flex-1 flex flex-col gap-[3px]">
               <template x-for="(cell, di) in week" :key="di">
                 <div
-                  class="w-3 h-3 rounded-sm cursor-default transition-transform hover:scale-125"
+                  class="aspect-square rounded-[3px] cursor-default transition-transform hover:scale-125"
                   :class="heatmapColor(cell.count)"
                   :title="cell.label + (cell.count > 0 ? ' : ' + $plural(cell.count, 'séance') : '')"
                 ></div>
@@ -370,73 +443,99 @@
         </div>
       </div>
 
-      <!-- Légende mois -->
-      <p class="text-[9px] text-gray-600 mt-2 text-center">← passé · futur</p>
+      <!-- Repères temporels + légende -->
+      <div
+        class="flex items-center justify-between gap-3 mt-2 pl-[1.125rem] text-[11px] text-gray-500"
+      >
+        <span>Il y a 20 sem.</span>
+        <span class="inline-flex items-center gap-1" aria-hidden="true">
+          Moins
+          <span class="w-2.5 h-2.5 rounded-[3px] bg-kinetic-elevated"></span>
+          <span class="w-2.5 h-2.5 rounded-[3px] bg-kinetic-teal/45"></span>
+          <span class="w-2.5 h-2.5 rounded-[3px] bg-kinetic-teal/75"></span>
+          <span class="w-2.5 h-2.5 rounded-[3px] bg-kinetic-teal"></span>
+          Plus
+        </span>
+        <span>Auj.</span>
+      </div>
 
       <!-- Résumé période -->
-      <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-white/5 text-center">
+      <dl class="grid grid-cols-3 mt-4 pt-4 border-t border-white/10">
         <div>
-          <p class="text-xs text-gray-500 font-semibold">20 sem.</p>
-          <p
-            class="text-sm font-bold text-white"
+          <dt class="text-xs text-gray-500">20 semaines</dt>
+          <dd
+            class="text-base font-semibold text-white tabular-nums mt-0.5"
             x-text="$plural(sessionsInLastWeeks(20), 'séance')"
-          ></p>
+          ></dd>
         </div>
         <div>
-          <p class="text-xs text-gray-500 font-semibold">Total</p>
-          <p class="text-sm font-bold text-white" x-text="totalSessions + ' séances'"></p>
+          <dt class="text-xs text-gray-500">Total</dt>
+          <dd
+            class="text-base font-semibold text-white tabular-nums mt-0.5"
+            x-text="totalSessions + ' séances'"
+          ></dd>
         </div>
         <div>
-          <p class="text-xs text-gray-500 font-semibold">Régularité</p>
-          <p class="text-sm font-bold text-kinetic-neon" x-text="consistency + '%'"></p>
+          <dt class="text-xs text-gray-500">Régularité</dt>
+          <dd
+            class="text-base font-semibold text-white tabular-nums mt-0.5"
+            x-text="consistency + '%'"
+          ></dd>
         </div>
-      </div>
+      </dl>
     </div>
   </div>
 
   <!-- ─── Onglet RECORDS ────────────────────────────────────── -->
   <div
     x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics') && activeTab === 'records'"
-    x-transition
+    x-transition.opacity.duration.200ms
   >
-    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="font-display font-bold text-white tracking-tight text-sm">Records personnels</h2>
-        <span class="text-xs text-gray-500 font-semibold" x-text="records.length + ' PR'"></span>
+    <template x-if="records.length === 0">
+      <div class="k-empty">
+        <p>Pas encore de record</p>
+        <p class="text-sm text-gray-500 mt-1">Tes records personnels apparaîtront ici.</p>
       </div>
+    </template>
 
-      <template x-if="records.length === 0">
-        <p class="text-sm text-gray-500 text-center py-6">Pas encore de PR détecté.</p>
-      </template>
-
-      <ul x-show="records.length > 0" class="divide-y divide-white/5">
+    <div x-show="records.length > 0">
+      <div class="flex items-baseline justify-between px-4 mb-1.5">
+        <h2 class="text-xs text-gray-500">Records personnels</h2>
+        <span class="text-xs text-gray-500 tabular-nums" x-text="records.length + ' PR'"></span>
+      </div>
+      <ul class="k-list">
         <template x-for="(pr, i) in records" :key="pr.exerciseId + '-' + pr.achievedAt">
-          <li class="py-3 flex items-center gap-3">
-            <div
-              class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              :class="i === 0 ? 'bg-kinetic-neon text-gray-950' : 'bg-kinetic-ink ring-1 ring-white/10 text-gray-400'"
-            >
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="3" fill="rgb(var(--ink))" />
+          <li class="k-row k-row-icon">
+            <span class="k-glyph" :class="i === 0 ? 'bg-kinetic-gold' : 'bg-kinetic-elevated'">
+              <svg
+                class="w-[18px] h-[18px]"
+                :class="i === 0 ? 'text-gray-950' : 'text-gray-400'"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4.5v1.5A3.5 3.5 0 0 0 8 11M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11M12 14v4M8.5 20h7"
+                />
               </svg>
-            </div>
+            </span>
             <div class="flex-1 min-w-0">
+              <p class="text-base text-white truncate" x-text="exerciseName(pr.exerciseId)"></p>
               <p
-                class="text-sm font-semibold text-white truncate"
-                x-text="exerciseName(pr.exerciseId)"
-              ></p>
-              <p
-                class="text-[11px] text-gray-500"
-                x-text="pr.weightKg + ' kg × ' + pr.reps + ' • ' + formatDate(pr.achievedAt)"
+                class="text-xs text-gray-500 tabular-nums"
+                x-text="pr.weightKg + ' kg × ' + pr.reps + ' · ' + formatDate(pr.achievedAt)"
               ></p>
             </div>
-            <div class="text-right">
-              <p
-                class="text-sm font-display font-black text-kinetic-electric"
-                x-text="formatNumber(pr.e1rmKg, 1)"
-              ></p>
-              <p class="text-[10px] text-gray-500 tabular-nums">e1RM kg</p>
+            <div class="text-right flex-shrink-0">
+              <p class="text-base font-semibold text-white tabular-nums">
+                <span x-text="formatNumber(pr.e1rmKg, 1)"></span
+                ><span class="text-xs text-gray-500 font-medium ml-0.5">kg</span>
+              </p>
+              <p class="text-[11px] text-gray-500">e1RM</p>
             </div>
           </li>
         </template>

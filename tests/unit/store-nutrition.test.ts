@@ -427,6 +427,30 @@ describe('nutritionStore.removeMealItem', () => {
     expect(breakfast?.items[0]!.food.name).toBe('Toast');
     expect(lunch?.items).toHaveLength(1);
   });
+
+  it('drops a meal from the log once its last item is removed', async () => {
+    const stored = new Map<string, unknown>();
+    vi.mocked(getDeps).mockResolvedValue({
+      storage: {
+        get: vi.fn().mockImplementation((k: string) => Promise.resolve(stored.get(k) ?? null)),
+        set: vi.fn().mockImplementation((k: string, v: unknown) => {
+          stored.set(k, v);
+          return Promise.resolve();
+        }),
+        remove: vi.fn(),
+        keys: vi.fn().mockResolvedValue([]),
+        clear: vi.fn(),
+      },
+    } as ReturnType<typeof getDeps> extends Promise<infer T> ? Promise<T> : never);
+
+    await store.addMealItem('Breakfast', egg, 100);
+    await store.addMealItem('Lunch', toast, 50);
+    await store.removeMealItem('Breakfast', 0);
+
+    expect(store.todayLog.map((m) => m.mealName)).toEqual(['Lunch']);
+    const persisted = [...stored.values()][0] as { mealName: string }[];
+    expect(persisted.map((m) => m.mealName)).toEqual(['Lunch']);
+  });
 });
 
 // ─── recalculatePlan ─────────────────────────────────────────────────────────

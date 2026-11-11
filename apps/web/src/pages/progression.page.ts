@@ -206,43 +206,136 @@ export function progression() {
       return points.sort((a, b) => a.x - b.x);
     },
 
+    /**
+     * Courbe e1RM (style Santé iOS) : trait lissé bleu, aire en fondu, grille
+     * horizontale discrète, repère sur la dernière valeur et sur le record.
+     * Les gris (grille, légendes) suivent `currentColor` pour le mode clair.
+     */
     forceSvg(): string {
       const pts = this.forcePoints();
       if (pts.length < 2) return '';
+      const LINE = '#0A84FF';
+      const BEST = '#FFD60A';
       const W = 320,
-        H = 160,
-        padX = 12,
-        padY = 16;
+        H = 172,
+        padL = 4,
+        padR = 34,
+        padT = 10,
+        padB = 22;
       const minX = pts[0]!.x,
         maxX = pts.at(-1)!.x;
       const ys = pts.map((p) => p.y);
-      const minY = Math.min(...ys),
-        maxY = Math.max(...ys);
+      const rawMin = Math.min(...ys),
+        rawMax = Math.max(...ys);
+      // Graduations « rondes » : pas de 1, 2, 2,5 ou 5 × 10^n, 3 intervalles.
+      const span = Math.max(1, rawMax - rawMin);
+      const rough = span / 3;
+      const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+      const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= rough) ?? 10 * mag;
+      const minY = Math.floor(rawMin / step) * step;
+      const maxY = Math.max(minY + step, Math.ceil(rawMax / step) * step);
       const dx = Math.max(1, maxX - minX),
-        dy = Math.max(0.1, maxY - minY);
-      const sx = (x: number) => padX + ((x - minX) / dx) * (W - padX * 2);
-      const sy = (y: number) => H - padY - ((y - minY) / dy) * (H - padY * 2);
-      const line = pts
-        .map((p, i) => `${i === 0 ? 'M' : 'L'} ${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`)
-        .join(' ');
-      const area = line + ` L ${sx(pts.at(-1)!.x).toFixed(1)} ${H} L ${padX} ${H} Z`;
-      const dots = pts
-        .map(
-          (p) =>
-            `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#FFD60A' : '#FF453A'}"><title>${p.label}: ${p.y.toFixed(1)} kg</title></circle>`,
-        )
-        .join('');
+        dy = maxY - minY;
+      const plotW = W - padL - padR,
+        plotH = H - padT - padB;
+      const sx = (x: number) => padL + ((x - minX) / dx) * plotW;
+      const sy = (y: number) => padT + plotH - ((y - minY) / dy) * plotH;
+      const f = (n: number) => n.toFixed(1);
+
+      // Grille + graduations à droite
+      let grid = '';
+      for (let v = minY; v <= maxY + step / 2; v += step) {
+        const y = f(sy(v));
+        grid += `<line x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}" stroke="currentColor" stroke-opacity="0.18" stroke-width="1" vector-effect="non-scaling-stroke"${v > minY ? ' stroke-dasharray="2 3"' : ''}/>`;
+        grid += `<text x="${W - padR + 6}" y="${y}" fill="currentColor" font-size="10" dominant-baseline="middle">${this.formatNumber(v, 1)}</text>`;
+      }
+
+      // Trait lissé : courbe de Bézier à tangentes horizontales (pas de dépassement)
+      const xy = pts.map((p) => [sx(p.x), sy(p.y)] as const);
+      let line = `M ${f(xy[0]![0])} ${f(xy[0]![1])}`;
+      for (let i = 1; i < xy.length; i++) {
+        const [x0, y0] = xy[i - 1]!;
+        const [x1, y1] = xy[i]!;
+        const mx = (x0 + x1) / 2;
+        line += ` C ${f(mx)} ${f(y0)} ${f(mx)} ${f(y1)} ${f(x1)} ${f(y1)}`;
+      }
+      const base = f(padT + plotH);
+      const area = `${line} L ${f(xy.at(-1)![0])} ${base} L ${f(xy[0]![0])} ${base} Z`;
+
+      // Points : seulement quand la série est courte, sinon le trait suffit
+      const dots =
+        pts.length <= 12
+          ? pts
+              .map(
+                (p, i) =>
+                  `<circle cx="${f(xy[i]![0])}" cy="${f(xy[i]![1])}" r="2.5" fill="${LINE}"><title>${p.label} : ${p.y.toFixed(1)} kg</title></circle>`,
+              )
+              .join('')
+          : '';
+
+      // Record (jaune) et dernière valeur (halo bleu)
+      const bestIdx = ys.lastIndexOf(rawMax);
+      const lastIdx = pts.length - 1;
+      const [bx, by] = xy[bestIdx]!;
+      const [lx, ly] = xy[lastIdx]!;
+      const best =
+        bestIdx !== lastIdx
+          ? `<circle cx="${f(bx)}" cy="${f(by)}" r="4" fill="${BEST}"><title>Record ${pts[bestIdx]!.label} : ${rawMax.toFixed(1)} kg</title></circle>`
+          : '';
+      const lastFill = bestIdx === lastIdx ? BEST : LINE;
+      const last = `<circle cx="${f(lx)}" cy="${f(ly)}" r="8" fill="${lastFill}" fill-opacity="0.22"/><circle cx="${f(lx)}" cy="${f(ly)}" r="4.5" fill="${lastFill}"><title>${pts[lastIdx]!.label} : ${pts[lastIdx]!.y.toFixed(1)} kg</title></circle>`;
+
+      // Dates de début et de fin sous l'axe
+      const xLabels =
+        `<text x="${padL}" y="${H - 4}" fill="currentColor" font-size="10">${pts[0]!.label}</text>` +
+        `<text x="${W - padR}" y="${H - 4}" fill="currentColor" font-size="10" text-anchor="end">${pts[lastIdx]!.label}</text>`;
+
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe e1RM">
-        <path d="${area}" fill="#FF453A" fill-opacity="0.15"/>
-        <path d="${line}" fill="none" stroke="#FF453A" stroke-width="2" stroke-linecap="round"/>
-        ${dots}
-        <text x="${padX}" y="${H - 4}" fill="#6B7280" font-size="9">${minY.toFixed(0)} kg</text>
-        <text x="${padX}" y="14" fill="#6B7280" font-size="9">${maxY.toFixed(0)} kg</text>
+        <defs>
+          <linearGradient id="k-force-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="${LINE}" stop-opacity="0.32"/>
+            <stop offset="1" stop-color="${LINE}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        ${grid}
+        <path d="${area}" fill="url(#k-force-fill)"/>
+        <path d="${line}" fill="none" stroke="${LINE}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        ${dots}${best}${last}${xLabels}
       </svg>`;
     },
 
     forceHasData(): boolean {
       return this.forcePoints().length >= 2;
+    },
+
+    /** Dernière e1RM de l'exercice sélectionné (0 si aucune). */
+    forceLatest(): number {
+      const pts = this.forcePoints();
+      return pts.length ? pts.at(-1)!.y : 0;
+    },
+
+    /** Meilleure e1RM de l'exercice sélectionné (0 si aucune). */
+    forceBest(): number {
+      const pts = this.forcePoints();
+      return pts.length ? Math.max(...pts.map((p) => p.y)) : 0;
+    },
+
+    /** Évolution depuis la première séance : « +8 % depuis le 03 mars ». */
+    forceDeltaLabel(): string {
+      const pts = this.forcePoints();
+      if (pts.length < 2) return '';
+      const first = pts[0]!;
+      const pct = Math.round(((pts.at(-1)!.y - first.y) / first.y) * 100);
+      const sign = pct > 0 ? '+' : '';
+      return `${sign}${pct} % depuis le ${first.label}`;
+    },
+
+    /** Sens de l'évolution e1RM : 'up' | 'down' | 'flat'. */
+    forceTrend(): 'up' | 'down' | 'flat' {
+      const pts = this.forcePoints();
+      if (pts.length < 2) return 'flat';
+      const d = pts.at(-1)!.y - pts[0]!.y;
+      return d > 0.05 ? 'up' : d < -0.05 ? 'down' : 'flat';
     },
 
     // ─── Onglet VOLUME : tonnage hebdo ───────────────────────
@@ -345,12 +438,13 @@ export function progression() {
       return weeks;
     },
 
+    /** Teinte d'une case : vert système en 3 intensités, gris de remplissage sinon. */
     heatmapColor(count: number): string {
-      if (count < 0) return 'bg-kinetic-elevated/20'; // futur
-      if (count === 0) return 'bg-kinetic-ink ring-1 ring-white/5';
-      if (count === 1) return 'bg-kinetic-neon/30';
-      if (count === 2) return 'bg-kinetic-neon/60';
-      return 'bg-kinetic-neon shadow-[0_0_6px_rgba(242,194,48,0.6)]';
+      if (count < 0) return 'bg-kinetic-elevated opacity-40'; // futur
+      if (count === 0) return 'bg-kinetic-elevated';
+      if (count === 1) return 'bg-kinetic-teal/45';
+      if (count === 2) return 'bg-kinetic-teal/75';
+      return 'bg-kinetic-teal';
     },
 
     get longestStreak(): number {
