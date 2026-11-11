@@ -1,15 +1,6 @@
 <div x-data="bodyweight" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
   <!-- En-tête -->
-  <div class="flex items-center gap-3 mb-6">
-    <a
-      href="/"
-      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
-      aria-label="Retour"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-      </svg>
-    </a>
+  <div class="k-nav">
     <div class="flex-1">
       <h1 class="text-2xl font-display font-black tracking-tight text-white">Poids corporel</h1>
     </div>
@@ -72,7 +63,7 @@
           <span class="text-xs text-gray-500 font-semibold">Objectif</span>
           <span class="text-[10px] text-gray-400 tabular-nums" x-text="goalWeight + ' kg'"></span>
         </div>
-        <div class="h-1.5 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
+        <div class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
           <div
             class="h-full rounded-full transition-all duration-700"
             :class="goalProgress >= 100 ? 'bg-kinetic-neon' : 'bg-kinetic-electric/70'"
@@ -129,8 +120,8 @@
             @click="period = p.v"
             class="text-[10px] px-2 py-1 rounded-lg font-semibold transition-all"
             :class="period === p.v
-                    ? 'bg-kinetic-neon text-gray-950 font-semibold'
-                    : 'text-gray-500 hover:text-gray-300'"
+                    ? 'k-on'
+                    : 'k-off'"
           >
             <span x-text="p.l"></span>
           </button>

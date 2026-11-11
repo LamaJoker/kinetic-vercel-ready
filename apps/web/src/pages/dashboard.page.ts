@@ -78,10 +78,9 @@ export function dashboard() {
     },
 
     weekDayClass(day: { trained: boolean; isToday: boolean; isFuture: boolean }): string {
-      if (day.trained) return 'bg-kinetic-neon text-gray-950 font-bold';
-      if (day.isToday) return 'ring-2 ring-kinetic-neon/70 text-white font-semibold';
-      if (day.isFuture) return 'text-gray-600';
-      return 'bg-white/[0.04] text-gray-500';
+      if (day.trained) return 'bg-kinetic-neon text-gray-950 font-semibold';
+      if (day.isToday) return 'ring-2 ring-inset ring-kinetic-neon text-white font-semibold';
+      return 'bg-kinetic-ink text-gray-500';
     },
 
     /** Démarre la séance proposée (même mécanisme que « Programme du jour »). */

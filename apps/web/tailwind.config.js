@@ -5,10 +5,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        'kinetic-purple': '#3E6FD8',
-        'kinetic-teal': '#1E9E5A',
-        'kinetic-coral': '#D93A34',
-        'kinetic-gold': '#F2C230',
+        // Couleurs système iOS (variante sombre) : bleu, vert, rouge, jaune.
+        'kinetic-purple': '#0A84FF',
+        'kinetic-teal': '#30D158',
+        'kinetic-coral': '#FF453A',
+        'kinetic-gold': '#FFD60A',
+        gray: {
+          50: '#f9f9fb',
+          100: '#f2f2f7',
+          200: '#e5e5ea',
+          300: '#d1d1d6',
+          400: '#aeaeb2',
+          500: '#98989f',
+          600: '#8e8e93',
+          700: '#636366',
+          800: '#3a3a3c',
+          900: '#1c1c1e',
+          950: '#0a0a0c',
+        },
         // Couleurs thématiques pilotées par variables CSS (cf. styles.css)
         'kinetic-neon': 'rgb(var(--kinetic-neon) / <alpha-value>)',
         'kinetic-electric': 'rgb(var(--kinetic-electric) / <alpha-value>)',
@@ -19,13 +33,46 @@ export default {
         'kinetic-raised': 'rgb(var(--raised) / <alpha-value>)',
       },
       fontFamily: {
-        sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
-        display: ['Barlow Condensed', 'Arial Narrow', 'sans-serif'],
+        // Appareils Apple : San Francisco. Ailleurs (Android, Windows) : Inter, très proche.
+        sans: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Inter Variable',
+          'system-ui',
+          'Segoe UI',
+          'Roboto',
+          'sans-serif',
+        ],
+        display: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Inter Variable',
+          'system-ui',
+          'Segoe UI',
+          'Roboto',
+          'sans-serif',
+        ],
       },
-      // Barlow Condensed est chargée jusqu'à 700 : évite un faux-gras synthétisé.
+      // Échelle typographique iOS (Dynamic Type, taille « Large ») :
+      // footnote 13, subheadline 15, body 17, title3 20, title2 22, title1 28, large title 34.
+      fontSize: {
+        xs: ['0.8125rem', { lineHeight: '1.125rem' }],
+        sm: ['0.9375rem', { lineHeight: '1.25rem' }],
+        base: ['1.0625rem', { lineHeight: '1.375rem' }],
+        lg: ['1.25rem', { lineHeight: '1.5625rem' }],
+        xl: ['1.375rem', { lineHeight: '1.75rem' }],
+        '2xl': ['1.75rem', { lineHeight: '2.125rem' }],
+        '3xl': ['2.125rem', { lineHeight: '2.5625rem' }],
+        '4xl': ['2.5rem', { lineHeight: '2.875rem' }],
+      },
+      // Titres en « bold » (700), jamais plus gras : c'est le poids des grands titres iOS.
       fontWeight: { black: '700', extrabold: '700' },
       borderRadius: {
-        k: '20px',
+        lg: '10px',
+        xl: '14px',
+        '2xl': '22px',
+        '3xl': '28px',
+        k: '22px',
       },
       boxShadow: {
         'glow-p': 'none',

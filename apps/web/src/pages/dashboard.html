@@ -1,39 +1,25 @@
-<div x-data="dashboard" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
-  <!-- En-tête -->
-  <div class="flex items-center justify-between mb-7">
-    <div>
-      <h1 class="font-display font-black text-2xl tracking-tight text-white" x-text="greeting"></h1>
-      <p class="text-sm text-gray-500" x-text="todayLabel"></p>
+<div x-data="dashboard" x-init="init()" class="max-w-md mx-auto px-4 pt-6 pb-8">
+  <!-- En-tête : date en légende, grand titre, avatar -->
+  <div class="flex items-end justify-between gap-3 mb-5">
+    <div class="min-w-0">
+      <p
+        class="text-xs font-semibold uppercase tracking-wide text-gray-500"
+        x-text="todayLabel"
+      ></p>
+      <h1 class="font-display font-bold text-white truncate" x-text="greeting"></h1>
     </div>
-    <a href="/profile" class="relative select-none">
-      <div
-        class="w-11 h-11 rounded-full bg-kinetic-raised flex items-center justify-center text-white font-semibold text-sm"
-        x-text="$store.auth.initials"
-      ></div>
-      <div
-        class="absolute -bottom-1 -right-1 w-5 h-5 bg-kinetic-neon rounded-full flex items-center justify-center"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          class="w-2.5 h-2.5 text-gray-950"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="12" r="3" fill="rgb(var(--ink))" />
-        </svg>
-      </div>
-    </a>
+    <a
+      href="/profile"
+      class="flex-shrink-0 mb-0.5 w-9 h-9 rounded-full bg-kinetic-surface flex items-center justify-center text-white font-semibold text-xs select-none active:bg-kinetic-elevated transition-colors"
+      x-text="$store.auth.initials"
+    ></a>
   </div>
 
   <!-- Séance du jour : l'action principale de l'app -->
-  <section
-    class="relative overflow-hidden rounded-[22px] bg-kinetic-surface ring-1 ring-white/[0.07] p-5 mb-3"
-    aria-labelledby="today-session-title"
-  >
+  <section class="rounded-2xl bg-kinetic-surface p-5 mb-3" aria-labelledby="today-session-title">
     <template x-if="training && training.next">
       <div>
-        <p class="text-xs font-medium text-gray-400">
+        <p class="text-xs font-semibold text-gray-500">
           <span x-show="training.totalSessions === 0">Ta première séance</span>
           <span x-show="training.totalSessions > 0 && training.daysSinceLast === 0">
             Déjà entraîné aujourd'hui — prochaine séance
@@ -44,34 +30,34 @@
         </p>
         <h2
           id="today-session-title"
-          class="font-display font-black text-[34px] leading-[1.05] tracking-tight text-white mt-1"
+          class="font-display font-bold text-2xl text-white mt-0.5"
           x-text="training.next.name"
         ></h2>
-        <p class="text-sm text-gray-400 mt-1" x-text="nextDetail"></p>
+        <p class="text-sm text-gray-500 mt-0.5" x-text="nextDetail"></p>
 
         <button
           type="button"
           @click="startNextSession()"
-          class="mt-4 w-full rounded-2xl bg-kinetic-neon text-gray-950 font-display font-bold text-base py-3.5 active:scale-[0.98] transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kinetic-neon"
+          class="mt-5 w-full h-[3.125rem] rounded-xl bg-kinetic-neon text-gray-950 font-semibold text-base active:scale-[0.98] active:brightness-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kinetic-neon"
         >
           Commencer la séance
         </button>
         <a
           href="/seances"
-          class="block text-center text-xs text-gray-500 hover:text-gray-300 mt-2.5 py-1"
+          class="block text-center text-sm font-medium text-kinetic-neon mt-1 py-2.5"
         >
           Choisir une autre séance
         </a>
 
-        <div class="mt-4 pt-4 border-t border-white/[0.06]">
-          <div class="flex items-center justify-between mb-2">
-            <p class="text-xs text-gray-400">Cette semaine</p>
-            <p class="text-xs font-semibold text-white" x-text="weekDetail"></p>
+        <div class="mt-2 pt-4 border-t border-white/10">
+          <div class="flex items-baseline justify-between mb-3">
+            <p class="text-sm font-semibold text-white">Cette semaine</p>
+            <p class="text-xs text-gray-500 tabular-nums" x-text="weekDetail"></p>
           </div>
-          <ol class="grid grid-cols-7 gap-1.5" aria-label="Jours entraînés cette semaine">
+          <ol class="grid grid-cols-7 gap-2" aria-label="Jours entraînés cette semaine">
             <template x-for="day in training.week.days" :key="day.iso">
               <li
-                class="aspect-square rounded-full flex items-center justify-center text-[11px]"
+                class="aspect-square rounded-full flex items-center justify-center text-xs"
                 :class="weekDayClass(day)"
                 :aria-label="day.iso + (day.trained ? ' : entraîné' : '')"
                 x-text="day.label"
@@ -91,146 +77,163 @@
       <div class="animate-pulse" aria-hidden="true">
         <div class="h-3 w-24 bg-white/10 rounded"></div>
         <div class="h-8 w-40 bg-white/10 rounded mt-3"></div>
-        <div class="h-12 w-full bg-white/10 rounded-2xl mt-5"></div>
+        <div class="h-12 w-full bg-white/10 rounded-xl mt-5"></div>
       </div>
     </template>
   </section>
 
-  <!-- XP Bar -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-3 ring-1 ring-white/5">
-    <div class="flex items-center justify-between mb-2">
-      <div class="flex items-center gap-2">
-        <span class="text-xs text-gray-500 font-semibold">Niveau</span>
-        <span
-          class="font-display font-black text-kinetic-neon text-xl leading-none"
-          x-text="$store.xp.currentLevel"
-        ></span>
-        <span class="text-xs text-gray-400 font-medium" x-text="$store.xp.title"></span>
-      </div>
-      <span class="text-sm tabular-nums font-bold text-white" x-text="$store.xp.xp + ' XP'"></span>
-    </div>
-    <div class="h-2 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
-      <div
-        class="h-full bg-kinetic-neon rounded-full transition-all duration-700 ease-out"
-        :style="'width: ' + $store.xp.progressPercent + '%'"
-      ></div>
-    </div>
-    <div class="flex justify-between mt-2">
-      <p
-        class="text-xs text-gray-600 font-semibold"
-        x-text="'Niveau ' + $store.xp.currentLevel"
-      ></p>
-      <p
-        class="text-xs text-gray-500"
-        x-show="!$store.xp.isMaxLevel"
-        x-text="'Encore ' + $store.xp.remaining + ' XP pour le niveau ' + ($store.xp.currentLevel + 1)"
-      ></p>
-      <p class="text-xs text-kinetic-electric font-medium" x-show="$store.xp.isMaxLevel">MAX</p>
-    </div>
-  </div>
-
-  <!-- Quick actions -->
-  <div class="grid grid-cols-5 gap-2 mb-3">
-    <a
-      href="/seances"
-      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-white/20 transition-all group"
-    >
-      <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M6 7h2m8 0h2M5 9v6a2 2 0 002 2h1v2h2v-2h4v2h2v-2h1a2 2 0 002-2V9M8 7V5a1 1 0 011-1h6a1 1 0 011 1v2"
-        />
-      </svg>
-      <span class="text-[10px] text-gray-400 font-semibold" x-text="$t('nav.sessions')"></span>
-    </a>
+  <!-- Raccourcis -->
+  <div class="grid grid-cols-3 gap-3 mb-3">
     <a
       href="/progression"
-      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-white/20 transition-all group"
+      class="flex flex-col justify-between gap-3 min-h-[5.25rem] p-3.5 bg-kinetic-surface rounded-2xl active:bg-kinetic-elevated transition-colors"
     >
-      <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M3 17l6-6 4 4 8-8M14 7h7v7"
-        />
+      <svg
+        class="w-6 h-6 text-kinetic-purple"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M3 17l6-6 4 4 8-8M14 7h7v7" />
       </svg>
-      <span class="text-[10px] text-gray-400 font-semibold" x-text="$t('nav.progression')"></span>
+      <span class="min-w-0">
+        <span
+          class="block text-sm font-semibold text-white leading-tight line-clamp-2 break-words"
+          x-text="$t('nav.progression')"
+        ></span>
+      </span>
     </a>
     <a
       href="/records"
-      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-white/20 transition-all group"
+      class="flex flex-col justify-between gap-3 min-h-[5.25rem] p-3.5 bg-kinetic-surface rounded-2xl active:bg-kinetic-elevated transition-colors"
     >
-      <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg
+        class="w-6 h-6 text-kinetic-gold"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
         <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M5 3v4a7 7 0 0014 0V3M9 21h6M12 17v4"
+          d="M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4.5v1.5A3.5 3.5 0 0 0 8 11M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11M12 14v4M8.5 20h7"
         />
       </svg>
-      <span class="text-[10px] text-gray-400 font-semibold" x-text="$t('nav.records')"></span>
+      <span class="min-w-0">
+        <span
+          class="block text-sm font-semibold text-white leading-tight line-clamp-2 break-words"
+          x-text="$t('nav.records')"
+        ></span>
+      </span>
     </a>
     <a
       href="/nutrition"
-      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-white/20 transition-all group"
+      class="flex flex-col justify-between gap-3 min-h-[5.25rem] p-3.5 bg-kinetic-surface rounded-2xl active:bg-kinetic-elevated transition-colors"
     >
-      <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg
+        class="w-6 h-6 text-kinetic-teal"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
         <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
           d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10ZM2 21c0-3 1.85-5.36 5.08-6"
         />
       </svg>
-      <span class="text-[10px] text-gray-400 font-semibold">Nutrition</span>
-      <!-- Same word in EN -->
+      <span class="min-w-0">
+        <span class="block text-sm font-semibold text-white leading-tight line-clamp-2 break-words"
+          >Nutrition</span
+        >
+      </span>
     </a>
     <a
       href="/bodyweight"
-      class="flex flex-col items-center gap-1.5 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-white/20 transition-all group"
+      class="flex flex-col justify-between gap-3 min-h-[5.25rem] p-3.5 bg-kinetic-surface rounded-2xl active:bg-kinetic-elevated transition-colors"
     >
-      <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-        />
+      <svg
+        class="w-6 h-6 text-kinetic-coral"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+        <path d="M8.3 10a5.2 5.2 0 0 1 7.4 0" />
+        <path d="m12 8.8 1.4 2.9" />
       </svg>
-      <span
-        class="text-[10px] text-gray-400 font-semibold"
-        x-text="$locale() === 'en' ? 'Body' : 'Poids'"
-      ></span>
+      <span class="min-w-0">
+        <span
+          class="block text-sm font-semibold text-white leading-tight line-clamp-2 break-words"
+          x-text="$locale() === 'en' ? 'Body' : 'Poids'"
+        ></span>
+      </span>
     </a>
-  </div>
-
-  <!-- Outils -->
-  <div class="grid grid-cols-2 gap-2 mb-3">
     <a
       href="/plates"
-      class="flex items-center gap-2 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-neon/40 transition-all"
+      class="flex flex-col justify-between gap-3 min-h-[5.25rem] p-3.5 bg-kinetic-surface rounded-2xl active:bg-kinetic-elevated transition-colors"
     >
-      <div class="min-w-0">
-        <p class="text-xs font-bold text-white" x-text="$t('tools.plates')"></p>
-        <p class="text-[10px] text-gray-500 truncate" x-text="$t('tools.plates_sub')"></p>
-      </div>
+      <svg
+        class="w-6 h-6 text-orange-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="8.5" />
+        <circle cx="12" cy="12" r="2.5" />
+        <path d="M12 3.5v2M12 18.5v2" />
+      </svg>
+      <span class="min-w-0">
+        <span
+          class="block text-sm font-semibold text-white leading-tight line-clamp-2 break-words"
+          x-text="$t('tools.plates')"
+        ></span>
+      </span>
     </a>
     <a
       href="/achievements"
-      class="flex items-center gap-2 p-3 bg-kinetic-surface ring-1 ring-white/5 rounded-xl hover:ring-kinetic-neon/40 transition-all"
+      class="flex flex-col justify-between gap-3 min-h-[5.25rem] p-3.5 bg-kinetic-surface rounded-2xl active:bg-kinetic-elevated transition-colors"
     >
-      <div class="min-w-0">
-        <p class="text-xs font-bold text-white" x-text="$t('tools.achievements')"></p>
-        <p class="text-[10px] text-gray-500 truncate">
-          <span x-text="$store.achievements ? $store.achievements.unlockedCount : 0"></span>
-          /
-          <span x-text="$store.achievements ? $store.achievements.totalCount : 0"></span>
-          <span x-text="$t('tools.achievements_sub')"></span>
-        </p>
-      </div>
+      <svg
+        class="w-6 h-6 text-purple-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="9" r="5.5" />
+        <path d="m8.5 13.5-1.5 7 5-2.5 5 2.5-1.5-7" />
+      </svg>
+      <span class="min-w-0">
+        <span
+          class="block text-sm font-semibold text-white leading-tight line-clamp-2 break-words"
+          x-text="$t('tools.achievements')"
+        ></span>
+        <span class="block text-xs text-gray-500 truncate tabular-nums">
+          <span x-text="$store.achievements ? $store.achievements.unlockedCount : 0"></span>/<span
+            x-text="$store.achievements ? $store.achievements.totalCount : 0"
+          ></span>
+        </span>
+      </span>
     </a>
   </div>
 
@@ -238,13 +241,21 @@
   <template x-if="aiCoachAvailable">
     <button
       @click="openCoachModal()"
-      class="w-full mb-3 bg-kinetic-surface ring-1 ring-white/10 rounded-2xl p-3 flex items-center gap-3 hover:ring-white/10 transition-all active:scale-[0.98]"
+      class="w-full mb-3 bg-kinetic-surface rounded-2xl px-4 py-3 flex items-center gap-3 active:bg-kinetic-elevated transition-colors"
     >
       <div class="flex-1 text-left min-w-0">
-        <p class="text-sm font-bold text-white">Coach IA</p>
-        <p class="text-[10px] text-gray-200 truncate">Pose une question sur ta progression</p>
+        <p class="text-base font-semibold text-white">Coach IA</p>
+        <p class="text-xs text-gray-500 truncate">Pose une question sur ta progression</p>
       </div>
-      <span class="text-gray-200 text-lg">→</span>
+      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
     </button>
   </template>
 
@@ -262,10 +273,7 @@
     class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
     style="display: none"
   >
-    <div
-      class="w-full max-w-md bg-kinetic-surface rounded-3xl ring-1 ring-white/10 p-5 shadow-2xl"
-      @click.stop
-    >
+    <div class="w-full max-w-md bg-kinetic-surface rounded-3xl p-5 shadow-2xl" @click.stop>
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2">
           <h2 class="font-display font-black text-white text-lg">Coach IA</h2>
@@ -307,7 +315,7 @@
         <button
           @click="askCoachAi()"
           :disabled="coachLoading || !coachQuestion.trim()"
-          class="px-4 py-2 rounded-xl bg-purple-500 text-white text-sm font-bold hover:brightness-110 disabled:opacity-40 active:scale-95"
+          class="px-4 py-2 rounded-xl bg-kinetic-neon text-gray-950 text-sm font-bold hover:brightness-110 disabled:opacity-40 active:scale-95"
         >
           <span x-show="!coachLoading">→</span>
           <span x-show="coachLoading">…</span>
@@ -333,7 +341,7 @@
         </button>
         <button
           @click="closeCoachModal()"
-          class="flex-1 text-xs px-3 py-2 rounded-lg bg-purple-500 text-white font-bold"
+          class="flex-1 text-xs px-3 py-2 rounded-lg bg-kinetic-neon text-gray-950 font-bold"
         >
           Fermer
         </button>
@@ -341,71 +349,70 @@
     </div>
   </div>
 
-  <!-- Routine vitalité -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-3 ring-1 ring-white/5">
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="font-display font-bold text-white tracking-tight">Récupération</h2>
-      <span
-        class="text-xs bg-kinetic-neon/10 text-kinetic-neon px-2.5 py-0.5 rounded-full font-semibold ring-1 ring-kinetic-neon/20"
-        x-text="$store.vitalite.doneCount + '/' + $store.vitalite.totalCount"
-      ></span>
+  <!-- Série : deux tuiles -->
+  <div class="grid grid-cols-2 gap-3 mb-3">
+    <div class="bg-kinetic-surface rounded-2xl p-4">
+      <p class="text-xs font-semibold text-kinetic-electric">Série en cours</p>
+      <p class="mt-2 text-3xl font-display font-bold text-white leading-none">
+        <span x-text="streak"></span>
+        <span class="text-sm font-sans font-medium text-gray-500">jours</span>
+      </p>
     </div>
-    <div class="h-1.5 bg-black/40 rounded-full overflow-hidden mb-3 ring-1 ring-white/5">
+    <div class="bg-kinetic-surface rounded-2xl p-4">
+      <p class="text-xs font-semibold text-kinetic-electric">Meilleure série</p>
+      <p class="mt-2 text-3xl font-display font-bold text-white leading-none">
+        <span x-text="bestStreak + ''"></span>
+        <span class="text-sm font-sans font-medium text-gray-500">jours</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- Routine récupération -->
+  <a
+    href="/vitalite"
+    class="block bg-kinetic-surface rounded-2xl p-4 mb-3 active:bg-kinetic-elevated transition-colors"
+  >
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <h2 class="font-display text-white">Récupération</h2>
+      <span class="flex items-center gap-2 text-sm text-gray-500 tabular-nums">
+        <span x-text="$store.vitalite.doneCount + '/' + $store.vitalite.totalCount"></span>
+        <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+          <path
+            d="m1 1 6 6-6 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </span>
+    </div>
+    <div class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
       <div
-        class="h-full bg-kinetic-neon rounded-full transition-all duration-500"
+        class="h-full bg-kinetic-teal rounded-full transition-all duration-500"
         :style="'width: ' + $store.vitalite.progress + '%'"
       ></div>
     </div>
-
-    <div
+    <p
       x-show="$store.vitalite.allDone"
       x-transition
-      class="text-center py-2 text-kinetic-neon font-medium text-sm"
+      class="mt-3 text-sm font-medium text-kinetic-teal"
     >
       Routine complète — excellent travail !
-    </div>
-
-    <a
-      href="/vitalite"
-      x-show="!$store.vitalite.allDone"
-      class="block text-center py-2 text-sm text-kinetic-neon hover:brightness-110 transition-all font-semibold"
-    >
-      Continuer la routine →
-    </a>
-  </div>
-
-  <!-- Stats rapides -->
-  <div class="grid grid-cols-2 gap-3 mb-3">
-    <div class="bg-kinetic-surface rounded-2xl p-4">
-      <p class="text-gray-400 text-xs font-semibold mb-1">Série en cours</p>
-      <p class="text-4xl font-display font-bold text-white">
-        <span x-text="streak"></span>
-        <span class="text-base font-sans font-medium text-gray-500">jours</span>
-      </p>
-    </div>
-    <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
-      <p class="text-gray-400 text-xs font-semibold mb-1">Meilleure série</p>
-      <p
-        class="text-4xl font-display font-black text-kinetic-electric"
-        x-text="bestStreak + ''"
-      ></p>
-    </div>
-  </div>
+    </p>
+    <p x-show="!$store.vitalite.allDone" class="mt-3 text-sm text-gray-500">Continuer la routine</p>
+  </a>
 
   <!-- Équilibre musculaire (4 semaines) — avancé -->
   <template x-if="balanceWarning">
-    <div
-      class="adv-only bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30 rounded-2xl p-4 mb-3 flex items-start gap-3"
-    >
-      <div class="flex-1 min-w-0">
-        <p class="text-xs text-kinetic-electric font-bold mb-0.5">Équilibre musculaire</p>
-        <p class="text-xs text-gray-300 leading-snug" x-text="balanceWarning"></p>
-        <p class="text-[10px] text-gray-500 mt-1">
-          <span x-text="'Push ' + balance.push"></span> ·
-          <span x-text="'Pull ' + balance.pull"></span> ·
-          <span x-text="'Legs ' + balance.legs"></span> sets sur 4 semaines
-        </p>
-      </div>
+    <div class="adv-only bg-kinetic-surface rounded-2xl p-4 mb-3">
+      <p class="text-xs text-kinetic-electric font-semibold mb-1">Équilibre musculaire</p>
+      <p class="text-sm text-gray-300 leading-snug" x-text="balanceWarning"></p>
+      <p class="text-xs text-gray-500 mt-1.5 tabular-nums">
+        <span x-text="'Push ' + balance.push"></span> ·
+        <span x-text="'Pull ' + balance.pull"></span> ·
+        <span x-text="'Legs ' + balance.legs"></span> sets sur 4 semaines
+      </p>
     </div>
   </template>
 
@@ -413,26 +420,26 @@
   <div
     x-show="!$store.goals.loading"
     x-data="{ editing: false }"
-    class="bg-kinetic-surface rounded-2xl p-4 mb-3 ring-1 ring-white/5"
+    class="bg-kinetic-surface rounded-2xl p-4 mb-3"
   >
     <div class="flex items-center justify-between mb-3">
-      <h2 class="font-display font-bold text-white tracking-tight text-sm">Objectifs semaine</h2>
+      <h2 class="font-display text-white">Objectifs semaine</h2>
       <div class="flex items-center gap-2">
         <span
           x-show="$store.goals.allOk && !editing"
-          class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-kinetic-neon/15 text-kinetic-neon ring-1 ring-kinetic-neon/30"
+          class="text-xs font-semibold text-kinetic-teal"
         >
           ✓ Atteints
         </span>
         <button
           type="button"
           @click="editing = !editing"
-          class="text-gray-500 hover:text-white p-1 rounded-md hover:bg-kinetic-ink transition-colors"
+          class="text-gray-500 hover:text-white p-2 -m-1 rounded-full transition-colors"
           :aria-label="editing ? 'Fermer' : 'Régler les objectifs'"
         >
           <svg
             x-show="!editing"
-            class="w-3.5 h-3.5"
+            class="w-5 h-5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -452,7 +459,7 @@
           </svg>
           <svg
             x-show="editing"
-            class="w-3.5 h-3.5"
+            class="w-5 h-5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -482,7 +489,7 @@
           step="1"
           x-model.number="$store.goals.targetSessions"
           @change="$store.goals.save(); $store.goals.reload()"
-          class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-neon rounded-lg px-2.5 py-1.5 text-sm text-white outline-none"
+          class="w-full bg-kinetic-ink focus:ring-2 focus:ring-kinetic-neon rounded-lg px-3 py-2 text-base text-white outline-none"
         />
       </div>
       <div>
@@ -497,46 +504,46 @@
           x-model.number="$store.goals.targetTonnageKg"
           @change="$store.goals.save(); $store.goals.reload()"
           placeholder="0 = aucun"
-          class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-neon rounded-lg px-2.5 py-1.5 text-sm text-white outline-none"
+          class="w-full bg-kinetic-ink focus:ring-2 focus:ring-kinetic-neon rounded-lg px-3 py-2 text-base text-white outline-none"
         />
       </div>
     </div>
     <!-- Séances -->
     <div class="mb-3">
-      <div class="flex justify-between mb-1">
-        <span class="text-xs text-gray-400">Séances</span>
+      <div class="flex items-baseline justify-between mb-1.5">
+        <span class="text-sm text-gray-400">Séances</span>
         <span
-          class="text-xs font-bold"
-          :class="$store.goals.sessionsOk ? 'text-kinetic-neon' : 'text-gray-300'"
+          class="text-sm font-semibold tabular-nums"
+          :class="$store.goals.sessionsOk ? 'text-kinetic-teal' : 'text-white'"
           x-text="$store.goals.doneSessions + ' / ' + $store.goals.targetSessions"
         ></span>
       </div>
-      <div class="h-1.5 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
+      <div class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
         <div
           class="h-full rounded-full transition-all duration-700"
           :class="$store.goals.sessionsOk
-               ? 'bg-kinetic-neon'
-               : 'bg-kinetic-electric/70'"
+               ? 'bg-kinetic-teal'
+               : 'bg-kinetic-neon'"
           :style="'width: ' + $store.goals.sessionsPercent + '%'"
         ></div>
       </div>
     </div>
     <!-- Tonnage si objectif défini -->
     <div x-show="$store.goals.targetTonnageKg > 0">
-      <div class="flex justify-between mb-1">
-        <span class="text-xs text-gray-400">Tonnage</span>
+      <div class="flex items-baseline justify-between mb-1.5">
+        <span class="text-sm text-gray-400">Tonnage</span>
         <span
-          class="text-xs font-bold"
-          :class="$store.goals.tonnageOk ? 'text-kinetic-neon' : 'text-gray-300'"
+          class="text-sm font-semibold tabular-nums"
+          :class="$store.goals.tonnageOk ? 'text-kinetic-teal' : 'text-white'"
           x-text="$store.goals.doneTonnageKg + ' / ' + $store.goals.targetTonnageKg + ' kg'"
         ></span>
       </div>
-      <div class="h-1.5 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
+      <div class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
         <div
           class="h-full rounded-full transition-all duration-700"
           :class="$store.goals.tonnageOk
-               ? 'bg-kinetic-neon'
-               : 'bg-kinetic-electric/70'"
+               ? 'bg-kinetic-teal'
+               : 'bg-kinetic-neon'"
           :style="'width: ' + $store.goals.tonnagePercent + '%'"
         ></div>
       </div>
@@ -544,24 +551,50 @@
   </div>
 
   <!-- Activité récente -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
-    <h2 class="font-display font-bold text-white mb-3 tracking-tight text-sm">
-      Activité <span class="text-gray-500 font-medium">— 7 derniers jours</span>
-    </h2>
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-3">
+    <div class="flex items-baseline justify-between mb-3">
+      <h2 class="font-display text-white">Activité</h2>
+      <span class="text-xs text-gray-500">7 derniers jours</span>
+    </div>
     <div class="flex gap-1.5">
       <template x-for="(day, i) in activityDays" :key="i">
         <div class="flex-1 flex flex-col items-center gap-1.5">
           <div
-            class="w-full h-7 rounded-md transition-all"
-            :class="day.active
-                 ? 'bg-kinetic-neon'
-                 : 'bg-white/5 ring-1 ring-white/5'"
+            class="w-full h-8 rounded-lg transition-all"
+            :class="day.active ? 'bg-kinetic-neon' : 'bg-kinetic-ink'"
             :title="day.label"
           ></div>
-          <span class="text-xs text-gray-600 font-semibold" x-text="day.short"></span>
+          <span class="text-xs text-gray-500 font-medium" x-text="day.short"></span>
         </div>
       </template>
     </div>
+  </div>
+  <!-- Niveau -->
+  <div class="bg-kinetic-surface rounded-2xl p-4">
+    <div class="flex items-baseline justify-between mb-3">
+      <h2 class="font-display text-white">
+        Niveau <span x-text="$store.xp.currentLevel"></span>
+        <span class="font-normal text-gray-500" x-text="'· ' + $store.xp.title"></span>
+      </h2>
+      <span
+        class="text-sm tabular-nums font-semibold text-white"
+        x-text="$store.xp.xp + ' XP'"
+      ></span>
+    </div>
+    <div class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
+      <div
+        class="h-full bg-kinetic-neon rounded-full transition-all duration-700 ease-out"
+        :style="'width: ' + $store.xp.progressPercent + '%'"
+      ></div>
+    </div>
+    <p
+      class="text-xs text-gray-500 mt-2.5 tabular-nums"
+      x-show="!$store.xp.isMaxLevel"
+      x-text="'Encore ' + $store.xp.remaining + ' XP pour le niveau ' + ($store.xp.currentLevel + 1)"
+    ></p>
+    <p class="text-xs text-kinetic-neon font-medium mt-2.5" x-show="$store.xp.isMaxLevel">
+      Niveau maximum atteint
+    </p>
   </div>
 </div>
 

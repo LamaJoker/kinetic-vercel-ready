@@ -1,41 +1,26 @@
 <div class="max-w-md mx-auto px-4 pt-8 pb-8">
   <!-- Header -->
-  <div class="flex items-center gap-3 mb-6">
-    <a
-      href="/"
-      aria-label="Retour"
-      class="text-gray-500 hover:text-gray-300 transition-colors p-1 -ml-1"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-      </svg>
-    </a>
+  <div class="k-nav">
     <h1 class="text-2xl font-display font-black tracking-tight text-white">Récupération</h1>
     <span class="ml-auto text-xs text-gray-500" x-text="$today"> </span>
   </div>
 
   <!-- Progression globale -->
-  <div
-    class="relative overflow-hidden rounded-2xl p-5 mb-4 bg-kinetic-surface ring-1 ring-kinetic-neon/20"
-  >
+  <div class="rounded-2xl p-4 mb-4 bg-kinetic-surface">
     <div class="relative flex items-center justify-between mb-2">
-      <span class="text-xs text-kinetic-neon font-semibold">Progression du jour</span>
+      <span class="text-base font-semibold text-white">Aujourd'hui</span>
       <div class="flex items-center gap-2">
         <!-- Indicateur bonus XP (niveau 5+) -->
         <template x-if="$store.rewards.hasXpBonus">
-          <span
-            class="text-[10px] font-bold text-yellow-400 bg-yellow-400/10 ring-1 ring-yellow-400/30 px-2 py-0.5 rounded-full"
-          >
-            +20% XP
-          </span>
+          <span class="text-xs font-semibold text-kinetic-neon"> +20% XP </span>
         </template>
         <span
-          class="font-display font-black text-kinetic-neon text-2xl leading-none"
+          class="font-display font-bold text-white text-2xl leading-none"
           x-text="$store.vitalite.progress + '%'"
         ></span>
       </div>
     </div>
-    <div class="relative h-2.5 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
+    <div class="relative h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
       <div
         class="h-full bg-kinetic-neon rounded-full transition-all duration-500 ease-out"
         :style="'width: ' + $store.vitalite.progress + '%'"
@@ -52,23 +37,23 @@
     <button
       @click="$store.vitalite.showAddForm = !$store.vitalite.showAddForm"
       aria-label="Ajouter une tâche personnalisée"
-      class="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-kinetic-neon/15 ring-1 ring-kinetic-neon/40 text-sm font-semibold text-kinetic-neon hover:bg-kinetic-neon/25 hover:ring-kinetic-neon/60 active:scale-[0.98] transition-all"
+      class="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-kinetic-neon/15 text-base font-semibold text-kinetic-neon active:bg-kinetic-neon/25 transition-colors"
     >
-      <span class="text-base font-black">＋</span>
+      <span class="text-lg font-normal leading-none">＋</span>
       <span>Ajouter</span>
     </button>
     <button
       x-show="$store.vitalite.hiddenIds.length > 0"
       @click="$store.vitalite.showHidden = !$store.vitalite.showHidden"
       :aria-label="'Voir les ' + $store.vitalite.hiddenIds.length + ' tâches masquées'"
-      class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-kinetic-surface ring-1 ring-white/10 text-sm text-gray-300 hover:text-white hover:bg-kinetic-elevated transition-colors"
+      class="flex items-center gap-1.5 h-11 px-4 rounded-xl bg-kinetic-surface text-base text-white active:bg-kinetic-elevated transition-colors"
     >
       <span x-text="$store.vitalite.hiddenIds.length"></span>
     </button>
     <button
       @click="$store.vitalite.toggleHistory()"
       aria-label="Voir l'historique des 7 derniers jours"
-      class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-kinetic-surface ring-1 ring-white/10 text-sm text-gray-300 hover:text-white hover:bg-kinetic-elevated transition-colors"
+      class="flex items-center gap-2 h-11 px-4 rounded-xl bg-kinetic-surface text-base text-white active:bg-kinetic-elevated transition-colors"
     >
       <span>Historique</span>
     </button>
@@ -267,7 +252,7 @@
               </p>
             </div>
             <!-- Mini barre de progression -->
-            <div class="w-16 h-1.5 bg-black/40 rounded-full overflow-hidden">
+            <div class="w-16 h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
               <div
                 class="h-full bg-kinetic-neon rounded-full transition-all"
                 :style="'width: ' + $num.min(100, $num.round(day.doneIds.length / $num.max(1, $store.vitalite.totalCount) * 100)) + '%'"
@@ -318,36 +303,26 @@
   </div>
 
   <!-- ── Liste des tâches ───────────────────────────────────────────────────── -->
-  <div class="space-y-2.5" x-data>
+  <div class="k-list" x-data>
     <template x-for="task in $store.vitalite.tasks" :key="task.id">
-      <div class="flex items-stretch gap-2">
+      <div class="k-item flex items-stretch">
         <!-- Carte principale -->
         <button
           @click="!task.done && $store.vitalite.complete(task.id)"
           :disabled="task.done || $store.vitalite.isLocked(task.id)"
-          class="flex-1 min-w-0 flex items-center gap-4 p-4 bg-kinetic-surface rounded-2xl transition-all duration-300 text-left active:scale-[0.98] disabled:cursor-not-allowed"
-          :class="task.done
-            ? 'ring-1 ring-kinetic-neon/30 opacity-75'
-            : 'ring-1 ring-white/5 hover:ring-kinetic-electric/30'"
+          class="flex-1 min-w-0 flex items-center gap-3 pl-4 pr-1 py-3 text-left transition-colors active:bg-kinetic-elevated disabled:cursor-not-allowed"
         >
           <!-- Icône / Checkmark -->
           <div
-            class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
-            :class="task.done
-                 ? 'bg-kinetic-neon/15 ring-1 ring-kinetic-neon/30'
-                 : 'bg-kinetic-elevated ring-1 ring-white/5'"
+            class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-300"
+            :class="task.done ? 'bg-kinetic-neon' : 'ring-2 ring-inset ring-gray-700'"
           >
-            <span
-              x-show="!task.done"
-              class="w-5 h-5 rounded-full ring-2 ring-white/25"
-              aria-hidden="true"
-            ></span>
             <span
               x-show="task.done"
               x-transition:enter="transition duration-300"
               x-transition:enter-start="scale-0 opacity-0"
               x-transition:enter-end="scale-100 opacity-100"
-              class="text-kinetic-neon font-bold text-lg"
+              class="text-gray-950 font-bold text-xs leading-none"
               >✓</span
             >
           </div>
@@ -355,25 +330,20 @@
           <!-- Contenu -->
           <div class="flex-1 min-w-0">
             <p
-              class="font-medium text-sm transition-colors"
-              :class="task.done ? 'line-through text-gray-500' : 'text-white'"
+              class="text-base transition-colors"
+              :class="task.done ? 'text-gray-500' : 'text-white'"
               x-text="task.title"
             ></p>
             <p
-              class="text-xs mt-0.5 font-semibold"
-              :class="task.done ? 'text-kinetic-neon' : 'text-gray-400'"
-              x-text="task.done ? 'Complété ✓' : '+' + task.xp + ' XP'"
+              class="text-xs mt-0.5 text-gray-500"
+              x-text="task.done ? 'Terminé' : '+' + task.xp + ' XP'"
             ></p>
           </div>
 
           <!-- Badge priorité -->
           <span
-            class="text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-bold"
-            :class="{
-                  'bg-kinetic-electric/15 text-kinetic-electric ring-1 ring-kinetic-electric/30': task.priority === 'high',
-                  'bg-white/5 text-gray-300 ring-1 ring-white/10': task.priority === 'med',
-                  'bg-white/5 text-gray-500 ring-1 ring-white/5':                                 task.priority === 'low'
-                }"
+            class="text-xs flex-shrink-0 font-medium"
+            :class="task.priority === 'high' ? 'text-kinetic-electric' : 'text-gray-500'"
             x-text="{ high: 'Haute', med: 'Moy.', low: 'Faible' }[task.priority]"
           >
           </span>

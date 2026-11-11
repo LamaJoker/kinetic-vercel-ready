@@ -114,6 +114,7 @@ type CoachGoal = 'force' | 'hypertrophie' | 'endurance';
 
 interface GoalPreset {
   label: string;
+  short: string; // libellé du contrôle segmenté
   emoji: string;
   targetReps: number;
   targetRpe: number;
@@ -124,6 +125,7 @@ interface GoalPreset {
 const COACH_GOALS: Record<CoachGoal, GoalPreset> = {
   force: {
     label: 'Force',
+    short: 'Force',
     emoji: '',
     targetReps: 4,
     targetRpe: 8.5,
@@ -132,6 +134,7 @@ const COACH_GOALS: Record<CoachGoal, GoalPreset> = {
   },
   hypertrophie: {
     label: 'Hypertrophie',
+    short: 'Hypertrophie',
     emoji: '',
     targetReps: 9,
     targetRpe: 8,
@@ -140,6 +143,7 @@ const COACH_GOALS: Record<CoachGoal, GoalPreset> = {
   },
   endurance: {
     label: 'Endurance musculaire',
+    short: 'Endurance',
     emoji: '',
     targetReps: 15,
     targetRpe: 7,
@@ -1267,7 +1271,7 @@ export function seances() {
       const circles = pts
         .map(
           (p) =>
-            `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#FFD166' : '#3E6FD8'}"><title>${p.label}: ${p.y.toFixed(1)}</title></circle>`,
+            `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#FFD60A' : '#0A84FF'}"><title>${p.label}: ${p.y.toFixed(1)}</title></circle>`,
         )
         .join('');
       const metric =
@@ -1277,8 +1281,8 @@ export function seances() {
             ? 'Volume (kg·reps)'
             : 'e1RM (kg)';
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="${metric}">
-        <path d="${area}" fill="#3E6FD8" fill-opacity="0.15"/>
-        <path d="${line}" fill="none" stroke="#3E6FD8" stroke-width="2" stroke-linecap="round"/>
+        <path d="${area}" fill="#0A84FF" fill-opacity="0.15"/>
+        <path d="${line}" fill="none" stroke="#0A84FF" stroke-width="2" stroke-linecap="round"/>
         ${circles}
         <text x="${padX}" y="${H - 2}" fill="#6B7280" font-size="9">${minY.toFixed(0)}</text>
         <text x="${padX}" y="14" fill="#6B7280" font-size="9">${maxY.toFixed(0)}</text>

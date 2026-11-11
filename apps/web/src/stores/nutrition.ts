@@ -37,8 +37,8 @@ export interface MacroBar {
 }
 
 const MACRO_DEFS: Array<{ key: MacroBar['key']; label: string; color: string }> = [
-  { key: 'proteinG', label: 'Protéines', color: '#D93A34' },
-  { key: 'carbsG', label: 'Glucides', color: '#F2C230' },
+  { key: 'proteinG', label: 'Protéines', color: '#FF453A' },
+  { key: 'carbsG', label: 'Glucides', color: '#FFD60A' },
   { key: 'fatG', label: 'Lipides', color: '#8B9099' },
 ];
 

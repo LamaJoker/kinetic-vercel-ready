@@ -1,15 +1,6 @@
 <div x-data="profile" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
   <!-- En-tête -->
-  <div class="flex items-center gap-3 mb-8">
-    <a
-      href="/"
-      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
-      aria-label="Retour"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-      </svg>
-    </a>
+  <div class="k-nav">
     <h1 class="font-display font-black text-2xl tracking-tight text-white">Mon profil</h1>
     <span
       class="ml-auto text-xs text-kinetic-neon"
@@ -162,7 +153,7 @@
       </div>
       <span class="text-sm tabular-nums font-bold text-white" x-text="$store.xp.xp + ' XP'"></span>
     </div>
-    <div class="h-2 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
+    <div class="h-2 bg-kinetic-ink rounded-full overflow-hidden">
       <div
         class="h-full bg-kinetic-neon rounded-full transition-all duration-700 ease-out"
         :style="'width: ' + $store.xp.progressPercent + '%'"
@@ -413,8 +404,8 @@
         @click="setTheme('dark')"
         class="flex flex-col items-center gap-1 px-2 py-3 rounded-xl text-xs font-bold transition-all active:scale-95"
         :class="themeMode === 'dark'
-          ? 'bg-kinetic-neon text-gray-950'
-          : 'bg-kinetic-elevated text-white hover:bg-white/10'"
+          ? 'k-on'
+          : 'k-off'"
       >
         <span>Foncé</span>
       </button>
@@ -422,8 +413,8 @@
         @click="setTheme('light')"
         class="flex flex-col items-center gap-1 px-2 py-3 rounded-xl text-xs font-bold transition-all active:scale-95"
         :class="themeMode === 'light'
-          ? 'bg-kinetic-neon text-gray-950'
-          : 'bg-kinetic-elevated text-white hover:bg-white/10'"
+          ? 'k-on'
+          : 'k-off'"
       >
         <span>Clair</span>
       </button>
@@ -431,8 +422,8 @@
         @click="setTheme('system')"
         class="flex flex-col items-center gap-1 px-2 py-3 rounded-xl text-xs font-bold transition-all active:scale-95"
         :class="themeMode === 'system'
-          ? 'bg-kinetic-neon text-gray-950'
-          : 'bg-kinetic-elevated text-white hover:bg-white/10'"
+          ? 'k-on'
+          : 'k-off'"
       >
         <span>Auto</span>
       </button>
@@ -451,8 +442,8 @@
         @click="setDensity('simple')"
         class="flex flex-col items-center gap-1 px-2 py-3 rounded-xl text-xs font-bold transition-all active:scale-95"
         :class="density === 'simple'
-          ? 'bg-kinetic-neon text-gray-950'
-          : 'bg-kinetic-elevated text-white hover:bg-white/10'"
+          ? 'k-on'
+          : 'k-off'"
       >
         <span>Simple</span>
       </button>
@@ -460,8 +451,8 @@
         @click="setDensity('advanced')"
         class="flex flex-col items-center gap-1 px-2 py-3 rounded-xl text-xs font-bold transition-all active:scale-95"
         :class="density === 'advanced'
-          ? 'bg-kinetic-neon text-gray-950'
-          : 'bg-kinetic-elevated text-white hover:bg-white/10'"
+          ? 'k-on'
+          : 'k-off'"
       >
         <span>Avancé</span>
       </button>
@@ -495,8 +486,8 @@
         @click="setUiLocale('fr')"
         class="px-3 py-2 rounded-xl text-sm font-bold transition-all active:scale-95"
         :class="locale === 'fr'
-          ? 'bg-kinetic-neon text-gray-950'
-          : 'bg-kinetic-elevated text-white hover:bg-white/10'"
+          ? 'k-on'
+          : 'k-off'"
       >
         Français
       </button>
@@ -504,8 +495,8 @@
         @click="setUiLocale('en')"
         class="px-3 py-2 rounded-xl text-sm font-bold transition-all active:scale-95"
         :class="locale === 'en'
-          ? 'bg-kinetic-neon text-gray-950'
-          : 'bg-kinetic-elevated text-white hover:bg-white/10'"
+          ? 'k-on'
+          : 'k-off'"
       >
         English
       </button>
@@ -663,7 +654,7 @@
       <div class="h-2 bg-kinetic-elevated rounded-full overflow-hidden">
         <div
           class="h-full rounded-full transition-all duration-500"
-          :style="'width: ' + (storagePercent !== null ? storagePercent : 0) + '%; background: ' + (storagePercent !== null && storagePercent > 80 ? '#D93A34' : '#F2C230')"
+          :style="'width: ' + (storagePercent !== null ? storagePercent : 0) + '%; background: ' + (storagePercent !== null && storagePercent > 80 ? '#FF453A' : '#FFD60A')"
         ></div>
       </div>
     </div>

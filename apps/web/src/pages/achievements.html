@@ -1,12 +1,13 @@
 <div x-data="achievements" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
-  <div class="flex items-center gap-3 mb-6">
-    <a
-      href="/"
-      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
-      aria-label="Retour"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+  <div class="k-nav">
+    <a href="/" class="k-back" aria-label="Retour">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2.4"
+          d="M15 19l-7-7 7-7"
+        />
       </svg>
     </a>
     <div class="flex-1">
@@ -27,7 +28,7 @@
         x-text="$store.achievements.progressPercent + '%'"
       ></span>
     </div>
-    <div class="h-2 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
+    <div class="h-2 bg-kinetic-ink rounded-full overflow-hidden">
       <div
         class="h-full bg-kinetic-neon rounded-full transition-all duration-700"
         :style="'width: ' + $store.achievements.progressPercent + '%'"
@@ -41,8 +42,8 @@
       <button
         @click="filter = cat.key"
         :class="filter === cat.key
-              ? 'bg-kinetic-neon text-gray-950 font-bold'
-              : 'bg-kinetic-surface ring-1 ring-white/10 text-gray-400'"
+              ? 'k-on'
+              : 'k-off'"
         class="px-3 py-1.5 rounded-lg transition-all whitespace-nowrap"
         x-text="cat.label"
       ></button>
