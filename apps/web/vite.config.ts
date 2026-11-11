@@ -30,6 +30,18 @@ function injectSwVersion(): Plugin {
  * gzip de moins au total. Sûr : les espaces entre balises sont réduits par le
  * navigateur de toute façon, et le seul <pre> des pages est rempli par x-text.
  */
+export function compactHtml(source: string): string {
+  // Retrait répété jusqu'à stabilité : un commentaire imbriqué ou reformé par
+  // un premier passage (« <!<!---->-- ») ne peut pas survivre.
+  let html = source;
+  let previous: string;
+  do {
+    previous = html;
+    html = html.replace(/<!--[\s\S]*?-->/g, '');
+  } while (html !== previous);
+  return html.replace(/\n[ \t]+/g, '\n').replace(/\n{2,}/g, '\n');
+}
+
 function compactPageHtml(): Plugin {
   return {
     name: 'compact-page-html',
@@ -40,11 +52,7 @@ function compactPageHtml(): Plugin {
       if (query !== 'raw' || !file || !/[\\/]src[\\/]pages[\\/][^\\/]+\.html$/.test(file)) {
         return null;
       }
-      const html = readFileSync(file, 'utf8')
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/\n[ \t]+/g, '\n')
-        .replace(/\n{2,}/g, '\n');
-      return `export default ${JSON.stringify(html)};`;
+      return `export default ${JSON.stringify(compactHtml(readFileSync(file, 'utf8')))};`;
     },
   };
 }
