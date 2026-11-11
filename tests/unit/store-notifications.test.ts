@@ -69,11 +69,11 @@ describe('notificationsStore', () => {
   });
 
   it('kindClass returns correct CSS for each kind', () => {
-    expect(store.kindClass('success')).toContain('bg-kinetic-neon');
+    expect(store.kindClass('success')).toContain('bg-kinetic-teal');
     expect(store.kindClass('error')).toContain('bg-kinetic-electric');
-    expect(store.kindClass('warning')).toContain('bg-kinetic-electric');
-    expect(store.kindClass('info')).toContain('bg-kinetic-surface');
-    expect(store.kindClass('unknown')).toContain('bg-kinetic-surface');
+    expect(store.kindClass('warning')).toContain('bg-kinetic-neon');
+    expect(store.kindClass('info')).toContain('bg-kinetic-purple');
+    expect(store.kindClass('unknown')).toContain('bg-kinetic-purple');
   });
 
   it('init registers kinetic:notify listener', () => {

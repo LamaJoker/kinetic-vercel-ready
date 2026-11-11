@@ -175,7 +175,6 @@ async function render(path: string): Promise<void> {
   }
 
   const host = outlet();
-  host.style.opacity = '0.6';
   host.setAttribute('aria-busy', 'true');
 
   const html = await resolveHtml(normalizedPath);
@@ -194,6 +193,11 @@ async function render(path: string): Promise<void> {
   });
 
   host.innerHTML = html;
+  // Entrée de page en cascade (styles.css → #app-outlet.k-enter). On retire puis
+  // remet la classe en forçant un reflow pour rejouer l'animation à chaque page.
+  host.classList.remove('k-enter');
+  void host.offsetWidth;
+  host.classList.add('k-enter');
 
   // FIX #3 : Restaurer le hash après injection du HTML pour que Supabase Auth JS
   // puisse le lire lors de l'init du composant auth-callback
@@ -210,7 +214,6 @@ async function render(path: string): Promise<void> {
   }
 
   requestAnimationFrame(() => {
-    host.style.opacity = '1';
     host.setAttribute('aria-busy', 'false');
     // Notify body x-data so nav active indicator stays in sync (H3)
     window.dispatchEvent(

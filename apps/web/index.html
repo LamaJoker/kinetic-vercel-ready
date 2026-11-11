@@ -33,9 +33,9 @@
       Aller au contenu principal
     </a>
 
-    <!-- Toasts (announced to screen readers via aria-live) -->
+    <!-- Toasts : capsules en haut d'écran (annoncées aux lecteurs d'écran) -->
     <div
-      class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-xs w-full"
+      class="fixed top-[calc(env(safe-area-inset-top)+0.75rem)] inset-x-0 z-[80] flex flex-col items-center gap-2 px-4 pointer-events-none"
       role="region"
       aria-label="Notifications"
       aria-live="polite"
@@ -43,21 +43,33 @@
     >
       <template x-for="toast in $store.notifications.toasts" :key="toast.id">
         <div
-          class="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl text-white shadow-xl text-sm transition-all duration-300"
-          :class="[
-             $store.notifications.kindClass(toast.kind),
-             toast.visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
-           ]"
+          class="k-toast pointer-events-auto flex items-center gap-3 max-w-sm w-fit min-h-[2.75rem] pl-4 pr-2 py-2 rounded-full text-sm font-medium transition-all duration-300 ease-out"
+          :class="toast.visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-3 scale-95'"
           :role="toast.kind === 'error' ? 'alert' : 'status'"
         >
+          <span
+            class="w-2 h-2 rounded-full flex-shrink-0"
+            :class="$store.notifications.kindClass(toast.kind)"
+            aria-hidden="true"
+          ></span>
           <span x-text="toast.message" class="flex-1"></span>
           <button
             @click="$store.notifications.dismiss(toast.id)"
             type="button"
             aria-label="Fermer la notification"
-            class="text-white/60 hover:text-white text-xs ml-1"
+            class="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:text-white"
           >
-            ✕
+            <svg
+              class="w-3.5 h-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
           </button>
         </div>
       </template>
@@ -71,16 +83,11 @@
       aria-live="polite"
       class="fixed bottom-20 inset-x-0 mx-auto max-w-sm px-4 z-50"
     >
-      <div
-        :class="$store.offline.isOffline
-                 ? 'bg-kinetic-surface text-white ring-1 ring-white/10'
-                 : 'bg-kinetic-neon text-gray-950'"
-        class="rounded-2xl px-4 py-3 flex items-center gap-3 shadow-xl text-sm"
-      >
+      <div class="k-toast rounded-2xl px-4 py-3 flex items-center gap-3 text-sm">
         <span
-          class="text-lg flex-shrink-0"
+          class="w-2 h-2 rounded-full flex-shrink-0"
+          :class="$store.offline.isOffline ? 'bg-kinetic-neon' : 'bg-kinetic-teal'"
           aria-hidden="true"
-          x-text="$store.offline.isOffline ? '' : ''"
         ></span>
         <div class="flex-1">
           <p
@@ -231,17 +238,14 @@
       class="min-h-screen pb-28 focus:outline-none"
     >
       <!-- Skeleton de chargement initial -->
-      <div class="max-w-md mx-auto px-4 pt-8 animate-pulse space-y-4">
-        <div class="flex justify-between items-center">
-          <div class="space-y-2">
-            <div class="h-6 bg-kinetic-elevated rounded w-40"></div>
-            <div class="h-4 bg-kinetic-elevated rounded w-32"></div>
-          </div>
-          <div class="w-10 h-10 bg-kinetic-elevated rounded-full"></div>
+      <div class="max-w-md mx-auto px-4 pt-6 space-y-3" aria-hidden="true">
+        <div class="k-skeleton h-4 w-36"></div>
+        <div class="k-skeleton h-9 w-56 mb-2"></div>
+        <div class="k-skeleton h-56 rounded-2xl"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="k-skeleton h-[3.75rem] rounded-2xl"></div>
+          <div class="k-skeleton h-[3.75rem] rounded-2xl"></div>
         </div>
-        <div class="h-20 bg-kinetic-surface rounded-k"></div>
-        <div class="h-32 bg-kinetic-surface rounded-k"></div>
-        <div class="h-16 bg-kinetic-surface rounded-k"></div>
       </div>
     </main>
 
@@ -256,15 +260,13 @@
       x-transition:leave="transition ease-in duration-200"
       x-transition:leave-start="opacity-100 translate-y-0"
       x-transition:leave-end="opacity-0 translate-y-4"
-      class="fixed bottom-20 left-4 right-4 max-w-md mx-auto z-40 bg-kinetic-surface border border-kinetic-neon/30 rounded-2xl p-4 shadow-2xl"
+      class="k-toast fixed bottom-24 left-4 right-4 max-w-md mx-auto z-40 rounded-3xl p-4"
       style="display: none"
     >
       <div class="flex items-start gap-3">
-        <div
-          class="flex-shrink-0 w-10 h-10 bg-kinetic-neon/20 rounded-xl flex items-center justify-center text-xl"
-        ></div>
+        <img src="/icons/icon-192.png" alt="" class="flex-shrink-0 w-11 h-11 rounded-[10px]" />
         <div class="flex-1 min-w-0">
-          <p class="text-white font-bold text-sm mb-0.5">Installer Kinetic</p>
+          <p class="text-white font-semibold text-base mb-0.5">Installer Kinetic</p>
           <p class="text-xs text-gray-400 leading-relaxed" x-show="!isIos">
             Accède plus vite à tes séances depuis ton écran d'accueil.
           </p>
@@ -273,20 +275,9 @@
           </p>
         </div>
       </div>
-      <div class="flex gap-2 mt-3">
-        <button
-          @click="dismiss()"
-          class="flex-1 text-xs text-gray-400 px-3 py-2 rounded-lg ring-1 ring-white/10 hover:ring-white/30"
-        >
-          Plus tard
-        </button>
-        <button
-          x-show="!isIos"
-          @click="install()"
-          class="flex-1 text-xs font-bold text-gray-950 bg-kinetic-neon px-3 py-2 rounded-lg hover:brightness-110"
-        >
-          Installer
-        </button>
+      <div class="flex gap-2 mt-4">
+        <button @click="dismiss()" class="k-btn-2 h-11 text-sm">Plus tard</button>
+        <button x-show="!isIos" @click="install()" class="k-btn h-11 text-sm">Installer</button>
       </div>
     </div>
 

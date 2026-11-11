@@ -542,6 +542,244 @@ button.k-row:active {
   color: #fff;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Composants standard — à utiliser plutôt que des classes ad hoc
+   ═══════════════════════════════════════════════════════════════════════ */
+@layer components {
+  /* Bouton principal (une seule action principale par écran) */
+  .k-btn {
+    @apply inline-flex h-[3.125rem] w-full items-center justify-center gap-2 rounded-xl bg-kinetic-neon px-5 text-base font-semibold text-gray-950 transition active:scale-[0.98] active:brightness-90 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  /* Bouton secondaire, même gabarit, sur fond gris */
+  .k-btn-2 {
+    @apply inline-flex h-[3.125rem] w-full items-center justify-center gap-2 rounded-xl bg-kinetic-elevated px-5 text-base font-medium text-white transition active:scale-[0.98] active:bg-kinetic-raised disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  /* Bouton destructif */
+  .k-btn-danger {
+    @apply inline-flex h-[3.125rem] w-full items-center justify-center gap-2 rounded-xl bg-kinetic-electric px-5 text-base font-semibold text-white transition active:scale-[0.98] active:brightness-90 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  /* Petit bouton pilule, dans une rangée de liste ou un en-tête de carte */
+  .k-pill {
+    @apply inline-flex h-9 flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-kinetic-elevated px-4 text-sm font-medium text-white transition active:scale-95 active:bg-kinetic-raised disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .k-pill-accent {
+    @apply inline-flex h-9 flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-kinetic-neon px-4 text-sm font-semibold text-gray-950 transition active:scale-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  /* Lien-texte d'action (couleur d'accent, sans fond) */
+  .k-link {
+    @apply inline-flex items-center gap-1 py-1 text-base font-medium text-kinetic-neon active:opacity-60;
+  }
+  /* Bouton icône rond (fermer, plus, réglages) : 36 px visibles, 44 px de zone tactile */
+  .k-icon-btn {
+    @apply relative inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-kinetic-elevated text-gray-400 transition active:scale-90 active:bg-kinetic-raised;
+  }
+  .k-icon-btn::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+  }
+  /* Champ de saisie rempli, sans contour (le contour revient au focus) */
+  .k-field {
+    @apply h-11 w-full min-w-0 rounded-xl bg-kinetic-ink px-3.5 text-base text-white outline-none transition-shadow placeholder:text-gray-500 focus:ring-2 focus:ring-kinetic-neon;
+  }
+  /* Libellé au-dessus d'un champ */
+  .k-label {
+    @apply mb-1.5 block text-sm font-medium text-gray-400;
+  }
+  /* Carte standard */
+  .k-card {
+    @apply rounded-2xl bg-kinetic-surface p-4;
+  }
+  /* Titre de carte (headline iOS) */
+  .k-card-title {
+    @apply text-[1.0625rem] font-semibold leading-[1.375rem] text-white;
+  }
+  /* Valeur chiffrée mise en avant */
+  .k-metric {
+    @apply font-display text-3xl font-bold leading-none tabular-nums text-white;
+  }
+  /* État vide : centré, discret */
+  .k-empty {
+    @apply rounded-2xl bg-kinetic-surface px-6 py-10 text-center;
+  }
+  .k-empty > :first-child {
+    @apply text-base font-semibold text-white;
+  }
+  /* Badge discret (statut, compteur) */
+  .k-badge {
+    @apply inline-flex items-center rounded-full bg-kinetic-elevated px-2 py-0.5 text-xs font-semibold tabular-nums text-gray-400;
+  }
+}
+
+/* ─── Feuille modale (bottom sheet) ───
+   <div class="k-backdrop" x-show="open" @click.self="open=false">
+     <div class="k-sheet" role="dialog" aria-modal="true"> … </div>
+   </div> */
+.k-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0.5rem calc(env(safe-area-inset-bottom) + 0.5rem);
+  background: rgba(0, 0, 0, 0.48);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: k-fade-in 200ms ease both;
+}
+.k-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 28rem;
+  max-height: 88vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 28px;
+  background: rgb(var(--surface));
+  padding: 1.75rem 1.25rem 1.25rem;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.35);
+  animation: k-sheet-in 380ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  --ink: var(--well);
+}
+/* Poignée de la feuille */
+.k-sheet::before {
+  content: '';
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  width: 2.25rem;
+  height: 0.3125rem;
+  margin-left: -1.125rem;
+  border-radius: 9999px;
+  background: var(--separator);
+}
+@media (min-width: 640px) {
+  .k-backdrop {
+    align-items: center;
+  }
+}
+@keyframes k-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* ─── Toasts : capsule en matériau translucide ─── */
+.k-toast {
+  background: var(--material);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(24px);
+  box-shadow:
+    0 0 0 0.5px var(--separator),
+    0 10px 30px rgba(0, 0, 0, 0.3);
+  color: var(--tx);
+}
+
+/* ─── Mouvement ───
+   Entrée de page : les blocs montent et apparaissent en cascade.
+   `backwards` (et non `both`) : aucune transformation ne reste après
+   l'animation, sinon les éléments `fixed` des pages perdraient leur repère. */
+@keyframes k-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+#app-outlet.k-enter > * > * {
+  animation: k-page-in 420ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+#app-outlet.k-enter > * > :nth-child(2) {
+  animation-delay: 30ms;
+}
+#app-outlet.k-enter > * > :nth-child(3) {
+  animation-delay: 60ms;
+}
+#app-outlet.k-enter > * > :nth-child(4) {
+  animation-delay: 90ms;
+}
+#app-outlet.k-enter > * > :nth-child(5) {
+  animation-delay: 120ms;
+}
+#app-outlet.k-enter > * > :nth-child(6) {
+  animation-delay: 150ms;
+}
+#app-outlet.k-enter > * > :nth-child(n + 7) {
+  animation-delay: 180ms;
+}
+/* Les calques fixes (modales, minuteur) n'entrent pas en cascade */
+#app-outlet.k-enter > * > .fixed,
+#app-outlet.k-enter > * > [class*='fixed '],
+#app-outlet.k-enter > * > template {
+  animation: none;
+}
+
+/* Retour tactile : les cartes cliquables s'enfoncent légèrement */
+a.bg-kinetic-surface,
+button.bg-kinetic-surface,
+a.k-row,
+button.k-row,
+label.k-row {
+  transition:
+    transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 160ms ease;
+}
+a.bg-kinetic-surface:active,
+button.bg-kinetic-surface:active {
+  transform: scale(0.98);
+}
+
+/* Coche validée : petit rebond */
+@keyframes k-pop {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.k-pop {
+  animation: k-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Barres de progression : remplissage animé */
+[role='progressbar'] > div,
+.h-1\.5.rounded-full > div,
+.h-2.rounded-full > div {
+  transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Chargement : reflet qui balaie les blocs fantômes */
+@keyframes k-shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+.k-skeleton {
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    rgb(var(--surface)) 0%,
+    rgb(var(--elevated)) 50%,
+    rgb(var(--surface)) 100%
+  );
+  background-size: 200% 100%;
+  animation: k-shimmer 1.4s ease-in-out infinite;
+}
+
 /* ─── Mode d'affichage Simple / Avancé ───
    En mode simple (défaut), les blocs `.adv-only` sont masqués. */
 html:not([data-density='advanced']) .adv-only {
