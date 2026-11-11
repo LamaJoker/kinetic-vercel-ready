@@ -112,7 +112,10 @@ jobs:
   # ─── 5. Tests E2E ───────────────────────────────────────────
   e2e:
     name: E2E Tests
-    runs-on: ubuntu-latest
+    # Épinglé : ubuntu-latest est passé à 26.04, que Playwright 1.60 ne sait pas
+    # équiper (« does not support chromium on ubuntu26.04 »). À relâcher quand
+    # Playwright sera mis à jour.
+    runs-on: ubuntu-24.04
     needs: [unit]
     strategy:
       fail-fast: false
