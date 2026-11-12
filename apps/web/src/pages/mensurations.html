@@ -1,383 +1,439 @@
 <div x-data="mensurations" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
   <!-- En-tête -->
-  <div class="flex items-center gap-3 mb-6">
-    <a
-      href="/"
-      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
-      aria-label="Retour"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+  <div class="k-nav">
+    <a href="/" class="k-back" aria-label="Retour">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2.4"
+          d="M15 19l-7-7 7-7"
+        />
       </svg>
     </a>
-    <div class="flex-1">
-      <h1 class="text-2xl font-display font-black tracking-tight text-white">Mensurations</h1>
-      <p class="text-xs text-gray-500 mt-0.5">Tour de corps &amp; évolution (cm)</p>
-    </div>
-    <div class="text-right">
-      <p class="text-xs text-gray-600 font-semibold">Entrées</p>
-      <p
-        class="font-display font-black text-lg text-white leading-none"
-        x-text="entries.length"
-      ></p>
+    <div>
+      <h1 class="text-3xl font-display font-bold tracking-tight text-white">Mensurations</h1>
+      <p class="text-gray-500">Tours de corps et évolution, en cm</p>
     </div>
   </div>
 
-  <!-- Grille de mensurations actuelles -->
-  <div class="grid grid-cols-3 gap-2 mb-4">
-    <template x-for="m in metrics" :key="m.key">
-      <button
-        type="button"
-        @click="activeMetric = m.key"
-        class="rounded-2xl p-3 ring-1 transition-all text-left cursor-pointer"
-        :class="activeMetric === m.key
-                ? 'bg-kinetic-elevated ring-white/20'
-                : 'bg-kinetic-surface ring-white/5 hover:ring-white/10'"
+  <!-- Mesure active : valeur, évolution, période, courbe -->
+  <section class="k-card mb-8" aria-labelledby="mens-active-title">
+    <div class="flex items-center gap-2">
+      <h2 id="mens-active-title" class="k-card-title" x-text="activeMetricDef.label"></h2>
+    </div>
+
+    <p class="mt-3 flex items-baseline gap-1.5">
+      <span class="k-metric" x-text="formatCm(currentValue(activeMetric))"></span>
+      <span
+        x-show="currentValue(activeMetric) !== null"
+        class="text-base font-semibold text-gray-500"
+        >cm</span
       >
-        <p class="flex items-center gap-1.5 text-[11px] font-bold mb-1 text-gray-300">
-          <!-- La couleur de la mesure est portée par une pastille, pas par le texte (contraste) -->
-          <span
-            class="w-2 h-2 rounded-full flex-shrink-0"
-            :style="hasData(m.key) ? metricDotStyle(m.color) : metricDotStyle('#4B5563')"
-            aria-hidden="true"
-          ></span>
-          <span class="truncate" x-text="m.label"></span>
-        </p>
-        <p
-          class="font-display font-black text-base text-white leading-none"
-          x-text="formatCm(currentValue(m.key))"
-        ></p>
-        <p
-          x-show="currentValue(m.key) !== null"
-          class="text-[11px] mt-0.5 tabular-nums"
-          :class="metricDelta(m.key) > 0 ? 'text-kinetic-electric'
-             : metricDelta(m.key) < 0 ? 'text-kinetic-neon'
-             : 'text-gray-600'"
-          x-text="metricDelta(m.key) !== null
-             ? (metricDelta(m.key) > 0 ? '+' : '') + metricDelta(m.key).toFixed(1)
-             : ''"
-        ></p>
-        <p x-show="currentValue(m.key) === null" class="text-[11px] mt-0.5 text-gray-400">
-          non mesuré
-        </p>
-      </button>
-    </template>
-  </div>
+    </p>
+    <p
+      class="text-xs text-gray-500 mt-1.5 tabular-nums"
+      x-show="metricDelta(activeMetric) !== null"
+      x-text="formatDelta(activeMetric) + ' cm ' + periodLabel"
+    ></p>
+    <p
+      class="text-xs text-gray-500 mt-1.5"
+      x-show="metricDelta(activeMetric) === null"
+      x-text="currentValue(activeMetric) !== null ? 'Dernière valeur relevée' : 'Pas encore mesuré'"
+    ></p>
 
-  <!-- Section graphique -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <!-- Titre + sélecteur période -->
-    <div class="flex items-start justify-between mb-3">
-      <div>
-        <h2
-          class="font-display font-bold text-white tracking-tight text-sm"
-          x-text="activeMetricDef.label"
-        ></h2>
-        <p
-          class="text-xs mt-0.5"
-          :class="metricDelta(activeMetric) > 0 ? 'text-kinetic-electric'
-             : metricDelta(activeMetric) < 0 ? 'text-kinetic-neon'
-             : 'text-gray-600'"
-          x-show="metricDelta(activeMetric) !== null"
-          x-text="metricDelta(activeMetric) !== null
-             ? (metricDelta(activeMetric) > 0 ? '↑ +' : '↓ ')
-               + $num.abs(metricDelta(activeMetric)).toFixed(1) + ' cm sur la période'
-             : ''"
-        ></p>
-      </div>
-      <div class="flex gap-1 flex-shrink-0 ml-2">
-        <template
-          x-for="p in [{v:30,l:'30j'},{v:90,l:'90j'},{v:365,l:'1an'},{v:9999,l:'Tout'}]"
-          :key="p.v"
-        >
-          <button
-            type="button"
-            @click="period = p.v"
-            class="text-[10px] px-2 py-1 rounded-lg font-semibold transition-all"
-            :class="period === p.v
-                    ? 'bg-kinetic-neon text-gray-950 font-semibold'
-                    : 'text-gray-500 hover:text-gray-300'"
-          >
-            <span x-text="p.l"></span>
-          </button>
-        </template>
-      </div>
+    <!-- Période -->
+    <div class="k-seg mt-4" role="group" aria-label="Période affichée">
+      <template x-for="p in periods" :key="p.v">
+        <button
+          type="button"
+          class="k-seg-item"
+          @click="period = p.v"
+          :aria-pressed="period === p.v"
+          x-text="p.l"
+        ></button>
+      </template>
     </div>
 
-    <!-- Graphique ou état vide -->
+    <!-- Courbe ou état vide -->
     <template x-if="chartPoints().length >= 2">
-      <div x-svg="chartSvg()" class="w-full"></div>
+      <div x-svg="chartSvg()" class="w-full mt-4 text-gray-500"></div>
     </template>
     <template x-if="chartPoints().length < 2">
-      <div class="flex flex-col items-center justify-center py-8 text-center">
+      <div class="flex flex-col items-center justify-center pt-8 pb-4 text-center">
         <svg
-          class="w-10 h-10 text-gray-700 mb-3"
+          class="w-8 h-8 text-gray-500 mb-3"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
-            stroke-width="1.5"
-            d="M3 6h18M3 6l2 14h14L21 6M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M10 11v5M14 11v5"
+            stroke-width="2"
+            d="M3 3v18h18M7 15l4-4 3 3 5-6"
           />
         </svg>
-        <p class="text-sm text-gray-500">
-          Pas assez de données pour
-          <span class="text-white font-medium" x-text="activeMetricDef.label"></span>
+        <p class="text-base font-semibold text-white">Pas encore de courbe</p>
+        <p class="text-xs text-gray-500 mt-1 max-w-[16rem]">
+          Enregistre au moins 2 mesures de
+          <span class="text-white" x-text="activeMetricDef.label"></span> sur la période.
         </p>
-        <p class="text-xs text-gray-600 mt-1">Enregistre au moins 2 mesures</p>
       </div>
     </template>
 
-    <!-- Mini-stats si données -->
+    <!-- Repères de la période -->
     <template x-if="chartPoints().length >= 2">
-      <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/5">
-        <div class="text-center">
-          <p class="text-[11px] text-gray-600 font-semibold">Départ</p>
-          <p
-            class="font-display font-black text-sm text-white mt-0.5"
-            x-text="chartPoints()[0] ? chartPoints()[0].y.toFixed(1) + ' cm' : '—'"
-          ></p>
+      <dl class="grid grid-cols-3 gap-2 mt-4">
+        <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
+          <dt class="text-xs text-gray-500">Départ</dt>
+          <dd
+            class="text-base font-semibold text-white tabular-nums mt-0.5"
+            x-text="chartStats.start"
+          ></dd>
         </div>
-        <div class="text-center">
-          <p class="text-[11px] text-gray-600 font-semibold">Actuel</p>
-          <p
-            class="font-display font-black text-sm mt-0.5"
-            :style="'color: ' + activeMetricDef.color"
-            x-text="currentValue(activeMetric) !== null ? currentValue(activeMetric).toFixed(1) + ' cm' : '—'"
-          ></p>
+        <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
+          <dt
+            class="text-xs text-gray-500"
+            x-text="metricDelta(activeMetric) >= 0 ? 'Plus haut' : 'Plus bas'"
+          ></dt>
+          <dd
+            class="text-base font-semibold text-white tabular-nums mt-0.5"
+            x-text="metricDelta(activeMetric) >= 0 ? chartStats.max : chartStats.min"
+          ></dd>
         </div>
-        <div class="text-center">
-          <p class="text-[11px] text-gray-600 font-semibold">Mesures</p>
-          <p
-            class="font-display font-black text-sm text-white mt-0.5"
+        <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
+          <dt class="text-xs text-gray-500">Mesures</dt>
+          <dd
+            class="text-base font-semibold text-white tabular-nums mt-0.5"
             x-text="chartPoints().length"
-          ></p>
+          ></dd>
         </div>
-      </div>
+      </dl>
+    </template>
+  </section>
+
+  <!-- Toutes les mesures : choix de la courbe -->
+  <h2 class="k-section mb-2.5">Toutes les mesures</h2>
+  <div class="grid grid-cols-3 gap-2 mb-8">
+    <template x-for="m in metrics" :key="m.key">
+      <button
+        type="button"
+        @click="activeMetric = m.key"
+        :aria-pressed="activeMetric === m.key"
+        class="rounded-2xl bg-kinetic-surface px-3 py-2.5 min-h-[4.75rem] text-left transition active:scale-[0.97]"
+        :style="activeMetric === m.key ? 'box-shadow: inset 0 0 0 2px var(--tx)' : ''"
+      >
+        <span class="flex items-center gap-1.5 text-xs">
+          <span
+            class="truncate"
+            :class="activeMetric === m.key ? 'text-white font-semibold' : 'text-gray-400'"
+            x-text="m.label"
+          ></span>
+        </span>
+        <span
+          class="block mt-1 text-lg font-semibold leading-tight tabular-nums"
+          :class="currentValue(m.key) === null ? 'text-gray-500' : 'text-white'"
+          x-text="formatCm(currentValue(m.key))"
+        ></span>
+        <span
+          x-show="currentValue(m.key) !== null"
+          class="block text-[11px] text-gray-500 tabular-nums"
+          x-text="metricDelta(m.key) !== null ? formatDelta(m.key) + ' cm' : 'cm'"
+        ></span>
+        <span x-show="currentValue(m.key) === null" class="block text-[11px] text-gray-500">
+          Non mesuré
+        </span>
+      </button>
     </template>
   </div>
 
   <!-- Formulaire d'enregistrement -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <p class="text-xs text-gray-500 font-semibold mb-4">Enregistrer</p>
-
+  <h2 class="k-section mb-2.5">Nouvelle mesure</h2>
+  <div class="mb-8">
     <!-- Haut du corps -->
-    <p class="text-xs text-gray-600 font-bold mb-2 flex items-center gap-1.5">
-      <span class="w-1 h-1 rounded-full bg-kinetic-teal inline-block"></span> Haut du corps
-    </p>
-    <div class="grid grid-cols-2 gap-3 mb-4">
-      <div>
-        <label for="f-mensurations-1" class="text-xs text-gray-500 mb-1 block">Cou (cm)</label>
+    <p class="k-caption mb-1.5">Haut du corps</p>
+    <div class="k-list mb-5">
+      <label for="f-mensurations-1" class="k-row cursor-text">
+        <span class="flex-1 text-base text-white">Cou</span>
         <input
           id="f-mensurations-1"
           type="number"
+          inputmode="decimal"
           x-model.number="fNeck"
           min="20"
           max="70"
           step="0.5"
-          placeholder="38"
-          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+          :placeholder="formatCm(currentValue('neck'))"
+          class="w-20 bg-transparent text-right text-base text-white tabular-nums placeholder:text-gray-500 caret-kinetic-neon focus:outline-none"
         />
-      </div>
-      <div>
-        <label for="f-mensurations-2" class="text-xs text-gray-500 mb-1 block">Épaules (cm)</label>
+        <span class="text-base text-gray-500">cm</span>
+      </label>
+      <label for="f-mensurations-2" class="k-row cursor-text">
+        <span class="flex-1 text-base text-white">Épaules</span>
         <input
           id="f-mensurations-2"
           type="number"
+          inputmode="decimal"
           x-model.number="fShoulders"
           min="70"
           max="170"
           step="0.5"
-          placeholder="115"
-          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+          :placeholder="formatCm(currentValue('shoulders'))"
+          class="w-20 bg-transparent text-right text-base text-white tabular-nums placeholder:text-gray-500 caret-kinetic-neon focus:outline-none"
         />
-      </div>
-      <div class="col-span-2">
-        <label for="f-mensurations-3" class="text-xs text-gray-500 mb-1 block">Poitrine (cm)</label>
+        <span class="text-base text-gray-500">cm</span>
+      </label>
+      <label for="f-mensurations-3" class="k-row cursor-text">
+        <span class="flex-1 text-base text-white">Poitrine</span>
         <input
           id="f-mensurations-3"
           type="number"
+          inputmode="decimal"
           x-model.number="fChest"
           min="50"
           max="160"
           step="0.5"
-          placeholder="92"
-          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-neon/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+          :placeholder="formatCm(currentValue('chest'))"
+          class="w-20 bg-transparent text-right text-base text-white tabular-nums placeholder:text-gray-500 caret-kinetic-neon focus:outline-none"
         />
-      </div>
+        <span class="text-base text-gray-500">cm</span>
+      </label>
     </div>
 
     <!-- Bras -->
-    <p class="text-xs text-gray-600 font-bold mb-2 flex items-center gap-1.5">
-      <span class="w-1 h-1 rounded-full bg-kinetic-gold inline-block"></span> Bras
-    </p>
-    <div class="grid grid-cols-2 gap-3 mb-4">
-      <div>
-        <label for="f-mensurations-4" class="text-xs text-gray-500 mb-1 block"
-          >Bras gauche (cm)</label
-        >
+    <p class="k-caption mb-1.5">Bras</p>
+    <div class="k-list mb-5">
+      <label for="f-mensurations-4" class="k-row cursor-text">
+        <span class="flex-1 text-base text-white">Bras gauche</span>
         <input
           id="f-mensurations-4"
           type="number"
+          inputmode="decimal"
           x-model.number="fLeftBicep"
           min="15"
           max="65"
           step="0.5"
-          placeholder="36"
-          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-gold/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+          :placeholder="formatCm(currentValue('leftBicep'))"
+          class="w-20 bg-transparent text-right text-base text-white tabular-nums placeholder:text-gray-500 caret-kinetic-neon focus:outline-none"
         />
-      </div>
-      <div>
-        <label for="f-mensurations-5" class="text-xs text-gray-500 mb-1 block"
-          >Bras droit (cm)</label
-        >
+        <span class="text-base text-gray-500">cm</span>
+      </label>
+      <label for="f-mensurations-5" class="k-row cursor-text">
+        <span class="flex-1 text-base text-white">Bras droit</span>
         <input
           id="f-mensurations-5"
           type="number"
+          inputmode="decimal"
           x-model.number="fRightBicep"
           min="15"
           max="65"
           step="0.5"
-          placeholder="36"
-          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-gold/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+          :placeholder="formatCm(currentValue('rightBicep'))"
+          class="w-20 bg-transparent text-right text-base text-white tabular-nums placeholder:text-gray-500 caret-kinetic-neon focus:outline-none"
         />
-      </div>
+        <span class="text-base text-gray-500">cm</span>
+      </label>
     </div>
 
-    <!-- Milieu -->
-    <p class="text-xs text-gray-600 font-bold mb-2 flex items-center gap-1.5">
-      <span class="w-1 h-1 rounded-full bg-kinetic-electric inline-block"></span> Milieu
-    </p>
-    <div class="grid grid-cols-2 gap-3 mb-4">
-      <div>
-        <label for="f-mensurations-6" class="text-xs text-gray-500 mb-1 block">Taille (cm)</label>
+    <!-- Taille et hanches -->
+    <p class="k-caption mb-1.5">Taille et hanches</p>
+    <div class="k-list mb-5">
+      <label for="f-mensurations-6" class="k-row cursor-text">
+        <span class="flex-1 text-base text-white">Taille</span>
         <input
           id="f-mensurations-6"
           type="number"
+          inputmode="decimal"
           x-model.number="fWaist"
           min="40"
           max="160"
           step="0.5"
-          placeholder="80"
-          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-neon/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+          :placeholder="formatCm(currentValue('waist'))"
+          class="w-20 bg-transparent text-right text-base text-white tabular-nums placeholder:text-gray-500 caret-kinetic-neon focus:outline-none"
         />
-      </div>
-      <div>
-        <label for="f-mensurations-7" class="text-xs text-gray-500 mb-1 block">Hanches (cm)</label>
+        <span class="text-base text-gray-500">cm</span>
+      </label>
+      <label for="f-mensurations-7" class="k-row cursor-text">
+        <span class="flex-1 text-base text-white">Hanches</span>
         <input
           id="f-mensurations-7"
           type="number"
+          inputmode="decimal"
           x-model.number="fHips"
           min="50"
           max="170"
           step="0.5"
-          placeholder="96"
-          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-purple/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+          :placeholder="formatCm(currentValue('hips'))"
+          class="w-20 bg-transparent text-right text-base text-white tabular-nums placeholder:text-gray-500 caret-kinetic-neon focus:outline-none"
         />
-      </div>
+        <span class="text-base text-gray-500">cm</span>
+      </label>
     </div>
 
     <!-- Jambes -->
-    <p class="text-xs text-gray-600 font-bold mb-2 flex items-center gap-1.5">
-      <span class="w-1 h-1 rounded-full bg-kinetic-coral inline-block"></span> Jambes
-    </p>
-    <div class="grid grid-cols-2 gap-3 mb-4">
-      <div>
-        <label for="f-mensurations-8" class="text-xs text-gray-500 mb-1 block"
-          >Cuisse gauche (cm)</label
-        >
+    <p class="k-caption mb-1.5">Jambes</p>
+    <div class="k-list mb-5">
+      <label for="f-mensurations-8" class="k-row cursor-text">
+        <span class="flex-1 text-base text-white">Cuisse gauche</span>
         <input
           id="f-mensurations-8"
           type="number"
+          inputmode="decimal"
           x-model.number="fLeftThigh"
           min="25"
           max="100"
           step="0.5"
-          placeholder="58"
-          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-coral/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+          :placeholder="formatCm(currentValue('leftThigh'))"
+          class="w-20 bg-transparent text-right text-base text-white tabular-nums placeholder:text-gray-500 caret-kinetic-neon focus:outline-none"
         />
-      </div>
-      <div>
-        <label for="f-mensurations-9" class="text-xs text-gray-500 mb-1 block"
-          >Cuisse droite (cm)</label
-        >
+        <span class="text-base text-gray-500">cm</span>
+      </label>
+      <label for="f-mensurations-9" class="k-row cursor-text">
+        <span class="flex-1 text-base text-white">Cuisse droite</span>
         <input
           id="f-mensurations-9"
           type="number"
+          inputmode="decimal"
           x-model.number="fRightThigh"
           min="25"
           max="100"
           step="0.5"
-          placeholder="58"
-          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-coral/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+          :placeholder="formatCm(currentValue('rightThigh'))"
+          class="w-20 bg-transparent text-right text-base text-white tabular-nums placeholder:text-gray-500 caret-kinetic-neon focus:outline-none"
         />
-      </div>
-      <div>
-        <label for="f-mensurations-10" class="text-xs text-gray-500 mb-1 block"
-          >Mollet gauche (cm)</label
-        >
+        <span class="text-base text-gray-500">cm</span>
+      </label>
+      <label for="f-mensurations-10" class="k-row cursor-text">
+        <span class="flex-1 text-base text-white">Mollet gauche</span>
         <input
           id="f-mensurations-10"
           type="number"
+          inputmode="decimal"
           x-model.number="fLeftCalf"
           min="15"
           max="65"
           step="0.5"
-          placeholder="34"
-          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+          :placeholder="formatCm(currentValue('leftCalf'))"
+          class="w-20 bg-transparent text-right text-base text-white tabular-nums placeholder:text-gray-500 caret-kinetic-neon focus:outline-none"
         />
-      </div>
-      <div>
-        <label for="f-mensurations-11" class="text-xs text-gray-500 mb-1 block"
-          >Mollet droit (cm)</label
-        >
+        <span class="text-base text-gray-500">cm</span>
+      </label>
+      <label for="f-mensurations-11" class="k-row cursor-text">
+        <span class="flex-1 text-base text-white">Mollet droit</span>
         <input
           id="f-mensurations-11"
           type="number"
+          inputmode="decimal"
           x-model.number="fRightCalf"
           min="15"
           max="65"
           step="0.5"
-          placeholder="34"
-          class="w-full bg-kinetic-ink border border-white/10 focus:border-kinetic-teal/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors"
+          :placeholder="formatCm(currentValue('rightCalf'))"
+          class="w-20 bg-transparent text-right text-base text-white tabular-nums placeholder:text-gray-500 caret-kinetic-neon focus:outline-none"
         />
-      </div>
+        <span class="text-base text-gray-500">cm</span>
+      </label>
     </div>
 
     <!-- Note -->
-    <input
-      x-model="fNote"
-      placeholder="Note (optionnel — ex: matin à jeun)"
-      class="w-full bg-kinetic-ink border border-white/10 focus:border-white/20 rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors mb-4"
-    />
+    <div class="k-list mb-5">
+      <label class="k-row cursor-text">
+        <input
+          x-model="fNote"
+          aria-label="Note"
+          maxlength="120"
+          placeholder="Note (optionnel, ex. matin à jeun)"
+          class="flex-1 min-w-0 bg-transparent text-base text-white placeholder:text-gray-500 caret-kinetic-neon focus:outline-none"
+        />
+      </label>
+    </div>
 
     <button
       type="button"
       @click="addEntry()"
       :disabled="!hasFormData"
-      class="w-full py-3 bg-kinetic-neon text-gray-950 font-bold rounded-xl text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all"
+      class="k-btn disabled:bg-kinetic-raised disabled:text-gray-500 disabled:opacity-100"
     >
       Enregistrer les mensurations
     </button>
+    <p class="k-caption mt-2 text-center">
+      Remplis seulement ce que tu as mesuré. Une saisie le même jour complète celle du jour.
+    </p>
   </div>
 
   <!-- Historique -->
-  <div class="bg-kinetic-surface rounded-2xl ring-1 ring-white/5 overflow-hidden">
-    <div class="flex items-center justify-between p-4 border-b border-white/5">
-      <h2 class="font-display font-bold text-white tracking-tight text-sm">Historique</h2>
-      <span
-        class="text-xs text-gray-500 font-semibold"
-        x-text="entries.length + ' entrée' + (entries.length > 1 ? 's' : '')"
-      ></span>
-    </div>
+  <div class="flex items-baseline justify-between mb-2.5">
+    <h2 class="k-section">Historique</h2>
+    <span
+      x-show="entries.length > 0"
+      class="text-xs text-gray-500 tabular-nums"
+      x-text="$plural(entries.length, 'entrée')"
+    ></span>
+  </div>
 
-    <template x-if="entries.length === 0">
-      <div class="p-10 text-center">
+  <template x-if="entries.length === 0">
+    <div class="k-empty mb-8">
+      <p>Aucune mensuration</p>
+      <p class="text-xs text-gray-500 mt-1">Commence à te mesurer pour suivre tes progrès.</p>
+    </div>
+  </template>
+
+  <ul x-show="entries.length > 0" class="k-list mb-8">
+    <template x-for="entry in entries.slice().reverse().slice(0, 30)" :key="entry.id">
+      <li class="k-row items-start pr-2">
+        <div class="flex-1 min-w-0 py-0.5">
+          <p class="text-base text-white" x-text="formatDate(entry.date)"></p>
+          <p
+            class="text-xs text-gray-500 mt-0.5 tabular-nums truncate"
+            x-show="entrySummary(entry)"
+            x-text="entrySummary(entry)"
+          ></p>
+          <p
+            x-show="entry.note"
+            class="text-xs text-gray-500 italic mt-0.5 truncate"
+            x-text="entry.note"
+          ></p>
+        </div>
+        <button
+          type="button"
+          @click="removeEntry(entry.id)"
+          class="-my-1.5 flex-shrink-0 w-11 h-11 inline-flex items-center justify-center rounded-full text-gray-500 transition active:scale-90 active:text-kinetic-electric hover:text-kinetic-electric"
+          aria-label="Supprimer"
+        >
+          <svg
+            class="w-[1.125rem] h-[1.125rem]"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"
+            />
+          </svg>
+        </button>
+      </li>
+    </template>
+  </ul>
+
+  <!-- ── Photos de progression ────────────────────────────────────────────── -->
+  <h2 class="k-section mb-2.5">Photos</h2>
+  <div class="k-list">
+    <button
+      type="button"
+      @click="showPhotos = !showPhotos"
+      :aria-expanded="showPhotos"
+      aria-controls="mens-photos-panel"
+      class="k-row"
+    >
+      <span class="k-glyph bg-kinetic-purple" aria-hidden="true">
         <svg
-          class="w-12 h-12 text-gray-700 mx-auto mb-3"
+          class="w-[1.125rem] h-[1.125rem]"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -385,118 +441,87 @@
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
-            stroke-width="1.5"
-            d="M3 6h18M3 6l2 14h14L21 6M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M10 11v5M14 11v5"
+            stroke-width="2"
+            d="M3 9a2 2 0 012-2h1.6a2 2 0 001.7-.9l.8-1.2A2 2 0 0110.8 4h2.4a2 2 0 011.7.9l.8 1.2a2 2 0 001.7.9H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
           />
+          <circle cx="12" cy="13" r="3.5" stroke-width="2" />
         </svg>
-        <p class="text-sm text-gray-500 font-medium">Aucune mensuration</p>
-        <p class="text-xs text-gray-600 mt-1">Commence à te suivre pour voir tes progrès</p>
-      </div>
-    </template>
-
-    <ul x-show="entries.length > 0" class="divide-y divide-white/5">
-      <template x-for="entry in entries.slice().reverse().slice(0, 30)" :key="entry.id">
-        <li class="px-4 py-3.5">
-          <div class="flex items-center justify-between mb-1.5">
-            <p class="text-sm font-semibold text-white" x-text="formatDate(entry.date)"></p>
-            <button
-              type="button"
-              @click="removeEntry(entry.id)"
-              class="p-1.5 text-gray-600 hover:text-kinetic-electric rounded-lg hover:bg-kinetic-ink transition-colors"
-              aria-label="Supprimer"
-            >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-          <p class="text-[11px] text-gray-500 leading-relaxed" x-text="entrySummary(entry)"></p>
-          <p
-            x-show="entry.note"
-            class="text-[11px] text-gray-600 italic mt-0.5"
-            x-text="entry.note"
-          ></p>
-        </li>
-      </template>
-    </ul>
-  </div>
-
-  <!-- ── Photos de progression ────────────────────────────────────────────── -->
-  <div class="mt-4 bg-kinetic-surface rounded-2xl ring-1 ring-white/5 overflow-hidden">
-    <button
-      type="button"
-      @click="showPhotos = !showPhotos"
-      class="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
-    >
-      <div class="flex items-center gap-3">
-        <div
-          class="w-8 h-8 rounded-xl bg-kinetic-neon/10 flex items-center justify-center text-base"
-        ></div>
-        <div class="text-left">
-          <p class="text-sm font-bold text-white">Photos de progression</p>
-          <p
-            class="text-[10px] text-gray-500 mt-0.5"
-            x-text="photos.length + ' photo' + (photos.length > 1 ? 's' : '')"
-          ></p>
-        </div>
-      </div>
-      <span
-        class="text-gray-500 text-sm transition-transform duration-200"
-        :class="showPhotos ? 'rotate-180' : ''"
-        >▾</span
+      </span>
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Photos de progression</span>
+        <span
+          class="block text-xs text-gray-500"
+          x-text="photos.length + ' photo' + (photos.length > 1 ? 's' : '')"
+        ></span>
+      </span>
+      <svg
+        class="k-chevron transition-transform duration-200"
+        :class="showPhotos ? 'rotate-90' : ''"
+        viewBox="0 0 8 14"
+        fill="none"
+        stroke="currentColor"
+        aria-hidden="true"
       >
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1l6 6-6 6" />
+      </svg>
     </button>
 
     <div
+      id="mens-photos-panel"
       x-show="showPhotos"
       x-transition:enter="transition ease-out duration-200"
-      x-transition:enter-start="opacity-0 -translate-y-2"
+      x-transition:enter-start="opacity-0 -translate-y-1"
       x-transition:enter-end="opacity-100 translate-y-0"
-      class="border-t border-white/5 p-4"
+      class="k-row-sep relative p-4"
     >
       <!-- Bouton photo -->
-      <button
-        type="button"
-        @click="takePhoto()"
-        :disabled="takingPhoto"
-        class="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-kinetic-neon/10 ring-1 ring-kinetic-neon/30 text-kinetic-neon font-semibold text-sm hover:bg-kinetic-neon/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-4"
-      >
+      <button type="button" @click="takePhoto()" :disabled="takingPhoto" class="k-btn-2 mb-4">
+        <svg
+          x-show="!takingPhoto"
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 5v14M5 12h14"
+          />
+        </svg>
         <span x-show="!takingPhoto">Prendre une photo</span>
         <span x-show="takingPhoto">Chargement…</span>
       </button>
 
       <!-- Galerie -->
       <template x-if="photos.length === 0">
-        <p class="text-sm text-gray-500 text-center py-4">
+        <p class="text-xs text-gray-500 text-center px-4 pb-2">
           Prends des photos pour suivre visuellement ta progression dans le temps.
         </p>
       </template>
 
-      <div x-show="photos.length > 0" class="grid grid-cols-3 gap-2">
+      <div x-show="photos.length > 0" class="grid grid-cols-3 gap-1.5">
         <template x-for="photo in photosDesc.slice(0, 12)" :key="photo.id">
           <button
             type="button"
             @click="selectedPhotoId = selectedPhotoId === photo.id ? null : photo.id"
-            class="relative aspect-square rounded-xl overflow-hidden ring-1 ring-white/10 hover:ring-kinetic-neon/50 transition-all group"
+            :aria-pressed="selectedPhotoId === photo.id"
+            class="relative aspect-square rounded-xl overflow-hidden bg-kinetic-elevated transition active:scale-95 group"
+            :class="selectedPhotoId !== null && selectedPhotoId !== photo.id ? 'opacity-50' : ''"
           >
             <img
               :src="photo.base64"
               :alt="formatPhotoDate(photo.takenAt)"
               class="w-full h-full object-cover"
             />
-            <div
-              class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end"
-            >
-              <p
-                class="text-[9px] text-white/70 p-1.5 leading-none opacity-0 group-hover:opacity-100 transition-opacity"
-                x-text="formatPhotoDate(photo.takenAt)"
-              ></p>
-            </div>
+            <span
+              class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-1.5 pb-1 pt-4 text-left text-[11px] font-medium text-white/90 leading-none opacity-0 group-hover:opacity-100 transition-opacity"
+              :class="selectedPhotoId === photo.id ? 'opacity-100' : ''"
+              x-text="formatPhotoDate(photo.takenAt)"
+              aria-hidden="true"
+            ></span>
           </button>
         </template>
       </div>
@@ -505,7 +530,7 @@
       <div
         x-show="selectedPhotoId !== null"
         x-transition
-        class="mt-3 rounded-2xl overflow-hidden ring-1 ring-white/10"
+        class="mt-3 rounded-xl overflow-hidden bg-kinetic-elevated"
       >
         <template x-for="photo in selectedPhotos" :key="photo.id">
           <div>
@@ -514,12 +539,12 @@
               :alt="formatPhotoDate(photo.takenAt)"
               class="w-full object-contain max-h-72 bg-black"
             />
-            <div class="p-3 flex items-center justify-between">
-              <p class="text-xs text-gray-400" x-text="formatPhotoDate(photo.takenAt)"></p>
+            <div class="pl-4 pr-2 py-2 flex items-center justify-between gap-3">
+              <p class="text-sm text-gray-400" x-text="formatPhotoDate(photo.takenAt)"></p>
               <button
                 type="button"
                 @click="deletePhoto(photo.id)"
-                class="text-xs text-kinetic-electric font-semibold hover:text-red-400 transition-colors px-3 py-1.5 rounded-lg bg-kinetic-electric/10 ring-1 ring-kinetic-electric/20"
+                class="h-11 px-3 rounded-full text-base font-medium text-kinetic-electric transition active:opacity-60"
               >
                 Supprimer
               </button>
@@ -530,7 +555,7 @@
 
       <p
         x-show="photos.length > 12"
-        class="text-[10px] text-gray-600 text-center mt-2"
+        class="text-xs text-gray-500 text-center mt-3"
         x-text="'+ ' + $plural(photos.length - 12, 'photo plus ancienne', 'photos plus anciennes')"
       ></p>
     </div>

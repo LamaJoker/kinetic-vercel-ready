@@ -54,16 +54,17 @@ export function notificationsStore() {
       }, 300);
     },
 
+    /** Couleur de la pastille d'état affichée dans le toast. */
     kindClass(kind: string): string {
       return (
         (
           {
-            success: 'bg-kinetic-neon text-gray-950',
-            error: 'bg-kinetic-electric text-white',
-            warning: 'bg-kinetic-electric/80 text-white',
-            info: 'bg-kinetic-surface text-white ring-1 ring-white/10',
+            success: 'bg-kinetic-teal',
+            error: 'bg-kinetic-electric',
+            warning: 'bg-kinetic-neon',
+            info: 'bg-kinetic-purple',
           } as Record<string, string>
-        )[kind] ?? 'bg-kinetic-surface text-white'
+        )[kind] ?? 'bg-kinetic-purple'
       );
     },
   };

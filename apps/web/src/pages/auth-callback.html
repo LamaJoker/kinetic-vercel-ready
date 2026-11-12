@@ -1,43 +1,37 @@
 <div
-  class="min-h-screen bg-kinetic-ink flex flex-col items-center justify-center px-4"
+  class="min-h-screen bg-kinetic-ink flex flex-col items-center justify-center px-4 py-12"
   x-data="authCallback"
   x-init="init()"
 >
   <!-- Mode 1 : sans deep link APK = flow web normal -->
-  <div x-show="!error && !apkDeepLink" x-transition class="flex flex-col items-center gap-6">
-    <div class="relative">
-      <div
-        class="relative w-16 h-16 bg-kinetic-neon rounded-3xl flex items-center justify-center ring-1 ring-white/10 animate-pulse"
-      >
-        <svg
-          class="w-8 h-8 text-gray-950"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="12" r="3" fill="rgb(var(--ink))" />
-        </svg>
-      </div>
-    </div>
-    <div class="text-center space-y-1">
-      <p class="text-white font-display font-black text-xl tracking-tight">Connexion en cours</p>
-      <p class="text-gray-500 text-sm">Authentification sécurisée…</p>
-    </div>
-    <div class="flex gap-1.5">
-      <div
-        class="w-1.5 h-1.5 rounded-full bg-kinetic-neon animate-bounce"
-        style="animation-delay: 0ms"
-      ></div>
-      <div
-        class="w-1.5 h-1.5 rounded-full bg-kinetic-neon animate-bounce"
-        style="animation-delay: 150ms"
-      ></div>
-      <div
-        class="w-1.5 h-1.5 rounded-full bg-kinetic-neon animate-bounce"
-        style="animation-delay: 300ms"
-      ></div>
-    </div>
+  <div
+    x-show="!error && !apkDeepLink"
+    role="status"
+    class="w-full max-w-sm flex flex-col items-center text-center"
+  >
+    <img
+      src="/icons/icon-192.png"
+      alt=""
+      width="80"
+      height="80"
+      class="w-20 h-20 rounded-[22%] shadow-lg shadow-black/30"
+    />
+    <h1 class="mt-6 text-xl font-display font-semibold tracking-tight text-white">
+      Connexion en cours
+    </h1>
+    <p class="mt-1 text-sm text-gray-500">Authentification sécurisée…</p>
+    <svg
+      class="mt-6 w-6 h-6 text-gray-500 animate-spin"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.4"
+      stroke-linecap="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" stroke-opacity="0.25" />
+      <path d="M21 12a9 9 0 0 0-9-9" />
+    </svg>
   </div>
 
   <!-- Mode 2 : flow APK = bouton primary CTA pour basculer dans l'app native.
@@ -46,83 +40,94 @@
        en clic direct = user gesture qui bypasse les blocages. -->
   <div
     x-show="!error && apkDeepLink"
-    x-transition
-    class="flex flex-col items-center gap-5 max-w-sm w-full"
+    class="w-full max-w-sm flex flex-col items-center text-center"
   >
     <div class="relative">
-      <div
-        class="relative w-16 h-16 bg-kinetic-neon rounded-3xl flex items-center justify-center ring-1 ring-white/10"
+      <img
+        src="/icons/icon-192.png"
+        alt=""
+        width="80"
+        height="80"
+        class="w-20 h-20 rounded-[22%] shadow-lg shadow-black/30"
+      />
+      <span
+        class="absolute -right-1.5 -bottom-1.5 flex w-7 h-7 items-center justify-center rounded-full bg-kinetic-teal text-gray-950 ring-4 ring-kinetic-ink"
+        aria-hidden="true"
       >
         <svg
-          class="w-8 h-8 text-gray-950"
+          class="w-4 h-4"
           viewBox="0 0 24 24"
-          fill="currentColor"
-          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         >
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="12" r="3" fill="rgb(var(--ink))" />
+          <path d="m5 12.5 4.5 4.5L19 7.5" />
         </svg>
-      </div>
+      </span>
     </div>
 
-    <div class="text-center space-y-2">
-      <p class="text-white font-display font-black text-2xl tracking-tight">Connexion réussie ✓</p>
-      <p class="text-gray-400 text-sm leading-relaxed px-4">
-        Tape le bouton ci-dessous pour ouvrir l'application Kinetic et finaliser ta connexion.
-      </p>
-    </div>
+    <h1 class="mt-6 text-2xl font-display font-bold tracking-tight text-white">
+      Connexion réussie
+    </h1>
+    <p class="mt-2 px-2 text-base leading-snug text-gray-400">
+      Ouvre l'application Kinetic pour finaliser ta connexion.
+    </p>
 
     <!-- Bouton primary : <a href> avec deep link → user gesture garanti -->
-    <a
-      :href="apkDeepLink"
-      class="w-full px-6 py-4 bg-kinetic-neon text-gray-950 rounded-2xl font-display font-black active:scale-[0.98] text-base text-center transition-transform"
-    >
-      Ouvrir dans Kinetic →
-    </a>
-
-    <!-- Escape hatch : pour PC ou si APK bloqué -->
-    <button
-      @click="continueOnWeb()"
-      class="text-gray-500 hover:text-gray-300 text-xs underline decoration-dotted underline-offset-4 transition-colors"
-    >
-      Continuer sur le web à la place
-    </button>
-
-    <p class="text-gray-600 text-[10px] text-center px-4 leading-relaxed">
-      Si Android te demande "Ouvrir avec Kinetic ?", choisis l'application. Tu peux ensuite revenir
-      ici et fermer cet onglet.
-    </p>
-  </div>
-
-  <!-- Erreur -->
-  <div x-show="error" x-transition class="flex flex-col items-center gap-6 text-center max-w-xs">
-    <div
-      class="w-16 h-16 bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30 rounded-3xl flex items-center justify-center"
-    >
+    <a :href="apkDeepLink" class="k-btn mt-8">
+      Ouvrir dans Kinetic
       <svg
-        class="w-8 h-8 text-kinetic-electric"
+        class="w-4 h-4"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        stroke-width="2"
+        stroke-width="2.4"
         stroke-linecap="round"
         stroke-linejoin="round"
         aria-hidden="true"
       >
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" />
+        <path d="M7 17 17 7" />
+        <path d="M8 7h9v9" />
       </svg>
-    </div>
-    <div class="space-y-2">
-      <p class="text-white font-display font-black text-xl tracking-tight">Échec de connexion</p>
-      <p class="text-kinetic-electric text-sm font-medium" x-text="error"></p>
-    </div>
-    <a
-      href="/login"
-      class="inline-flex items-center gap-2 px-6 py-3 text-kinetic-neon text-sm font-display font-bold underline decoration-kinetic-neon/40 underline-offset-4 hover:decoration-kinetic-neon transition-all"
-    >
-      Réessayer la connexion →
     </a>
+
+    <!-- Escape hatch : pour PC ou si APK bloqué -->
+    <button
+      type="button"
+      @click="continueOnWeb()"
+      class="k-btn-2 mt-3 bg-transparent text-gray-400 active:bg-kinetic-surface"
+    >
+      Continuer sur le web
+    </button>
+
+    <p class="mt-6 px-4 text-xs leading-relaxed text-gray-500">
+      Si Android te demande « Ouvrir avec Kinetic ? », choisis l'application. Tu pourras ensuite
+      revenir ici et fermer cet onglet.
+    </p>
+  </div>
+
+  <!-- Erreur -->
+  <div x-show="error" role="alert" class="w-full max-w-sm flex flex-col items-center text-center">
+    <svg
+      class="w-14 h-14 text-kinetic-electric"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 7.5v5" />
+      <path d="M12 16.3h.01" />
+    </svg>
+    <h1 class="mt-5 text-2xl font-display font-bold tracking-tight text-white">
+      Échec de connexion
+    </h1>
+    <p class="mt-2 px-2 text-base leading-snug text-gray-400 break-words" x-text="error"></p>
+    <a href="/login" class="k-btn mt-8">Réessayer la connexion</a>
   </div>
 </div>

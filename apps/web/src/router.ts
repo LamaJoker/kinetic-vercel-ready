@@ -175,7 +175,6 @@ async function render(path: string): Promise<void> {
   }
 
   const host = outlet();
-  host.style.opacity = '0.6';
   host.setAttribute('aria-busy', 'true');
 
   const html = await resolveHtml(normalizedPath);
@@ -194,6 +193,11 @@ async function render(path: string): Promise<void> {
   });
 
   host.innerHTML = html;
+  // Entrée de page en cascade (styles.css → #app-outlet.k-enter). On retire puis
+  // remet la classe en forçant un reflow pour rejouer l'animation à chaque page.
+  host.classList.remove('k-enter');
+  void host.offsetWidth;
+  host.classList.add('k-enter');
 
   // FIX #3 : Restaurer le hash après injection du HTML pour que Supabase Auth JS
   // puisse le lire lors de l'init du composant auth-callback
@@ -210,7 +214,6 @@ async function render(path: string): Promise<void> {
   }
 
   requestAnimationFrame(() => {
-    host.style.opacity = '1';
     host.setAttribute('aria-busy', 'false');
     // Notify body x-data so nav active indicator stays in sync (H3)
     window.dispatchEvent(
@@ -236,6 +239,15 @@ async function render(path: string): Promise<void> {
       );
     }
   });
+}
+
+/**
+ * Vrai si le routeur a déjà rendu une page dans #app-outlet. Le squelette
+ * initial d'index.html occupe l'outlet mais n'a pas d'élément [x-data] :
+ * seules les pages rendues par le routeur en ont.
+ */
+function hasRenderedPage(): boolean {
+  return !!document.getElementById('app-outlet')?.querySelector('[x-data]');
 }
 
 export function navigate(path: string, replace = false): void {
@@ -278,6 +290,12 @@ export function initRouter(): void {
     STORAGE_KEYS.EVENT_AUTH_READY,
     () => {
       _authReadyReceived = true;
+      // Rendu initial uniquement. En mode invité, auth-ready peut partir avant
+      // que cet écouteur soit branché : le rendu de secours ci-dessous a alors
+      // déjà affiché la page, et l'écouteur restait armé. Un auth-ready ultérieur
+      // re-rendait la page par-dessus elle-même, recréant le composant en plein
+      // travail (ex. Séances perdait la séance lancée depuis l'accueil).
+      if (hasRenderedPage()) return;
       void render(window.location.pathname || '/');
     },
     { once: true },
@@ -299,12 +317,7 @@ export function initRouter(): void {
   // rend directement sans attendre un autre event.
   setTimeout(() => {
     if (_authReadyReceived) return; // listener déjà consommé, render en cours
-    const appOutlet = document.getElementById('app-outlet');
-    // Le skeleton initial dans index.html occupe #app-outlet (donc hasChildNodes()
-    // est true) mais N'A PAS d'éléments [x-data] — seules les pages rendues par le
-    // router en ont. Tester `[x-data]` distingue fiablement "skeleton seul" de
-    // "router a déjà rendu", peu importe que la page ait ses propres animate-pulse.
-    if (appOutlet && appOutlet.querySelector('[x-data]')) return; // déjà rendu
+    if (hasRenderedPage()) return; // déjà rendu
     type WindowWithAlpine = Window & { Alpine?: { store?: (name: string) => unknown } };
     const auth = (window as WindowWithAlpine).Alpine?.store?.('auth') as
       | { loading?: boolean }

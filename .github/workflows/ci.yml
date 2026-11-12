@@ -113,6 +113,12 @@ jobs:
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
+    # Image officielle Playwright : navigateurs et dépendances système déjà
+    # installés. Plus d'appel à apt (dont les miroirs tombaient en panne DNS)
+    # ni de dépendance à la version d'Ubuntu de l'hôte. La version de l'image
+    # doit suivre celle de @playwright/test dans pnpm-lock.yaml.
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
     needs: [unit]
     strategy:
       fail-fast: false
@@ -136,9 +142,6 @@ jobs:
 
       - name: Build packages/adapter-web
         run: pnpm --filter @kinetic/adapters-web build
-
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps ${{ matrix.project == 'mobile-safari' && 'webkit' || 'chromium' }}
 
       - name: Build app (needed for E2E)
         run: pnpm build:e2e

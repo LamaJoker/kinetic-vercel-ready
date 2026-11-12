@@ -1,242 +1,407 @@
-<div x-data="onboarding" x-init="init()" class="min-h-screen bg-kinetic-ink px-4 pt-8 pb-10">
-  <div class="max-w-md mx-auto">
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-3">
-        <div class="w-7 h-7 text-kinetic-neon flex-shrink-0">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <circle cx="12" cy="12" r="3" fill="rgb(var(--ink))" />
-          </svg>
-        </div>
-        <h1 class="text-2xl font-display font-black tracking-tight text-white">Démarrage</h1>
-      </div>
-      <a
-        href="/"
-        class="text-xs text-gray-500 hover:text-gray-300 transition-colors underline underline-offset-2"
-        >Plus tard</a
+<div x-data="onboarding" x-init="init()" class="max-w-md mx-auto px-4 pt-4 pb-10">
+  <!-- Barre supérieure : passer -->
+  <div class="flex justify-end -mr-2">
+    <a
+      href="/"
+      class="inline-flex h-11 items-center px-2 text-base font-medium text-gray-400 active:opacity-60 transition-opacity"
+      >Plus tard</a
+    >
+  </div>
+
+  <!-- Titre -->
+  <header class="text-center mt-2 mb-9">
+    <div
+      class="mx-auto mb-5 flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[1.25rem] bg-kinetic-surface text-kinetic-neon"
+    >
+      <svg class="h-10 w-10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="3" fill="rgb(var(--surface))" />
+      </svg>
+    </div>
+    <h1 class="font-display text-3xl font-bold tracking-tight text-white">Bienvenue</h1>
+    <p class="mx-auto mt-2 max-w-xs text-base leading-snug text-gray-500">
+      Quelques infos pour calibrer tes séances et ta nutrition.
+    </p>
+  </header>
+
+  <!-- Objectif -->
+  <section class="mb-8">
+    <h2 id="onb-goal-title" class="k-section mb-2.5">Ton objectif</h2>
+    <div class="k-list" role="radiogroup" aria-labelledby="onb-goal-title">
+      <button
+        type="button"
+        role="radio"
+        @click="goal = 'lose_fat'"
+        :aria-checked="goal === 'lose_fat' ? 'true' : 'false'"
+        class="k-row k-row-icon transition-colors"
       >
+        <span class="k-glyph bg-kinetic-electric" aria-hidden="true">
+          <svg
+            class="h-[1.125rem] w-[1.125rem]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M12 3c.5 3 3.5 4.5 3.5 8.5a3.5 3.5 0 0 1-7 0c0-1.3.5-2.3 1.2-3C9.5 10 8 11.6 8 14a4 4 0 0 0 8 0"
+            />
+            <path d="M12 21a6 6 0 0 0 6-6c0-4-3-6-6-12-3 6-6 8-6 12a6 6 0 0 0 6 6z" />
+          </svg>
+        </span>
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Perte de gras</span>
+          <span class="block text-xs text-gray-500">Déficit contrôlé</span>
+        </span>
+        <svg
+          x-show="goal === 'lose_fat'"
+          class="k-pop h-5 w-5 flex-shrink-0 text-white"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        role="radio"
+        @click="goal = 'gain_muscle'"
+        :aria-checked="goal === 'gain_muscle' ? 'true' : 'false'"
+        class="k-row k-row-icon transition-colors"
+      >
+        <span class="k-glyph bg-kinetic-purple" aria-hidden="true">
+          <svg
+            class="h-[1.125rem] w-[1.125rem]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" />
+          </svg>
+        </span>
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Prise de masse</span>
+          <span class="block text-xs text-gray-500">Surplus modéré</span>
+        </span>
+        <svg
+          x-show="goal === 'gain_muscle'"
+          class="k-pop h-5 w-5 flex-shrink-0 text-white"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        role="radio"
+        @click="goal = 'recomp'"
+        :aria-checked="goal === 'recomp' ? 'true' : 'false'"
+        class="k-row k-row-icon transition-colors"
+      >
+        <span class="k-glyph bg-kinetic-teal" aria-hidden="true">
+          <svg
+            class="h-[1.125rem] w-[1.125rem]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M4 9h13l-3.5-3.5M20 15H7l3.5 3.5" />
+          </svg>
+        </span>
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Recomposition</span>
+          <span class="block text-xs text-gray-500">Déficit léger</span>
+        </span>
+        <svg
+          x-show="goal === 'recomp'"
+          class="k-pop h-5 w-5 flex-shrink-0 text-white"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        role="radio"
+        @click="goal = 'performance'"
+        :aria-checked="goal === 'performance' ? 'true' : 'false'"
+        class="k-row k-row-icon transition-colors"
+      >
+        <span class="k-glyph bg-orange-500" aria-hidden="true">
+          <svg
+            class="h-[1.125rem] w-[1.125rem]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M13 3L5 13.5h6L10 21l8-10.5h-6L13 3z" />
+          </svg>
+        </span>
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Performance</span>
+          <span class="block text-xs text-gray-500">Maintien de l'énergie</span>
+        </span>
+        <svg
+          x-show="goal === 'performance'"
+          class="k-pop h-5 w-5 flex-shrink-0 text-white"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      </button>
     </div>
+  </section>
 
-    <!-- Objectif -->
-    <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-4">
-      <p class="text-xs text-gray-500 font-semibold mb-3">Objectif</p>
-      <div class="grid grid-cols-2 gap-2">
-        <button
-          @click="goal = 'lose_fat'"
-          class="rounded-xl p-3 text-left transition-all"
-          :class="goal === 'lose_fat'
-                  ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
-                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'"
-        >
-          <p class="font-semibold text-sm leading-tight">Perte de gras</p>
-          <p class="text-xs text-gray-500 mt-0.5">Déficit contrôlé</p>
-        </button>
-
-        <button
-          @click="goal = 'gain_muscle'"
-          class="rounded-xl p-3 text-left transition-all"
-          :class="goal === 'gain_muscle'
-                  ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
-                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'"
-        >
-          <p class="font-semibold text-sm leading-tight">Prise de masse</p>
-          <p class="text-xs text-gray-500 mt-0.5">Surplus modéré</p>
-        </button>
-
-        <button
-          @click="goal = 'recomp'"
-          class="rounded-xl p-3 text-left transition-all"
-          :class="goal === 'recomp'
-                  ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
-                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'"
-        >
-          <p class="font-semibold text-sm leading-tight">Recomposition</p>
-          <p class="text-xs text-gray-500 mt-0.5">Déficit léger</p>
-        </button>
-
-        <button
-          @click="goal = 'performance'"
-          class="rounded-xl p-3 text-left transition-all"
-          :class="goal === 'performance'
-                  ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
-                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'"
-        >
-          <p class="font-semibold text-sm leading-tight">Performance</p>
-          <p class="text-xs text-gray-500 mt-0.5">Maintien énergie</p>
-        </button>
-      </div>
-    </div>
-
-    <!-- Profil -->
-    <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-4">
-      <p class="text-xs text-gray-500 font-semibold mb-3">Profil</p>
-
-      <div class="grid grid-cols-2 gap-2 mb-4">
-        <button
-          @click="sex = 'male'"
-          class="rounded-xl px-3 py-2.5 text-sm font-semibold transition-all"
-          :class="sex === 'male'
-                  ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
-                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'"
-        >
-          Homme
-        </button>
-        <button
-          @click="sex = 'female'"
-          class="rounded-xl px-3 py-2.5 text-sm font-semibold transition-all"
-          :class="sex === 'female'
-                  ? 'ring-2 ring-kinetic-neon bg-kinetic-neon/10 text-white'
-                  : 'ring-1 ring-white/5 bg-kinetic-elevated/50 text-gray-300 hover:ring-kinetic-neon/40 hover:bg-kinetic-elevated'"
-        >
-          Femme
-        </button>
+  <!-- Profil -->
+  <section class="mb-8">
+    <h2 class="k-section mb-2.5">À propos de toi</h2>
+    <div class="k-list">
+      <div class="k-row bg-kinetic-surface !py-[0.1875rem]">
+        <span id="onb-sex-label" class="text-base text-white flex-shrink-0">Sexe</span>
+        <div class="k-seg ml-auto w-44" role="group" aria-labelledby="onb-sex-label">
+          <button
+            type="button"
+            @click="sex = 'male'"
+            :aria-pressed="sex === 'male' ? 'true' : 'false'"
+            class="k-seg-item"
+          >
+            Homme
+          </button>
+          <button
+            type="button"
+            @click="sex = 'female'"
+            :aria-pressed="sex === 'female' ? 'true' : 'false'"
+            class="k-seg-item"
+          >
+            Femme
+          </button>
+        </div>
       </div>
 
-      <div class="grid grid-cols-3 gap-3">
-        <div>
-          <label for="f-onboarding-1" class="text-xs text-gray-500 mb-1 block">Âge</label>
+      <label for="f-onboarding-1" class="k-row cursor-text">
+        <span class="text-base text-white flex-shrink-0">Âge</span>
+        <span class="ml-auto flex items-baseline gap-1.5">
           <input
             id="f-onboarding-1"
             x-model.number="ageYears"
             type="number"
+            inputmode="numeric"
             min="12"
             max="90"
-            class="w-full bg-kinetic-ink ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon"
+            class="w-16 bg-transparent text-right text-base tabular-nums text-white focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
-        </div>
-        <div>
-          <label for="f-onboarding-2" class="text-xs text-gray-500 mb-1 block">Taille</label>
+          <span class="w-7 text-base text-gray-500" aria-hidden="true">ans</span>
+        </span>
+      </label>
+
+      <label for="f-onboarding-2" class="k-row cursor-text">
+        <span class="text-base text-white flex-shrink-0">Taille</span>
+        <span class="ml-auto flex items-baseline gap-1.5">
           <input
             id="f-onboarding-2"
             x-model.number="heightCm"
             type="number"
+            inputmode="numeric"
             min="120"
             max="230"
-            class="w-full bg-kinetic-ink ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon"
+            class="w-16 bg-transparent text-right text-base tabular-nums text-white focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
-        </div>
-        <div>
-          <label for="f-onboarding-3" class="text-xs text-gray-500 mb-1 block">Poids</label>
+          <span class="w-7 text-base text-gray-500" aria-hidden="true">cm</span>
+        </span>
+      </label>
+
+      <label for="f-onboarding-3" class="k-row cursor-text">
+        <span class="text-base text-white flex-shrink-0">Poids</span>
+        <span class="ml-auto flex items-baseline gap-1.5">
           <input
             id="f-onboarding-3"
             x-model.number="weightKg"
             type="number"
+            inputmode="decimal"
             min="30"
             max="250"
             step="0.1"
-            class="w-full bg-kinetic-ink ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon"
+            class="w-16 bg-transparent text-right text-base tabular-nums text-white focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
-        </div>
-      </div>
-    </div>
+          <span class="w-7 text-base text-gray-500" aria-hidden="true">kg</span>
+        </span>
+      </label>
 
-    <!-- Activité -->
-    <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-4">
-      <p class="text-xs text-gray-500 font-semibold mb-3">Activité</p>
-      <select
-        x-model="activity"
-        class="w-full bg-kinetic-ink ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kinetic-neon"
-      >
-        <option value="sedentary">Sédentaire</option>
-        <option value="light">Léger (1-2x/sem)</option>
-        <option value="moderate">Modéré (3-4x/sem)</option>
-        <option value="active">Actif (5x/sem)</option>
-        <option value="very_active">Très actif (sport + job physique)</option>
-      </select>
+      <label for="f-onboarding-4" class="k-row">
+        <span class="text-base text-white flex-shrink-0">Activité</span>
+        <select
+          id="f-onboarding-4"
+          x-model="activity"
+          class="flex-1 min-w-0 truncate bg-transparent text-right [text-align-last:right] text-base text-gray-400 focus:outline-none cursor-pointer"
+        >
+          <option value="sedentary">Sédentaire</option>
+          <option value="light">Léger (1-2x/sem)</option>
+          <option value="moderate">Modéré (3-4x/sem)</option>
+          <option value="active">Actif (5x/sem)</option>
+          <option value="very_active">Très actif (sport + job physique)</option>
+        </select>
+      </label>
     </div>
+    <p class="k-caption mt-2">
+      Sert uniquement à estimer tes besoins. Tout reste sur ton appareil.
+    </p>
+  </section>
 
-    <!-- Calories preview -->
-    <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-6">
-      <div class="flex items-end justify-between mb-3">
-        <div>
-          <p class="text-xs text-gray-500 font-semibold mb-1">Calories cible</p>
+  <!-- Estimation calorique -->
+  <section class="mb-8">
+    <h2 class="k-section mb-2.5">Ton estimation</h2>
+    <div class="k-card">
+      <div class="flex items-end justify-between gap-4">
+        <div class="min-w-0">
+          <p class="text-sm text-gray-500">Calories cible / jour</p>
           <p
-            class="text-4xl font-display font-black text-kinetic-neon leading-none"
+            class="mt-1.5 font-display text-[2.5rem] font-bold leading-none tracking-tight tabular-nums text-kinetic-neon"
             x-text="targetCalories ? targetCalories + ' kcal' : '--'"
           ></p>
         </div>
-        <div class="text-right">
-          <p class="text-xs text-gray-500 font-semibold mb-1">TDEE</p>
+        <div class="text-right flex-shrink-0">
+          <p class="text-sm text-gray-500">Dépense (TDEE)</p>
           <p
-            class="text-xl font-display font-bold text-gray-300 leading-none"
+            class="mt-1.5 font-display text-lg font-semibold leading-none tabular-nums text-white"
             x-text="tdee ? tdee + ' kcal' : '--'"
           ></p>
         </div>
       </div>
-      <p class="text-xs text-gray-600 leading-relaxed">
-        Estimation personnalisée. Ajustable à tout moment depuis les réglages.
+      <p class="mt-4 text-xs leading-relaxed text-gray-500">
+        Estimation personnalisée, ajustable à tout moment depuis ton profil.
       </p>
     </div>
+  </section>
 
-    <!-- Notifications -->
-    <div class="bg-kinetic-surface ring-1 ring-white/5 rounded-2xl p-5 mb-4">
-      <div class="flex items-start gap-3">
-        <div
-          class="w-9 h-9 rounded-xl bg-kinetic-raised flex items-center justify-center flex-shrink-0"
-        >
-          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <!-- Notifications -->
+  <section class="mb-10">
+    <div class="k-list">
+      <div class="k-row k-row-icon">
+        <span class="k-glyph bg-kinetic-electric" aria-hidden="true">
+          <svg
+            class="h-[1.125rem] w-[1.125rem]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+              d="M18 16H6l1.4-1.6c.4-.5.6-1 .6-1.6V10a4 4 0 0 1 8 0v2.8c0 .6.2 1.1.6 1.6L18 16z"
             />
+            <path d="M10 19a2 2 0 0 0 4 0" />
           </svg>
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-semibold text-white">Notifications</p>
-          <p class="text-[11px] text-gray-500 mt-0.5">
-            Rappel streak à 20h + fin du timer de repos.
-          </p>
-        </div>
+        </span>
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Notifications</span>
+          <span class="block text-xs text-gray-500">Rappel de série à 20 h, fin du repos.</span>
+        </span>
         <button
           type="button"
           @click="enableNotifications()"
           :disabled="notifPerm !== 'default'"
-          class="text-xs font-bold px-3 py-1.5 rounded-lg ring-1 transition-all flex-shrink-0"
+          class="k-pill"
           :class="notifPerm === 'granted'
-                  ? 'bg-kinetic-neon/15 text-kinetic-neon ring-kinetic-neon/30'
+                  ? 'bg-transparent px-1 text-kinetic-teal disabled:opacity-100'
                   : notifPerm === 'denied'
-                    ? 'bg-white/5 text-gray-500 ring-white/10'
-                    : 'bg-kinetic-electric/15 text-kinetic-electric ring-kinetic-electric/30 hover:bg-kinetic-electric/25'"
+                    ? 'bg-transparent px-1 text-gray-500 disabled:opacity-100'
+                    : ''"
         >
-          <span x-show="notifPerm === 'granted'">✓ Activé</span>
+          <span x-show="notifPerm === 'granted'" class="k-pop inline-flex items-center gap-1">
+            <svg
+              class="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12.5l4.5 4.5L19 7.5" />
+            </svg>
+            Activé
+          </span>
           <span x-show="notifPerm === 'denied'">Bloqué</span>
           <span x-show="notifPerm === 'default'">Activer</span>
         </button>
       </div>
     </div>
+  </section>
 
-    <!-- Submit -->
-    <button
-      @click="save()"
-      :disabled="saving"
-      class="w-full py-4 rounded-2xl bg-kinetic-neon text-gray-950 font-display font-black text-base tracking-tight hover:brightness-110 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
-    >
-      <span x-show="!saving">Créer mon profil</span>
-      <span x-show="saving">Enregistrement…</span>
-    </button>
+  <!-- Valider -->
+  <button type="button" @click="save()" :disabled="saving" class="k-btn">
+    <span x-show="!saving">Créer mon profil</span>
+    <span x-show="saving" class="inline-flex items-center gap-2">
+      <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle
+          cx="12"
+          cy="12"
+          r="9"
+          stroke="currentColor"
+          stroke-opacity="0.25"
+          stroke-width="3"
+        />
+        <path
+          d="M21 12a9 9 0 0 0-9-9"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
+      </svg>
+      Enregistrement…
+    </span>
+  </button>
 
-    <!-- Démo : explorer l'app remplie sans rien saisir (mode invité uniquement) -->
-    <template x-if="$store.auth.isGuest">
-      <div class="mt-4 rounded-2xl ring-1 ring-white/10 p-4 flex items-center gap-4">
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-semibold text-white">Juste curieux ?</p>
-          <p class="text-xs text-gray-400 mt-0.5">
-            Parcours Kinetic avec 8 semaines d'entraînement fictives. Tu pourras tout effacer depuis
-            ton profil.
-          </p>
-        </div>
-        <button
-          type="button"
-          @click="startDemo()"
-          :disabled="saving"
-          class="flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/20 hover:bg-white/5 disabled:opacity-40"
-        >
-          Voir la démo
-        </button>
-      </div>
-    </template>
-  </div>
+  <!-- Démo : explorer l'app remplie sans rien saisir (mode invité uniquement) -->
+  <template x-if="$store.auth.isGuest">
+    <div class="mt-8 text-center">
+      <p class="text-base font-semibold text-white">Juste curieux ?</p>
+      <p class="mx-auto mt-1 mb-4 max-w-xs text-sm text-gray-500">
+        Parcours Kinetic avec 8 semaines d'entraînement fictives. Tu pourras tout effacer depuis ton
+        profil.
+      </p>
+      <button type="button" @click="startDemo()" :disabled="saving" class="k-btn-2">
+        Voir la démo
+      </button>
+    </div>
+  </template>
 </div>

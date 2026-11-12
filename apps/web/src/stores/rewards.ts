@@ -31,7 +31,7 @@ export interface Theme {
 }
 
 export const THEMES: readonly Theme[] = [
-  { id: 'electrique', label: 'Électrique', emoji: '', neon: '#F2C230', accent: '#D93A34' },
+  { id: 'electrique', label: 'Électrique', emoji: '', neon: '#FFD60A', accent: '#FF453A' },
   { id: 'cyber', label: 'Cyber', emoji: '', neon: '#00E0FF', accent: '#0070FF' },
   { id: 'violet', label: 'Violet', emoji: '', neon: '#C060FF', accent: '#FF40A0' },
   { id: 'phoenix', label: 'Phoenix', emoji: '', neon: '#FFD200', accent: '#FF3C32' },

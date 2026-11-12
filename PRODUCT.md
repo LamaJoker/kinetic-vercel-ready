@@ -233,9 +233,14 @@ create policy "own sets" on workout_sets
 
 ### Direction design
 
-- **Palette** — violet `#7F77DD` (progression), teal `#00C2A0` (vitalité),
-  gold `#FFD166` (force), coral `#FF6B6B` (alertes). Fond noir profond `#0A0A0F`.
-- **Typographie** — Inter 16 px, 1.5 line-height, bold 700 uniquement sur chiffres.
+- **Langage visuel** — inspiré d'iOS : fond noir pur, cartes en aplat gris sans bordure
+  (`#1C1C1E`), listes groupées à filets fins, barre d'onglets translucide. Mode clair
+  équivalent (`#F2F2F7` / blanc). Tokens dans `apps/web/src/styles.css`.
+- **Couleur** — un seul accent (jaune système `#FFD60A`) réservé à l'action principale et
+  à la donnée clé ; rouge `#FF453A`, bleu `#0A84FF`, vert `#30D158` pour les données.
+  Aucun halo ni dégradé décoratif.
+- **Typographie** — San Francisco sur Apple, Inter ailleurs. Échelle iOS : grand titre 34,
+  titres 28/22/20, corps 17, notes 13 ; titres en gras 700, jamais plus.
 - **Densité** — gros boutons (48 px tactile mini), une action principale par écran.
 - **Feedback** — confettis sur PR, vibration sur fin de repos, toast sur XP.
 

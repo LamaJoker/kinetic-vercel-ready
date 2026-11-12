@@ -19,6 +19,9 @@ export function bodyweight() {
     newNote: '',
     goalWeight: null as number | null,
     period: 90,
+    /** Historique : mode édition (corbeilles visibles) et liste complète. */
+    editing: false,
+    showAll: false,
     _chartSvgCache: '' as string,
     _chartSvgVersion: '' as string,
 
@@ -171,75 +174,141 @@ export function bodyweight() {
       }
     },
 
+    /**
+     * Sens « favorable » d'une variation : si un objectif est fixé, on compare
+     * à la direction de l'objectif (perte ou prise) ; sinon une baisse est
+     * considérée favorable (comportement historique de l'écran).
+     */
+    _goodWhenDown(): boolean {
+      if (this.goalWeight && this.goalWeight > 0) {
+        const start = this.entries[0]?.weight ?? this.latest?.weight ?? this.goalWeight;
+        return this.goalWeight <= start;
+      }
+      return true;
+    },
+
+    /** Classe de couleur d'une variation : vert si favorable, rouge sinon, gris si stable. */
+    toneClass(d: number | null | undefined): string {
+      if (d === null || d === undefined || Math.abs(d) <= 0.05) return 'text-gray-500';
+      const good = d < 0 ? this._goodWhenDown() : !this._goodWhenDown();
+      return good ? 'text-kinetic-teal' : 'text-kinetic-electric';
+    },
+
+    /** Orientation de la flèche de tendance (flèche → tournée vers le haut ou le bas). */
+    arrowClass(d: number | null | undefined): string {
+      if (d === null || d === undefined || Math.abs(d) <= 0.05) return '';
+      return d > 0 ? '-rotate-45' : 'rotate-45';
+    },
+
+    /** Variation signée formatée : « +0.4 », « −0.3 », « 0.0 ». */
+    signed(d: number | null | undefined): string {
+      const v = d ?? 0;
+      if (v > 0) return '+' + v.toFixed(1);
+      if (v < 0) return '\u2212' + Math.abs(v).toFixed(1);
+      return v.toFixed(1);
+    },
+
     chartSvg(): string {
       const pts = this.filteredEntries;
       if (pts.length < 2) return '';
 
-      const version = `${pts.length}:${pts.at(-1)?.date ?? ''}:${this.goalWeight ?? ''}:${this.period}`;
+      // Courbe : `text-kinetic-neon/100` garde le jaune d'accent dans les deux modes
+      // (la règle claire de `.text-kinetic-neon` vise le texte, pas les tracés).
+      const isLight =
+        typeof document !== 'undefined' &&
+        document.documentElement.getAttribute('data-mode') === 'light';
+      const areaTop = isLight ? '0.18' : '0.28';
+      const version = `${isLight ? 'l' : 'd'}:${pts.length}:${pts[0]?.date ?? ''}:${pts.at(-1)?.date ?? ''}:${pts.at(-1)?.weight ?? ''}:${this.goalWeight ?? ''}:${this.period}`;
       if (this._chartSvgVersion === version && this._chartSvgCache) return this._chartSvgCache;
 
+      // Géométrie : zone de tracé à gauche, graduations à droite (style Santé iOS).
       const W = 320,
-        H = 140,
-        padX = 10,
-        padY = 20,
-        labelH = 14;
+        H = 168,
+        plotL = 2,
+        plotR = 284,
+        plotT = 10,
+        plotB = 140;
       const weights = pts.map((e) => e.weight);
-      const minY = Math.min(...weights) - 0.5;
-      const maxY = Math.max(...weights) + 0.5;
+      let lo = Math.min(...weights);
+      let hi = Math.max(...weights);
+      const goal = this.goalWeight && this.goalWeight > 0 ? this.goalWeight : null;
+      // L'objectif n'étend l'échelle que s'il est proche de la courbe.
+      const showGoal = goal !== null && goal >= lo - 3 && goal <= hi + 3;
+      if (showGoal && goal !== null) {
+        lo = Math.min(lo, goal);
+        hi = Math.max(hi, goal);
+      }
+      lo = Math.floor(lo - 0.5);
+      hi = Math.ceil(hi + 0.5);
+      if (hi - lo < 2) hi = lo + 2;
+
       const minX = Date.parse(pts[0]!.date);
       const maxX = Date.parse(pts.at(-1)!.date);
       const dx = Math.max(1, maxX - minX);
-      const dy = Math.max(0.1, maxY - minY);
-      const chartH = H - labelH;
+      const sx = (d: number) => plotL + ((d - minX) / dx) * (plotR - plotL);
+      const sy = (y: number) => plotB - ((y - lo) / (hi - lo)) * (plotB - plotT);
+      const fmtKg = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 
-      const sx = (d: number) => padX + ((d - minX) / dx) * (W - padX * 2);
-      const sy = (y: number) => chartH - padY - ((y - minY) / dy) * (chartH - padY * 2);
-
-      const linePath = pts
-        .map(
-          (e, i) =>
-            `${i === 0 ? 'M' : 'L'} ${sx(Date.parse(e.date)).toFixed(1)} ${sy(e.weight).toFixed(1)}`,
-        )
+      const coords = pts.map((e) => [sx(Date.parse(e.date)), sy(e.weight)] as const);
+      const linePath = coords
+        .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`)
         .join(' ');
       const areaPath =
         linePath +
-        ` L ${sx(Date.parse(pts.at(-1)!.date)).toFixed(1)} ${chartH}` +
-        ` L ${padX} ${chartH} Z`;
+        ` L${coords.at(-1)![0].toFixed(1)} ${plotB} L${coords[0]![0].toFixed(1)} ${plotB} Z`;
 
-      const gridLines = [0, 0.5, 1]
-        .map((ratio) => {
-          const y = padY + ratio * (chartH - padY * 2);
-          return `<line x1="${padX}" y1="${y.toFixed(1)}" x2="${W - padX}" y2="${y.toFixed(1)}" stroke="#ffffff08" stroke-width="1"/>`;
+      // Grille neutre : 3 graduations (haut, milieu, bas), couleur système.
+      const ticks = [hi, (hi + lo) / 2, lo];
+      const grid = ticks
+        .map((v) => {
+          const y = sy(v).toFixed(1);
+          return (
+            `<line x1="${plotL}" y1="${y}" x2="${plotR}" y2="${y}" class="text-gray-500" stroke="currentColor" stroke-opacity="0.22" stroke-width="1"/>` +
+            `<text x="${W - 2}" y="${(+y + 4).toFixed(1)}" text-anchor="end" class="text-gray-500" fill="currentColor" font-size="11.5">${fmtKg(v)}</text>`
+          );
         })
         .join('');
 
-      const lastPt = pts.at(-1)!;
-      const lastCx = sx(Date.parse(lastPt.date)).toFixed(1);
-      const lastCy = sy(lastPt.weight).toFixed(1);
-
       let goalLine = '';
-      if (this.goalWeight && this.goalWeight >= minY && this.goalWeight <= maxY + 2) {
-        const gy = sy(this.goalWeight).toFixed(1);
-        goalLine = `
-          <line x1="${padX}" y1="${gy}" x2="${W - padX}" y2="${gy}"
-                stroke="#F2C230" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
-          <text x="${W - padX + 2}" y="${+gy + 4}" fill="#F2C230" font-size="8" opacity="0.6">${this.goalWeight}</text>`;
+      if (showGoal && goal !== null) {
+        const gy = sy(goal).toFixed(1);
+        goalLine =
+          `<line x1="${plotL}" y1="${gy}" x2="${plotR}" y2="${gy}" class="text-kinetic-teal" stroke="currentColor" stroke-width="1.25" stroke-dasharray="3 4" stroke-linecap="round"/>` +
+          `<text x="${plotL + 2}" y="${(+gy - 5).toFixed(1)}" class="text-kinetic-teal" fill="currentColor" font-size="11.5" font-weight="600">Objectif ${fmtKg(goal)}</text>`;
       }
 
-      const startLabel = this.formatDate(pts[0]!.date);
-      const endLabel = this.formatDate(lastPt.date);
+      // Points intermédiaires discrets quand la série est courte.
+      const dots =
+        pts.length <= 20
+          ? coords
+              .slice(0, -1)
+              .map(
+                ([x, y]) =>
+                  `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" class="text-kinetic-neon/100" fill="currentColor"/>`,
+              )
+              .join('')
+          : '';
 
-      const svg = `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe de poids">
-        ${gridLines}
+      const [lastX, lastY] = coords.at(-1)!;
+      const startLabel = this.formatDate(pts[0]!.date);
+      const endLabel = this.formatDate(pts.at(-1)!.date);
+
+      const svg = `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe de poids, de ${startLabel} à ${endLabel}">
+        <defs>
+          <linearGradient id="bw-area" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" class="text-kinetic-neon/100" stop-color="currentColor" stop-opacity="${areaTop}"/>
+            <stop offset="1" class="text-kinetic-neon/100" stop-color="currentColor" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        ${grid}
         ${goalLine}
-        <path d="${areaPath}" fill="#F2C230" fill-opacity="0.07"/>
-        <path d="${linePath}" fill="none" stroke="#F2C230" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="${lastCx}" cy="${lastCy}" r="5" fill="#F2C230" filter="drop-shadow(0 0 4px rgba(242,194,48,0.8))"/>
-        <circle cx="${lastCx}" cy="${lastCy}" r="2.5" fill="#0A0A0F"/>
-        <text x="${padX}" y="${H - 2}" fill="#4B5563" font-size="9">${startLabel}</text>
-        <text x="${W - padX}" y="${H - 2}" text-anchor="end" fill="#4B5563" font-size="9">${endLabel}</text>
-        <text x="${padX}" y="12" fill="#6B7280" font-size="9">${maxY.toFixed(1)} kg</text>
-        <text x="${padX}" y="${chartH - 4}" fill="#6B7280" font-size="9">${minY.toFixed(1)} kg</text>
+        <path d="${areaPath}" fill="url(#bw-area)"/>
+        <path d="${linePath}" fill="none" class="text-kinetic-neon/100" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+        ${dots}
+        <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="5.5" class="text-kinetic-surface" fill="currentColor"/>
+        <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="4" class="text-kinetic-neon/100" fill="currentColor"/>
+        <text x="${plotL}" y="${H - 6}" class="text-gray-500" fill="currentColor" font-size="11.5">${startLabel}</text>
+        <text x="${plotR}" y="${H - 6}" text-anchor="end" class="text-gray-500" fill="currentColor" font-size="11.5">${endLabel}</text>
       </svg>`;
       this._chartSvgCache = svg;
       this._chartSvgVersion = version;

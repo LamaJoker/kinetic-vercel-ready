@@ -1,108 +1,109 @@
-@import '@fontsource/barlow-condensed/500.css';
-@import '@fontsource/barlow-condensed/600.css';
-@import '@fontsource/barlow-condensed/700.css';
+/* Inter (variable) : seulement les sous-ensembles latin et latin étendu.
+   Sur iPhone / Mac, la pile de polices préfère San Francisco (-apple-system). */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-wght-normal.woff2')
+    format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2')
+    format('woff2-variations');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Tokens & thèmes (Kinetic Redesign v2) ──────────────────
-   Format "R G B" pour compat Tailwind/alpha + variantes oklch
-   pour les composants signature (glows, gradients, pills).
-─────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════
+   Kinetic — langage visuel inspiré d'iOS
+   ───────────────────────────────────────────────────────────────────────
+   Principes :
+   1. Le fond est noir pur, les cartes sont des aplats gris sans bordure :
+      c'est le contraste des surfaces qui sépare, pas des traits.
+   2. La hiérarchie vient de la typographie (grand titre 34, titres 22/20,
+      corps 17, notes 13), pas de la couleur.
+   3. Une seule couleur d'accent, réservée à ce qui est actionnable ou
+      à la donnée clé. Le reste est blanc ou gris.
+   4. Aucun halo, dégradé décoratif ni texte lumineux.
+   Les couleurs sont au format "R G B" pour l'opacité Tailwind (<alpha-value>).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── Couleurs d'accent (thèmes débloqués par niveau) ─── */
 :root,
 [data-theme='electrique'] {
-  /* Identité « Compétition » : couleurs des disques calibrés.
-     neon = jaune 15 kg (action principale), electric = rouge 25 kg (records, séries). */
-  --kinetic-neon: 242 194 48;
-  --kinetic-electric: 217 58 52;
-  --p: oklch(82% 0.28 145);
-  --p-dim: oklch(58% 0.22 145);
-  --p-glow: oklch(82% 0.28 145 / 0.38);
-  --e: oklch(72% 0.22 35);
-  --e-glow: oklch(72% 0.22 35 / 0.42);
+  --kinetic-neon: 255 214 10; /* jaune système */
+  --kinetic-electric: 255 69 58; /* rouge système */
 }
-
 [data-theme='cyber'] {
-  --kinetic-neon: 0 224 255;
-  --kinetic-electric: 0 112 255;
-  --p: oklch(78% 0.24 210);
-  --p-dim: oklch(55% 0.18 210);
-  --p-glow: oklch(78% 0.24 210 / 0.38);
-  --e: oklch(72% 0.22 285);
-  --e-glow: oklch(72% 0.22 285 / 0.42);
+  --kinetic-neon: 100 210 255;
+  --kinetic-electric: 10 132 255;
 }
-
 [data-theme='violet'] {
-  --kinetic-neon: 192 96 255;
-  --kinetic-electric: 255 64 160;
-  --p: oklch(70% 0.28 300);
-  --p-dim: oklch(50% 0.22 300);
-  --p-glow: oklch(70% 0.28 300 / 0.38);
-  --e: oklch(70% 0.26 350);
-  --e-glow: oklch(70% 0.26 350 / 0.42);
+  --kinetic-neon: 191 90 242;
+  --kinetic-electric: 255 55 95;
 }
-
 [data-theme='phoenix'] {
-  --kinetic-neon: 255 210 0;
-  --kinetic-electric: 255 60 50;
-  --p: oklch(80% 0.24 55);
-  --p-dim: oklch(57% 0.19 55);
-  --p-glow: oklch(80% 0.24 55 / 0.38);
-  --e: oklch(68% 0.26 15);
-  --e-glow: oklch(68% 0.26 15 / 0.42);
+  --kinetic-neon: 255 159 10;
+  --kinetic-electric: 255 69 58;
 }
-
 [data-theme='fantome'] {
-  --kinetic-neon: 220 220 230;
-  --kinetic-electric: 140 140 160;
-  --p: oklch(90% 0.02 270);
-  --p-dim: oklch(65% 0.02 270);
-  --p-glow: oklch(90% 0.02 270 / 0.38);
-  --e: oklch(70% 0.02 270);
-  --e-glow: oklch(70% 0.02 270 / 0.42);
+  --kinetic-neon: 229 229 234;
+  --kinetic-electric: 142 142 147;
 }
 
+/* ─── Surfaces : mode sombre (défaut) ─── */
 :root {
-  /* Bleu 20 kg : données et courbes secondaires */
-  --v: rgb(62 111 216);
-  --v-glow: transparent;
-  /* ── Palette dark (defaut). Format "R G B" pour rgb()/<alpha-value> Tailwind ── */
-  /* Tapis de sol, fonte, acier ; texte couleur craie */
-  --ink: 22 23 26;
-  --surface: 31 33 36;
-  --elevated: 42 45 49;
-  --raised: 52 56 61;
-  --tx-rgb: 237 234 227;
-  --border: rgba(237, 234, 227, 0.08);
-  --border-hi: rgba(237, 234, 227, 0.16);
+  --ink: 0 0 0; /* fond de page */
+  --surface: 28 28 30; /* cartes */
+  --elevated: 44 44 46; /* éléments posés dans une carte */
+  --raised: 58 58 60; /* niveau au-dessus (pastille active, feuille) */
+  --well: 44 44 46; /* champs et pistes à l'intérieur d'une carte */
+  --chip: 44 44 46; /* pastille de choix non sélectionnée */
+  --on-tx: 0 0 0; /* texte sur pastille sélectionnée */
+  --tx-rgb: 255 255 255;
   --tx: rgb(var(--tx-rgb));
-  --tx2: rgb(var(--tx-rgb) / 0.52);
-  --tx3: rgb(var(--tx-rgb) / 0.26);
-  /* Force le rendu navigateur natif (scrollbars, controls) en harmonie */
+  --tx2: #98989f; /* libellé secondaire */
+  --separator: rgba(84, 84, 88, 0.65);
+  --border: rgba(84, 84, 88, 0.4);
+  --border-hi: rgba(84, 84, 88, 0.8);
+  --material: rgba(22, 22, 24, 0.78); /* barre d'onglets translucide */
   color-scheme: dark;
 }
 
-/* ─── Mode clair ────────────────────────────────────────────────────────
-   Activé via attribut data-mode="light" sur <html>.
-   Le mode est ORTHOGONAL au data-theme (couleurs d'accent) : on peut
-   combiner par ex. `data-mode="light" data-theme="cyber"`.
-   ───────────────────────────────────────────────────────────────────── */
+/* ─── Surfaces : mode clair (data-mode="light" sur <html>) ───
+   Orthogonal à data-theme : on peut combiner les deux. */
 [data-mode='light'] {
-  /* Fond cassé blanc avec nuances légères, jamais 100% pur pour éviter
-     la fatigue oculaire en plein soleil */
-  /* Mode clair « craie » : papier chaud, jamais blanc pur */
-  --ink: 241 239 234; /* body */
-  --surface: 252 251 248; /* cards */
-  --elevated: 233 230 224; /* panneaux internes */
-  --raised: 222 218 210; /* niveaux supérieurs */
-  --tx-rgb: 28 29 32; /* texte principal */
-  --border: rgba(28, 29, 32, 0.1);
-  --border-hi: rgba(28, 29, 32, 0.2);
+  --ink: 242 242 247;
+  --surface: 255 255 255;
+  --elevated: 242 242 247;
+  --raised: 229 229 234;
+  --well: 239 239 244;
+  --chip: 229 229 234;
+  --on-tx: 255 255 255;
+  --tx-rgb: 0 0 0;
+  --tx2: #636366;
+  --separator: rgba(60, 60, 67, 0.22);
+  --border: rgba(60, 60, 67, 0.14);
+  --border-hi: rgba(60, 60, 67, 0.3);
+  --material: rgba(249, 249, 249, 0.82);
   color-scheme: light;
 }
 
-/* ─── Layout iOS-friendly ─── */
+/* ─── Base ─── */
 html {
   height: -webkit-fill-available;
 }
@@ -110,56 +111,21 @@ body {
   min-height: -webkit-fill-available;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    'Helvetica Neue',
-    sans-serif;
   color: var(--tx);
-  -webkit-font-smoothing: antialiased;
   background: rgb(var(--ink));
-  background-image:
-    radial-gradient(ellipse 70% 50% at 20% 0%, rgb(var(--kinetic-neon) / 0.18) 0%, transparent 55%),
-    radial-gradient(
-      ellipse 55% 40% at 80% 95%,
-      rgb(var(--kinetic-electric) / 0.16) 0%,
-      transparent 55%
-    ),
-    radial-gradient(ellipse 40% 35% at 55% 50%, var(--v-glow) 0%, transparent 65%);
-  background-attachment: fixed;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   transition:
     background-color 200ms ease,
     color 200ms ease;
-}
-
-/* Mode clair : on atténue significativement les glows de fond
-   (gradients trop saturés sur fond clair → fatigue visuelle) */
-[data-mode='light'] body {
-  background-image:
-    radial-gradient(ellipse 70% 50% at 20% 0%, rgb(var(--kinetic-neon) / 0.06) 0%, transparent 55%),
-    radial-gradient(
-      ellipse 55% 40% at 80% 95%,
-      rgb(var(--kinetic-electric) / 0.05) 0%,
-      transparent 55%
-    );
-}
-
-h1,
-h2,
-h3,
-h4 {
-  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
 }
 
 * {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Scrollbar fine */
 ::-webkit-scrollbar {
   width: 2px;
 }
@@ -167,7 +133,7 @@ h4 {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--elevated);
+  background: rgb(var(--elevated));
   border-radius: 2px;
 }
 
@@ -175,18 +141,666 @@ h4 {
   display: none !important;
 }
 
-/* ─── Mode d'affichage Simple / Avancé ──────────────────────────────────
-   En mode "simple" (data-density absent ou = simple), on masque tout
-   élément taggé `.adv-only` : blocs avancés (coach périodisation, scores
-   normalisés, équilibre musculaire détaillé, etc.). Le mode "advanced"
-   révèle tout. Défaut = simple pour ne pas noyer les débutants.
-   ───────────────────────────────────────────────────────────────────── */
+/* ─── Typographie ───
+   Les titres resserrent l'interlettrage (comme SF Display aux grandes tailles). */
+h1,
+h2,
+h3,
+h4,
+h5,
+.font-display {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.022em;
+}
+.text-2xl,
+.text-3xl,
+.text-4xl,
+.text-5xl,
+.text-6xl {
+  letter-spacing: -0.028em;
+}
+/* Grand titre de page */
+#app-outlet h1 {
+  font-variant-numeric: normal;
+  font-size: 2.125rem;
+  line-height: 2.5625rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+/* Titres de section dans les cartes : « headline » iOS (17 semi-gras) au minimum */
+#app-outlet h2:not([class*='text-']),
+#app-outlet h3:not([class*='text-']) {
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+/* Plus petites tailles lisibles : 11 px est le plancher d'iOS (caption 2) */
+.text-\[10px\] {
+  font-size: 0.6875rem;
+  line-height: 0.875rem;
+}
+.text-\[11px\] {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+/* Chiffres : toujours alignés, jamais en police à chasse fixe */
+.font-mono {
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── En-tête de page : barre de navigation + grand titre ───
+   <div class="k-nav"> [a.k-back] <h1> | <div><h1><p></div> [élément de droite] </div>
+   Rangée 1 : retour à gauche, action/indicateur à droite. Rangée 2 : le titre. */
+.k-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.k-nav > .k-back {
+  order: 0;
+}
+.k-nav > :not(.k-back):not(h1):not(:has(h1)) {
+  order: 1;
+  margin-left: auto;
+}
+.k-nav > h1,
+.k-nav > :has(h1) {
+  order: 2;
+  flex: 0 0 100%;
+  min-width: 0;
+  margin-top: 0.625rem;
+}
+.k-nav p {
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+  margin-top: 0.125rem;
+}
+/* Pages racines (onglets) : pas de retour, la date passe au-dessus du titre */
+.k-nav:not(:has(.k-back)) > span {
+  margin-left: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--tx2);
+}
+.k-nav:not(:has(.k-back)) > h1,
+.k-nav:not(:has(.k-back)) > :has(h1) {
+  margin-top: 0.125rem;
+}
+/* Bouton retour : pastille ronde, 44 px de zone tactile */
+.k-back {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background: rgb(var(--surface));
+  color: var(--tx);
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease;
+}
+.k-back::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+.k-back:active {
+  transform: scale(0.92);
+  background: rgb(var(--elevated));
+}
+.k-back svg {
+  margin-right: 2px;
+}
+
+/* ─── Barre d'onglets : matériau translucide ─── */
+.k-tabbar {
+  background: var(--material);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(24px);
+  border-top: 0.5px solid var(--separator);
+}
+.k-tabbar a {
+  color: var(--tx2);
+  transition: color 150ms ease;
+}
+.k-tabbar a[aria-current='page'] {
+  color: rgb(var(--kinetic-neon));
+}
+/* Clair : le jaune ne se lit pas sur fond blanc, l'onglet actif passe en noir */
+[data-mode='light'] .k-tabbar a[aria-current='page'] {
+  color: var(--tx);
+}
+.k-tabbar a[aria-current='page'] svg {
+  stroke-width: 2.2;
+}
+
+/* ─── Cartes ───
+   Aplat sans bordure. À l'intérieur d'une carte, « ink » (champs, pistes de
+   progression) devient un gris de remplissage au lieu du noir de la page. */
+.bg-kinetic-surface {
+  --ink: var(--well);
+}
+.bg-kinetic-surface .bg-kinetic-elevated,
+.bg-kinetic-elevated {
+  --ink: var(--raised);
+}
+/* Les filets décoratifs (ring-white/5, ring-white/10) n'ont plus lieu d'être */
+.ring-white\/5,
+.ring-white\/10 {
+  --tw-ring-color: transparent;
+}
+/* …sauf sur un élément sans fond propre, où le filet tient lieu de contour */
+.ring-1.ring-white\/10:not([class*=' bg-']):not([class^='bg-']) {
+  --tw-ring-color: var(--border-hi);
+}
+.hover\:ring-white\/20:hover,
+.hover\:ring-white\/25:hover,
+.hover\:ring-white\/30:hover {
+  --tw-ring-color: var(--border-hi);
+}
+/* Champs : remplis, sans contour (le contour revient au focus) */
+[class~='border'].border-white\/10,
+[class~='border'].border-white\/5 {
+  border-color: transparent;
+}
+/* Séparateurs (border-t / border-b / divide-y) : filet fin */
+.border-white\/5,
+.border-white\/10,
+.border-white\/\[0\.07\] {
+  border-color: var(--separator);
+}
+[class*='divide-white/'] > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--separator);
+}
+
+/* Toute bordure sans couleur explicite est un filet de séparation */
+*,
+::before,
+::after {
+  border-color: var(--separator);
+}
+/* Encadrés teintés : l'aplat suffit, pas de liseré coloré autour */
+[class*='ring-kinetic-neon/'],
+[class*='ring-kinetic-electric/'],
+[class*='ring-kinetic-purple/'],
+[class*='ring-kinetic-teal/'],
+[class*='ring-kinetic-coral/'],
+[class*='ring-kinetic-gold/'],
+[class*='ring-yellow-400/'] {
+  --tw-ring-color: transparent;
+}
+[class~='border'][class*='border-kinetic-neon/'],
+[class~='border'][class*='border-kinetic-electric/'] {
+  border-color: transparent;
+}
+
+/* Plus de halos ni d'ombres colorées */
+[class*='shadow-['],
+[class*='shadow-glow'] {
+  box-shadow: none !important;
+}
+[class*='drop-shadow-['] {
+  filter: none !important;
+}
+
+/* ─── Contrôles ─── */
+input,
+select,
+textarea {
+  accent-color: rgb(var(--kinetic-neon));
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--tx2);
+  opacity: 0.7;
+}
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='16' viewBox='0 0 12 16' fill='none' stroke='%2398989f' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6l3-3 3 3M3 10l3 3 3-3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.25rem !important;
+}
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(var(--raised));
+  outline: none;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  box-shadow:
+    0 0.5px 4px rgba(0, 0, 0, 0.12),
+    0 3px 8px rgba(0, 0, 0, 0.2);
+}
+input[type='range']::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  border: none;
+  box-shadow:
+    0 0.5px 4px rgba(0, 0, 0, 0.12),
+    0 3px 8px rgba(0, 0, 0, 0.2);
+}
+button,
+a {
+  touch-action: manipulation;
+}
+:focus-visible {
+  outline: 2px solid rgb(var(--kinetic-neon));
+  outline-offset: 2px;
+}
+
+/* ─── Contrôle segmenté (iOS) ───
+   <div class="k-seg"> <button class="k-seg-item" aria-pressed|aria-selected|.on> … </div> */
+.k-seg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: rgb(var(--surface));
+}
+.bg-kinetic-surface .k-seg {
+  background: rgb(var(--well));
+}
+.k-seg-item {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 2.125rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--tx);
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+.k-seg-item.on,
+.k-seg-item[aria-pressed='true'],
+.k-seg-item[aria-selected='true'] {
+  font-weight: 600;
+  background: rgb(var(--raised));
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.12),
+    0 1px 1px rgba(0, 0, 0, 0.04);
+}
+[data-mode='light'] .k-seg {
+  background: rgba(118, 118, 128, 0.12);
+}
+[data-mode='light'] .k-seg-item.on,
+[data-mode='light'] .k-seg-item[aria-pressed='true'],
+[data-mode='light'] .k-seg-item[aria-selected='true'] {
+  background: #fff;
+}
+
+/* Pastilles de choix (thème, langue, filtres) : la sélection est neutre et
+   très contrastée ; le jaune reste réservé à l'action principale. */
+.k-on {
+  background: rgb(var(--tx-rgb));
+  color: rgb(var(--on-tx));
+  font-weight: 600;
+}
+.k-off {
+  background: rgb(var(--chip));
+  color: var(--tx);
+}
+
+/* ─── Liste groupée (iOS « inset grouped ») ───
+   <div class="k-list"> <div|a|button class="k-row"> … </div>
+   Une seule carte, des rangées séparées par un filet en retrait. */
+.k-list {
+  background: rgb(var(--surface));
+  border-radius: 22px;
+  overflow: hidden;
+  --ink: var(--well);
+}
+.k-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.6875rem 1rem;
+  text-align: left;
+}
+.k-row + .k-row::before,
+.k-row-sep::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 1rem;
+  height: 0.5px;
+  background: var(--separator);
+}
+.k-row.k-row-icon + .k-row.k-row-icon::before {
+  left: 3.5rem;
+}
+/* Bloc de liste (rangée + détail dépliable) */
+.k-item + .k-item {
+  box-shadow: inset 0 0.5px 0 var(--separator);
+}
+a.k-row:active,
+button.k-row:active {
+  background: rgb(var(--elevated));
+}
+/* Chevron de divulgation à droite d'une rangée */
+.k-chevron {
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.875rem;
+  color: var(--tx2);
+  opacity: 0.6;
+}
+/* Titre de section au-dessus d'une carte ou d'une liste */
+.k-section {
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.026em;
+  color: var(--tx);
+}
+/* Légende au-dessus d'une liste de réglages */
+.k-caption {
+  padding: 0 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--tx2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Composants standard — à utiliser plutôt que des classes ad hoc
+   ═══════════════════════════════════════════════════════════════════════ */
+@layer components {
+  /* Bouton principal (une seule action principale par écran) */
+  .k-btn {
+    @apply inline-flex h-[3.125rem] w-full items-center justify-center gap-2 rounded-xl bg-kinetic-neon px-5 text-base font-semibold text-gray-950 transition active:scale-[0.98] active:brightness-90 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  /* Bouton secondaire, même gabarit, sur fond gris */
+  .k-btn-2 {
+    @apply inline-flex h-[3.125rem] w-full items-center justify-center gap-2 rounded-xl bg-kinetic-elevated px-5 text-base font-medium text-white transition active:scale-[0.98] active:bg-kinetic-raised disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  /* Bouton destructif */
+  .k-btn-danger {
+    @apply inline-flex h-[3.125rem] w-full items-center justify-center gap-2 rounded-xl bg-kinetic-electric px-5 text-base font-semibold text-white transition active:scale-[0.98] active:brightness-90 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  /* Petit bouton pilule, dans une rangée de liste ou un en-tête de carte */
+  .k-pill {
+    @apply inline-flex h-9 flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-kinetic-elevated px-4 text-sm font-medium text-white transition active:scale-95 active:bg-kinetic-raised disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .k-pill-accent {
+    @apply inline-flex h-9 flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-kinetic-neon px-4 text-sm font-semibold text-gray-950 transition active:scale-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  /* Lien-texte d'action (couleur d'accent, sans fond) */
+  .k-link {
+    @apply inline-flex items-center gap-1 py-1 text-base font-medium text-kinetic-neon active:opacity-60;
+  }
+  /* Bouton icône rond (fermer, plus, réglages) : 36 px visibles, 44 px de zone tactile */
+  .k-icon-btn {
+    @apply relative inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-kinetic-elevated text-gray-400 transition active:scale-90 active:bg-kinetic-raised;
+  }
+  .k-icon-btn::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+  }
+  /* Champ de saisie rempli, sans contour (le contour revient au focus) */
+  .k-field {
+    @apply h-11 w-full min-w-0 rounded-xl bg-kinetic-ink px-3.5 text-base text-white outline-none transition-shadow placeholder:text-gray-500 focus:ring-2 focus:ring-kinetic-neon;
+  }
+  /* Libellé au-dessus d'un champ */
+  .k-label {
+    @apply mb-1.5 block text-sm font-medium text-gray-400;
+  }
+  /* Carte standard */
+  .k-card {
+    @apply rounded-2xl bg-kinetic-surface p-4;
+  }
+  /* Titre de carte (headline iOS) */
+  .k-card-title {
+    @apply text-[1.0625rem] font-semibold leading-[1.375rem] text-white;
+  }
+  /* Valeur chiffrée mise en avant */
+  .k-metric {
+    @apply font-display text-3xl font-bold leading-none tabular-nums text-white;
+  }
+  /* État vide : centré, discret */
+  .k-empty {
+    @apply rounded-2xl bg-kinetic-surface px-6 py-10 text-center;
+  }
+  .k-empty > :first-child {
+    @apply text-base font-semibold text-white;
+  }
+  /* Pastille d'icône colorée (réglages, raccourcis). Dans le calque
+     « components » pour qu'une classe text-* puisse remplacer le blanc. */
+  .k-glyph {
+    @apply inline-flex h-[1.875rem] w-[1.875rem] flex-shrink-0 items-center justify-center rounded-[7px] text-white;
+  }
+  /* Rangée défilant horizontalement (filtres) sans barre de défilement */
+  .k-scroll-x {
+    @apply -mx-4 flex gap-2 overflow-x-auto px-4 py-1;
+    scrollbar-width: none;
+  }
+  .k-scroll-x::-webkit-scrollbar {
+    display: none;
+  }
+  /* Bouton ±, 44 px, regroupé par paires dans un .k-stepper */
+  .k-stepper {
+    @apply inline-flex h-11 overflow-hidden rounded-xl bg-kinetic-raised;
+  }
+  .k-stepper > button {
+    @apply flex w-12 items-center justify-center text-xl font-medium text-white transition-colors active:bg-white/10;
+  }
+  .k-stepper > button + button {
+    box-shadow: inset 0.5px 0 0 var(--separator);
+  }
+  /* Badge discret (statut, compteur) */
+  .k-badge {
+    @apply inline-flex items-center rounded-full bg-kinetic-elevated px-2 py-0.5 text-xs font-semibold tabular-nums text-gray-400;
+  }
+}
+
+/* ─── Feuille modale (bottom sheet) ───
+   <div class="k-backdrop" x-show="open" @click.self="open=false">
+     <div class="k-sheet" role="dialog" aria-modal="true"> … </div>
+   </div> */
+.k-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0.5rem calc(env(safe-area-inset-bottom) + 0.5rem);
+  background: rgba(0, 0, 0, 0.48);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: k-fade-in 200ms ease both;
+}
+.k-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 28rem;
+  max-height: 88vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 28px;
+  background: rgb(var(--surface));
+  padding: 1.75rem 1.25rem 1.25rem;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.35);
+  animation: k-sheet-in 380ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  --ink: var(--well);
+}
+/* Poignée de la feuille */
+.k-sheet::before {
+  content: '';
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  width: 2.25rem;
+  height: 0.3125rem;
+  margin-left: -1.125rem;
+  border-radius: 9999px;
+  background: var(--separator);
+}
+@media (min-width: 640px) {
+  .k-backdrop {
+    align-items: center;
+  }
+}
+@keyframes k-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* ─── Toasts : capsule en matériau translucide ─── */
+.k-toast {
+  background: var(--material);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(24px);
+  box-shadow:
+    0 0 0 0.5px var(--separator),
+    0 10px 30px rgba(0, 0, 0, 0.3);
+  color: var(--tx);
+}
+
+/* ─── Mouvement ───
+   Entrée de page : les blocs montent et apparaissent en cascade.
+   `backwards` (et non `both`) : aucune transformation ne reste après
+   l'animation, sinon les éléments `fixed` des pages perdraient leur repère. */
+@keyframes k-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+#app-outlet.k-enter > * > * {
+  animation: k-page-in 420ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+#app-outlet.k-enter > * > :nth-child(2) {
+  animation-delay: 30ms;
+}
+#app-outlet.k-enter > * > :nth-child(3) {
+  animation-delay: 60ms;
+}
+#app-outlet.k-enter > * > :nth-child(4) {
+  animation-delay: 90ms;
+}
+#app-outlet.k-enter > * > :nth-child(5) {
+  animation-delay: 120ms;
+}
+#app-outlet.k-enter > * > :nth-child(6) {
+  animation-delay: 150ms;
+}
+#app-outlet.k-enter > * > :nth-child(n + 7) {
+  animation-delay: 180ms;
+}
+/* Les calques fixes (modales, minuteur) n'entrent pas en cascade ; un fond de
+   feuille modale garde son propre fondu */
+#app-outlet.k-enter > * > .fixed,
+#app-outlet.k-enter > * > [class*='fixed '],
+#app-outlet.k-enter > * > template {
+  animation: none;
+}
+#app-outlet.k-enter > * > .k-backdrop {
+  animation: k-fade-in 200ms ease both;
+}
+
+/* Retour tactile : les cartes cliquables s'enfoncent légèrement */
+a.bg-kinetic-surface,
+button.bg-kinetic-surface,
+a.k-row,
+button.k-row,
+label.k-row {
+  transition:
+    transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 160ms ease;
+}
+a.bg-kinetic-surface:active,
+button.bg-kinetic-surface:active {
+  transform: scale(0.98);
+}
+
+/* Coche validée : petit rebond */
+@keyframes k-pop {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.k-pop {
+  animation: k-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Barres de progression : remplissage animé */
+[role='progressbar'] > div,
+.h-1\.5.rounded-full > div,
+.h-2.rounded-full > div {
+  transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Chargement : reflet qui balaie les blocs fantômes */
+@keyframes k-shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+.k-skeleton {
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    rgb(var(--surface)) 0%,
+    rgb(var(--elevated)) 50%,
+    rgb(var(--surface)) 100%
+  );
+  background-size: 200% 100%;
+  animation: k-shimmer 1.4s ease-in-out infinite;
+}
+
+/* ─── Mode d'affichage Simple / Avancé ───
+   En mode simple (défaut), les blocs `.adv-only` sont masqués. */
 html:not([data-density='advanced']) .adv-only {
   display: none !important;
 }
-
-/* Petit badge "Avancé" optionnel à côté des sections, visible seulement
-   quand on EST en mode avancé, pour signaler que c'est du contenu poussé. */
 html[data-density='advanced'] .adv-badge {
   display: inline-flex;
 }
@@ -194,69 +808,7 @@ html[data-density='advanced'] .adv-badge {
   display: none;
 }
 
-/* ─── AUTO-APPLY hairline gradient + tweaks aux patterns existants ───
-   Aucun changement de markup nécessaire. Toutes les cartes
-   (bg-kinetic-surface + rounded-*) reçoivent le traitement k-card.
-─────────────────────────────────────────────────────────────────────── */
-.bg-kinetic-surface.rounded-2xl,
-.bg-kinetic-surface.rounded-3xl,
-.bg-kinetic-surface.rounded-xl,
-.bg-kinetic-surface.rounded-k {
-  position: relative;
-  overflow: hidden;
-}
-.bg-kinetic-surface.rounded-2xl::before,
-.bg-kinetic-surface.rounded-3xl::before,
-.bg-kinetic-surface.rounded-xl::before,
-.bg-kinetic-surface.rounded-k::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    transparent 45%,
-    rgba(255, 255, 255, 0.04) 100%
-  );
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Titres et chiffres clés : Barlow Condensed (esprit tableau d'affichage de compétition) */
-.font-display,
-h1,
-h2,
-h3,
-h4,
-h5 {
-  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Glow accru sur les couleurs néon utilisées en text-* */
-.text-kinetic-neon {
-  text-shadow: 0 0 18px rgb(var(--kinetic-neon) / 0.35);
-}
-.text-kinetic-electric {
-  text-shadow: 0 0 18px rgb(var(--kinetic-electric) / 0.35);
-}
-
-/* Pills/chips existantes (bg-kinetic-neon/10 + ring) → renforcement subtil */
-[class*='bg-kinetic-neon/1'][class*='rounded-full'],
-[class*='bg-kinetic-neon/2'][class*='rounded-full'] {
-  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
-}
-
-/* ─── ANIMATIONS ─── */
+/* ─── Animations ─── */
 @keyframes k-slide-up {
   from {
     opacity: 0;
@@ -285,482 +837,6 @@ h5 {
     transform: scale(1);
   }
 }
-@keyframes k-bar-fill {
-  from {
-    width: 0%;
-  }
-}
-@keyframes k-fire-pulse {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 10px var(--e-glow));
-  }
-  50% {
-    filter: drop-shadow(0 0 24px var(--e));
-  }
-}
-@keyframes k-ring-pulse {
-  0%,
-  100% {
-    opacity: 0.5;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.9;
-    transform: scale(1.06);
-  }
-}
-@keyframes k-shine {
-  0% {
-    left: -100%;
-  }
-  100% {
-    left: 200%;
-  }
-}
-@keyframes k-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-/* ─── COMPONENTS ─── */
-@layer components {
-  /* CARD avec hairline en gradient */
-  .k-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    position: relative;
-    overflow: hidden;
-  }
-  .k-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 20px;
-    padding: 1px;
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.09) 0%,
-      transparent 45%,
-      rgba(255, 255, 255, 0.04) 100%
-    );
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
-
-  /* PILLS / BADGES */
-  .pill {
-    border-radius: 99px;
-    font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-    font-variant-numeric: tabular-nums;
-    font-weight: 700;
-    font-size: 10px;
-    padding: 3px 9px;
-    letter-spacing: 0.04em;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    line-height: 1.4;
-  }
-  .pill-p {
-    background: oklch(82% 0.28 145 / 0.13);
-    color: var(--p);
-    border: 1px solid oklch(82% 0.28 145 / 0.28);
-  }
-  .pill-e {
-    background: oklch(72% 0.22 35 / 0.13);
-    color: var(--e);
-    border: 1px solid oklch(72% 0.22 35 / 0.28);
-  }
-  .pill-v {
-    background: oklch(66% 0.26 285 / 0.13);
-    color: var(--v);
-    border: 1px solid oklch(66% 0.26 285 / 0.28);
-  }
-
-  /* PROGRESS */
-  .bar-track {
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 99px;
-    overflow: hidden;
-  }
-  .bar-fill {
-    height: 100%;
-    border-radius: 99px;
-    background: linear-gradient(90deg, var(--p-dim), var(--p));
-    box-shadow: 0 0 10px var(--p-glow);
-    animation: k-bar-fill 0.9s cubic-bezier(0.34, 1.2, 0.64, 1) both;
-    transition: width 0.8s cubic-bezier(0.34, 1.2, 0.64, 1);
-  }
-  .bar-fill-e {
-    background: linear-gradient(90deg, oklch(55% 0.18 35), var(--e));
-    box-shadow: 0 0 10px var(--e-glow);
-  }
-
-  /* BUTTONS */
-  .btn-p {
-    background: var(--p);
-    color: #07070b;
-    border: none;
-    border-radius: 14px;
-    font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-    font-variant-numeric: tabular-nums;
-    font-weight: 700;
-    cursor: pointer;
-    transition:
-      transform 0.15s,
-      filter 0.15s,
-      box-shadow 0.15s;
-  }
-  .btn-p:active {
-    transform: scale(0.96);
-  }
-  .btn-p:hover {
-    filter: brightness(1.06);
-    box-shadow: 0 0 20px var(--p-glow);
-  }
-
-  .btn-ghost {
-    background: var(--elevated);
-    color: var(--tx2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition:
-      border-color 0.2s,
-      color 0.2s;
-  }
-  .btn-ghost:hover {
-    border-color: var(--border-hi);
-    color: var(--tx);
-  }
-
-  /* INPUT */
-  .k-input {
-    background: var(--elevated);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    color: var(--tx);
-    font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    outline: none;
-    transition:
-      border-color 0.2s,
-      box-shadow 0.2s;
-  }
-  .k-input:focus {
-    border-color: var(--p-dim);
-    box-shadow: 0 0 0 3px var(--p-glow);
-  }
-
-  /* TABS */
-  .k-tabs {
-    display: flex;
-    gap: 3px;
-    padding: 4px;
-    background: var(--elevated);
-    border-radius: 14px;
-    border: 1px solid var(--border);
-  }
-  .k-tab {
-    flex: 1;
-    padding: 7px 4px;
-    font-size: 10.5px;
-    font-weight: 600;
-    border-radius: 10px;
-    cursor: pointer;
-    text-align: center;
-    color: var(--tx3);
-    background: none;
-    border: none;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-  .k-tab.on {
-    background: var(--surface);
-    color: var(--tx);
-    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
-  }
-
-  /* STAT CHIP */
-  .k-stat {
-    background: var(--elevated);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .k-stat-label {
-    font-size: 9px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    font-weight: 600;
-    color: var(--tx3);
-    font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-    font-variant-numeric: tabular-nums;
-  }
-  .k-stat-val {
-    font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-    font-variant-numeric: tabular-nums;
-    font-weight: 700;
-    font-size: 22px;
-    line-height: 1;
-  }
-
-  /* OVERLAY plein écran */
-  .k-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(7, 7, 11, 0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    animation: k-fade-in 0.25s both;
-  }
-
-  /* DIAGONALES décoratives */
-  .k-diag {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-    border-radius: inherit;
-    opacity: 0.05;
-  }
-  .k-diag::before,
-  .k-diag::after {
-    content: '';
-    position: absolute;
-    width: 1.5px;
-    height: 200%;
-    background: var(--p);
-    top: -50%;
-    transform: rotate(18deg);
-  }
-  .k-diag::before {
-    left: 28%;
-  }
-  .k-diag::after {
-    left: 62%;
-  }
-
-  /* MACRO COLORS (nutrition) */
-  .macro-p {
-    color: var(--p);
-  }
-  .macro-g {
-    color: var(--e);
-  }
-  .macro-l {
-    color: oklch(78% 0.18 230);
-  }
-  .macro-k {
-    color: #fff;
-  }
-}
-
-/* RANGE */
-input[type='range'] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--elevated);
-  outline: none;
-}
-input[type='range']::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--p);
-  cursor: pointer;
-  box-shadow: 0 0 10px var(--p-glow);
-}
-input[type='range']::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--p);
-  cursor: pointer;
-  box-shadow: 0 0 10px var(--p-glow);
-  border: none;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   Mode clair — overrides ciblés des classes Tailwind hardcodées
-   ───────────────────────────────────────────────────────────────────────
-   Approche : ~340 occurrences de `text-white`, `bg-white/X`, `ring-white/X`
-   dans les templates sont hardcodées (le redesign initial était dark-only).
-   Refactor classe-par-classe = 50 fichiers → trop invasif pour ce sprint.
-   À la place, on override l'effet visuel quand `data-mode='light'` est posé
-   sur <html>. C'est `!important` partout parce qu'on lutte contre Tailwind
-   utilities qui ont une spécificité équivalente.
-   ═══════════════════════════════════════════════════════════════════════ */
-
-[data-mode='light'] .text-white {
-  color: var(--tx) !important;
-}
-[data-mode='light'] .text-gray-200 {
-  color: rgb(38 39 50) !important;
-}
-[data-mode='light'] .text-gray-300 {
-  color: rgb(58 60 75) !important;
-}
-[data-mode='light'] .text-gray-400 {
-  color: rgb(85 87 105) !important;
-}
-[data-mode='light'] .text-gray-500 {
-  color: rgb(110 112 130) !important;
-}
-[data-mode='light'] .text-gray-600 {
-  color: rgb(135 138 155) !important;
-}
-
-/* `bg-white/X` (overlay clair sur fond foncé) → en mode clair on inverse
-   en noir/transparent pour rester subtle */
-[data-mode='light'] .bg-white\/5 {
-  background-color: rgba(15, 16, 24, 0.04) !important;
-}
-[data-mode='light'] .bg-white\/10 {
-  background-color: rgba(15, 16, 24, 0.06) !important;
-}
-[data-mode='light'] .bg-white\/20 {
-  background-color: rgba(15, 16, 24, 0.1) !important;
-}
-[data-mode='light'] .hover\:bg-white\/5:hover {
-  background-color: rgba(15, 16, 24, 0.05) !important;
-}
-[data-mode='light'] .hover\:bg-white\/10:hover {
-  background-color: rgba(15, 16, 24, 0.08) !important;
-}
-[data-mode='light'] .hover\:bg-white\/20:hover {
-  background-color: rgba(15, 16, 24, 0.12) !important;
-}
-
-/* `ring-white/X` */
-[data-mode='light'] .ring-white\/5 {
-  --tw-ring-color: rgba(15, 16, 24, 0.06) !important;
-}
-[data-mode='light'] .ring-white\/10 {
-  --tw-ring-color: rgba(15, 16, 24, 0.1) !important;
-}
-[data-mode='light'] .ring-white\/20 {
-  --tw-ring-color: rgba(15, 16, 24, 0.16) !important;
-}
-[data-mode='light'] .ring-white\/30 {
-  --tw-ring-color: rgba(15, 16, 24, 0.22) !important;
-}
-[data-mode='light'] .hover\:ring-white\/20:hover {
-  --tw-ring-color: rgba(15, 16, 24, 0.18) !important;
-}
-[data-mode='light'] .hover\:ring-white\/30:hover {
-  --tw-ring-color: rgba(15, 16, 24, 0.24) !important;
-}
-
-/* `border-white/X` */
-[data-mode='light'] .border-white\/5,
-[data-mode='light'] .border-white\/10 {
-  border-color: rgba(15, 16, 24, 0.08) !important;
-}
-[data-mode='light'] .border-white\/20 {
-  border-color: rgba(15, 16, 24, 0.14) !important;
-}
-
-/* Le bouton "primaire" `bg-kinetic-neon text-gray-950` reste comme tel
-   (neon est lisible sur fond gris-950 même en light). Inverse de l'attendu :
-   pour les `text-gray-950` dans un contexte de surface (pas bouton primaire),
-   on garde aussi tel quel — un texte gris très foncé fonctionne en light. */
-
-/* Carte "subtle" : `bg-kinetic-surface` est déjà piloté par --surface,
-   donc rien à faire ici. */
-
-/* Gradient overlays type "from-black/80 to-transparent" sur photos :
-   en light, on garde un overlay sombre car les images sont colorées. */
-
-/* La pseudo-bordure subtle sur les cards `.bg-kinetic-surface::before`
-   utilise un gradient blanc — en mode clair on l'inverse vers du noir
-   pour qu'il reste visible sur fond blanc */
-[data-mode='light'] .bg-kinetic-surface.rounded-2xl::before,
-[data-mode='light'] .bg-kinetic-surface.rounded-3xl::before,
-[data-mode='light'] .bg-kinetic-surface.rounded-xl::before,
-[data-mode='light'] .bg-kinetic-surface.rounded-k::before {
-  background: linear-gradient(
-    135deg,
-    rgba(15, 16, 24, 0.06) 0%,
-    transparent 45%,
-    rgba(15, 16, 24, 0.02) 100%
-  );
-}
-
-/* Range slider track en mode clair */
-[data-mode='light'] input[type='range'] {
-  background: rgb(var(--elevated));
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   Identité « Compétition » — sobriété avant tout.
-   Neutralise les effets décoratifs de la v2 (halos néon, dégradés de fond,
-   liserés en dégradé, texte lumineux) : la couleur vient des disques, pas
-   de la lumière. Placé en fin de fichier pour primer sans toucher au markup.
-   ═══════════════════════════════════════════════════════════════════════ */
-body {
-  background-image: none !important;
-}
-.text-kinetic-neon,
-.text-kinetic-electric {
-  text-shadow: none !important;
-}
-.bg-kinetic-surface.rounded-2xl::before,
-.bg-kinetic-surface.rounded-3xl::before,
-.bg-kinetic-surface.rounded-xl::before,
-.bg-kinetic-surface.rounded-k::before,
-.k-card::before {
-  display: none !important;
-}
-.bg-kinetic-surface {
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-[class*='shadow-['],
-[class*='shadow-glow'] {
-  box-shadow: none !important;
-}
-[class*='drop-shadow-['] {
-  filter: none !important;
-}
-.bar-fill,
-.bar-fill-e,
-.btn-p,
-.btn-p:hover {
-  box-shadow: none !important;
-}
-/* Chiffres : alignés, jamais en police monospace */
-.font-mono {
-  font-family: inherit;
-  font-variant-numeric: tabular-nums;
-}
-:focus-visible {
-  outline: 2px solid rgb(var(--kinetic-neon));
-  outline-offset: 2px;
-}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -770,56 +846,105 @@ body {
   }
 }
 
-/* Barlow Condensed seulement aux grandes tailles : en petit, texte système lisible */
-:is(.font-display, h1, h2, h3, h4, h5):is(
-  .text-xs,
-  .text-sm,
-  .text-base,
-  .text-\[10px\],
-  .text-\[11px\]
-) {
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    'Helvetica Neue',
-    sans-serif;
-}
+/* ═══════════════════════════════════════════════════════════════════════
+   Texte : contraste WCAG AA (4,5:1) sur chaque surface
+   ═══════════════════════════════════════════════════════════════════════ */
 
-/* ─── Contraste (WCAG AA, texte 4,5:1) ──────────────────────────────────
-   Sur le gris « fonte » #1F2124, gray-500 (#6B7280) ne fait que ~3,3:1 et
-   gray-600 ~2,3:1 : on les éclaircit en mode sombre. */
-:root:not([data-mode='light']) .text-gray-500 {
-  color: #9aa0a8;
-}
+/* Sombre : libellés secondaires, tous au même gris (lisible jusque sur --raised) */
+:root:not([data-mode='light']) .text-gray-500,
 :root:not([data-mode='light']) .text-gray-600,
 :root:not([data-mode='light']) .text-gray-700 {
-  color: #979da6;
+  color: #a1a1a8;
 }
-/* Mode clair : le jaune 15 kg n'est pas lisible en texte sur fond clair ;
-   on garde le jaune pour les aplats et on passe le texte en ocre foncé. */
-[data-mode='light'] .text-kinetic-neon {
-  color: #8a6400;
-}
-[data-mode='light'] .text-kinetic-electric {
-  color: #b52a24;
-}
-
-/* Mode clair : barre de navigation claire, bordure visible */
-[data-mode='light'] nav[aria-label='Navigation principale'] {
-  border-top-color: rgba(28, 29, 32, 0.12);
-}
-
-/* Couleurs d'accent utilisées EN TEXTE sur fond sombre : versions éclaircies
-   pour atteindre 4,5:1 (le rouge 25 kg brut ne fait que ~3,4:1 en petit texte).
-   Les aplats (bg-*) gardent les couleurs exactes des disques. */
-:root:not([data-mode='light']) .text-kinetic-electric {
-  color: #f5847d;
+/* Sombre : les accents utilisés EN TEXTE passent en variante « accessible » ;
+   les aplats (bg-*) gardent la couleur système exacte. */
+:root:not([data-mode='light']) .text-kinetic-electric,
+:root:not([data-mode='light']) .text-kinetic-coral {
+  color: #ff6961;
 }
 :root:not([data-mode='light']) .text-kinetic-purple {
-  color: #86a6f0;
+  color: #409cff;
 }
-:root:not([data-mode='light']) .text-kinetic-teal {
-  color: #45c985;
+
+/* Clair : les classes écrites pour le sombre (text-white, bg-white/X, ring-white/X)
+   sont retournées ici plutôt que réécrites dans chaque gabarit. */
+[data-mode='light'] .text-white {
+  color: var(--tx) !important;
+}
+[data-mode='light'] .text-gray-100,
+[data-mode='light'] .text-gray-200 {
+  color: #1c1c1e !important;
+}
+[data-mode='light'] .text-gray-300 {
+  color: #3a3a3c !important;
+}
+[data-mode='light'] .text-gray-400 {
+  color: #545458 !important;
+}
+[data-mode='light'] .text-gray-500 {
+  color: #5f5f64 !important;
+}
+[data-mode='light'] .text-gray-600,
+[data-mode='light'] .text-gray-700 {
+  color: #636368 !important;
+}
+/* Le texte posé sur un aplat d'accent reste sombre dans les deux modes */
+[data-mode='light'] .bg-kinetic-neon.text-white,
+[data-mode='light'] .bg-kinetic-neon .text-white {
+  color: #0a0a0c !important;
+}
+[data-mode='light'] .bg-kinetic-electric.text-white,
+[data-mode='light'] .bg-kinetic-purple.text-white,
+[data-mode='light'] .bg-kinetic-teal.text-white {
+  color: #fff !important;
+}
+[data-mode='light'] .text-kinetic-neon,
+[data-mode='light'] .text-kinetic-gold,
+[data-mode='light'] .text-yellow-400 {
+  color: #7a5a00;
+}
+[data-mode='light'] .text-kinetic-electric,
+[data-mode='light'] .text-kinetic-coral {
+  color: #c4001a;
+}
+[data-mode='light'] .text-kinetic-purple {
+  color: #0058d0;
+}
+[data-mode='light'] .text-kinetic-teal {
+  color: #177a34;
+}
+[data-mode='light'] .bg-white\/5 {
+  background-color: rgba(118, 118, 128, 0.08) !important;
+}
+[data-mode='light'] .bg-white\/10 {
+  background-color: rgba(118, 118, 128, 0.12) !important;
+}
+[data-mode='light'] .bg-white\/20 {
+  background-color: rgba(118, 118, 128, 0.2) !important;
+}
+[data-mode='light'] .hover\:bg-white\/5:hover {
+  background-color: rgba(118, 118, 128, 0.1) !important;
+}
+[data-mode='light'] .hover\:bg-white\/10:hover {
+  background-color: rgba(118, 118, 128, 0.16) !important;
+}
+[data-mode='light'] .hover\:bg-white\/20:hover {
+  background-color: rgba(118, 118, 128, 0.24) !important;
+}
+[data-mode='light'] .ring-white\/20 {
+  --tw-ring-color: rgba(60, 60, 67, 0.18) !important;
+}
+[data-mode='light'] .ring-white\/30 {
+  --tw-ring-color: rgba(60, 60, 67, 0.26) !important;
+}
+[data-mode='light'] .border-white\/20 {
+  border-color: rgba(60, 60, 67, 0.2) !important;
+}
+
+/* Menus et bulles flottants (position absolue) : un cran plus clairs que la carte, avec ombre */
+[class~='absolute'].bg-kinetic-surface {
+  background-color: rgb(var(--elevated));
+  box-shadow:
+    0 0 0 0.5px var(--separator),
+    0 12px 32px rgba(0, 0, 0, 0.35);
 }

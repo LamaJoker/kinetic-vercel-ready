@@ -1,33 +1,44 @@
 <div x-data="achievements" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
-  <div class="flex items-center gap-3 mb-6">
-    <a
-      href="/"
-      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
-      aria-label="Retour"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+  <div class="k-nav">
+    <a href="/" class="k-back" aria-label="Retour">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2.4"
+          d="M15 19l-7-7 7-7"
+        />
       </svg>
     </a>
     <div class="flex-1">
-      <h1 class="font-display font-black text-2xl tracking-tight text-white">Succès</h1>
-      <p class="text-xs text-gray-500">
-        <span x-text="$store.achievements.unlockedCount"></span> /
+      <h1 class="font-display font-bold text-white">Succès</h1>
+      <p class="text-gray-500 tabular-nums">
+        <span x-text="$store.achievements.unlockedCount"></span> sur
         <span x-text="$store.achievements.totalCount"></span> débloqués
       </p>
     </div>
   </div>
 
-  <!-- Progress global -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <div class="flex items-center justify-between mb-2">
-      <span class="text-xs text-gray-500 font-semibold"> Progression globale </span>
+  <!-- Progression globale -->
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-8">
+    <div class="flex items-end justify-between gap-3 mb-3">
+      <div class="min-w-0">
+        <p class="k-card-title">Progression</p>
+        <p class="text-xs text-gray-500 mt-0.5">Badges gagnés à l'entraînement</p>
+      </div>
       <span
-        class="text-sm tabular-nums font-bold text-kinetic-neon"
+        class="k-metric text-kinetic-neon"
         x-text="$store.achievements.progressPercent + '%'"
       ></span>
     </div>
-    <div class="h-2 bg-black/40 rounded-full overflow-hidden ring-1 ring-white/5">
+    <div
+      class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden"
+      role="progressbar"
+      aria-label="Succès débloqués"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      :aria-valuenow="$store.achievements.progressPercent"
+    >
       <div
         class="h-full bg-kinetic-neon rounded-full transition-all duration-700"
         :style="'width: ' + $store.achievements.progressPercent + '%'"
@@ -35,64 +46,100 @@
     </div>
   </div>
 
-  <!-- Filtres catégorie -->
-  <div class="flex gap-2 mb-3 text-xs overflow-x-auto">
+  <!-- Filtres catégorie (défilement horizontal) -->
+  <div
+    class="-mx-4 px-4 py-1 mb-3 flex gap-2 overflow-x-auto"
+    role="group"
+    aria-label="Filtrer par catégorie"
+  >
     <template x-for="cat in categories" :key="cat.key">
       <button
+        type="button"
         @click="filter = cat.key"
         :class="filter === cat.key
-              ? 'bg-kinetic-neon text-gray-950 font-bold'
-              : 'bg-kinetic-surface ring-1 ring-white/10 text-gray-400'"
-        class="px-3 py-1.5 rounded-lg transition-all whitespace-nowrap"
+              ? 'k-on'
+              : 'k-off'"
+        :aria-pressed="filter === cat.key ? 'true' : 'false'"
+        class="relative h-9 px-4 flex-shrink-0 rounded-full text-sm whitespace-nowrap transition-colors active:scale-95 after:absolute after:inset-x-0 after:-inset-y-1 after:content-['']"
         x-text="cat.label"
       ></button>
     </template>
   </div>
 
   <!-- Liste -->
-  <div class="space-y-2">
+  <div class="k-list" x-show="filteredCatalog.length > 0">
     <template x-for="ach in filteredCatalog" :key="ach.id">
-      <div
-        class="rounded-2xl p-3 flex items-center gap-3 ring-1 transition-all"
-        :class="$store.achievements.isUnlocked(ach.id)
-              ? 'bg-kinetic-surface ring-kinetic-neon/30'
-              : 'bg-kinetic-surface ring-white/5 opacity-50'"
-      >
-        <div
-          class="w-10 h-10 shrink-0"
-          :class="$store.achievements.isUnlocked(ach.id) ? 'text-kinetic-neon' : 'text-white/10'"
+      <div class="k-row k-row-icon">
+        <!-- Médaille : or si débloqué, cadenas sinon -->
+        <span
+          class="w-[1.875rem] h-[1.875rem] flex-shrink-0 rounded-full flex items-center justify-center"
+          :class="$store.achievements.isUnlocked(ach.id)
+                ? 'bg-kinetic-gold text-gray-950'
+                : 'bg-kinetic-elevated text-gray-500'"
         >
-          <svg viewBox="0 0 24 24" class="w-full h-full" aria-hidden="true">
-            <circle cx="12" cy="12" r="10.5" fill="currentColor" />
-            <circle
-              cx="12"
-              cy="12"
-              r="6.5"
-              fill="none"
-              stroke="rgb(var(--surface))"
-              stroke-opacity="0.35"
-              stroke-width="1.2"
-            />
-            <circle cx="12" cy="12" r="2.6" fill="rgb(var(--surface))" />
+          <svg
+            x-show="$store.achievements.isUnlocked(ach.id)"
+            class="w-[1.125rem] h-[1.125rem]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="9" r="5.5" />
+            <path d="m8.6 13.3-1.6 7.2 5-2.7 5 2.7-1.6-7.2" />
           </svg>
-        </div>
-        <div class="flex-1 min-w-0">
-          <p
-            class="text-sm font-bold leading-tight"
-            :class="$store.achievements.isUnlocked(ach.id) ? 'text-white' : 'text-gray-500'"
+          <svg
+            x-show="!$store.achievements.isUnlocked(ach.id)"
+            class="w-3.5 h-3.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M5.5 11h13v9.5h-13zM8 11V7.5a4 4 0 0 1 8 0V11" />
+          </svg>
+        </span>
+        <span class="flex-1 min-w-0">
+          <span
+            class="block text-base leading-snug"
+            :class="$store.achievements.isUnlocked(ach.id) ? 'text-white font-semibold' : 'text-gray-400'"
             x-text="ach.title"
-          ></p>
-          <p class="text-[11px] text-gray-500 leading-tight mt-0.5" x-text="ach.description"></p>
-        </div>
-        <span class="text-xs text-gray-600 font-bold shrink-0">
-          <template x-for="i in ach.tier" :key="i">
-            <span class="text-kinetic-neon" x-show="$store.achievements.isUnlocked(ach.id)"></span>
-          </template>
-          <template x-for="i in ach.tier" :key="i">
-            <span class="text-gray-700" x-show="!$store.achievements.isUnlocked(ach.id)"></span>
+          ></span>
+          <span
+            class="block text-xs text-gray-500 leading-snug mt-0.5"
+            x-text="ach.description"
+          ></span>
+          <span
+            class="sr-only"
+            x-text="$store.achievements.isUnlocked(ach.id) ? 'Débloqué' : 'Verrouillé'"
+          ></span>
+        </span>
+        <!-- Difficulté : piste fixe de 5 points (pleins = niveau) -->
+        <span
+          class="flex items-center gap-1 flex-shrink-0"
+          :class="$store.achievements.isUnlocked(ach.id) ? '' : 'opacity-60'"
+          role="img"
+          :aria-label="'Difficulté ' + ach.tier + ' sur 5'"
+        >
+          <template x-for="i in 5" :key="i">
+            <span
+              class="w-1.5 h-1.5 rounded-full bg-gray-400"
+              :class="i <= ach.tier ? '' : 'opacity-25'"
+            ></span>
           </template>
         </span>
       </div>
     </template>
+  </div>
+
+  <div class="k-empty" x-show="filteredCatalog.length === 0">
+    <p>Aucun succès ici</p>
+    <p class="text-sm text-gray-500 mt-1">Choisis une autre catégorie.</p>
   </div>
 </div>

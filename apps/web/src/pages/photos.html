@@ -1,155 +1,268 @@
 <div x-data="photosPage" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
-  <div class="flex items-center gap-3 mb-6">
-    <a
-      href="/profile"
-      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
-      aria-label="Retour"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+  <div class="k-nav">
+    <a href="/profile" class="k-back" aria-label="Retour">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2.4"
+          d="M15 19l-7-7 7-7"
+        />
       </svg>
     </a>
-    <h1 class="text-2xl font-display font-black tracking-tight text-white">Photos de progrès</h1>
+    <div class="flex-1 min-w-0">
+      <h1 class="font-display font-bold text-white">Photos de progrès</h1>
+      <p class="text-gray-500 text-pretty">Même lumière, même pose : l'évolution saute aux yeux</p>
+    </div>
   </div>
 
   <!-- Ajout -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <p class="text-xs text-gray-500 mb-3">
-      Les photos sont stockées <strong>localement</strong> sur ton appareil. Aucune n'est envoyée à
-      un serveur.
-    </p>
-    <div class="grid grid-cols-2 gap-2 mb-3">
-      <div>
-        <label for="f-photos-1" class="text-xs text-gray-500 font-semibold">Poids (kg)</label>
+  <section class="mb-8">
+    <div class="k-list">
+      <label for="f-photos-1" class="k-row cursor-text">
+        <span class="text-base text-white flex-shrink-0">Poids</span>
         <input
           id="f-photos-1"
           type="number"
           step="0.1"
+          inputmode="decimal"
+          placeholder="Facultatif"
           x-model.number="newBodyweight"
-          class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white mt-1"
+          class="flex-1 min-w-0 bg-transparent text-right text-base text-white tabular-nums placeholder:text-gray-500 focus:outline-none"
         />
-      </div>
-      <div>
-        <label for="f-photos-2" class="text-xs text-gray-500 font-semibold">Étiquette</label>
-        <select
-          id="f-photos-2"
-          x-model="newLabel"
-          class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white mt-1"
-        >
-          <option value="front">Face</option>
-          <option value="side">Profil</option>
-          <option value="back">Dos</option>
-        </select>
-      </div>
+        <span class="text-base text-gray-500 flex-shrink-0" aria-hidden="true">kg</span>
+      </label>
+      <label for="f-photos-2" class="k-row cursor-pointer">
+        <span class="text-base text-white flex-1 min-w-0">Pose</span>
+        <span class="relative flex items-center">
+          <select
+            id="f-photos-2"
+            x-model="newLabel"
+            class="appearance-none bg-transparent text-right text-base text-gray-500 pr-6 py-1 focus:outline-none cursor-pointer"
+          >
+            <option value="front">Face</option>
+            <option value="side">Profil</option>
+            <option value="back">Dos</option>
+          </select>
+          <svg
+            class="pointer-events-none absolute right-0 w-3.5 h-3.5 text-gray-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.4"
+              d="M8 9l4-4 4 4M8 15l4 4 4-4"
+            />
+          </svg>
+        </span>
+      </label>
     </div>
+
+    <p class="k-caption mt-2 mb-4 flex items-start gap-1.5">
+      <svg
+        class="w-3.5 h-3.5 mt-0.5 flex-shrink-0"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <rect x="5" y="11" width="14" height="10" rx="2" stroke-width="2.2" />
+        <path stroke-linecap="round" stroke-width="2.2" d="M8 11V8a4 4 0 118 0v3" />
+      </svg>
+      <span>Tes photos restent sur ton appareil : aucune n'est envoyée à un serveur.</span>
+    </p>
+
     <label
-      class="block w-full bg-kinetic-neon text-gray-950 rounded-xl px-4 py-2.5 text-sm font-bold text-center hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+      class="k-btn cursor-pointer focus-within:ring-2 focus-within:ring-kinetic-neon focus-within:ring-offset-2 focus-within:ring-offset-kinetic-ink"
       :class="adding ? 'opacity-40 pointer-events-none' : ''"
     >
+      <svg
+        x-show="!adding"
+        class="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2.2"
+          d="M4 8.5A1.5 1.5 0 015.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0120 8.5v9a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 17.5v-9z"
+        />
+        <circle cx="12" cy="13" r="3.25" stroke-width="2.2" />
+      </svg>
       <span x-show="!adding">Ajouter une photo</span>
       <span x-show="adding">Compression…</span>
       <input
         type="file"
         accept="image/*"
         capture="user"
-        class="hidden"
+        class="sr-only"
+        :disabled="adding"
         @change="addPhoto($event)"
       />
     </label>
-  </div>
+  </section>
 
   <!-- Comparaison -->
   <template x-if="photos.length >= 2">
-    <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="font-bold text-white">Comparaison</h2>
-        <button @click="showCompare = !showCompare" class="text-xs text-gray-400 hover:text-white">
+    <section class="mb-8">
+      <div class="flex items-center justify-between mb-2.5">
+        <h2 class="k-section">Comparaison</h2>
+        <button
+          type="button"
+          @click="showCompare = !showCompare"
+          class="k-link min-h-11"
+          :aria-expanded="showCompare ? 'true' : 'false'"
+        >
           <span x-text="showCompare ? 'Masquer' : 'Afficher'"></span>
         </button>
       </div>
       <template x-if="showCompare">
-        <div>
-          <div class="grid grid-cols-2 gap-2 mb-2 text-xs text-gray-500">
-            <p>Avant</p>
-            <p>Après</p>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <select
-                x-model="compareBeforeId"
-                class="w-full bg-kinetic-ink border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white mb-2"
-              >
-                <template x-for="p in photos.slice().reverse()" :key="p.id">
-                  <option :value="p.id" x-text="photoDateLabel(p)"></option>
-                </template>
-              </select>
+        <div class="k-card">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="min-w-0">
+              <p class="text-xs font-semibold text-gray-500 mb-1.5 px-0.5">Avant</p>
               <img
                 x-bind:src="comparePhoto(compareBeforeId) ? photoUrl(comparePhoto(compareBeforeId)) : ''"
-                class="w-full aspect-[3/4] object-cover rounded-xl bg-black"
+                alt="Photo avant"
+                class="w-full aspect-[3/4] object-cover rounded-xl bg-kinetic-elevated"
               />
+              <div class="relative mt-2">
+                <select
+                  x-model="compareBeforeId"
+                  aria-label="Date de la photo avant"
+                  class="w-full h-11 appearance-none rounded-xl bg-kinetic-elevated pl-3 pr-8 text-sm text-white tabular-nums focus:outline-none focus:ring-2 focus:ring-kinetic-neon"
+                >
+                  <template x-for="p in photos.slice().reverse()" :key="p.id">
+                    <option :value="p.id" x-text="photoDateLabel(p)"></option>
+                  </template>
+                </select>
+                <svg
+                  class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.4"
+                    d="M8 9l4-4 4 4M8 15l4 4 4-4"
+                  />
+                </svg>
+              </div>
             </div>
-            <div>
-              <select
-                x-model="compareAfterId"
-                class="w-full bg-kinetic-ink border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white mb-2"
-              >
-                <template x-for="p in photos.slice().reverse()" :key="p.id">
-                  <option :value="p.id" x-text="photoDateLabel(p)"></option>
-                </template>
-              </select>
+            <div class="min-w-0">
+              <p class="text-xs font-semibold text-gray-500 mb-1.5 px-0.5">Après</p>
               <img
                 x-bind:src="comparePhoto(compareAfterId) ? photoUrl(comparePhoto(compareAfterId)) : ''"
-                class="w-full aspect-[3/4] object-cover rounded-xl bg-black"
+                alt="Photo après"
+                class="w-full aspect-[3/4] object-cover rounded-xl bg-kinetic-elevated"
               />
+              <div class="relative mt-2">
+                <select
+                  x-model="compareAfterId"
+                  aria-label="Date de la photo après"
+                  class="w-full h-11 appearance-none rounded-xl bg-kinetic-elevated pl-3 pr-8 text-sm text-white tabular-nums focus:outline-none focus:ring-2 focus:ring-kinetic-neon"
+                >
+                  <template x-for="p in photos.slice().reverse()" :key="p.id">
+                    <option :value="p.id" x-text="photoDateLabel(p)"></option>
+                  </template>
+                </select>
+                <svg
+                  class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.4"
+                    d="M8 9l4-4 4 4M8 15l4 4 4-4"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
-          <p class="text-xs text-center text-gray-500 mt-3" x-show="weightDelta() !== null">
-            Δ poids : <span class="font-bold" x-text="weightDelta() + ' kg'"></span>
+          <p
+            class="mt-3 flex items-center justify-between gap-3 rounded-xl bg-kinetic-elevated px-3.5 min-h-11"
+            x-show="weightDelta() !== null"
+          >
+            <span class="text-sm text-gray-400">Écart de poids</span>
+            <span
+              class="text-base font-semibold text-white tabular-nums"
+              x-text="(weightDelta() > 0 ? '+' : '') + weightDelta() + ' kg'"
+            ></span>
           </p>
         </div>
       </template>
-    </div>
+    </section>
   </template>
 
-  <!-- Timeline -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="font-bold text-white">Mes photos</h2>
-      <span class="text-xs text-gray-500" x-text="$plural(photos.length, 'photo')"></span>
+  <!-- Galerie -->
+  <section>
+    <div class="flex items-baseline justify-between mb-2.5">
+      <h2 class="k-section">Mes photos</h2>
+      <span
+        class="text-sm text-gray-500 tabular-nums"
+        x-show="photos.length > 0"
+        x-text="$plural(photos.length, 'photo')"
+      ></span>
     </div>
     <template x-if="photos.length === 0">
-      <p class="text-sm text-gray-500 text-center py-8">
-        Aucune photo pour l'instant. Choisis une étiquette puis « Ajouter une photo » : prends-la
-        toujours avec la même lumière et la même pose pour comparer.
-      </p>
+      <div class="k-empty">
+        <p>Aucune photo pour l'instant</p>
+        <p class="text-sm text-gray-500 mt-1.5 leading-relaxed">
+          Choisis une pose puis « Ajouter une photo ». Prends-la toujours avec la même lumière et la
+          même pose pour bien comparer.
+        </p>
+      </div>
     </template>
     <div class="grid grid-cols-2 gap-2">
       <template x-for="p in photos.slice().reverse()" :key="p.id">
-        <div class="relative group">
+        <figure class="relative overflow-hidden rounded-xl bg-kinetic-surface">
           <img
             x-bind:src="photoUrl(p)"
-            class="w-full aspect-[3/4] object-cover rounded-xl bg-black"
+            class="w-full aspect-[3/4] object-cover"
             x-bind:alt="photoDateLabel(p)"
           />
-          <div
-            class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent rounded-b-xl px-2 py-1.5"
+          <figcaption
+            class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent px-2.5 pt-6 pb-2"
           >
-            <p class="text-[10px] text-white font-bold" x-text="photoDateLabel(p)"></p>
+            <p class="text-xs font-semibold text-gray-50" x-text="photoDateLabel(p)"></p>
             <p
-              class="text-[10px] text-gray-300"
+              class="text-[11px] text-gray-50/80 tabular-nums"
               x-show="p.bodyweightKg"
-              x-text="p.bodyweightKg + ' kg · ' + (p.label || '')"
+              x-text="p.bodyweightKg + ' kg' + (p.label ? ' · ' + (p.label === 'front' ? 'Face' : (p.label === 'side' ? 'Profil' : (p.label === 'back' ? 'Dos' : p.label))) : '')"
             ></p>
-          </div>
+          </figcaption>
           <button
+            type="button"
             @click="removePhoto(p.id)"
-            class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white text-xs flex items-center justify-center hover:bg-kinetic-electric transition-colors"
-            aria-label="Supprimer"
+            class="absolute top-1.5 right-1.5 w-8 h-8 rounded-full bg-black/50 backdrop-blur text-gray-50 flex items-center justify-center transition active:scale-90 active:bg-kinetic-electric after:absolute after:-inset-1.5 after:content-['']"
+            aria-label="Supprimer la photo"
           >
-            ✕
+            <svg
+              class="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path stroke-linecap="round" stroke-width="2.6" d="M6 6l12 12M18 6L6 18" />
+            </svg>
           </button>
-        </div>
+        </figure>
       </template>
     </div>
-  </div>
+  </section>
 </div>

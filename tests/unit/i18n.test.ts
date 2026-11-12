@@ -53,8 +53,15 @@ describe('i18n', () => {
     expect(t('login.title')).toBe('Connexion');
   });
 
-  it('utilise EN si navigator.language commence par en', async () => {
+  it('reste en FR même si le navigateur est en anglais (app française par défaut)', async () => {
     Object.defineProperty(navigator, 'language', { value: 'en-US', configurable: true });
+    const { getLocale, t } = await import('../../apps/web/src/lib/i18n.js');
+    expect(getLocale()).toBe('fr');
+    expect(t('login.title')).toBe('Connexion');
+  });
+
+  it('utilise EN quand il est choisi dans les réglages', async () => {
+    localStorage.setItem('kinetic:locale', 'en');
     const { getLocale, t } = await import('../../apps/web/src/lib/i18n.js');
     expect(getLocale()).toBe('en');
     expect(t('login.title')).toBe('Sign in');

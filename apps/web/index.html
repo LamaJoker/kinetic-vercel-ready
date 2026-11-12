@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#16171A" />
+    <meta name="theme-color" content="#000000" />
     <meta
       name="description"
       content="Kinetic — ton système d'exploitation quotidien pour la performance"
@@ -33,9 +33,9 @@
       Aller au contenu principal
     </a>
 
-    <!-- Toasts (announced to screen readers via aria-live) -->
+    <!-- Toasts : capsules en haut d'écran (annoncées aux lecteurs d'écran) -->
     <div
-      class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-xs w-full"
+      class="fixed top-[calc(env(safe-area-inset-top)+0.75rem)] inset-x-0 z-[80] flex flex-col items-center gap-2 px-4 pointer-events-none"
       role="region"
       aria-label="Notifications"
       aria-live="polite"
@@ -43,21 +43,33 @@
     >
       <template x-for="toast in $store.notifications.toasts" :key="toast.id">
         <div
-          class="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl text-white shadow-xl text-sm transition-all duration-300"
-          :class="[
-             $store.notifications.kindClass(toast.kind),
-             toast.visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
-           ]"
+          class="k-toast pointer-events-auto flex items-center gap-3 max-w-sm w-fit min-h-[2.75rem] pl-4 pr-2 py-2 rounded-full text-sm font-medium transition-all duration-300 ease-out"
+          :class="toast.visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-3 scale-95'"
           :role="toast.kind === 'error' ? 'alert' : 'status'"
         >
+          <span
+            class="w-2 h-2 rounded-full flex-shrink-0"
+            :class="$store.notifications.kindClass(toast.kind)"
+            aria-hidden="true"
+          ></span>
           <span x-text="toast.message" class="flex-1"></span>
           <button
             @click="$store.notifications.dismiss(toast.id)"
             type="button"
             aria-label="Fermer la notification"
-            class="text-white/60 hover:text-white text-xs ml-1"
+            class="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:text-white"
           >
-            ✕
+            <svg
+              class="w-3.5 h-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
           </button>
         </div>
       </template>
@@ -71,16 +83,11 @@
       aria-live="polite"
       class="fixed bottom-20 inset-x-0 mx-auto max-w-sm px-4 z-50"
     >
-      <div
-        :class="$store.offline.isOffline
-                 ? 'bg-kinetic-surface text-white ring-1 ring-white/10'
-                 : 'bg-kinetic-neon text-gray-950'"
-        class="rounded-2xl px-4 py-3 flex items-center gap-3 shadow-xl text-sm"
-      >
+      <div class="k-toast rounded-2xl px-4 py-3 flex items-center gap-3 text-sm">
         <span
-          class="text-lg flex-shrink-0"
+          class="w-2 h-2 rounded-full flex-shrink-0"
+          :class="$store.offline.isOffline ? 'bg-kinetic-neon' : 'bg-kinetic-teal'"
           aria-hidden="true"
-          x-text="$store.offline.isOffline ? '' : ''"
         ></span>
         <div class="flex-1">
           <p
@@ -100,166 +107,124 @@
     <nav
       x-show="$store.auth.isAuthenticated && !isChromeless()"
       aria-label="Navigation principale"
-      class="fixed bottom-0 inset-x-0 bg-kinetic-ink/90 backdrop-blur-[28px] border-t border-white/[0.07] z-40 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
+      class="k-tabbar fixed bottom-0 inset-x-0 z-40 pt-1.5 pb-[calc(env(safe-area-inset-bottom)+0.375rem)]"
     >
-      <div class="max-w-md mx-auto flex items-center justify-around px-1">
+      <div class="max-w-md mx-auto flex items-stretch justify-around px-2">
         <a
           href="/"
           :aria-current="currentPath === '/' ? 'page' : null"
-          class="relative flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-2xl transition-all min-w-0"
-          :class="currentPath === '/' ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
+          class="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 rounded-xl"
         >
           <svg
             aria-hidden="true"
             focusable="false"
-            class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="currentPath === '/' ? '' : ''"
+            class="w-[26px] h-[26px] flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            stroke-width="2"
+            stroke-width="1.8"
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
+            <path
+              d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15V15a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5.5H5.5A1.5 1.5 0 0 1 4 19v-8.5Z"
+            />
           </svg>
           <span
-            class="text-[10px]"
-            :class="currentPath === '/' ? 'font-bold' : 'font-medium'"
+            class="text-[10px] font-medium truncate max-w-full"
             x-text="$t('nav.dashboard')"
           ></span>
-          <span
-            x-show="currentPath === '/'"
-            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon"
-          ></span>
         </a>
-
         <a
           href="/seances"
           :aria-current="currentPath === '/seances' ? 'page' : null"
-          class="relative flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-2xl transition-all min-w-0"
-          :class="currentPath === '/seances' ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
+          class="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 rounded-xl"
         >
           <svg
             aria-hidden="true"
             focusable="false"
-            class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="currentPath === '/seances' ? '' : ''"
+            class="w-[26px] h-[26px] flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            stroke-width="2"
+            stroke-width="1.8"
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <path
-              d="M6 7h2m8 0h2M5 9v6a2 2 0 002 2h1v2h2v-2h4v2h2v-2h1a2 2 0 002-2V9M8 7V5a1 1 0 011-1h6a1 1 0 011 1v2"
-            />
+            <path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11" />
           </svg>
           <span
-            class="text-[10px]"
-            :class="currentPath === '/seances' ? 'font-bold' : 'font-medium'"
+            class="text-[10px] font-medium truncate max-w-full"
             x-text="$t('nav.sessions')"
           ></span>
-          <span
-            x-show="currentPath === '/seances'"
-            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon"
-          ></span>
         </a>
-
         <a
           href="/bodyweight"
           :aria-current="isBodyPage() ? 'page' : null"
-          class="relative flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-2xl transition-all min-w-0"
-          :class="isBodyPage() ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
+          class="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 rounded-xl"
         >
           <svg
             aria-hidden="true"
             focusable="false"
-            class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="isBodyPage() ? '' : ''"
+            class="w-[26px] h-[26px] flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            stroke-width="2"
+            stroke-width="1.8"
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <rect x="2" y="7" width="20" height="14" rx="3" />
-            <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
-            <line x1="12" y1="12" x2="12" y2="16" />
-            <line x1="10" y1="14" x2="14" y2="14" />
+            <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+            <path d="M8.3 10a5.2 5.2 0 0 1 7.4 0" />
+            <path d="m12 8.8 1.4 2.9" />
           </svg>
-          <span class="text-[10px]" :class="isBodyPage() ? 'font-bold' : 'font-medium'">Corps</span>
-          <span
-            x-show="isBodyPage()"
-            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon"
-          ></span>
+          <span class="text-[10px] font-medium truncate max-w-full">Corps</span>
         </a>
-
         <a
           href="/vitalite"
           :aria-current="currentPath === '/vitalite' ? 'page' : null"
-          class="relative flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-2xl transition-all min-w-0"
-          :class="currentPath === '/vitalite' ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
+          class="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 rounded-xl"
         >
           <svg
             aria-hidden="true"
             focusable="false"
-            class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="currentPath === '/vitalite' ? '' : ''"
+            class="w-[26px] h-[26px] flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            stroke-width="2"
+            stroke-width="1.8"
             stroke-linecap="round"
             stroke-linejoin="round"
           >
             <path
-              d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
+              d="M12 20.5s-7.5-4.3-7.5-10A4.3 4.3 0 0 1 12 8a4.3 4.3 0 0 1 7.5 2.5c0 5.700-7.5 10-7.5 10Z"
             />
           </svg>
-          <span
-            class="text-[10px]"
-            :class="currentPath === '/vitalite' ? 'font-bold' : 'font-medium'"
-            >Récup</span
-          >
-          <span
-            x-show="currentPath === '/vitalite'"
-            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon"
-          ></span>
+          <span class="text-[10px] font-medium truncate max-w-full">Récup</span>
         </a>
-
         <a
           href="/profile"
           :aria-current="currentPath === '/profile' ? 'page' : null"
-          class="relative flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-2xl transition-all min-w-0"
-          :class="currentPath === '/profile' ? 'text-kinetic-neon -translate-y-px' : 'text-white/25 hover:text-white/60'"
+          class="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 rounded-xl"
         >
           <svg
             aria-hidden="true"
             focusable="false"
-            class="w-[22px] h-[22px] flex-shrink-0 transition-[filter]"
-            :class="currentPath === '/profile' ? '' : ''"
+            class="w-[26px] h-[26px] flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            stroke-width="2"
+            stroke-width="1.8"
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
+            <circle cx="12" cy="12" r="8.5" />
+            <circle cx="12" cy="10" r="2.8" />
+            <path d="M6.6 18.5a6.3 6.3 0 0 1 10.8 0" />
           </svg>
           <span
-            class="text-[10px]"
-            :class="currentPath === '/profile' ? 'font-bold' : 'font-medium'"
+            class="text-[10px] font-medium truncate max-w-full"
             x-text="$t('nav.profile')"
-          ></span>
-          <span
-            x-show="currentPath === '/profile'"
-            class="absolute bottom-0.5 w-1 h-1 rounded-full bg-kinetic-neon"
           ></span>
         </a>
       </div>
@@ -273,17 +238,14 @@
       class="min-h-screen pb-28 focus:outline-none"
     >
       <!-- Skeleton de chargement initial -->
-      <div class="max-w-md mx-auto px-4 pt-8 animate-pulse space-y-4">
-        <div class="flex justify-between items-center">
-          <div class="space-y-2">
-            <div class="h-6 bg-kinetic-elevated rounded w-40"></div>
-            <div class="h-4 bg-kinetic-elevated rounded w-32"></div>
-          </div>
-          <div class="w-10 h-10 bg-kinetic-elevated rounded-full"></div>
+      <div class="max-w-md mx-auto px-4 pt-6 space-y-3" aria-hidden="true">
+        <div class="k-skeleton h-4 w-36"></div>
+        <div class="k-skeleton h-9 w-56 mb-2"></div>
+        <div class="k-skeleton h-56 rounded-2xl"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="k-skeleton h-[3.75rem] rounded-2xl"></div>
+          <div class="k-skeleton h-[3.75rem] rounded-2xl"></div>
         </div>
-        <div class="h-20 bg-kinetic-surface rounded-k"></div>
-        <div class="h-32 bg-kinetic-surface rounded-k"></div>
-        <div class="h-16 bg-kinetic-surface rounded-k"></div>
       </div>
     </main>
 
@@ -298,15 +260,13 @@
       x-transition:leave="transition ease-in duration-200"
       x-transition:leave-start="opacity-100 translate-y-0"
       x-transition:leave-end="opacity-0 translate-y-4"
-      class="fixed bottom-20 left-4 right-4 max-w-md mx-auto z-40 bg-kinetic-surface border border-kinetic-neon/30 rounded-2xl p-4 shadow-2xl"
+      class="k-toast fixed bottom-24 left-4 right-4 max-w-md mx-auto z-40 rounded-3xl p-4"
       style="display: none"
     >
       <div class="flex items-start gap-3">
-        <div
-          class="flex-shrink-0 w-10 h-10 bg-kinetic-neon/20 rounded-xl flex items-center justify-center text-xl"
-        ></div>
+        <img src="/icons/icon-192.png" alt="" class="flex-shrink-0 w-11 h-11 rounded-[10px]" />
         <div class="flex-1 min-w-0">
-          <p class="text-white font-bold text-sm mb-0.5">Installer Kinetic</p>
+          <p class="text-white font-semibold text-base mb-0.5">Installer Kinetic</p>
           <p class="text-xs text-gray-400 leading-relaxed" x-show="!isIos">
             Accède plus vite à tes séances depuis ton écran d'accueil.
           </p>
@@ -315,20 +275,9 @@
           </p>
         </div>
       </div>
-      <div class="flex gap-2 mt-3">
-        <button
-          @click="dismiss()"
-          class="flex-1 text-xs text-gray-400 px-3 py-2 rounded-lg ring-1 ring-white/10 hover:ring-white/30"
-        >
-          Plus tard
-        </button>
-        <button
-          x-show="!isIos"
-          @click="install()"
-          class="flex-1 text-xs font-bold text-gray-950 bg-kinetic-neon px-3 py-2 rounded-lg hover:brightness-110"
-        >
-          Installer
-        </button>
+      <div class="flex gap-2 mt-4">
+        <button @click="dismiss()" class="k-btn-2 h-11 text-sm">Plus tard</button>
+        <button x-show="!isIos" @click="install()" class="k-btn h-11 text-sm">Installer</button>
       </div>
     </div>
 

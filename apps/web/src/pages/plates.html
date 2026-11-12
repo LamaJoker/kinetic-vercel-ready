@@ -1,126 +1,229 @@
 <div x-data="plates" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
-  <div class="flex items-center gap-3 mb-6">
-    <a
-      href="/"
-      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
-      aria-label="Retour"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+  <div class="k-nav">
+    <a href="/" class="k-back" aria-label="Retour">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2.4"
+          d="M15 19l-7-7 7-7"
+        />
       </svg>
     </a>
     <div class="flex-1">
-      <h1 class="font-display font-black text-2xl tracking-tight text-white">
-        Chargement de barre
-      </h1>
-      <p class="text-xs text-gray-500">Quels disques mettre de chaque côté</p>
+      <h1 class="font-display font-bold text-white">Chargement de barre</h1>
+      <p class="text-gray-500">Les disques à mettre de chaque côté</p>
     </div>
   </div>
 
-  <!-- Entrées -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5 space-y-3">
-    <div>
-      <label for="f-plates-1" class="text-xs text-gray-500 font-semibold block mb-1">
-        Charge totale (kg)
-      </label>
-      <input
-        id="f-plates-1"
-        type="number"
-        x-model.number="targetKg"
-        min="0"
-        step="0.5"
-        class="w-full bg-kinetic-ink ring-1 ring-white/10 focus:ring-kinetic-neon rounded-lg px-3 py-2.5 text-2xl tabular-nums font-bold text-white outline-none"
-      />
-    </div>
-    <div>
-      <label class="text-xs text-gray-500 font-semibold block mb-1"> Barre (kg) </label>
-      <div class="grid grid-cols-4 gap-2">
-        <template x-for="bar in BAR_PRESETS" :key="bar">
-          <button
-            @click="barKg = bar"
-            :class="barKg === bar
-                  ? 'bg-kinetic-neon text-gray-950 font-bold'
-                  : 'bg-kinetic-ink ring-1 ring-white/10 text-gray-400'"
-            class="rounded-lg px-2 py-2 text-sm transition-all"
-            x-text="bar + ' kg'"
-          ></button>
-        </template>
+  <!-- Entrées : charge cible + barre -->
+  <div class="bg-kinetic-surface rounded-2xl p-4 mb-8">
+    <label for="f-plates-1" class="k-label">Charge totale</label>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        @click="stepTarget(-2.5)"
+        class="k-icon-btn w-11 h-11 text-white"
+        aria-label="Retirer 2,5 kg"
+      >
+        <svg
+          class="w-5 h-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M6 12h12" />
+        </svg>
+      </button>
+      <div
+        class="flex-1 min-w-0 h-16 flex items-center gap-1.5 rounded-xl bg-kinetic-ink px-3 transition-shadow focus-within:ring-2 focus-within:ring-kinetic-neon"
+      >
+        <input
+          id="f-plates-1"
+          type="number"
+          inputmode="decimal"
+          x-model.number="targetKg"
+          min="0"
+          step="0.5"
+          class="flex-1 basis-0 min-w-0 h-full bg-transparent text-right font-display text-3xl font-bold tabular-nums text-white outline-none"
+        />
+        <span class="flex-1 basis-0 pt-1.5 text-lg font-semibold text-gray-500" aria-hidden="true">
+          kg
+        </span>
       </div>
+      <button
+        type="button"
+        @click="stepTarget(2.5)"
+        class="k-icon-btn w-11 h-11 text-white"
+        aria-label="Ajouter 2,5 kg"
+      >
+        <svg
+          class="w-5 h-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 6v12M6 12h12" />
+        </svg>
+      </button>
+    </div>
+
+    <p id="plates-bar-label" class="k-label mt-5">Barre</p>
+    <div class="k-seg" role="group" aria-labelledby="plates-bar-label">
+      <template x-for="bar in BAR_PRESETS" :key="bar">
+        <button
+          type="button"
+          @click="barKg = bar"
+          class="k-seg-item tabular-nums"
+          :class="barKg === bar ? 'on' : ''"
+          :aria-pressed="barKg === bar ? 'true' : 'false'"
+          x-text="bar + ' kg'"
+        ></button>
+      </template>
     </div>
   </div>
 
   <!-- Résultat visuel -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-    <div class="flex items-center justify-between mb-3">
-      <p class="text-xs text-gray-500 font-semibold">Par côté</p>
-      <span class="text-xs text-kinetic-neon font-bold" x-text="resultLabel"></span>
+  <div class="mb-8">
+    <div class="flex items-baseline justify-between gap-3 mb-2.5">
+      <h2 class="k-section">Par côté</h2>
+      <span
+        class="text-base font-semibold tabular-nums text-kinetic-neon"
+        x-text="resultLabel"
+        aria-live="polite"
+      ></span>
     </div>
 
-    <template x-if="result.underBar">
-      <p class="text-sm text-kinetic-electric">
-        La barre seule est plus lourde que la cible — réduis la cible ou change de barre.
-      </p>
-    </template>
-
-    <template x-if="!result.underBar && result.perSide.length === 0">
-      <p class="text-sm text-gray-400">Barre seule (pas de disques).</p>
-    </template>
-
-    <!-- Barre chargée (SVG généré, couleurs de compétition) -->
-    <template x-if="!result.underBar && result.perSide.length > 0">
-      <div class="bg-kinetic-ink rounded-xl ring-1 ring-white/5 px-2 py-3" x-svg="barbellSvg"></div>
-    </template>
-
-    <!-- Liste textuelle -->
-    <template x-if="!result.underBar && result.perSide.length > 0">
-      <div class="mt-3 space-y-1">
-        <template x-for="p in result.perSide" :key="p.plateKg">
-          <div
-            class="flex items-center justify-between text-sm bg-kinetic-ink rounded-lg px-3 py-2"
+    <div class="bg-kinetic-surface rounded-2xl p-4">
+      <template x-if="result.underBar">
+        <div class="flex items-start gap-3 py-2">
+          <svg
+            class="w-5 h-5 mt-0.5 flex-shrink-0 text-kinetic-electric"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
           >
-            <span class="flex items-center gap-2 font-bold text-white">
+            <path
+              d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"
+            />
+          </svg>
+          <p class="text-base text-white">
+            La barre seule pèse plus que la cible.
+            <span class="block text-sm text-gray-500 mt-0.5">
+              Augmente la cible ou choisis une barre plus légère.
+            </span>
+          </p>
+        </div>
+      </template>
+
+      <template x-if="!result.underBar && result.perSide.length === 0">
+        <p class="py-2 text-base text-gray-400">Barre seule, pas de disques.</p>
+      </template>
+
+      <!-- Barre chargée (SVG généré, couleurs de compétition) -->
+      <template x-if="!result.underBar && result.perSide.length > 0">
+        <div class="bg-kinetic-ink rounded-xl px-2 py-3" x-svg="barbellSvg"></div>
+      </template>
+
+      <!-- Liste textuelle -->
+      <template x-if="!result.underBar && result.perSide.length > 0">
+        <div class="mt-2 -mb-1 divide-y divide-white/10 [&>div:first-of-type]:!border-t-0">
+          <template x-for="p in result.perSide" :key="p.plateKg">
+            <div class="flex items-center gap-3 min-h-[2.75rem] py-2">
               <span
-                class="w-3 h-3 rounded-sm ring-1 ring-black/40"
+                class="w-4 h-4 flex-shrink-0 rounded-full ring-1 ring-black/20"
                 :style="plateSwatch(p.plateKg)"
                 aria-hidden="true"
               ></span>
-              <span x-text="p.plateKg + ' kg'"></span>
-            </span>
-            <span class="text-gray-400" x-text="'×' + p.count + ' par côté'"></span>
-          </div>
-        </template>
-      </div>
-    </template>
+              <span
+                class="flex-1 text-base font-semibold tabular-nums text-white"
+                x-text="p.plateKg + ' kg'"
+              ></span>
+              <span
+                class="text-base tabular-nums text-gray-500"
+                x-text="'×' + p.count + ' par côté'"
+              ></span>
+            </div>
+          </template>
+        </div>
+      </template>
 
-    <template x-if="result.inexact && !result.underBar">
-      <p class="mt-3 text-xs text-kinetic-electric">
-        Charge la plus proche :
-        <span class="font-bold" x-text="result.achievedKg + ' kg'"></span> (manque
-        <span class="font-bold" x-text="result.deltaKg.toFixed(2) + ' kg'"></span>)
-      </p>
-    </template>
+      <template x-if="result.inexact && !result.underBar">
+        <p class="mt-3 text-sm text-kinetic-electric">
+          Charge la plus proche :
+          <span class="font-semibold tabular-nums" x-text="result.achievedKg + ' kg'"></span>
+          (manque
+          <span class="font-semibold tabular-nums" x-text="result.deltaKg.toFixed(2) + ' kg'"></span
+          >)
+        </p>
+      </template>
+    </div>
   </div>
 
-  <!-- Plates dispos (collapsible) -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
+  <!-- Disques disponibles (repliable) -->
+  <div class="k-list">
     <button
+      type="button"
       @click="showPlates = !showPlates"
-      class="flex items-center justify-between w-full text-left"
+      class="k-row"
+      :aria-expanded="showPlates ? 'true' : 'false'"
+      aria-controls="plates-inventory"
     >
-      <span class="text-xs text-gray-500 font-semibold"> Disques disponibles </span>
-      <span class="text-gray-500 text-xs" x-text="showPlates ? '−' : '+'"></span>
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Disques disponibles</span>
+        <span
+          class="block text-xs text-gray-500 tabular-nums"
+          x-text="enabledPlates.length + ' sur ' + PLATE_OPTIONS.length + ' sélectionnés'"
+        ></span>
+      </span>
+      <svg
+        class="k-chevron transition-transform duration-200"
+        :class="showPlates ? 'rotate-90' : ''"
+        viewBox="0 0 8 14"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="m1 1 6 6-6 6" />
+      </svg>
     </button>
-    <div x-show="showPlates" x-transition class="mt-3 flex flex-wrap gap-1.5">
-      <template x-for="p in PLATE_OPTIONS" :key="p">
-        <button
-          @click="togglePlate(p)"
-          :class="enabledPlates.includes(p)
-                ? 'bg-kinetic-neon text-gray-950 font-bold'
-                : 'bg-kinetic-ink ring-1 ring-white/10 text-gray-400'"
-          class="rounded-lg px-2.5 py-1 text-xs transition-all"
-          x-text="p + ' kg'"
-        ></button>
-      </template>
+    <div id="plates-inventory" x-show="showPlates" class="px-4 pb-4 pt-1">
+      <div class="grid grid-cols-4 gap-2">
+        <template x-for="p in PLATE_OPTIONS" :key="p">
+          <button
+            type="button"
+            @click="togglePlate(p)"
+            :class="enabledPlates.includes(p)
+                ? 'k-on'
+                : 'k-off'"
+            :aria-pressed="hasPlate(p) ? 'true' : 'false'"
+            class="h-11 rounded-xl flex items-center justify-center gap-1.5 text-sm tabular-nums transition-colors active:scale-95"
+          >
+            <span
+              class="w-2.5 h-2.5 flex-shrink-0 rounded-full ring-1 ring-black/20"
+              :style="plateSwatch(p)"
+              aria-hidden="true"
+            ></span>
+            <span x-text="p + ' kg'"></span>
+          </button>
+        </template>
+      </div>
+      <p class="mt-3 text-xs text-gray-500">
+        Touche un disque pour l'inclure ou l'exclure du calcul.
+      </p>
     </div>
   </div>
 </div>

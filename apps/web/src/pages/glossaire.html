@@ -1,56 +1,99 @@
 <div x-data="glossairePage" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
-  <div class="flex items-center gap-3 mb-6">
-    <a
-      href="/profile"
-      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
-      aria-label="Retour"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+  <div class="k-nav">
+    <a href="/profile" class="k-back" aria-label="Retour">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2.4"
+          d="M15 19l-7-7 7-7"
+        />
       </svg>
     </a>
-    <div class="flex-1">
-      <h1 class="text-2xl font-display font-black tracking-tight text-white">Glossaire</h1>
-      <p class="text-xs text-gray-500">Tous les termes expliqués simplement</p>
+    <div class="flex-1 min-w-0">
+      <h1 class="font-display font-bold text-white">Glossaire</h1>
+      <p class="text-gray-500">Tous les termes expliqués simplement</p>
     </div>
   </div>
 
   <!-- Recherche -->
-  <div class="mb-4">
+  <div class="relative mb-2">
+    <svg
+      class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-[1.125rem] h-[1.125rem] text-gray-500"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="6.5" stroke-width="2.2" />
+      <path stroke-linecap="round" stroke-width="2.2" d="M16 16l4 4" />
+    </svg>
     <input
       x-model="query"
       type="search"
-      placeholder="Rechercher un terme (RPE, e1RM, deload...)"
-      class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600"
+      aria-label="Rechercher un terme"
+      placeholder="Rechercher (RPE, e1RM, deload…)"
+      autocomplete="off"
+      class="k-field bg-kinetic-surface pl-10"
     />
   </div>
+  <p
+    class="k-caption mb-4 tabular-nums"
+    aria-live="polite"
+    x-text="$plural(results.length, 'terme')"
+  ></p>
 
-  <!-- Résultats -->
+  <!-- Aucun résultat -->
   <template x-if="results.length === 0">
-    <p class="text-sm text-gray-500 text-center py-8">Aucun terme ne correspond à ta recherche.</p>
+    <div class="k-empty">
+      <p>Aucun résultat</p>
+      <p class="text-sm text-gray-500 mt-1.5">Aucun terme ne correspond à ta recherche.</p>
+    </div>
   </template>
 
-  <div class="space-y-3">
+  <!-- Termes -->
+  <div class="k-list" x-show="results.length > 0">
     <template x-for="term in results" :key="term.id">
-      <div class="bg-kinetic-surface rounded-2xl p-4 ring-1 ring-white/5">
-        <div class="flex items-center justify-between mb-1">
-          <h2 class="text-white font-bold" x-text="term.term"></h2>
-          <span
-            class="text-xs px-2 py-0.5 rounded-full bg-kinetic-elevated text-gray-400"
-            x-text="term.category"
-          ></span>
+      <details class="k-item group">
+        <summary
+          class="flex items-center gap-3 min-h-[3.25rem] px-4 py-2.5 cursor-pointer list-none select-none transition-colors active:bg-kinetic-elevated [&::-webkit-details-marker]:hidden"
+        >
+          <span class="flex-1 min-w-0">
+            <span class="block text-base font-semibold text-white" x-text="term.term"></span>
+            <span class="block text-xs text-gray-500 truncate" x-text="term.short"></span>
+          </span>
+          <svg
+            class="k-chevron transition-transform duration-200 group-open:rotate-90"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 8 14"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M1 1l6 6-6 6"
+            />
+          </svg>
+        </summary>
+        <div class="px-4 pb-4 pt-0.5">
+          <p class="text-base text-gray-300 leading-relaxed" x-text="term.long"></p>
+          <template x-if="term.formula">
+            <p
+              class="mt-3 rounded-xl bg-kinetic-elevated px-3.5 py-2.5 text-sm font-medium tabular-nums text-white"
+              x-text="term.formula"
+            ></p>
+          </template>
+          <template x-if="term.example">
+            <p class="mt-3 text-sm text-gray-500 leading-relaxed">
+              <span class="font-semibold text-gray-400">Exemple</span> ·
+              <span x-text="term.example"></span>
+            </p>
+          </template>
+          <span class="k-badge mt-3 capitalize" x-text="term.category"></span>
         </div>
-        <p class="text-sm text-gray-300 leading-relaxed mb-2" x-text="term.long"></p>
-        <template x-if="term.formula">
-          <p
-            class="text-xs tabular-nums bg-kinetic-ink/60 rounded-lg px-3 py-2 text-kinetic-neon mb-1.5"
-            x-text="term.formula"
-          ></p>
-        </template>
-        <template x-if="term.example">
-          <p class="text-xs text-gray-500 italic">Exemple : <span x-text="term.example"></span></p>
-        </template>
-      </div>
+      </details>
     </template>
   </div>
 </div>

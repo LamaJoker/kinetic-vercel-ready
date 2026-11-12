@@ -114,6 +114,7 @@ type CoachGoal = 'force' | 'hypertrophie' | 'endurance';
 
 interface GoalPreset {
   label: string;
+  short: string; // libellé du contrôle segmenté
   emoji: string;
   targetReps: number;
   targetRpe: number;
@@ -124,6 +125,7 @@ interface GoalPreset {
 const COACH_GOALS: Record<CoachGoal, GoalPreset> = {
   force: {
     label: 'Force',
+    short: 'Force',
     emoji: '',
     targetReps: 4,
     targetRpe: 8.5,
@@ -132,6 +134,7 @@ const COACH_GOALS: Record<CoachGoal, GoalPreset> = {
   },
   hypertrophie: {
     label: 'Hypertrophie',
+    short: 'Hypertrophie',
     emoji: '',
     targetReps: 9,
     targetRpe: 8,
@@ -140,6 +143,7 @@ const COACH_GOALS: Record<CoachGoal, GoalPreset> = {
   },
   endurance: {
     label: 'Endurance musculaire',
+    short: 'Endurance',
     emoji: '',
     targetReps: 15,
     targetRpe: 7,
@@ -278,6 +282,7 @@ export function seances() {
           e.exerciseId === oldExerciseId ? { ...e, exerciseId: newExerciseId } : e,
         ),
       };
+      if (this.activeExerciseId === oldExerciseId) this.setActiveEntry(newExerciseId);
       this.substitutionFor = null;
       this.substitutionResults = [];
       window.dispatchEvent(
@@ -314,6 +319,53 @@ export function seances() {
 
     get currentEntries(): SessionExerciseEntry[] {
       return (this.currentSession?.entries ?? []) as SessionExerciseEntry[];
+    },
+
+    // ─── Exercice actif (saisie ouverte sur un seul exercice à la fois) ──────
+    activeExerciseId: null as string | null,
+    _activeSessionId: null as string | null,
+
+    /** Ouvre la saisie sur un exercice de la séance en cours. */
+    setActiveEntry(exerciseId: string): void {
+      this.activeExerciseId = exerciseId;
+      this._activeSessionId = this.currentSession?.id ?? null;
+    },
+
+    /**
+     * Vrai si la saisie est ouverte sur cet exercice. Sans choix explicite
+     * (ou si l'exercice choisi n'est plus dans la séance) : le premier exercice
+     * sans série, à défaut le dernier.
+     */
+    isActiveEntry(exerciseId: string): boolean {
+      const entries = this.currentEntries;
+      if (!entries.length) return false;
+      const chosen = this.activeExerciseId;
+      if (
+        chosen &&
+        this._activeSessionId === this.currentSession?.id &&
+        entries.some((e) => e.exerciseId === chosen)
+      ) {
+        return chosen === exerciseId;
+      }
+      const fallback = entries.find((e) => e.sets.length === 0) ?? entries.at(-1);
+      return fallback?.exerciseId === exerciseId;
+    },
+
+    /** Nombre total de séries de la séance en cours. */
+    sessionSetCount(): number {
+      return this.currentEntries.reduce((n, e) => n + e.sets.length, 0);
+    },
+
+    /** Tonnage de la séance en cours : « 840 kg » ou « 12,4 t ». */
+    sessionVolumeLabel(): string {
+      const kg = this.currentEntries.reduce(
+        (acc, e) => acc + e.sets.reduce((a, s) => a + s.weightKg * s.reps, 0),
+        0,
+      );
+      if (kg >= 10000) {
+        return `${(kg / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} t`;
+      }
+      return `${Math.round(kg).toLocaleString('fr-FR')} kg`;
     },
 
     /** Exercices regroupés par groupe musculaire, dans l'ordre CATEGORY_ORDER. */
@@ -453,6 +505,12 @@ export function seances() {
      * la même série dans la séance actuelle déclencherait 5× la célébration
      * PR car la séance en cours n'est pas dans `this.sessions`.
      */
+    /** Record formaté à la française pour l'en-tête d'exercice (« 154 kg », « 97,5 kg »). */
+    prLabel(exerciseId: string): string {
+      const v = this.pr(exerciseId);
+      return v ? v.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' kg' : '';
+    },
+
     pr(exerciseId: string): number | null {
       let best = 0;
       for (const s of this.sessions) {
@@ -781,8 +839,10 @@ export function seances() {
     },
 
     bumpWeight(delta: number): void {
-      // Le pas dépend de l'exercice si on en a un sélectionné dans la session
-      const entry = this.currentSession?.entries[0];
+      // Le pas dépend de l'exercice dont la saisie est ouverte
+      const entry =
+        this.currentEntries.find((e) => this.isActiveEntry(e.exerciseId)) ??
+        this.currentSession?.entries[0];
       const ex = entry ? this.exercises.find((e) => e.id === entry.exerciseId) : null;
       const step = ex?.incrementKg ?? 2.5;
       const current = Number(this.draft.weightKg) || 0;
@@ -825,6 +885,7 @@ export function seances() {
           { exerciseId: this.selectedExerciseId, sets: [] },
         ],
       };
+      this.setActiveEntry(this.selectedExerciseId);
       this.selectedExerciseId = '';
     },
 
@@ -898,6 +959,8 @@ export function seances() {
       };
       // Vide la note après ajout (le tempo reste pour les sets suivants)
       this.draft.note = '';
+      // La saisie reste ouverte sur l'exercice qu'on vient de travailler
+      this.setActiveEntry(exerciseId);
 
       if (isPr && hadRecord) {
         const e1rmKg = Math.round(estimateE1rmKg(weightKg, reps) * 10) / 10;
@@ -1014,6 +1077,19 @@ export function seances() {
     expandedSessionId: null as string | null,
     confirmDeleteId: null as string | null,
     deletingSession: false,
+
+    /** Nombre de séances affichées dans l'historique (les plus récentes). */
+    historyLimit: 5,
+
+    /** Séances visibles dans l'historique, de la plus récente à la plus ancienne. */
+    visibleSessions(): WorkoutSession[] {
+      return this.sessions.slice().reverse().slice(0, this.historyLimit);
+    },
+
+    /** Déplie tout l'historique. */
+    showAllHistory(): void {
+      this.historyLimit = this.sessions.length;
+    },
 
     /** Bascule l'affichage détaillé d'une séance dans l'historique. */
     toggleSessionDetail(id: string): void {
@@ -1248,27 +1324,47 @@ export function seances() {
     progressSvg(): string {
       const pts = this.progressPoints();
       if (pts.length < 2) return '';
+      // Style « Santé » iOS : courbe bleue, record en rouge (comme « Nouveau
+      // Record »), quadrillage et libellés en currentColor (gris du conteneur,
+      // donc lisibles en mode clair comme en sombre).
       const W = 320,
-        H = 140,
-        padX = 8,
-        padY = 8;
+        H = 160,
+        padL = 6,
+        padR = 34, // colonne des valeurs à droite
+        padT = 10,
+        padB = 22; // ligne des dates en bas
+      const BLUE = '#0A84FF';
+      const RED = '#FF453A';
       const minX = pts[0]!.x,
         maxX = pts.at(-1)!.x;
       const minY = this.progressMin(),
         maxY = this.progressMax();
       const dx = Math.max(1, maxX - minX),
         dy = Math.max(0.1, maxY - minY);
-      const sx = (x: number) => padX + ((x - minX) / dx) * (W - padX * 2);
-      const sy = (y: number) => H - padY - ((y - minY) / dy) * (H - padY * 2);
+      const plotR = W - padR;
+      const plotB = H - padB;
+      const sx = (x: number) => padL + ((x - minX) / dx) * (plotR - padL);
+      const sy = (y: number) => plotB - ((y - minY) / dy) * (plotB - padT);
       const line = pts
         .map((p, i) => `${i === 0 ? 'M' : 'L'} ${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`)
         .join(' ');
-      const area = line + ` L ${sx(pts.at(-1)!.x).toFixed(1)} ${H} L ${padX} ${H} Z`;
+      const area = `${line} L ${sx(pts.at(-1)!.x).toFixed(1)} ${plotB} L ${sx(minX).toFixed(1)} ${plotB} Z`;
+      const fmt = (v: number) => v.toLocaleString('fr-FR', { maximumFractionDigits: 0 });
+      const gridValues = maxY - minY < 0.5 ? [maxY] : [maxY, (maxY + minY) / 2, minY];
+      const grid = gridValues
+        .map((v) => {
+          const y = sy(v).toFixed(1);
+          return `<line x1="${padL}" x2="${plotR}" y1="${y}" y2="${y}" stroke="currentColor" stroke-opacity="0.28" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/><text x="${W - 2}" y="${y}" fill="currentColor" font-size="11" text-anchor="end" dominant-baseline="middle">${fmt(v)}</text>`;
+        })
+        .join('');
+      const firstLabel = pts[0]!.label;
+      const lastLabel = pts.at(-1)!.label;
+      const dates = `<text x="${padL}" y="${H - 4}" fill="currentColor" font-size="11">${firstLabel}</text><text x="${plotR}" y="${H - 4}" fill="currentColor" font-size="11" text-anchor="end">${lastLabel}</text>`;
       const circles = pts
-        .map(
-          (p) =>
-            `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.y >= maxY ? 4 : 2.5}" fill="${p.y >= maxY ? '#FFD166' : '#3E6FD8'}"><title>${p.label}: ${p.y.toFixed(1)}</title></circle>`,
-        )
+        .map((p) => {
+          const isRecord = p.y >= maxY;
+          return `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${isRecord ? 5 : 3}" fill="${isRecord ? RED : BLUE}"${isRecord ? ' class="stroke-kinetic-surface" stroke-width="2.5"' : ''}><title>${p.label} : ${p.y.toFixed(1)}</title></circle>`;
+        })
         .join('');
       const metric =
         this.progressMetric === 'weight'
@@ -1277,11 +1373,11 @@ export function seances() {
             ? 'Volume (kg·reps)'
             : 'e1RM (kg)';
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="${metric}">
-        <path d="${area}" fill="#3E6FD8" fill-opacity="0.15"/>
-        <path d="${line}" fill="none" stroke="#3E6FD8" stroke-width="2" stroke-linecap="round"/>
+        ${grid}
+        <path d="${area}" fill="${BLUE}" fill-opacity="0.12"/>
+        <path d="${line}" fill="none" stroke="${BLUE}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         ${circles}
-        <text x="${padX}" y="${H - 2}" fill="#6B7280" font-size="9">${minY.toFixed(0)}</text>
-        <text x="${padX}" y="14" fill="#6B7280" font-size="9">${maxY.toFixed(0)}</text>
+        ${dates}
       </svg>`;
     },
 

@@ -1,129 +1,209 @@
 <div x-data="records" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
   <!-- En-tête -->
-  <div class="flex items-center gap-3 mb-6">
-    <a
-      href="/"
-      class="p-1.5 -ml-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-kinetic-surface"
-      aria-label="Retour"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+  <div class="k-nav">
+    <a href="/" class="k-back" aria-label="Retour">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2.4"
+          d="M15 19l-7-7 7-7"
+        />
       </svg>
     </a>
-    <div class="flex-1">
-      <h1 class="font-display font-black text-2xl tracking-tight text-white">Records</h1>
-      <p class="text-xs text-gray-500" x-text="subtitleLabel"></p>
+    <div class="flex-1 min-w-0">
+      <h1 class="font-display font-bold text-white">Records</h1>
     </div>
   </div>
 
-  <!-- Loading -->
-  <div x-show="loading" class="text-center py-8 text-gray-500 text-sm">Chargement…</div>
+  <!-- Chargement -->
+  <div x-show="loading" class="space-y-3" aria-busy="true">
+    <span class="sr-only">Chargement…</span>
+    <div class="k-skeleton h-[5.5rem] rounded-2xl" aria-hidden="true"></div>
+    <div class="k-skeleton h-9 rounded-[10px]" aria-hidden="true"></div>
+    <div class="k-skeleton h-56 rounded-2xl" aria-hidden="true"></div>
+  </div>
 
-  <!-- Empty state -->
+  <!-- État vide -->
   <template x-if="!loading && records.length === 0">
-    <div class="bg-kinetic-surface rounded-2xl p-6 text-center ring-1 ring-white/5">
-      <p class="font-display font-bold text-white">Aucun record encore</p>
-      <p class="text-xs text-gray-500 mt-1">
-        Termine ta première séance pour débloquer des records personnels.
+    <div class="k-empty">
+      <p>Aucun record pour l'instant</p>
+      <p class="text-sm text-gray-500 mt-1.5 max-w-[16rem] mx-auto">
+        Termine ta première séance pour débloquer tes records personnels.
       </p>
-      <a
-        href="/seances"
-        class="inline-block mt-4 bg-kinetic-neon text-gray-950 rounded-xl px-4 py-2 text-sm font-bold hover:brightness-105 transition-all"
+      <a href="/seances" class="k-btn mt-6">Démarrer une séance</a>
+    </div>
+  </template>
+
+  <!-- Chiffres clés -->
+  <template x-if="!loading && records.length > 0">
+    <div class="bg-kinetic-surface rounded-2xl py-4 mb-8 grid grid-cols-3 divide-x divide-white/10">
+      <div class="px-3 text-center">
+        <p
+          class="font-display font-bold text-2xl text-white tabular-nums"
+          x-text="records.length"
+        ></p>
+        <p class="text-xs text-gray-500 mt-0.5">Records</p>
+      </div>
+      <div class="px-3 text-center">
+        <p class="font-display font-bold text-2xl text-white tabular-nums" x-text="recentCount"></p>
+        <p class="text-xs text-gray-500 mt-0.5">Sur 7 jours</p>
+      </div>
+      <div class="px-3 text-center">
+        <p class="font-display font-bold text-2xl text-kinetic-neon tabular-nums">
+          <span x-text="topE1rm"></span
+          ><span class="text-base font-semibold text-gray-500"> kg</span>
+        </p>
+        <p class="text-xs text-gray-500 mt-0.5">Meilleur e1RM</p>
+      </div>
+    </div>
+  </template>
+
+  <!-- Liste des records -->
+  <section class="mb-8" x-show="!loading && records.length > 0">
+    <h2 class="k-section mb-2.5">Tous les records · e1RM</h2>
+    <div class="k-seg mb-3" role="group" aria-label="Trier les records">
+      <button
+        type="button"
+        @click="sort = 'recent'"
+        class="k-seg-item"
+        :class="sort === 'recent' ? 'on' : ''"
+        :aria-pressed="sort === 'recent' ? 'true' : 'false'"
       >
-        Démarrer une séance
-      </a>
+        Récents
+      </button>
+      <button
+        type="button"
+        @click="sort = 'e1rm'"
+        class="k-seg-item"
+        :class="sort === 'e1rm' ? 'on' : ''"
+        :aria-pressed="sort === 'e1rm' ? 'true' : 'false'"
+      >
+        Top e1RM
+      </button>
+      <button
+        type="button"
+        @click="sort = 'name'"
+        class="k-seg-item"
+        :class="sort === 'name' ? 'on' : ''"
+        :aria-pressed="sort === 'name' ? 'true' : 'false'"
+      >
+        A–Z
+      </button>
     </div>
-  </template>
 
-  <!-- Stats agrégées -->
-  <template x-if="!loading && records.length > 0">
-    <div class="grid grid-cols-3 gap-3 mb-4">
-      <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
-        <p class="font-display font-black text-2xl text-kinetic-neon" x-text="records.length"></p>
-        <p class="text-xs text-gray-500 mt-0.5">PR actifs</p>
-      </div>
-      <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
-        <p class="font-display font-black text-2xl text-kinetic-electric" x-text="recentCount"></p>
-        <p class="text-xs text-gray-500 mt-0.5">7 derniers j</p>
-      </div>
-      <div class="bg-kinetic-surface rounded-2xl p-3 text-center ring-1 ring-white/5">
-        <p class="font-display font-black text-2xl text-white" x-text="topE1rm + ' kg'"></p>
-        <p class="text-xs text-gray-500 mt-0.5">Top e1RM</p>
-      </div>
-    </div>
-  </template>
-
-  <!-- ── Strength scores (Wilks / IPF GL / DOTS) — avancé ──────────────── -->
-  <template x-if="!loading && records.length > 0">
-    <div class="adv-only bg-kinetic-surface rounded-2xl p-4 mb-4 ring-1 ring-white/5">
-      <div class="flex items-center justify-between mb-3">
-        <div>
-          <h2 class="font-display font-bold text-white inline-flex items-center gap-1">
-            Scores de force
-            <span x-data="helpTip" data-term="wilks" class="relative inline-flex">
-              <button
-                type="button"
-                @click="toggle()"
-                @click.outside="close()"
-                aria-label="Qu'est-ce que le score de force ?"
-                class="w-4 h-4 rounded-full bg-kinetic-elevated text-gray-400 text-[9px] font-bold flex items-center justify-center hover:text-white"
-              >
-                i
-              </button>
-              <span
-                x-show="open"
-                x-transition
-                class="absolute left-0 top-6 z-50 w-56 bg-kinetic-raised ring-1 ring-white/15 rounded-xl p-3 shadow-2xl text-[11px] text-gray-200 leading-snug font-normal normal-case tracking-normal"
-                style="display: none"
-              >
-                <span class="block font-bold text-white mb-0.5" x-text="label"></span>
-                <span x-text="def"></span>
-              </span>
-            </span>
-          </h2>
-          <p class="text-xs text-gray-500">SBD normalisé</p>
+    <div class="k-list">
+      <template x-for="r in sortedRecords" :key="r.exerciseId">
+        <div class="k-row py-3">
+          <div class="flex-1 min-w-0">
+            <p class="text-base text-white truncate" x-text="r.exerciseName"></p>
+            <p class="text-xs text-gray-500 mt-0.5 truncate tabular-nums">
+              <span x-text="r.weightLabel + ' × ' + r.reps"></span>
+              <span class="mx-1" aria-hidden="true">·</span>
+              <span x-text="r.dateLabel"></span>
+            </p>
+          </div>
+          <p class="flex-shrink-0 font-display text-xl font-semibold text-white tabular-nums">
+            <span x-text="r.e1rmKg"></span
+            ><span class="text-sm font-medium text-gray-500"> kg</span>
+          </p>
         </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- ── Scores de force (Wilks / IPF GL / DOTS) — mode avancé ─────────── -->
+  <template x-if="!loading && records.length > 0">
+    <section class="adv-only mb-8">
+      <div class="flex items-center justify-between gap-3 mb-2.5">
+        <h2 class="k-section inline-flex items-center gap-1.5">
+          Scores de force
+          <span x-data="helpTip" data-term="wilks" class="relative inline-flex">
+            <button
+              type="button"
+              @click="toggle()"
+              @click.outside="close()"
+              aria-label="Qu'est-ce que le score de force ?"
+              class="relative flex h-6 w-6 items-center justify-center rounded-full text-gray-500 transition active:opacity-60 after:absolute after:-inset-2.5 after:content-['']"
+            >
+              <svg
+                class="h-[18px] w-[18px]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 11v5M12 7.6h.01" />
+              </svg>
+            </button>
+            <span
+              x-show="open"
+              x-transition
+              class="absolute left-0 top-full mt-2 z-50 w-60 rounded-xl bg-kinetic-raised p-3 shadow-2xl text-xs text-gray-300 leading-snug font-normal normal-case tracking-normal"
+              style="display: none"
+            >
+              <span class="mb-0.5 block font-semibold text-white" x-text="label"></span>
+              <span x-text="def"></span>
+            </span>
+          </span>
+        </h2>
         <button
+          type="button"
           @click="showScoresEditor = !showScoresEditor"
-          class="text-xs text-gray-400 hover:text-white px-2 py-1 rounded-lg hover:bg-kinetic-elevated"
+          class="k-pill"
+          :aria-expanded="showScoresEditor ? 'true' : 'false'"
         >
-          <span x-show="!showScoresEditor"></span>
+          <span x-show="!showScoresEditor">Modifier</span>
           <span x-show="showScoresEditor">Fermer</span>
         </button>
       </div>
+      <p class="text-sm text-gray-500 mb-3">
+        Ton total squat, bench et deadlift, rapporté à ton poids.
+      </p>
 
-      <!-- Editor profil -->
+      <!-- Réglages du profil de force -->
       <template x-if="showScoresEditor">
-        <div class="grid grid-cols-2 gap-2 mb-3">
-          <div>
-            <label for="f-records-1" class="text-xs text-gray-500 font-semibold">Poids (kg)</label>
-            <input
-              id="f-records-1"
-              type="number"
-              step="0.1"
-              :value="scoreBodyweightKg || ''"
-              @input="setScoreBodyweight($event.target.value)"
-              placeholder="80"
-              class="w-full bg-kinetic-ink border border-white/10 rounded-xl px-3 py-2 text-sm text-white mt-1"
-            />
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 font-semibold">Sexe</label>
-            <div class="grid grid-cols-2 gap-1 mt-1">
+        <div class="k-list mb-3">
+          <label for="f-records-1" class="k-row">
+            <span class="text-base text-white flex-shrink-0">Poids corporel</span>
+            <span class="flex-1 min-w-0 flex items-baseline justify-end gap-1">
+              <input
+                id="f-records-1"
+                type="number"
+                step="0.1"
+                inputmode="decimal"
+                :value="scoreBodyweightKg || ''"
+                @input="setScoreBodyweight($event.target.value)"
+                placeholder="80"
+                class="w-20 min-w-0 bg-transparent text-right text-base text-white tabular-nums placeholder:text-gray-500 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <span class="text-base text-gray-500">kg</span>
+            </span>
+          </label>
+          <div class="k-row">
+            <span class="text-base text-white flex-shrink-0" id="records-sex-label">Sexe</span>
+            <div class="k-seg ml-auto w-44" role="group" aria-labelledby="records-sex-label">
               <button
+                type="button"
                 @click="setScoreSex('male')"
-                class="py-2 rounded-xl text-sm font-bold transition-all active:scale-95"
-                :class="scoreSex === 'male'
-                          ? 'bg-kinetic-neon text-gray-950'
-                          : 'bg-kinetic-elevated text-white'"
-              ></button>
+                class="k-seg-item"
+                :class="scoreSex === 'male' ? 'on' : ''"
+                :aria-pressed="scoreSex === 'male' ? 'true' : 'false'"
+              >
+                Homme
+              </button>
               <button
+                type="button"
                 @click="setScoreSex('female')"
-                class="py-2 rounded-xl text-sm font-bold transition-all active:scale-95"
-                :class="scoreSex === 'female'
-                          ? 'bg-kinetic-neon text-gray-950'
-                          : 'bg-kinetic-elevated text-white'"
-              ></button>
+                class="k-seg-item"
+                :class="scoreSex === 'female' ? 'on' : ''"
+                :aria-pressed="scoreSex === 'female' ? 'true' : 'false'"
+              >
+                Femme
+              </button>
             </div>
           </div>
         </div>
@@ -131,141 +211,85 @@
 
       <!-- État incomplet -->
       <template x-if="!scoresReady">
-        <p class="text-xs text-gray-500 leading-relaxed">
-          Renseigne ton poids corporel () et fais au moins un PR en squat / bench / deadlift pour
-          calculer ton score.
+        <p class="bg-kinetic-surface rounded-2xl p-4 text-sm text-gray-500 leading-relaxed">
+          Indique ton poids corporel (bouton Modifier) et établis au moins un record au squat, au
+          bench ou au deadlift pour calculer ton score.
         </p>
       </template>
 
       <!-- Scores -->
       <template x-if="scoresReady">
-        <div>
-          <!-- SBD breakdown -->
-          <div class="grid grid-cols-3 gap-2 mb-3">
-            <div class="text-center bg-kinetic-elevated/50 rounded-lg p-2">
-              <p class="text-xs text-gray-500">Squat</p>
-              <p class="text-sm font-bold text-white" x-text="sbdBreakdown.squat + ' kg'"></p>
+        <div class="space-y-3">
+          <!-- Total + niveau, détail SBD -->
+          <div class="bg-kinetic-surface rounded-2xl p-4">
+            <div class="flex items-end justify-between gap-3">
+              <div>
+                <p class="text-sm text-gray-500">Total SBD</p>
+                <p class="k-metric mt-1.5">
+                  <span x-text="sbdTotalKg"></span
+                  ><span class="text-lg font-semibold text-gray-500"> kg</span>
+                </p>
+              </div>
+              <div class="text-right">
+                <p class="text-sm text-gray-500">Niveau</p>
+                <p class="text-lg font-semibold text-white mt-1" x-text="strengthTierLabel"></p>
+              </div>
             </div>
-            <div class="text-center bg-kinetic-elevated/50 rounded-lg p-2">
-              <p class="text-xs text-gray-500">Bench</p>
-              <p class="text-sm font-bold text-white" x-text="sbdBreakdown.bench + ' kg'"></p>
-            </div>
-            <div class="text-center bg-kinetic-elevated/50 rounded-lg p-2">
-              <p class="text-xs text-gray-500">Deadlift</p>
-              <p class="text-sm font-bold text-white" x-text="sbdBreakdown.deadlift + ' kg'"></p>
+            <div class="grid grid-cols-3 gap-2 mt-4">
+              <div class="bg-kinetic-ink rounded-xl px-2 py-2.5 text-center">
+                <p class="text-xs text-gray-500">Squat</p>
+                <p
+                  class="text-base font-semibold text-white tabular-nums mt-0.5"
+                  x-text="sbdBreakdown.squat + ' kg'"
+                ></p>
+              </div>
+              <div class="bg-kinetic-ink rounded-xl px-2 py-2.5 text-center">
+                <p class="text-xs text-gray-500">Bench</p>
+                <p
+                  class="text-base font-semibold text-white tabular-nums mt-0.5"
+                  x-text="sbdBreakdown.bench + ' kg'"
+                ></p>
+              </div>
+              <div class="bg-kinetic-ink rounded-xl px-2 py-2.5 text-center">
+                <p class="text-xs text-gray-500">Deadlift</p>
+                <p
+                  class="text-base font-semibold text-white tabular-nums mt-0.5"
+                  x-text="sbdBreakdown.deadlift + ' kg'"
+                ></p>
+              </div>
             </div>
           </div>
 
-          <!-- Total + Tier -->
-          <div
-            class="bg-kinetic-electric/10 ring-1 ring-kinetic-electric/30 rounded-xl p-3 mb-3 flex items-center justify-between"
-          >
-            <div>
-              <p class="text-xs text-gray-400">Total SBD</p>
-              <p class="text-2xl font-black text-white" x-text="sbdTotalKg + ' kg'"></p>
+          <!-- Scores normalisés -->
+          <div class="k-list">
+            <div class="k-row">
+              <span class="flex-1 text-base text-white">Wilks</span>
+              <span
+                class="text-base font-semibold text-white tabular-nums"
+                x-text="wilksScore.toFixed(1)"
+              ></span>
             </div>
-            <div class="text-right">
-              <p class="text-xs text-gray-400">Tier</p>
-              <p class="text-base font-bold text-kinetic-electric" x-text="strengthTierLabel"></p>
+            <div class="k-row">
+              <span class="flex-1 text-base text-white">IPF GL</span>
+              <span
+                class="text-base font-semibold text-white tabular-nums"
+                x-text="ipfGlScore.toFixed(1)"
+              ></span>
             </div>
-          </div>
-
-          <!-- Scores formules -->
-          <div class="grid grid-cols-3 gap-2 text-center">
-            <div class="bg-kinetic-elevated/50 rounded-lg p-2">
-              <p class="text-xs text-gray-500">Wilks</p>
-              <p class="text-base font-bold text-white" x-text="wilksScore.toFixed(1)"></p>
-            </div>
-            <div class="bg-kinetic-elevated/50 rounded-lg p-2">
-              <p class="text-xs text-gray-500">IPF GL</p>
-              <p class="text-base font-bold text-white" x-text="ipfGlScore.toFixed(1)"></p>
-            </div>
-            <div class="bg-kinetic-elevated/50 rounded-lg p-2">
-              <p class="text-xs text-gray-500">DOTS</p>
-              <p class="text-base font-bold text-white" x-text="dotsScoreValue.toFixed(1)"></p>
+            <div class="k-row">
+              <span class="flex-1 text-base text-white">DOTS</span>
+              <span
+                class="text-base font-semibold text-white tabular-nums"
+                x-text="dotsScoreValue.toFixed(1)"
+              ></span>
             </div>
           </div>
-          <p class="text-[10px] text-gray-600 italic text-center mt-2">
-            Sources : Wilks (2020), IPF GL (Annexe 7), DOTS (Konertz 2019)
+          <p class="k-caption">
+            Estimés à partir de tes e1RM. Sources : Wilks (2020), IPF GL (annexe 7), DOTS (Konertz
+            2019).
           </p>
         </div>
       </template>
-    </div>
+    </section>
   </template>
-
-  <!-- Tri -->
-  <template x-if="!loading && records.length > 0">
-    <div class="flex gap-2 mb-3 text-xs">
-      <button
-        @click="sort = 'e1rm'"
-        :class="sort === 'e1rm'
-              ? 'bg-kinetic-neon text-gray-950 font-bold'
-              : 'bg-kinetic-surface ring-1 ring-white/10 text-gray-400'"
-        class="px-3 py-1.5 rounded-lg transition-all"
-      >
-        Top e1RM
-      </button>
-      <button
-        @click="sort = 'recent'"
-        :class="sort === 'recent'
-              ? 'bg-kinetic-neon text-gray-950 font-bold'
-              : 'bg-kinetic-surface ring-1 ring-white/10 text-gray-400'"
-        class="px-3 py-1.5 rounded-lg transition-all"
-      >
-        Récents
-      </button>
-      <button
-        @click="sort = 'name'"
-        :class="sort === 'name'
-              ? 'bg-kinetic-neon text-gray-950 font-bold'
-              : 'bg-kinetic-surface ring-1 ring-white/10 text-gray-400'"
-        class="px-3 py-1.5 rounded-lg transition-all"
-      >
-        A → Z
-      </button>
-    </div>
-  </template>
-
-  <!-- Liste des records -->
-  <div class="space-y-2" x-show="!loading && records.length > 0">
-    <template x-for="r in sortedRecords" :key="r.exerciseId">
-      <div
-        class="bg-kinetic-surface rounded-2xl p-4 ring-1 transition-all"
-        :class="r.isRecent
-              ? 'ring-kinetic-neon/30'
-              : 'ring-white/5'"
-      >
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-2 min-w-0">
-            <span class="text-lg" x-text="r.isRecent ? '' : ''"></span>
-            <p class="font-display font-bold text-white truncate" x-text="r.exerciseName"></p>
-          </div>
-          <span
-            class="text-xs font-bold px-2 py-0.5 rounded-full ring-1 whitespace-nowrap"
-            :class="r.isRecent
-                  ? 'bg-kinetic-neon/15 text-kinetic-neon ring-kinetic-neon/30'
-                  : 'bg-kinetic-elevated text-gray-400 ring-white/5'"
-            x-text="r.dateLabel"
-          ></span>
-        </div>
-        <div class="grid grid-cols-3 gap-2 text-center">
-          <div>
-            <p class="text-xs text-gray-500 font-semibold">Charge</p>
-            <p class="tabular-nums text-white font-bold text-sm" x-text="r.weightLabel"></p>
-          </div>
-          <div>
-            <p class="text-xs text-gray-500 font-semibold">Reps</p>
-            <p class="tabular-nums text-white font-bold text-sm" x-text="r.reps"></p>
-          </div>
-          <div>
-            <p class="text-xs text-gray-500 font-semibold">e1RM</p>
-            <p
-              class="tabular-nums text-kinetic-neon font-black text-sm"
-              x-text="r.e1rmKg + ' kg'"
-            ></p>
-          </div>
-        </div>
-      </div>
-    </template>
-  </div>
 </div>

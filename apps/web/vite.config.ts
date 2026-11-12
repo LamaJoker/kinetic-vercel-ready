@@ -24,8 +24,41 @@ function injectSwVersion(): Plugin {
   };
 }
 
+/**
+ * Compacte au build le HTML des pages, embarqué dans les chunks JS via `?raw`
+ * (cf. router.ts) : retire les commentaires et l'indentation. Environ 10 KiB
+ * gzip de moins au total. Sûr : les espaces entre balises sont réduits par le
+ * navigateur de toute façon, et le seul <pre> des pages est rempli par x-text.
+ */
+export function compactHtml(source: string): string {
+  // Retrait répété jusqu'à stabilité : un commentaire imbriqué ou reformé par
+  // un premier passage (« <!<!---->-- ») ne peut pas survivre.
+  let html = source;
+  let previous: string;
+  do {
+    previous = html;
+    html = html.replace(/<!--[\s\S]*?-->/g, '');
+  } while (html !== previous);
+  return html.replace(/\n[ \t]+/g, '\n').replace(/\n{2,}/g, '\n');
+}
+
+function compactPageHtml(): Plugin {
+  return {
+    name: 'compact-page-html',
+    apply: 'build',
+    enforce: 'pre',
+    load(id) {
+      const [file, query] = id.split('?');
+      if (query !== 'raw' || !file || !/[\\/]src[\\/]pages[\\/][^\\/]+\.html$/.test(file)) {
+        return null;
+      }
+      return `export default ${JSON.stringify(compactHtml(readFileSync(file, 'utf8')))};`;
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [injectSwVersion()],
+  plugins: [compactPageHtml(), injectSwVersion()],
 
   resolve: {
     alias: {
