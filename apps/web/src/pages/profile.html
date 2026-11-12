@@ -10,7 +10,7 @@
     <div
       class="w-[3.75rem] h-[3.75rem] flex-shrink-0 rounded-full flex items-center justify-center font-display font-semibold text-xl select-none"
       :class="$store.rewards.hasLegendBadge ? 'bg-kinetic-neon text-gray-950' : 'bg-kinetic-raised text-white'"
-      x-text="$store.auth.initials"
+      x-text="displayName && displayName.trim() ? displayName.trim().charAt(0).toUpperCase() : ($store.auth.user && !$store.auth.isGuest ? $store.auth.initials : 'A')"
     ></div>
     <div class="min-w-0">
       <p
@@ -19,9 +19,8 @@
       ></p>
       <p
         class="text-sm text-gray-500 truncate"
-        x-text="$store.auth.user ? $store.auth.user.email : 'Mode invité'"
+        x-text="$store.auth.user && $store.auth.user.email ? $store.auth.user.email : 'Mode invité'"
       ></p>
-      <p class="text-xs text-kinetic-neon font-medium mt-0.5" x-text="$store.xp.title"></p>
     </div>
   </div>
 
@@ -96,9 +95,8 @@
     </div>
     <div class="px-3 text-center">
       <p class="font-display font-bold text-2xl text-white tabular-nums" x-text="streak + ''"></p>
-      <p class="text-xs text-gray-500 mt-0.5">
-        Série · record <span class="tabular-nums" x-text="bestStreak + ''"></span>
-      </p>
+      <p class="text-xs text-gray-500 mt-0.5">Série</p>
+      <p class="text-xs text-gray-500 tabular-nums" x-text="'Record ' + bestStreak"></p>
     </div>
     <div class="px-3 text-center">
       <p
@@ -112,7 +110,7 @@
   <!-- Niveau -->
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-8">
     <div class="flex items-baseline justify-between mb-3">
-      <h2 class="font-display text-white">
+      <h2 class="text-base font-semibold text-white">
         Niveau <span x-text="$store.xp.currentLevel"></span>
         <span class="font-normal text-gray-500" x-text="'· ' + $store.xp.title"></span>
       </h2>
@@ -121,7 +119,7 @@
         x-text="$store.xp.xp + ' XP'"
       ></span>
     </div>
-    <div class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
+    <div class="h-1.5 bg-kinetic-raised rounded-full overflow-hidden">
       <div
         class="h-full bg-kinetic-neon rounded-full transition-all duration-700 ease-out"
         :style="'width: ' + $store.xp.progressPercent + '%'"
@@ -144,7 +142,7 @@
       <div class="k-row">
         <span
           class="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center text-sm font-semibold tabular-nums"
-          :class="$store.rewards.isUnlocked(reward.level) ? 'bg-kinetic-neon text-gray-950' : 'bg-kinetic-elevated text-gray-500'"
+          :class="$store.rewards.isUnlocked(reward.level) ? 'bg-kinetic-raised text-white' : 'bg-kinetic-elevated text-gray-500'"
           x-text="reward.level"
         ></span>
         <span class="flex-1 min-w-0">
@@ -153,11 +151,11 @@
             :class="$store.rewards.isUnlocked(reward.level) ? 'text-white' : 'text-gray-500'"
             x-text="reward.title"
           ></span>
-          <span class="block text-xs text-gray-500 truncate" x-text="reward.description"></span>
+          <span class="block text-xs text-gray-500 line-clamp-2" x-text="reward.description"></span>
         </span>
         <template x-if="$store.rewards.isUnlocked(reward.level)">
           <svg
-            class="w-5 h-5 flex-shrink-0 text-kinetic-neon"
+            class="w-5 h-5 flex-shrink-0 text-gray-500"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -207,7 +205,7 @@
   <!-- Thème de couleur (niveau 7+) -->
   <template x-if="$store.rewards.hasColorThemes">
     <div class="bg-kinetic-surface rounded-2xl p-4 mb-8">
-      <h2 class="font-display text-white mb-3">Couleur d'accent</h2>
+      <h2 class="text-base font-semibold text-white mb-3">Couleur d'accent</h2>
 
       <div class="grid grid-cols-5 gap-2">
         <template x-for="theme in $store.rewards.allThemes" :key="theme.id">
@@ -251,7 +249,7 @@
         class="flex-1 min-w-0 bg-transparent text-right text-base text-white focus:outline-none"
       />
     </label>
-    <div class="k-row" x-show="$store.auth.isAuthenticated">
+    <div class="k-row" x-show="$store.auth.isAuthenticated && !$store.auth.isGuest">
       <span class="flex-1 min-w-0">
         <span class="block text-base text-white">Connecté</span>
         <span
@@ -266,7 +264,7 @@
         Se déconnecter
       </button>
     </div>
-    <div class="k-row" x-show="!$store.auth.isAuthenticated">
+    <div class="k-row" x-show="!$store.auth.isAuthenticated || $store.auth.isGuest">
       <span class="flex-1 min-w-0">
         <span class="block text-base text-white">Mode invité</span>
         <span class="block text-xs text-gray-500">Connecte-toi pour sauvegarder dans le cloud</span>
@@ -287,7 +285,7 @@
         @click="togglePush()"
         :disabled="pushBusy"
         class="flex-shrink-0 h-9 px-4 rounded-full text-sm font-semibold disabled:opacity-40"
-        :class="pushSubscribed ? 'bg-kinetic-elevated text-white' : 'bg-kinetic-neon text-gray-950'"
+        :class="pushSubscribed ? 'bg-kinetic-elevated text-white' : 'bg-kinetic-elevated text-white'"
       >
         <span x-show="pushBusy">…</span>
         <span x-show="!pushBusy && !pushSubscribed">Activer</span>
@@ -461,7 +459,7 @@
             >PRO</span
           >
         </span>
-        <span class="block text-xs text-gray-500">JSON : sauvegarde complète · CSV : tableur</span>
+        <span class="block text-xs text-gray-500">Sauvegarde complète ou tableur</span>
       </span>
       <button
         @click="exportJson()"
@@ -510,7 +508,10 @@
           <span class="text-base text-white">Stockage</span>
           <span class="text-xs text-gray-500 tabular-nums" x-text="storageLabel"></span>
         </span>
-        <span class="block h-1.5 mt-2 bg-kinetic-ink rounded-full overflow-hidden">
+        <span
+          class="block h-1.5 mt-2 bg-kinetic-raised rounded-full overflow-hidden"
+          x-show="storagePercent !== null && storagePercent >= 1"
+        >
           <span
             class="block h-full rounded-full transition-all duration-500"
             :style="'width: ' + (storagePercent !== null ? storagePercent : 0) + '%; background: ' + (storagePercent !== null && storagePercent > 80 ? '#FF453A' : '#FFD60A')"
@@ -549,8 +550,9 @@
   </template>
 
   <!-- Profil partagé -->
+  <h2 class="k-section mt-5 mb-2.5">Partage</h2>
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-8">
-    <h2 class="font-display text-white">Partager mon profil</h2>
+    <h2 class="text-base font-semibold text-white">Partager mon profil</h2>
     <p class="text-sm text-gray-500 mt-1 mb-3">
       Un lien public avec tes records, ta série et ton niveau. Tout est encodé dans le lien, aucun
       serveur n'est appelé.
@@ -566,7 +568,7 @@
       <button
         @click="shareProfile()"
         :disabled="sharingProfile"
-        class="h-11 px-5 rounded-xl bg-kinetic-neon text-gray-950 text-base font-semibold active:brightness-90 disabled:opacity-40"
+        class="h-11 px-5 rounded-xl bg-kinetic-elevated text-white active:bg-kinetic-raised text-base font-semibold disabled:opacity-40"
       >
         <span x-show="!sharingProfile">Partager</span>
         <span x-show="sharingProfile">…</span>

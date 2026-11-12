@@ -118,7 +118,7 @@ export function progression() {
 
     formatDate(iso: string): string {
       try {
-        return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+        return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
       } catch {
         return iso;
       }
@@ -132,6 +132,16 @@ export function progression() {
 
     formatNumber(n: number, digits = 0): string {
       return n.toLocaleString('fr-FR', { maximumFractionDigits: digits });
+    },
+
+    /** Tonnage compact : en tonnes à partir de 100 000 kg (« 190,9 »), sinon en kg. */
+    formatTonnage(kg: number): string {
+      return kg >= 100000 ? this.formatNumber(kg / 1000, 1) : this.formatNumber(kg);
+    },
+
+    /** Pourcentage signé à la française : vrai signe moins, espace fine insécable avant « % ». */
+    formatPct(pct: number): string {
+      return (pct > 0 ? '+' : pct < 0 ? '\u2212' : '') + Math.abs(pct) + '\u202F%';
     },
 
     // ─── Stats globales (header) ─────────────────────────────
@@ -169,9 +179,8 @@ export function progression() {
       const r = this.weeklyReview;
       switch (r.trend) {
         case 'up':
-          return `+${r.tonnageDeltaPct}% vs semaine dernière`;
         case 'down':
-          return `${r.tonnageDeltaPct}% vs semaine dernière`;
+          return `${this.formatPct(r.tonnageDeltaPct ?? 0)} vs semaine dernière`;
         case 'first':
           return 'Première semaine de données';
         default:
@@ -219,7 +228,7 @@ export function progression() {
       const W = 320,
         H = 172,
         padL = 4,
-        padR = 34,
+        padR = 38,
         padT = 10,
         padB = 22;
       const minX = pts[0]!.x,
@@ -247,7 +256,7 @@ export function progression() {
       for (let v = minY; v <= maxY + step / 2; v += step) {
         const y = f(sy(v));
         grid += `<line x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}" stroke="currentColor" stroke-opacity="0.18" stroke-width="1" vector-effect="non-scaling-stroke"${v > minY ? ' stroke-dasharray="2 3"' : ''}/>`;
-        grid += `<text x="${W - padR + 6}" y="${y}" fill="currentColor" font-size="10" dominant-baseline="middle">${this.formatNumber(v, 1)}</text>`;
+        grid += `<text x="${W - padR + 6}" y="${y}" fill="currentColor" font-size="11" dominant-baseline="middle" style="font-variant-numeric:tabular-nums">${this.formatNumber(v, 1)}</text>`;
       }
 
       // Trait lissé : courbe de Bézier à tangentes horizontales (pas de dépassement)
@@ -287,8 +296,8 @@ export function progression() {
 
       // Dates de début et de fin sous l'axe
       const xLabels =
-        `<text x="${padL}" y="${H - 4}" fill="currentColor" font-size="10">${pts[0]!.label}</text>` +
-        `<text x="${W - padR}" y="${H - 4}" fill="currentColor" font-size="10" text-anchor="end">${pts[lastIdx]!.label}</text>`;
+        `<text x="${padL}" y="${H - 4}" fill="currentColor" font-size="11">${pts[0]!.label}</text>` +
+        `<text x="${W - padR}" y="${H - 4}" fill="currentColor" font-size="11" text-anchor="end">${pts[lastIdx]!.label}</text>`;
 
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe e1RM">
         <defs>
@@ -326,8 +335,7 @@ export function progression() {
       if (pts.length < 2) return '';
       const first = pts[0]!;
       const pct = Math.round(((pts.at(-1)!.y - first.y) / first.y) * 100);
-      const sign = pct > 0 ? '+' : '';
-      return `${sign}${pct} % depuis le ${first.label}`;
+      return `${this.formatPct(pct)} depuis le ${first.label}`;
     },
 
     /** Sens de l'évolution e1RM : 'up' | 'down' | 'flat'. */

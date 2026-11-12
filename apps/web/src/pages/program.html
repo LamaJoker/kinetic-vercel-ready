@@ -215,20 +215,16 @@
             ></span>
             <span
               class="block text-xs text-gray-500 mt-0.5 truncate"
-              x-text="split.description"
+              x-text="split.description.replace(', ' + split.daysPerWeek + 'j/sem', '')"
             ></span>
           </span>
           <span class="flex-shrink-0 text-right">
             <span
               class="block text-sm text-gray-400 tabular-nums"
-              x-text="split.daysPerWeek + 'j/sem'"
-            ></span>
-            <span
-              class="block text-xs text-gray-500 first-letter:uppercase"
-              x-text="split.goal"
+              x-text="split.daysPerWeek + ' j/sem'"
             ></span>
           </span>
-          <span class="w-5 flex-shrink-0 flex justify-center">
+          <span x-show="activeProgram" class="w-5 flex-shrink-0 flex justify-center">
             <svg
               x-show="(activeProgram ? activeProgram.splitType : null) === split.type"
               class="w-5 h-5 text-white k-pop"

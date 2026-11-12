@@ -80,10 +80,6 @@ export function renderBarbellSvg(plates: readonly PlateVisual[], barKg: number):
       '</linearGradient>' +
       '</defs>',
   );
-  // Ombre portée discrète sous la barre
-  parts.push(
-    `<ellipse cx="${W / 2}" cy="${H - 6}" rx="${W / 2 - 24}" ry="3" fill="#000" fill-opacity=".18"/>`,
-  );
   // Manchons + barre
   parts.push(
     `<rect x="4" y="${cy - 5}" width="${W - 8}" height="10" rx="3" fill="url(#kb-steel)"/>`,
@@ -97,10 +93,6 @@ export function renderBarbellSvg(plates: readonly PlateVisual[], barKg: number):
   parts.push(
     `<rect x="${collarR}" y="${cy - 13}" width="6" height="26" rx="1.5" fill="url(#kb-collar)"/>`,
   );
-  // Moletage (zone de prise)
-  parts.push(
-    `<line x1="${W / 2 - 36}" y1="${cy}" x2="${W / 2 + 36}" y2="${cy}" stroke="#5f646c" stroke-width="2" stroke-dasharray="1.5 2" stroke-opacity=".7"/>`,
-  );
 
   let xr = collarR + 6;
   let xl = collarL - 6;
@@ -113,19 +105,6 @@ export function renderBarbellSvg(plates: readonly PlateVisual[], barKg: number):
       parts.push(
         `<rect x="${x.toFixed(1)}" y="${y}" width="${w.toFixed(1)}" height="${h}" rx="2.5" fill="${p.color}" stroke="rgba(0,0,0,.35)" stroke-width="1"/>`,
       );
-      // Reflet sur la tranche du disque
-      if (w >= 4) {
-        const hx = (x + 1.6).toFixed(1);
-        parts.push(
-          `<line x1="${hx}" y1="${y + 4}" x2="${hx}" y2="${y + h - 4}" stroke="#fff" stroke-opacity=".22" stroke-width="1" stroke-linecap="round"/>`,
-        );
-      }
-      if (p.label && w >= 8) {
-        const tx = (x + w / 2).toFixed(1);
-        parts.push(
-          `<text x="${tx}" y="${cy}" fill="${p.text}" font-size="8.5" font-weight="700" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 ${tx} ${cy})" font-family="-apple-system, Inter Variable, system-ui, sans-serif">${p.label}</text>`,
-        );
-      }
     }
     xr += step;
     xl -= step;

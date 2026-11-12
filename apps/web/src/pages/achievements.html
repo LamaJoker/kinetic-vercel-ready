@@ -120,22 +120,17 @@
             x-text="$store.achievements.isUnlocked(ach.id) ? 'Débloqué' : 'Verrouillé'"
           ></span>
         </span>
-        <!-- Difficulté : un point par niveau -->
+        <!-- Difficulté : piste fixe de 5 points (pleins = niveau) -->
         <span
           class="flex items-center gap-1 flex-shrink-0"
+          :class="$store.achievements.isUnlocked(ach.id) ? '' : 'opacity-60'"
           role="img"
           :aria-label="'Difficulté ' + ach.tier + ' sur 5'"
         >
-          <template x-for="i in ach.tier" :key="i">
+          <template x-for="i in 5" :key="i">
             <span
-              class="w-1.5 h-1.5 rounded-full bg-kinetic-gold"
-              x-show="$store.achievements.isUnlocked(ach.id)"
-            ></span>
-          </template>
-          <template x-for="i in ach.tier" :key="i">
-            <span
-              class="w-1.5 h-1.5 rounded-full bg-gray-500 opacity-60"
-              x-show="!$store.achievements.isUnlocked(ach.id)"
+              class="w-1.5 h-1.5 rounded-full bg-gray-400"
+              :class="i <= ach.tier ? '' : 'opacity-25'"
             ></span>
           </template>
         </span>

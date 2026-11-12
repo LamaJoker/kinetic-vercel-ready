@@ -17,12 +17,6 @@ import {
 import { navigate } from '../router';
 import { hapticLight } from '../lib/haptics';
 
-interface ActivityDay {
-  label: string;
-  short: string;
-  active: boolean;
-}
-
 const PATTERN_LABELS: Record<'push' | 'pull' | 'legs', string> = {
   push: 'pousser',
   pull: 'tirer',
@@ -35,7 +29,6 @@ export function dashboard() {
     todayLabel: '',
     streak: 0,
     bestStreak: 0,
-    activityDays: [] as ActivityDay[],
     balance: null as BalanceReport | null,
 
     // ─── AI Coach ────────────────────────────────────────────────────────
@@ -60,13 +53,13 @@ export function dashboard() {
       return `${n.exerciseCount} exercices, ${n.setCount} séries`;
     },
 
-    /** « Push A, hier : 4,2 t en 52 min » */
+    /** « Push A, hier · 4,2 t · 52 min » */
     get lastDetail(): string {
       const l = this.training?.last;
       if (!l) return '';
       const when = relativeDayLabel(this.training?.daysSinceLast ?? null);
-      const dur = l.durationMin ? ` en ${l.durationMin} min` : '';
-      return `${l.name}, ${when} : ${formatVolume(l.volumeKg)} soulevées${dur}`;
+      const dur = l.durationMin ? ` · ${l.durationMin} min` : '';
+      return `${l.name}, ${when} · ${formatVolume(l.volumeKg)}${dur}`;
     },
 
     get weekDetail(): string {
@@ -74,7 +67,7 @@ export function dashboard() {
       if (!w) return '';
       const goals = Alpine.store('goals') as { targetSessions?: number } | undefined;
       const target = goals?.targetSessions;
-      return target ? `${w.count} / ${target} cette semaine` : `${w.count} cette semaine`;
+      return target ? `${w.count} / ${target}` : `${w.count}`;
     },
 
     weekDayClass(day: { trained: boolean; isToday: boolean; isFuture: boolean }): string {
@@ -174,7 +167,6 @@ export function dashboard() {
           this.bestStreak = streakData.best ?? 0;
         }
 
-        this.activityDays = await this._buildActivityDays();
         this.balance = await this._buildBalanceReport();
         this._allSessions = await loadSessions(deps.storage);
         const templates = await loadTemplates(deps.storage);
@@ -212,36 +204,6 @@ export function dashboard() {
       } catch (err) {
         console.warn('[dashboard] _buildBalanceReport failed:', err);
         return null;
-      }
-    },
-
-    async _buildActivityDays(): Promise<ActivityDay[]> {
-      try {
-        const deps = await getDeps();
-        const jours = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
-        const today = new Date();
-
-        // Lectures parallèles : 7 round-trips IDB → 1 batch
-        const indices = Array.from({ length: 7 }, (_, k) => 6 - k);
-        const dates = indices.map((i) => {
-          const d = new Date(today);
-          d.setDate(d.getDate() - i);
-          return d;
-        });
-        const dones = await Promise.all(
-          dates.map((d) => {
-            const iso = d.toISOString().slice(0, 10);
-            return deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(iso));
-          }),
-        );
-        return dates.map((d, k) => ({
-          label: d.toISOString().slice(0, 10),
-          short: jours[d.getDay()] ?? '',
-          active: Array.isArray(dones[k]) && (dones[k] as string[]).length > 0,
-        }));
-      } catch (err) {
-        console.warn('[dashboard] _buildActivityDays failed:', err);
-        return [];
       }
     },
   };

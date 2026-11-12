@@ -26,26 +26,17 @@
               <span class="flex items-baseline justify-between gap-3">
                 <span class="text-base font-semibold text-white truncate" x-text="p.name"></span>
                 <span
-                  class="text-xs font-semibold flex-shrink-0"
-                  :class="p.level === 'beginner'
-                    ? 'text-kinetic-teal'
-                    : p.level === 'intermediate'
-                    ? 'text-kinetic-purple'
-                    : 'text-kinetic-electric'"
+                  class="text-[13px] text-gray-500 flex-shrink-0"
                   x-text="levelLabel(p.level)"
                 ></span>
               </span>
               <span
-                class="block text-sm text-gray-400 leading-snug mt-1 line-clamp-2"
+                class="text-sm text-gray-400 leading-snug mt-1 line-clamp-2"
                 x-text="p.description"
               ></span>
               <span
-                class="block text-xs text-gray-500 mt-1.5"
-                x-text="goalLabel(p.goal) + ', ' + p.daysPerWeek + ' jours par semaine pendant ' + p.durationWeeks + ' semaines'"
-              ></span>
-              <span
-                class="block text-[11px] text-gray-500 italic mt-1 truncate"
-                x-text="'Source : ' + p.citation"
+                class="block text-xs text-gray-500 mt-1.5 truncate tabular-nums"
+                x-text="goalLabel(p.goal) + ' · ' + p.daysPerWeek + ' j/sem · ' + p.durationWeeks + ' sem'"
               ></span>
             </span>
             <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">

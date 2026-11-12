@@ -505,6 +505,12 @@ export function seances() {
      * la même série dans la séance actuelle déclencherait 5× la célébration
      * PR car la séance en cours n'est pas dans `this.sessions`.
      */
+    /** Record formaté à la française pour l'en-tête d'exercice (« 154 kg », « 97,5 kg »). */
+    prLabel(exerciseId: string): string {
+      const v = this.pr(exerciseId);
+      return v ? v.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' kg' : '';
+    },
+
     pr(exerciseId: string): number | null {
       let best = 0;
       for (const s of this.sessions) {
@@ -1071,6 +1077,19 @@ export function seances() {
     expandedSessionId: null as string | null,
     confirmDeleteId: null as string | null,
     deletingSession: false,
+
+    /** Nombre de séances affichées dans l'historique (les plus récentes). */
+    historyLimit: 5,
+
+    /** Séances visibles dans l'historique, de la plus récente à la plus ancienne. */
+    visibleSessions(): WorkoutSession[] {
+      return this.sessions.slice().reverse().slice(0, this.historyLimit);
+    },
+
+    /** Déplie tout l'historique. */
+    showAllHistory(): void {
+      this.historyLimit = this.sessions.length;
+    },
 
     /** Bascule l'affichage détaillé d'une séance dans l'historique. */
     toggleSessionDetail(id: string): void {

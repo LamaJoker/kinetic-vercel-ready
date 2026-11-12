@@ -19,7 +19,7 @@ export function photosPage() {
   return {
     photos: [] as PhotoEntry[],
     adding: false,
-    newBodyweight: 0 as number | null,
+    newBodyweight: null as number | null,
     newLabel: 'front' as 'front' | 'side' | 'back',
     showCompare: true,
     compareBeforeId: '' as string,

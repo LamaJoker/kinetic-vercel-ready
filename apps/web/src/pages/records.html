@@ -13,7 +13,6 @@
     </a>
     <div class="flex-1 min-w-0">
       <h1 class="font-display font-bold text-white">Records</h1>
-      <p class="text-xs text-gray-500 tabular-nums" x-text="subtitleLabel"></p>
     </div>
   </div>
 
@@ -52,7 +51,8 @@
       </div>
       <div class="px-3 text-center">
         <p class="font-display font-bold text-2xl text-kinetic-neon tabular-nums">
-          <span x-text="topE1rm"></span><span class="text-base font-semibold"> kg</span>
+          <span x-text="topE1rm"></span
+          ><span class="text-base font-semibold text-gray-500"> kg</span>
         </p>
         <p class="text-xs text-gray-500 mt-0.5">Meilleur e1RM</p>
       </div>
@@ -61,7 +61,7 @@
 
   <!-- Liste des records -->
   <section class="mb-8" x-show="!loading && records.length > 0">
-    <h2 class="k-section mb-2.5">Tous les records</h2>
+    <h2 class="k-section mb-2.5">Tous les records · e1RM</h2>
     <div class="k-seg mb-3" role="group" aria-label="Trier les records">
       <button
         type="button"
@@ -100,19 +100,13 @@
             <p class="text-xs text-gray-500 mt-0.5 truncate tabular-nums">
               <span x-text="r.weightLabel + ' × ' + r.reps"></span>
               <span class="mx-1" aria-hidden="true">·</span>
-              <span
-                :class="r.isRecent ? 'text-kinetic-neon font-medium' : ''"
-                x-text="r.dateLabel"
-              ></span>
+              <span x-text="r.dateLabel"></span>
             </p>
           </div>
-          <div class="flex-shrink-0 text-right">
-            <p class="font-display text-xl font-semibold leading-none text-white tabular-nums">
-              <span x-text="r.e1rmKg"></span
-              ><span class="text-sm font-medium text-gray-500"> kg</span>
-            </p>
-            <p class="text-[11px] text-gray-500 mt-1">e1RM</p>
-          </div>
+          <p class="flex-shrink-0 font-display text-xl font-semibold text-white tabular-nums">
+            <span x-text="r.e1rmKg"></span
+            ><span class="text-sm font-medium text-gray-500"> kg</span>
+          </p>
         </div>
       </template>
     </div>

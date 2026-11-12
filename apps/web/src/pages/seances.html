@@ -46,7 +46,7 @@
       <button
         type="button"
         @click="skipRest()"
-        class="h-11 flex-shrink-0 rounded-full bg-kinetic-neon px-5 text-base font-semibold text-gray-950 transition active:scale-95 active:brightness-90"
+        class="h-11 flex-shrink-0 rounded-full bg-white/10 px-5 text-base font-semibold text-white transition active:scale-95"
       >
         Passer
       </button>
@@ -330,22 +330,16 @@
         ></button>
       </template>
     </div>
-    <p class="k-caption mt-2">
-      <span class="text-white" x-text="coachGoals[coachGoal].rpeZone"></span>
-      <span x-text="' · ' + coachGoals[coachGoal].science"></span>
-    </p>
+    <p class="k-caption mt-2 text-white" x-text="coachGoals[coachGoal].rpeZone"></p>
+    <p
+      class="k-caption mt-0.5 text-gray-500 text-balance"
+      x-text="coachGoals[coachGoal].science"
+    ></p>
   </div>
 
   <!-- ── Séance en cours ─────────────────────────────────────────────────── -->
-  <section class="mb-8">
+  <section x-show="currentSession" class="mb-8">
     <h2 class="k-section mb-2.5">Séance en cours</h2>
-
-    <template x-if="!currentSession">
-      <div class="bg-kinetic-surface rounded-2xl px-6 py-7 text-center">
-        <p class="text-base font-semibold text-white">Aucune séance en cours</p>
-        <p class="mt-1 text-sm text-gray-500">Démarre une séance libre ou un modèle.</p>
-      </div>
-    </template>
 
     <div x-show="currentSession" class="space-y-3">
       <!-- Tableau de bord : chrono, totaux, repos, fin de séance -->
@@ -503,7 +497,7 @@
       <template x-for="entry in currentEntries" :key="entry.exerciseId">
         <article class="bg-kinetic-surface rounded-2xl p-4">
           <!-- En-tête : nom (touche pour saisir) + actions -->
-          <div class="flex items-start gap-2">
+          <div class="flex items-center gap-2">
             <h3 class="flex-1 min-w-0">
               <button
                 type="button"
@@ -514,24 +508,18 @@
                 <span class="min-w-0 flex-1">
                   <span class="flex items-center gap-2">
                     <span
-                      x-show="isActiveEntry(entry.exerciseId)"
-                      class="k-pop h-2 w-2 flex-shrink-0 rounded-full bg-kinetic-purple"
-                      aria-hidden="true"
-                    ></span>
-                    <span
                       class="k-card-title truncate"
                       x-text="exerciseName(entry.exerciseId)"
                     ></span>
                   </span>
-                  <span class="mt-0.5 block text-xs font-normal text-gray-500 tabular-nums">
+                  <span
+                    class="mt-0.5 block truncate whitespace-nowrap text-xs font-normal text-gray-500 tabular-nums"
+                  >
                     <span x-text="$plural(entry.sets.length, 'série')"></span>
                     <template x-if="pr(entry.exerciseId)">
                       <span>
                         · Record
-                        <span
-                          class="text-gray-400"
-                          x-text="(pr(entry.exerciseId) ? pr(entry.exerciseId).toFixed(1) : '0') + ' kg e1RM'"
-                        ></span>
+                        <span class="text-gray-400" x-text="prLabel(entry.exerciseId)"></span>
                       </span>
                     </template>
                   </span>
@@ -553,7 +541,7 @@
                 </svg>
               </button>
             </h3>
-            <div class="flex items-center gap-2 pt-1">
+            <div x-show="isActiveEntry(entry.exerciseId)" class="flex items-center gap-2">
               <button
                 type="button"
                 x-show="cues(entry.exerciseId)"
@@ -851,7 +839,7 @@
                     class="flex min-h-11 items-center gap-2 px-3.5 py-2.5 cursor-pointer list-none rounded-xl [&::-webkit-details-marker]:hidden"
                   >
                     <svg
-                      class="h-4 w-4 flex-shrink-0 text-kinetic-purple"
+                      class="h-4 w-4 flex-shrink-0 text-gray-400"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -1219,7 +1207,25 @@
                 </div>
               </div>
 
-              <button type="button" @click="addSet(entry.exerciseId)" class="k-btn">+ Série</button>
+              <button
+                type="button"
+                @click="addSet(entry.exerciseId)"
+                aria-label="+ Série"
+                class="k-btn"
+              >
+                <svg
+                  class="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Série
+              </button>
             </div>
           </template>
         </article>
@@ -1303,30 +1309,30 @@
     </template>
 
     <div class="k-list" x-show="sessions.length > 0">
-      <template x-for="s in sessions.slice().reverse().slice(0, 20)" :key="s.id">
+      <template x-for="s in visibleSessions()" :key="s.id">
         <div class="k-item">
           <!-- Ligne résumé (cliquable pour étendre) -->
           <button
             @click="toggleSessionDetail(s.id)"
             class="w-full text-left px-4 py-3 active:bg-kinetic-elevated transition-colors"
           >
-            <div class="flex items-center justify-between gap-2">
-              <p class="text-base text-white min-w-0 truncate" x-text="s.name"></p>
+            <div class="flex items-center gap-3">
+              <div class="min-w-0 flex-1">
+                <p class="text-base text-white truncate" x-text="s.name"></p>
+                <p class="mt-0.5 text-xs text-gray-500">
+                  <span x-text="$plural(s.entries.length, 'exercice')"></span>
+                  <span x-show="s.durationMin" class="mx-1">·</span>
+                  <span x-show="s.durationMin" x-text="s.durationMin + ' min'"></span>
+                  <span x-show="s.caloriesKcal" class="mx-1">·</span>
+                  <span x-show="s.caloriesKcal" x-text="'~' + s.caloriesKcal + ' kcal'"></span>
+                </p>
+              </div>
               <span
-                class="text-sm text-gray-500 flex-shrink-0"
+                class="flex-shrink-0 text-sm text-gray-500"
                 x-text="formatDate(s.startedAt)"
               ></span>
-            </div>
-            <div class="flex items-center justify-between gap-2 mt-1">
-              <p class="text-xs text-gray-500">
-                <span x-text="$plural(s.entries.length, 'exercice')"></span>
-                <span x-show="s.durationMin" class="mx-1">·</span>
-                <span x-show="s.durationMin" x-text="s.durationMin + ' min'"></span>
-                <span x-show="s.caloriesKcal" class="mx-1">·</span>
-                <span x-show="s.caloriesKcal" x-text="'~' + s.caloriesKcal + ' kcal'"></span>
-              </p>
               <svg
-                class="k-chevron transition-transform"
+                class="k-chevron flex-shrink-0 transition-transform"
                 :class="expandedSessionId === s.id ? '-rotate-90' : 'rotate-90'"
                 viewBox="0 0 8 14"
                 fill="none"
@@ -1429,13 +1435,23 @@
           </div>
         </div>
       </template>
-    </div>
-    <div>
-      <p
-        class="k-caption mt-2"
-        x-show="sessions.length > 20"
-        x-text="'+ ' + $plural(sessions.length - 20, 'séance plus ancienne', 'séances plus anciennes') + '. Exporte en JSON pour tout consulter.'"
-      ></p>
+      <button
+        type="button"
+        class="k-item flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-base text-white transition-colors active:bg-kinetic-elevated"
+        x-show="sessions.length > historyLimit"
+        @click="showAllHistory()"
+      >
+        <span x-text="'Tout afficher (' + sessions.length + ')'"></span>
+        <svg class="k-chevron flex-shrink-0" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+          <path
+            d="m1 1 6 6-6 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
     </div>
   </div>
 

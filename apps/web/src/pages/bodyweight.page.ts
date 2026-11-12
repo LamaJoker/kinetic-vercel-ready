@@ -19,6 +19,9 @@ export function bodyweight() {
     newNote: '',
     goalWeight: null as number | null,
     period: 90,
+    /** Historique : mode édition (corbeilles visibles) et liste complète. */
+    editing: false,
+    showAll: false,
     _chartSvgCache: '' as string,
     _chartSvgVersion: '' as string,
 
@@ -209,7 +212,13 @@ export function bodyweight() {
       const pts = this.filteredEntries;
       if (pts.length < 2) return '';
 
-      const version = `${pts.length}:${pts[0]?.date ?? ''}:${pts.at(-1)?.date ?? ''}:${pts.at(-1)?.weight ?? ''}:${this.goalWeight ?? ''}:${this.period}`;
+      // Courbe : `text-kinetic-neon/100` garde le jaune d'accent dans les deux modes
+      // (la règle claire de `.text-kinetic-neon` vise le texte, pas les tracés).
+      const isLight =
+        typeof document !== 'undefined' &&
+        document.documentElement.getAttribute('data-mode') === 'light';
+      const areaTop = isLight ? '0.18' : '0.28';
+      const version = `${isLight ? 'l' : 'd'}:${pts.length}:${pts[0]?.date ?? ''}:${pts.at(-1)?.date ?? ''}:${pts.at(-1)?.weight ?? ''}:${this.goalWeight ?? ''}:${this.period}`;
       if (this._chartSvgVersion === version && this._chartSvgCache) return this._chartSvgCache;
 
       // Géométrie : zone de tracé à gauche, graduations à droite (style Santé iOS).
@@ -275,7 +284,7 @@ export function bodyweight() {
               .slice(0, -1)
               .map(
                 ([x, y]) =>
-                  `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" class="text-kinetic-neon" fill="currentColor"/>`,
+                  `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" class="text-kinetic-neon/100" fill="currentColor"/>`,
               )
               .join('')
           : '';
@@ -287,17 +296,17 @@ export function bodyweight() {
       const svg = `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe de poids, de ${startLabel} à ${endLabel}">
         <defs>
           <linearGradient id="bw-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" class="text-kinetic-neon" stop-color="currentColor" stop-opacity="0.28"/>
-            <stop offset="1" class="text-kinetic-neon" stop-color="currentColor" stop-opacity="0"/>
+            <stop offset="0" class="text-kinetic-neon/100" stop-color="currentColor" stop-opacity="${areaTop}"/>
+            <stop offset="1" class="text-kinetic-neon/100" stop-color="currentColor" stop-opacity="0"/>
           </linearGradient>
         </defs>
         ${grid}
         ${goalLine}
         <path d="${areaPath}" fill="url(#bw-area)"/>
-        <path d="${linePath}" fill="none" class="text-kinetic-neon" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${linePath}" fill="none" class="text-kinetic-neon/100" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
         ${dots}
         <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="5.5" class="text-kinetic-surface" fill="currentColor"/>
-        <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="4" class="text-kinetic-neon" fill="currentColor"/>
+        <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="4" class="text-kinetic-neon/100" fill="currentColor"/>
         <text x="${plotL}" y="${H - 6}" class="text-gray-500" fill="currentColor" font-size="11.5">${startLabel}</text>
         <text x="${plotR}" y="${H - 6}" text-anchor="end" class="text-gray-500" fill="currentColor" font-size="11.5">${endLabel}</text>
       </svg>`;

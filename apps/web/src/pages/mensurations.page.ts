@@ -54,6 +54,11 @@ const METRICS: readonly MetricDef[] = [
 ] as const;
 
 const STORAGE_KEY = STORAGE_KEYS.MEASUREMENTS_ENTRIES;
+
+/** Année affichée seulement hors de l'année en cours (« 11 nov. » / « 16 sept. 2025 »). */
+function yearOption(iso: string): { year?: 'numeric' } {
+  return new Date(iso).getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {};
+}
 const PHOTOS_KEY = STORAGE_KEYS.MEASUREMENTS_PHOTOS;
 // Limite IDB côté validateStorageValue = 1 MB. On garde 48 KB de marge pour
 // l'overhead JSON ({"base64":""}) + l'enrobage de la valeur stockée.
@@ -150,13 +155,14 @@ export function mensurations() {
     },
 
     /** Repères de la courbe active, déjà formatés (« 92,5 cm »). */
-    get chartStats(): { start: string; min: string } {
+    get chartStats(): { start: string; min: string; max: string } {
       const pts = this.chartPoints();
-      if (pts.length === 0) return { start: '—', min: '—' };
+      if (pts.length === 0) return { start: '—', min: '—', max: '—' };
       const ys = pts.map((p) => p.y);
       return {
         start: this.formatCm(pts[0]!.y) + ' cm',
         min: this.formatCm(Math.min(...ys)) + ' cm',
+        max: this.formatCm(Math.max(...ys)) + ' cm',
       };
     },
 
@@ -476,7 +482,7 @@ export function mensurations() {
           weekday: 'short',
           day: 'numeric',
           month: 'short',
-          year: '2-digit',
+          ...yearOption(iso),
         });
       } catch {
         return iso;
@@ -561,9 +567,9 @@ export function mensurations() {
     formatDate(iso: string): string {
       try {
         return new Date(iso).toLocaleDateString('fr-FR', {
-          day: '2-digit',
+          day: 'numeric',
           month: 'short',
-          year: '2-digit',
+          ...yearOption(iso),
         });
       } catch {
         return iso;
@@ -572,25 +578,25 @@ export function mensurations() {
 
     entrySummary(entry: MeasurementEntry): string {
       const abbrs: Array<[string, MetricKey]> = [
-        ['Poit', 'chest'],
+        ['Poitrine', 'chest'],
         ['Taille', 'waist'],
-        ['Hanch', 'hips'],
-        ['Épau', 'shoulders'],
+        ['Hanches', 'hips'],
+        ['Épaules', 'shoulders'],
         ['Bras G', 'leftBicep'],
         ['Bras D', 'rightBicep'],
       ];
       const parts: string[] = [];
       for (const [abbr, k] of abbrs) {
         const v = val(entry, k);
-        if (v !== undefined) parts.push(`${abbr} ${v}`);
-        if (parts.length >= 3) break;
+        if (v !== undefined) parts.push(`${abbr} ${this.formatCm(v)}`);
+        if (parts.length >= 2) break;
       }
       const extraCount =
         Object.keys(entry).filter(
           (k) =>
             k !== 'id' && k !== 'date' && k !== 'note' && val(entry, k as MetricKey) !== undefined,
         ).length - parts.length;
-      if (extraCount > 0) parts.push(`+${extraCount} autres`);
+      if (extraCount > 0) parts.push(`+${extraCount}\u00a0autres`);
       return parts.join(' · ') || entry.note || '';
     },
 
@@ -611,8 +617,15 @@ export function mensurations() {
         labelH = 18;
       const ys = pts.map((p) => p.y);
       const pad = Math.max(0.5, (Math.max(...ys) - Math.min(...ys)) * 0.08);
-      const minY = Math.min(...ys) - pad;
-      const maxY = Math.max(...ys) + pad;
+      // Bornes arrondies à un pas « rond » pour que les repères tombent sur des valeurs nettes.
+      const rawMin = Math.min(...ys) - pad;
+      const rawMax = Math.max(...ys) + pad;
+      const span = rawMax - rawMin;
+      const step = span <= 4 ? 0.5 : span <= 10 ? 1 : 5;
+      const minY = Math.floor(rawMin / step) * step;
+      let maxY = Math.ceil(rawMax / step) * step;
+      // Nombre pair de pas : le repère du milieu tombe lui aussi sur un multiple du pas.
+      if (Math.round((maxY - minY) / step) % 2 === 1) maxY += step;
       const minX = pts[0]!.x;
       const maxX = pts.at(-1)!.x;
       const dx = Math.max(1, maxX - minX);
@@ -623,7 +636,8 @@ export function mensurations() {
       const sx = (d: number) => padL + ((d - minX) / dx) * plotW;
       const sy = (y: number) => chartH - padY - ((y - minY) / dy) * (chartH - padY * 2);
 
-      const color = metricDef.color;
+      // Une seule teinte neutre (bleu système) pour la série : le jaune reste réservé à l'action principale.
+      const color = '#0A84FF';
 
       const linePath = pts
         .map((p, i) => `${i === 0 ? 'M' : 'L'} ${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`)
@@ -636,7 +650,7 @@ export function mensurations() {
         ` L ${padL} ${chartH.toFixed(1)} Z`;
 
       const fmtCm = (v: number) =>
-        v.toLocaleString('fr-FR', { maximumFractionDigits: dy < 4 ? 1 : 0 });
+        v.toLocaleString('fr-FR', { maximumFractionDigits: step < 1 ? 1 : 0 });
 
       // 3 lignes de repère (haut, milieu, bas) avec leur valeur à droite
       const gridLines = [0, 0.5, 1]

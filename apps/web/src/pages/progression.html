@@ -48,7 +48,7 @@
   <!-- Upsell analytics avancées (gratuit) -->
   <div
     x-show="totalSessions > 0 && !$store.entitlement.can('advanced_analytics')"
-    class="bg-kinetic-surface rounded-2xl p-5 mb-6"
+    class="bg-kinetic-surface rounded-2xl p-4 mb-6"
   >
     <div class="flex items-center gap-2">
       <svg
@@ -75,14 +75,14 @@
   <!-- Bilan de la semaine -->
   <section
     x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics')"
-    class="bg-kinetic-surface rounded-2xl p-5 mb-6"
+    class="bg-kinetic-surface rounded-2xl p-4 mb-6"
     aria-labelledby="prog-week-title"
   >
     <div class="flex items-center justify-between gap-3">
       <h2 id="prog-week-title" class="k-card-title">Ta semaine</h2>
       <span
         class="inline-flex items-center gap-1 text-xs font-semibold tabular-nums"
-        :class="weeklyReview.trend === 'up' ? 'text-kinetic-teal' : weeklyReview.trend === 'down' ? 'text-kinetic-electric' : 'text-gray-500'"
+        :class="weeklyReview.trend === 'up' ? 'text-kinetic-teal' : 'text-gray-500'"
       >
         <svg
           x-show="weeklyReview.trend === 'up'"
@@ -123,29 +123,28 @@
       <div>
         <dt class="text-xs text-gray-500">Séances</dt>
         <dd
-          class="text-lg font-semibold text-white tabular-nums mt-0.5"
+          class="text-xl font-semibold text-white tabular-nums mt-0.5"
           x-text="weeklyReview.sessions"
         ></dd>
       </div>
       <div>
         <dt class="text-xs text-gray-500">Jours</dt>
         <dd
-          class="text-lg font-semibold text-white tabular-nums mt-0.5"
+          class="text-xl font-semibold text-white tabular-nums mt-0.5"
           x-text="weeklyReview.trainingDays"
         ></dd>
       </div>
       <div>
         <dt class="text-xs text-gray-500">Séries</dt>
         <dd
-          class="text-lg font-semibold text-white tabular-nums mt-0.5"
+          class="text-xl font-semibold text-white tabular-nums mt-0.5"
           x-text="weeklyReview.totalSets"
         ></dd>
       </div>
       <div>
         <dt class="text-xs text-gray-500">Records</dt>
         <dd
-          class="text-lg font-semibold tabular-nums mt-0.5"
-          :class="weeklyReview.prCount > 0 ? 'text-kinetic-neon' : 'text-white'"
+          class="text-xl font-semibold text-white tabular-nums mt-0.5"
           x-text="weeklyReview.prCount"
         ></dd>
       </div>
@@ -155,7 +154,7 @@
   <!-- Stats globales -->
   <section x-show="totalSessions > 0" class="mb-6" aria-labelledby="prog-all-title">
     <h2 id="prog-all-title" class="k-section mb-2.5">Depuis le début</h2>
-    <dl class="bg-kinetic-surface rounded-2xl px-4 py-4 grid grid-cols-3 gap-y-5">
+    <dl class="bg-kinetic-surface rounded-2xl p-4 grid grid-cols-[1fr_1.3fr_1fr] gap-x-3 gap-y-5">
       <div>
         <dt class="text-xs text-gray-500">Séances</dt>
         <dd
@@ -166,22 +165,25 @@
       <div>
         <dt class="text-xs text-gray-500">Tonnage</dt>
         <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
-          <span x-text="formatNumber(totalTonnage)"></span
-          ><span class="text-xs text-gray-500 font-medium ml-0.5">kg</span>
+          <span x-text="formatTonnage(totalTonnage)"></span
+          ><span
+            class="text-xs text-gray-500 font-medium ml-1"
+            x-text="totalTonnage >= 100000 ? 't' : 'kg'"
+          ></span>
         </dd>
       </div>
       <div>
         <dt class="text-xs text-gray-500">Régularité</dt>
         <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
           <span x-text="consistency"></span
-          ><span class="text-xs text-gray-500 font-medium ml-0.5">%</span>
+          ><span class="text-xs text-gray-500 font-medium ml-1">%</span>
         </dd>
       </div>
       <div>
         <dt class="text-xs text-gray-500">Meilleure série</dt>
         <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
           <span x-text="longestStreak"></span
-          ><span class="text-xs text-gray-500 font-medium ml-0.5">j</span>
+          ><span class="text-xs text-gray-500 font-medium ml-1">j</span>
         </dd>
       </div>
       <div>
@@ -195,7 +197,7 @@
         <dt class="text-xs text-gray-500">Durée moy.</dt>
         <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
           <span x-text="avgDurationMin"></span
-          ><span class="text-xs text-gray-500 font-medium ml-0.5">min</span>
+          ><span class="text-xs text-gray-500 font-medium ml-1">min</span>
         </dd>
       </div>
     </dl>
@@ -264,7 +266,7 @@
       <div class="mt-5 flex items-start justify-between gap-3">
         <div class="min-w-0">
           <h2 class="k-card-title">Courbe e1RM</h2>
-          <p class="text-xs text-gray-500 mt-0.5">Charge max estimée sur 1 répétition</p>
+          <p class="text-xs text-gray-500 mt-0.5">Charge max estimée (1 rép.)</p>
         </div>
         <div x-show="forceHasData()" class="text-right flex-shrink-0">
           <p class="text-2xl font-bold text-white tabular-nums leading-none">
