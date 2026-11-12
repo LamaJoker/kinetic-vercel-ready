@@ -1207,25 +1207,10 @@
                 </div>
               </div>
 
-              <button
-                type="button"
-                @click="addSet(entry.exerciseId)"
-                aria-label="+ Série"
-                class="k-btn"
-              >
-                <svg
-                  class="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.4"
-                  stroke-linecap="round"
-                  aria-hidden="true"
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Série
-              </button>
+              <!-- Libellé texte « + Série » (pas d'icône SVG + aria-label) : les
+                   tests E2E le cherchent par nom accessible, et la variante
+                   icône + aria-label n'était pas retrouvée sous WebKit. -->
+              <button type="button" @click="addSet(entry.exerciseId)" class="k-btn">+ Série</button>
             </div>
           </template>
         </article>
