@@ -1,4 +1,5 @@
-﻿import { STORAGE_KEYS } from '@kinetic/core';
+﻿import { loc } from '../lib/num';
+import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
@@ -373,8 +374,8 @@ export function mensurations() {
         // que validateStorageValue rejettera silencieusement côté IdbStorage.
         const finalBytes = estimateDataUrlBytes(compressed);
         if (finalBytes > MAX_PHOTO_BYTES) {
-          const mb = (finalBytes / 1_048_576).toFixed(1);
-          const maxMb = (MAX_PHOTO_BYTES / 1_048_576).toFixed(1);
+          const mb = loc((finalBytes / 1_048_576).toFixed(1));
+          const maxMb = loc((MAX_PHOTO_BYTES / 1_048_576).toFixed(1));
           window.dispatchEvent(
             new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
               detail: {

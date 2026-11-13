@@ -62,6 +62,13 @@
   ],
   "shortcuts": [
     {
+      "name": "Séance du jour",
+      "short_name": "Séance",
+      "description": "Démarre ta séance",
+      "url": "/seances",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
       "name": "Routine vitalité",
       "short_name": "Vitalité",
       "description": "Ouvre ta routine du jour",

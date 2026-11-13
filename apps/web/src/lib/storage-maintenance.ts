@@ -10,6 +10,7 @@
  * rest. Sessions / exercises / profile are NEVER touched.
  */
 
+import { loc } from './num';
 import type { StoragePort } from '@kinetic/core';
 import { STORAGE_KEYS } from '@kinetic/core';
 
@@ -105,7 +106,7 @@ export async function autoCompactOnStartup(storage: StoragePort): Promise<void> 
 export function formatBytes(n: number | null): string {
   if (n === null) return '—';
   if (n < 1024) return `${n} o`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} ko`;
-  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} Mo`;
-  return `${(n / 1024 / 1024 / 1024).toFixed(2)} Go`;
+  if (n < 1024 * 1024) return loc(`${(n / 1024).toFixed(1)} ko`);
+  if (n < 1024 * 1024 * 1024) return loc(`${(n / 1024 / 1024).toFixed(1)} Mo`);
+  return loc(`${(n / 1024 / 1024 / 1024).toFixed(2)} Go`);
 }

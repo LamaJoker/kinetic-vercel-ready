@@ -52,7 +52,7 @@
         <p class="mt-1.5 flex items-baseline gap-1">
           <span
             class="font-display font-bold text-[3.25rem] leading-none tracking-tight tabular-nums text-white"
-            x-text="(latest ? latest.weight : 0).toFixed(1)"
+            x-text="$num.loc((latest ? latest.weight : 0).toFixed(1))"
           ></span>
           <span class="text-lg font-semibold text-gray-500">kg</span>
         </p>
@@ -72,7 +72,7 @@
     <p
       x-show="latest && latest.bodyFatPct"
       class="text-sm text-gray-500 mt-2 tabular-nums"
-      x-text="(latest && latest.bodyFatPct ? latest.bodyFatPct.toFixed(1) : '0') + ' % de masse grasse'"
+      x-text="$num.loc((latest && latest.bodyFatPct ? latest.bodyFatPct.toFixed(1) : '0') + ' % de masse grasse')"
     ></p>
 
     <!-- Progression vers l'objectif -->
@@ -106,7 +106,7 @@
         <p
           x-show="latest && goalProgress < 100"
           class="text-xs text-gray-500 mt-2 tabular-nums"
-          x-text="'Encore ' + (latest ? (latest.weight > goalWeight ? latest.weight - goalWeight : goalWeight - latest.weight) : 0).toFixed(1) + ' kg'"
+          x-text="$num.loc('Encore ' + (latest ? (latest.weight > goalWeight ? latest.weight - goalWeight : goalWeight - latest.weight) : 0).toFixed(1) + ' kg')"
         ></p>
       </div>
     </template>
@@ -121,21 +121,21 @@
       <p class="text-xs text-gray-500">Min</p>
       <p
         class="font-display font-semibold text-xl text-white tabular-nums mt-0.5"
-        x-text="minWeight !== null ? minWeight.toFixed(1) : '—'"
+        x-text="$num.loc(minWeight !== null ? minWeight.toFixed(1) : '—')"
       ></p>
     </div>
     <div class="px-3 text-center">
       <p class="text-xs text-gray-500">Moyenne</p>
       <p
         class="font-display font-semibold text-xl text-white tabular-nums mt-0.5"
-        x-text="avgWeight !== null ? avgWeight.toFixed(1) : '—'"
+        x-text="$num.loc(avgWeight !== null ? avgWeight.toFixed(1) : '—')"
       ></p>
     </div>
     <div class="px-3 text-center">
       <p class="text-xs text-gray-500">Max</p>
       <p
         class="font-display font-semibold text-xl text-white tabular-nums mt-0.5"
-        x-text="maxWeight !== null ? maxWeight.toFixed(1) : '—'"
+        x-text="$num.loc(maxWeight !== null ? maxWeight.toFixed(1) : '—')"
       ></p>
     </div>
   </div>
@@ -276,7 +276,7 @@
             <p
               class="text-xs text-gray-500 truncate"
               x-show="entry.note || entry.bodyFatPct"
-              x-text="entry.note ? entry.note : (entry.bodyFatPct ? entry.bodyFatPct.toFixed(1) + ' % MG' : '')"
+              x-text="$num.loc(entry.note ? entry.note : (entry.bodyFatPct ? entry.bodyFatPct.toFixed(1) + ' % MG' : ''))"
             ></p>
           </div>
           <div class="flex items-baseline gap-2 flex-shrink-0 tabular-nums">
@@ -288,7 +288,7 @@
             ></span>
             <span
               class="text-base font-semibold text-white"
-              x-text="entry.weight.toFixed(1) + ' kg'"
+              x-text="$num.loc(entry.weight.toFixed(1) + ' kg')"
             ></span>
           </div>
           <button

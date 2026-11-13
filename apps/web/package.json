@@ -1,6 +1,6 @@
 {
   "name": "@kinetic/web",
-  "version": "9.0.0",
+  "version": "9.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,6 +13,8 @@
     "android:open": "cap open android",
     "android:build": "vite build && cap sync android && cd android && gradlew.bat assembleDebug",
     "android:build:release": "vite build && cap sync android && cd android && gradlew.bat assembleRelease",
+    "android:bundle": "vite build && cap sync android && cd android && gradlew.bat bundleRelease",
+    "android:assets": "node ../../scripts/generate-android-assets.mjs",
     "android:run": "cap run android"
   },
   "dependencies": {

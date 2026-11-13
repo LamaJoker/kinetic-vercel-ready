@@ -69,7 +69,7 @@
       </div>
       <p
         class="text-xs text-gray-500 mt-2 tabular-nums"
-        x-text="completedTrainingDays + ' / ' + totalTrainingDays + ' séances cette semaine'"
+        x-text="$num.loc(completedTrainingDays + ' / ' + totalTrainingDays + ' séances cette semaine')"
       ></p>
     </div>
   </div>
@@ -124,7 +124,7 @@
             ></p>
             <p
               class="text-xs text-gray-500 tabular-nums mt-0.5"
-              x-text="ex.sets + '×' + ex.targetReps + ' reps · RPE ' + ex.targetRpe"
+              x-text="$num.loc(ex.sets + '×' + ex.targetReps + ' reps · RPE ' + ex.targetRpe)"
             ></p>
           </div>
           <button
@@ -215,7 +215,7 @@
             ></span>
             <span
               class="block text-xs text-gray-500 mt-0.5 truncate"
-              x-text="split.description.replace(', ' + split.daysPerWeek + 'j/sem', '')"
+              x-text="$num.loc(split.description.replace(', ' + split.daysPerWeek + 'j/sem', ''))"
             ></span>
           </span>
           <span class="flex-shrink-0 text-right">

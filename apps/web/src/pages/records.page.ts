@@ -3,6 +3,7 @@
  * exercice). Source de vérité = sessions enregistrées + détection PR via
  * analytics domain.
  */
+import { loc } from '../lib/num';
 import {
   STORAGE_KEYS,
   detectPRs,
@@ -48,7 +49,7 @@ function formatDateLabel(iso: string, now: number): string {
 
 function formatWeight(weightKg: number): string {
   if (weightKg === 0) return 'PC';
-  return weightKg % 1 === 0 ? `${weightKg} kg` : `${weightKg.toFixed(1)} kg`;
+  return weightKg % 1 === 0 ? `${weightKg} kg` : `${loc(weightKg.toFixed(1))} kg`;
 }
 
 const TIER_LABELS_FR: Record<StrengthTier, string> = {

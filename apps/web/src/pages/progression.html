@@ -110,12 +110,12 @@
         >
           <path d="M7 7l10 10M17 9v8H9" />
         </svg>
-        <span x-text="weeklyTrendLabel()"></span>
+        <span x-text="$num.loc(weeklyTrendLabel())"></span>
       </span>
     </div>
 
     <p class="mt-3 flex items-baseline gap-1.5">
-      <span class="k-metric" x-text="formatNumber(weeklyReview.tonnageKg)"></span>
+      <span class="k-metric" x-text="$num.loc(formatNumber(weeklyReview.tonnageKg))"></span>
       <span class="text-sm text-gray-500 font-medium">kg soulevés</span>
     </p>
 
@@ -138,7 +138,7 @@
         <dt class="text-xs text-gray-500">Séries</dt>
         <dd
           class="text-xl font-semibold text-white tabular-nums mt-0.5"
-          x-text="weeklyReview.totalSets"
+          x-text="$num.loc(weeklyReview.totalSets)"
         ></dd>
       </div>
       <div>
@@ -159,16 +159,16 @@
         <dt class="text-xs text-gray-500">Séances</dt>
         <dd
           class="text-xl font-semibold text-white tabular-nums mt-0.5"
-          x-text="totalSessions"
+          x-text="$num.loc(totalSessions)"
         ></dd>
       </div>
       <div>
         <dt class="text-xs text-gray-500">Tonnage</dt>
         <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
-          <span x-text="formatTonnage(totalTonnage)"></span
+          <span x-text="$num.loc(formatTonnage(totalTonnage))"></span
           ><span
             class="text-xs text-gray-500 font-medium ml-1"
-            x-text="totalTonnage >= 100000 ? 't' : 'kg'"
+            x-text="$num.loc(totalTonnage >= 100000 ? 't' : 'kg')"
           ></span>
         </dd>
       </div>
@@ -190,13 +190,13 @@
         <dt class="text-xs text-gray-500">Séances/sem.</dt>
         <dd
           class="text-xl font-semibold text-white tabular-nums mt-0.5"
-          x-text="avgSessionsPerWeek"
+          x-text="$num.loc(avgSessionsPerWeek)"
         ></dd>
       </div>
       <div>
         <dt class="text-xs text-gray-500">Durée moy.</dt>
         <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
-          <span x-text="avgDurationMin"></span
+          <span x-text="$num.loc(avgDurationMin)"></span
           ><span class="text-xs text-gray-500 font-medium ml-1">min</span>
         </dd>
       </div>
@@ -276,7 +276,7 @@
           <p
             class="text-xs font-semibold tabular-nums mt-1"
             :class="forceTrend() === 'up' ? 'text-kinetic-teal' : forceTrend() === 'down' ? 'text-kinetic-electric' : 'text-gray-500'"
-            x-text="forceDeltaLabel()"
+            x-text="$num.loc(forceDeltaLabel())"
           ></p>
         </div>
       </div>
@@ -294,7 +294,7 @@
               Record :
               <span
                 class="text-white font-semibold tabular-nums"
-                x-text="formatNumber(forceBest(), 1) + ' kg'"
+                x-text="$num.loc(formatNumber(forceBest(), 1) + ' kg')"
               ></span>
             </span>
           </div>
@@ -332,11 +332,11 @@
           <p class="flex items-baseline gap-1.5 mt-0.5">
             <span
               class="text-2xl font-bold text-white tabular-nums leading-tight"
-              x-text="formatNumber(weeklyBuckets.at(-1).tonnageKg)"
+              x-text="$num.loc(formatNumber(weeklyBuckets.at(-1).tonnageKg))"
             ></span>
             <span class="text-sm text-gray-500 font-medium">kg</span>
             <span class="text-sm text-gray-500 ml-auto tabular-nums">
-              <span x-text="weeklyBuckets.at(-1).totalSets"></span> séries
+              <span x-text="$num.loc(weeklyBuckets.at(-1).totalSets)"></span> séries
             </span>
           </p>
         </div>
@@ -390,7 +390,7 @@
           <div class="k-row">
             <span
               class="w-28 flex-shrink-0 text-base text-white truncate"
-              x-text="muscleLabel(m.muscle)"
+              x-text="$num.loc(muscleLabel(m.muscle))"
             ></span>
             <div class="flex-1 h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
               <div
@@ -474,7 +474,7 @@
           <dt class="text-xs text-gray-500">Total</dt>
           <dd
             class="text-base font-semibold text-white tabular-nums mt-0.5"
-            x-text="totalSessions + ' séances'"
+            x-text="$num.loc(totalSessions + ' séances')"
           ></dd>
         </div>
         <div>
@@ -529,12 +529,12 @@
               <p class="text-base text-white truncate" x-text="exerciseName(pr.exerciseId)"></p>
               <p
                 class="text-xs text-gray-500 tabular-nums"
-                x-text="pr.weightKg + ' kg × ' + pr.reps + ' · ' + formatDate(pr.achievedAt)"
+                x-text="$num.loc(pr.weightKg + ' kg × ' + pr.reps + ' · ' + formatDate(pr.achievedAt))"
               ></p>
             </div>
             <div class="text-right flex-shrink-0">
               <p class="text-base font-semibold text-white tabular-nums">
-                <span x-text="formatNumber(pr.e1rmKg, 1)"></span
+                <span x-text="$num.loc(formatNumber(pr.e1rmKg, 1))"></span
                 ><span class="text-xs text-gray-500 font-medium ml-0.5">kg</span>
               </p>
               <p class="text-[11px] text-gray-500">e1RM</p>

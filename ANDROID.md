@@ -52,24 +52,30 @@ adb install apps/web/android/app/build/outputs/apk/debug/app-debug.apk
      -alias kinetic -keyalg RSA -keysize 2048 -validity 10000
    ```
 
-2. Create `apps/web/android/keystore.properties`:
+2. Move `kinetic-release.keystore` into `apps/web/android/` and create
+   `apps/web/android/keystore.properties` (both are git-ignored — never commit them,
+   and keep a backup: a lost keystore means you can no longer update the app):
 
    ```properties
-   storeFile=../../kinetic-release.keystore
+   storeFile=kinetic-release.keystore
    storePassword=YOUR_PASSWORD
    keyAlias=kinetic
    keyPassword=YOUR_PASSWORD
    ```
 
-3. Edit `apps/web/android/app/build.gradle` to load the keystore (signing config block).
+   `app/build.gradle` picks this file up automatically; without it the release
+   build is left unsigned.
 
-4. Run:
+3. Build:
 
    ```bash
-   pnpm android:build:release
+   pnpm android:build:release   # signed APK  → app/build/outputs/apk/release/
+   pnpm android:bundle          # signed AAB  → app/build/outputs/bundle/release/ (Play Store)
    ```
 
-   APK output: `apps/web/android/app/build/outputs/apk/release/app-release.apk`
+The version shown in the store comes from `apps/web/package.json` (`version`):
+`9.1.0` becomes `versionName 9.1.0` / `versionCode 90100`. Bump it before every
+upload — Play refuses a `versionCode` it has already seen.
 
 ## Open in Android Studio
 
@@ -103,14 +109,39 @@ Defined in [`apps/web/capacitor.config.ts`](apps/web/capacitor.config.ts):
 
 To rename or change the package: edit `capacitor.config.ts`, then `npx cap sync android`. For an existing build you'll need to re-run `cap add android` or manually update `applicationId` in `app/build.gradle` and the package folders under `app/src/main/java/`.
 
+## Home-screen widget
+
+The app ships a "streak + daily routine" widget
+(`app/src/main/java/com/lamajoker/kinetic/KineticWidgetProvider.java`, layouts in
+`res/layout/widget_kinetic*.xml`). The web app pushes its state through the
+`KineticWidget` Capacitor plugin (`KineticWidgetPlugin.java` ↔ `src/lib/widget.ts`)
+every time a routine task changes; the widget re-reads it every 30 minutes so the
+day rolls over even if the app stays closed. Tapping it opens the routine
+(`com.lamajoker.kinetic://open/vitalite`).
+
+Users add it from Profile → "Ajouter le widget", or by long-pressing the home screen.
+
+## Reminders
+
+`src/lib/reminders.ts` schedules two system notifications with
+`@capacitor/local-notifications`: the daily routine reminder (time chosen in
+Profile, skipped once the routine is done) and the Sunday 6 pm weekly recap.
+They fire with the app closed. Android 13+ asks for the notification permission
+the first time a reminder is enabled.
+
 ## Customizing the icon & splash
 
-Replace icons in `apps/web/android/app/src/main/res/mipmap-*/` and the splash drawable in `drawable*/splash.png`. Tools like [`@capacitor/assets`](https://github.com/ionic-team/capacitor-assets) automate this:
+The launcher icon is vector (`res/drawable/ic_launcher_foreground.xml`, plus
+`ic_launcher_monochrome.xml` for Android 13 themed icons). Legacy PNG icons and
+splash screens are rendered from the same logo:
 
 ```bash
-pnpm dlx @capacitor/assets generate --android \
-  --iconBackgroundColor "#0b0f1a" \
-  --splashBackgroundColor "#0b0f1a"
+pnpm android:assets
 ```
 
-(Place a `1024x1024` icon and `2732x2732` splash in `apps/web/assets/` first.)
+Edit the SVG at the top of `scripts/generate-android-assets.mjs` to change the logo.
+
+## Publishing
+
+See [`docs/play-store.md`](docs/play-store.md) for the store listing text and the
+release checklist.

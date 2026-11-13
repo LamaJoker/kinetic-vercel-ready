@@ -20,11 +20,11 @@
   <!-- Mesure active : valeur, évolution, période, courbe -->
   <section class="k-card mb-8" aria-labelledby="mens-active-title">
     <div class="flex items-center gap-2">
-      <h2 id="mens-active-title" class="k-card-title" x-text="activeMetricDef.label"></h2>
+      <h2 id="mens-active-title" class="k-card-title" x-text="$num.loc(activeMetricDef.label)"></h2>
     </div>
 
     <p class="mt-3 flex items-baseline gap-1.5">
-      <span class="k-metric" x-text="formatCm(currentValue(activeMetric))"></span>
+      <span class="k-metric" x-text="$num.loc(formatCm(currentValue(activeMetric)))"></span>
       <span
         x-show="currentValue(activeMetric) !== null"
         class="text-base font-semibold text-gray-500"
@@ -34,12 +34,12 @@
     <p
       class="text-xs text-gray-500 mt-1.5 tabular-nums"
       x-show="metricDelta(activeMetric) !== null"
-      x-text="formatDelta(activeMetric) + ' cm ' + periodLabel"
+      x-text="$num.loc(formatDelta(activeMetric) + ' cm ' + periodLabel)"
     ></p>
     <p
       class="text-xs text-gray-500 mt-1.5"
       x-show="metricDelta(activeMetric) === null"
-      x-text="currentValue(activeMetric) !== null ? 'Dernière valeur relevée' : 'Pas encore mesuré'"
+      x-text="$num.loc(currentValue(activeMetric) !== null ? 'Dernière valeur relevée' : 'Pas encore mesuré')"
     ></p>
 
     <!-- Période -->
@@ -78,7 +78,7 @@
         <p class="text-base font-semibold text-white">Pas encore de courbe</p>
         <p class="text-xs text-gray-500 mt-1 max-w-[16rem]">
           Enregistre au moins 2 mesures de
-          <span class="text-white" x-text="activeMetricDef.label"></span> sur la période.
+          <span class="text-white" x-text="$num.loc(activeMetricDef.label)"></span> sur la période.
         </p>
       </div>
     </template>
@@ -96,11 +96,11 @@
         <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
           <dt
             class="text-xs text-gray-500"
-            x-text="metricDelta(activeMetric) >= 0 ? 'Plus haut' : 'Plus bas'"
+            x-text="$num.loc(metricDelta(activeMetric) >= 0 ? 'Plus haut' : 'Plus bas')"
           ></dt>
           <dd
             class="text-base font-semibold text-white tabular-nums mt-0.5"
-            x-text="metricDelta(activeMetric) >= 0 ? chartStats.max : chartStats.min"
+            x-text="$num.loc(metricDelta(activeMetric) >= 0 ? chartStats.max : chartStats.min)"
           ></dd>
         </div>
         <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
@@ -129,18 +129,18 @@
           <span
             class="truncate"
             :class="activeMetric === m.key ? 'text-white font-semibold' : 'text-gray-400'"
-            x-text="m.label"
+            x-text="$num.loc(m.label)"
           ></span>
         </span>
         <span
           class="block mt-1 text-lg font-semibold leading-tight tabular-nums"
           :class="currentValue(m.key) === null ? 'text-gray-500' : 'text-white'"
-          x-text="formatCm(currentValue(m.key))"
+          x-text="$num.loc(formatCm(currentValue(m.key)))"
         ></span>
         <span
           x-show="currentValue(m.key) !== null"
           class="block text-[11px] text-gray-500 tabular-nums"
-          x-text="metricDelta(m.key) !== null ? formatDelta(m.key) + ' cm' : 'cm'"
+          x-text="$num.loc(metricDelta(m.key) !== null ? formatDelta(m.key) + ' cm' : 'cm')"
         ></span>
         <span x-show="currentValue(m.key) === null" class="block text-[11px] text-gray-500">
           Non mesuré
@@ -388,12 +388,12 @@
           <p
             class="text-xs text-gray-500 mt-0.5 tabular-nums truncate"
             x-show="entrySummary(entry)"
-            x-text="entrySummary(entry)"
+            x-text="$num.loc(entrySummary(entry))"
           ></p>
           <p
             x-show="entry.note"
             class="text-xs text-gray-500 italic mt-0.5 truncate"
-            x-text="entry.note"
+            x-text="$num.loc(entry.note)"
           ></p>
         </div>
         <button

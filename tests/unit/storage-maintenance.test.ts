@@ -104,9 +104,9 @@ describe('formatBytes', () => {
   it('formate en o, ko, Mo, Go', () => {
     expect(formatBytes(0)).toBe('0 o');
     expect(formatBytes(512)).toBe('512 o');
-    expect(formatBytes(2048)).toBe('2.0 ko');
-    expect(formatBytes(5 * 1024 * 1024)).toBe('5.0 Mo');
-    expect(formatBytes(2 * 1024 * 1024 * 1024)).toBe('2.00 Go');
+    expect(formatBytes(2048)).toBe('2,0 ko');
+    expect(formatBytes(5 * 1024 * 1024)).toBe('5,0 Mo');
+    expect(formatBytes(2 * 1024 * 1024 * 1024)).toBe('2,00 Go');
     expect(formatBytes(null)).toBe('—');
   });
 });

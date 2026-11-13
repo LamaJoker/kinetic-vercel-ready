@@ -1,4 +1,5 @@
-﻿import { plural } from '../lib/plural';
+﻿import { loc } from '../lib/num';
+import { plural } from '../lib/plural';
 import {
   STORAGE_KEYS,
   suggestProgression,
@@ -1256,7 +1257,7 @@ export function seances() {
           periodizationNote =
             'Fatigue accumulée détectée (RPE moyen ≥ 9 sur 3 séances). Envisage une semaine de décharge à 60 % du volume habituel.';
         } else if (e1rmProgression > 0 && avgRpe < preset.targetRpe + 0.5) {
-          periodizationNote = `Bonne progression : +${e1rmProgression.toFixed(1)} kg d'e1RM sur les 3 dernières séances. Continue la surcharge progressive.`;
+          periodizationNote = `Bonne progression : +${loc(e1rmProgression.toFixed(1))} kg d'e1RM sur les 3 dernières séances. Continue la surcharge progressive.`;
         } else if (Math.abs(e1rmProgression) < 1.5 && history.length >= 4) {
           periodizationNote =
             "Stagnation possible : l'e1RM évolue peu depuis 3–4 séances. Envisage de changer le schéma de répétitions ou d'ajouter une série.";

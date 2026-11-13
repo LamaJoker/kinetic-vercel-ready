@@ -1,4 +1,5 @@
-﻿import { STORAGE_KEYS } from '@kinetic/core';
+﻿import { loc } from '../lib/num';
+import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import {
   weeklyVolume,
@@ -277,7 +278,7 @@ export function progression() {
           ? pts
               .map(
                 (p, i) =>
-                  `<circle cx="${f(xy[i]![0])}" cy="${f(xy[i]![1])}" r="2.5" fill="${LINE}"><title>${p.label} : ${p.y.toFixed(1)} kg</title></circle>`,
+                  `<circle cx="${f(xy[i]![0])}" cy="${f(xy[i]![1])}" r="2.5" fill="${LINE}"><title>${p.label} : ${loc(p.y.toFixed(1))} kg</title></circle>`,
               )
               .join('')
           : '';
@@ -289,7 +290,7 @@ export function progression() {
       const [lx, ly] = xy[lastIdx]!;
       const best =
         bestIdx !== lastIdx
-          ? `<circle cx="${f(bx)}" cy="${f(by)}" r="4" fill="${BEST}"><title>Record ${pts[bestIdx]!.label} : ${rawMax.toFixed(1)} kg</title></circle>`
+          ? `<circle cx="${f(bx)}" cy="${f(by)}" r="4" fill="${BEST}"><title>Record ${pts[bestIdx]!.label} : ${loc(rawMax.toFixed(1))} kg</title></circle>`
           : '';
       const lastFill = bestIdx === lastIdx ? BEST : LINE;
       const last = `<circle cx="${f(lx)}" cy="${f(ly)}" r="8" fill="${lastFill}" fill-opacity="0.22"/><circle cx="${f(lx)}" cy="${f(ly)}" r="4.5" fill="${lastFill}"><title>${pts[lastIdx]!.label} : ${pts[lastIdx]!.y.toFixed(1)} kg</title></circle>`;

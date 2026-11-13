@@ -12,6 +12,8 @@
     "android:sync": "pnpm --filter @kinetic/web android:sync",
     "android:build": "pnpm --filter @kinetic/web android:build",
     "android:build:release": "pnpm --filter @kinetic/web android:build:release",
+    "android:bundle": "pnpm --filter @kinetic/web android:bundle",
+    "android:assets": "pnpm --filter @kinetic/web android:assets",
     "android:run": "pnpm --filter @kinetic/web android:run",
     "test": "vitest run",
     "test:watch": "vitest",

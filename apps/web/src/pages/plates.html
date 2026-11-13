@@ -83,7 +83,7 @@
           class="k-seg-item tabular-nums"
           :class="barKg === bar ? 'on' : ''"
           :aria-pressed="barKg === bar ? 'true' : 'false'"
-          x-text="bar + ' kg'"
+          x-text="$num.loc(bar + ' kg')"
         ></button>
       </template>
     </div>
@@ -95,7 +95,7 @@
       <h2 class="k-section">Par côté</h2>
       <span
         class="text-base font-semibold tabular-nums text-kinetic-neon"
-        x-text="resultLabel"
+        x-text="$num.loc(resultLabel)"
         aria-live="polite"
       ></span>
     </div>
@@ -147,7 +147,7 @@
               ></span>
               <span
                 class="flex-1 text-base font-semibold tabular-nums text-white"
-                x-text="p.plateKg + ' kg'"
+                x-text="$num.loc(p.plateKg + ' kg')"
               ></span>
               <span
                 class="text-base tabular-nums text-gray-500"
@@ -161,9 +161,15 @@
       <template x-if="result.inexact && !result.underBar">
         <p class="mt-3 text-sm text-kinetic-electric">
           Charge la plus proche :
-          <span class="font-semibold tabular-nums" x-text="result.achievedKg + ' kg'"></span>
+          <span
+            class="font-semibold tabular-nums"
+            x-text="$num.loc(result.achievedKg + ' kg')"
+          ></span>
           (manque
-          <span class="font-semibold tabular-nums" x-text="result.deltaKg.toFixed(2) + ' kg'"></span
+          <span
+            class="font-semibold tabular-nums"
+            x-text="$num.loc(result.deltaKg.toFixed(2) + ' kg')"
+          ></span
           >)
         </p>
       </template>
@@ -183,7 +189,7 @@
         <span class="block text-base text-white">Disques disponibles</span>
         <span
           class="block text-xs text-gray-500 tabular-nums"
-          x-text="enabledPlates.length + ' sur ' + PLATE_OPTIONS.length + ' sélectionnés'"
+          x-text="$num.loc(enabledPlates.length + ' sur ' + PLATE_OPTIONS.length + ' sélectionnés')"
         ></span>
       </span>
       <svg
@@ -217,7 +223,7 @@
               :style="plateSwatch(p)"
               aria-hidden="true"
             ></span>
-            <span x-text="p + ' kg'"></span>
+            <span x-text="$num.loc(p + ' kg')"></span>
           </button>
         </template>
       </div>

@@ -1,4 +1,5 @@
-﻿import { STORAGE_KEYS } from '@kinetic/core';
+﻿import { loc } from '../lib/num';
+import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 
 interface BodyweightEntry {
@@ -133,7 +134,7 @@ export function bodyweight() {
         this.newNote = '';
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: entry.weight.toFixed(1) + ' kg enregistré' },
+            detail: { kind: 'success', message: loc(entry.weight.toFixed(1)) + ' kg enregistré' },
           }),
         );
       } catch (err) {
@@ -203,9 +204,9 @@ export function bodyweight() {
     /** Variation signée formatée : « +0.4 », « −0.3 », « 0.0 ». */
     signed(d: number | null | undefined): string {
       const v = d ?? 0;
-      if (v > 0) return '+' + v.toFixed(1);
-      if (v < 0) return '\u2212' + Math.abs(v).toFixed(1);
-      return v.toFixed(1);
+      if (v > 0) return '+' + loc(v.toFixed(1));
+      if (v < 0) return '\u2212' + loc(Math.abs(v).toFixed(1));
+      return loc(v.toFixed(1));
     },
 
     chartSvg(): string {
@@ -247,7 +248,7 @@ export function bodyweight() {
       const dx = Math.max(1, maxX - minX);
       const sx = (d: number) => plotL + ((d - minX) / dx) * (plotR - plotL);
       const sy = (y: number) => plotB - ((y - lo) / (hi - lo)) * (plotB - plotT);
-      const fmtKg = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
+      const fmtKg = (v: number) => (Number.isInteger(v) ? String(v) : loc(v.toFixed(1)));
 
       const coords = pts.map((e) => [sx(Date.parse(e.date)), sy(e.weight)] as const);
       const linePath = coords

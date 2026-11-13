@@ -4,7 +4,7 @@
     <div class="min-w-0">
       <p
         class="text-xs font-semibold uppercase tracking-wide text-gray-500"
-        x-text="todayLabel"
+        x-text="$num.loc(todayLabel)"
       ></p>
       <h1 class="font-display font-bold text-white truncate" x-text="greeting"></h1>
     </div>
@@ -35,7 +35,7 @@
           class="font-display font-bold text-2xl text-white mt-0.5"
           x-text="training.next.name"
         ></h2>
-        <p class="text-sm text-gray-500 mt-0.5" x-text="nextDetail"></p>
+        <p class="text-sm text-gray-500 mt-0.5" x-text="$num.loc(nextDetail)"></p>
 
         <button
           type="button"
@@ -54,7 +54,7 @@
         <div class="mt-2 pt-4 border-t border-white/10">
           <div class="flex items-baseline justify-between mb-3">
             <p class="text-sm font-semibold text-white">Cette semaine</p>
-            <p class="text-xs text-gray-500 tabular-nums" x-text="weekDetail"></p>
+            <p class="text-xs text-gray-500 tabular-nums" x-text="$num.loc(weekDetail)"></p>
           </div>
           <ol class="grid grid-cols-7 gap-2" aria-label="Jours entraînés cette semaine">
             <template x-for="day in training.week.days" :key="day.iso">
@@ -62,14 +62,14 @@
                 class="aspect-square rounded-full flex items-center justify-center text-xs"
                 :class="weekDayClass(day)"
                 :aria-label="day.iso + (day.trained ? ' : entraîné' : '')"
-                x-text="day.label"
+                x-text="$num.loc(day.label)"
               ></li>
             </template>
           </ol>
           <p
             x-show="training.last"
             class="text-xs text-gray-500 mt-3"
-            x-text="'Dernière séance · ' + lastDetail"
+            x-text="$num.loc('Dernière séance · ' + lastDetail)"
           ></p>
         </div>
       </div>
@@ -204,7 +204,7 @@
       <span class="min-w-0">
         <span
           class="block text-sm font-semibold text-white leading-tight line-clamp-2"
-          x-text="$t('tools.plates')"
+          x-text="$num.loc($t('tools.plates'))"
         ></span>
       </span>
     </a>
@@ -232,7 +232,7 @@
         ></span>
         <span class="block text-xs text-gray-500 truncate tabular-nums">
           <span x-text="$store.achievements ? $store.achievements.unlockedCount : 0"></span>/<span
-            x-text="$store.achievements ? $store.achievements.totalCount : 0"
+            x-text="$num.loc($store.achievements ? $store.achievements.totalCount : 0)"
           ></span>
         </span>
       </span>
@@ -301,7 +301,7 @@
               @click="coachQuestion = suggestion"
               class="k-row text-sm text-white active:bg-kinetic-elevated"
             >
-              <span class="flex-1 min-w-0" x-text="suggestion"></span>
+              <span class="flex-1 min-w-0" x-text="$num.loc(suggestion)"></span>
               <svg
                 class="w-4 h-4 flex-shrink-0 text-gray-500"
                 fill="none"
@@ -390,7 +390,7 @@
     <div class="bg-kinetic-surface rounded-2xl p-4">
       <p class="text-xs font-semibold text-gray-500">Meilleure série</p>
       <p class="mt-2 text-3xl font-display font-bold text-white leading-none">
-        <span x-text="bestStreak + ''"></span>
+        <span x-text="$num.loc(bestStreak + '')"></span>
         <span class="text-sm font-sans font-medium text-gray-500">jours</span>
       </p>
     </div>
@@ -404,7 +404,9 @@
     <div class="flex items-center justify-between gap-3 mb-3">
       <h2 class="k-card-title">Récupération</h2>
       <span class="flex items-center gap-2 text-sm text-gray-500 tabular-nums">
-        <span x-text="$store.vitalite.doneCount + '/' + $store.vitalite.totalCount"></span>
+        <span
+          x-text="$num.loc($store.vitalite.doneCount + '/' + $store.vitalite.totalCount)"
+        ></span>
         <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
           <path
             d="m1 1 6 6-6 6"
@@ -554,7 +556,7 @@
         <span
           class="text-sm font-semibold tabular-nums"
           :class="$store.goals.sessionsOk ? 'text-kinetic-teal' : 'text-white'"
-          x-text="$store.goals.doneSessions + ' / ' + $store.goals.targetSessions"
+          x-text="$num.loc($store.goals.doneSessions + ' / ' + $store.goals.targetSessions)"
         ></span>
       </div>
       <div class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
@@ -574,7 +576,7 @@
         <span
           class="text-sm font-semibold tabular-nums"
           :class="$store.goals.tonnageOk ? 'text-kinetic-teal' : 'text-white'"
-          x-text="$store.goals.doneTonnageKg + ' / ' + $store.goals.targetTonnageKg + ' kg'"
+          x-text="$num.loc($store.goals.doneTonnageKg + ' / ' + $store.goals.targetTonnageKg + ' kg')"
         ></span>
       </div>
       <div class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
@@ -680,7 +682,7 @@
       ></h3>
       <p
         class="mt-1.5 text-sm text-gray-400 leading-snug"
-        x-text="$store.rewards.pendingReward ? $store.rewards.pendingReward.description : ''"
+        x-text="$num.loc($store.rewards.pendingReward ? $store.rewards.pendingReward.description : '')"
       ></p>
       <button type="button" @click="$store.rewards.dismissModal()" class="k-btn mt-6">
         Super, merci !

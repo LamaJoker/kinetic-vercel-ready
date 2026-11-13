@@ -140,7 +140,7 @@ test.describe('Parcours fonctionnels', () => {
     await goto(page, '/bodyweight');
     await page.locator('input[x-model\\.number="newWeight"]').fill('81.4');
     await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
-    await expect(page.getByText('81.4 kg').first()).toBeVisible();
+    await expect(page.getByText('81,4 kg').first()).toBeVisible();
   });
 
   test('chargement de barre : 140 kg dessine 3 disques par côté', async ({ page }) => {

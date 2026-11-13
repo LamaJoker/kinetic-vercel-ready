@@ -27,16 +27,16 @@
                 <span class="text-base font-semibold text-white truncate" x-text="p.name"></span>
                 <span
                   class="text-[13px] text-gray-500 flex-shrink-0"
-                  x-text="levelLabel(p.level)"
+                  x-text="$num.loc(levelLabel(p.level))"
                 ></span>
               </span>
               <span
                 class="text-sm text-gray-400 leading-snug mt-1 line-clamp-2"
-                x-text="p.description"
+                x-text="$num.loc(p.description)"
               ></span>
               <span
                 class="block text-xs text-gray-500 mt-1.5 truncate tabular-nums"
-                x-text="goalLabel(p.goal) + ' · ' + p.daysPerWeek + ' j/sem · ' + p.durationWeeks + ' sem'"
+                x-text="$num.loc(goalLabel(p.goal) + ' · ' + p.daysPerWeek + ' j/sem · ' + p.durationWeeks + ' sem')"
               ></span>
             </span>
             <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
@@ -78,7 +78,7 @@
         <h2 class="font-display text-xl font-bold text-white" x-text="selectedProgram.name"></h2>
         <p
           class="text-sm text-gray-400 leading-snug mt-1.5"
-          x-text="selectedProgram.description"
+          x-text="$num.loc(selectedProgram.description)"
         ></p>
         <p
           class="text-xs text-gray-500 italic mt-3"
@@ -97,7 +97,7 @@
             <label
               :for="'f-programs-' + lift"
               class="text-base text-white flex-shrink-0"
-              x-text="liftLabel(lift)"
+              x-text="$num.loc(liftLabel(lift))"
             ></label>
             <input
               :id="'f-programs-' + lift"
@@ -167,7 +167,7 @@
       </div>
       <p
         class="text-sm text-gray-500 mb-3"
-        x-text="selectedProgram.weeks[currentWeekIndex]?.label"
+        x-text="$num.loc(selectedProgram.weeks[currentWeekIndex]?.label)"
       ></p>
 
       <div class="space-y-3">
@@ -178,7 +178,7 @@
               <div class="pt-3 mt-3 border-t border-white/10">
                 <p
                   class="text-sm font-semibold text-white mb-1.5"
-                  x-text="liftLabel(ex.liftRef)"
+                  x-text="$num.loc(liftLabel(ex.liftRef))"
                 ></p>
                 <div class="grid grid-cols-3 gap-2 text-xs text-gray-500 pb-1">
                   <span>Série</span><span>Charge</span><span class="text-right">Reps</span>
@@ -186,7 +186,10 @@
                 <template x-for="(set, setIdx) in ex.sets" :key="setIdx">
                   <div class="grid grid-cols-3 gap-2 py-1 text-sm text-white">
                     <span class="text-gray-500 tabular-nums" x-text="setIdx + 1"></span>
-                    <span class="tabular-nums font-semibold" x-text="set.weightKg + ' kg'"></span>
+                    <span
+                      class="tabular-nums font-semibold"
+                      x-text="$num.loc(set.weightKg + ' kg')"
+                    ></span>
                     <span
                       class="tabular-nums text-right"
                       :class="set.amrap ? 'text-kinetic-electric font-semibold' : ''"
