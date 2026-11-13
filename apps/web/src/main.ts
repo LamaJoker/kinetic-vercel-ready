@@ -116,6 +116,7 @@ import { getDeps } from './deps';
 
 import { initRouter } from './router';
 import { scheduleStreakReminder } from './lib/streak-reminder';
+import { syncWeeklyRecap } from './lib/reminders';
 import { autoCompactOnStartup } from './lib/storage-maintenance';
 import { runMigrationsIfNeeded } from './lib/migrations';
 import { initMobile } from './lib/mobile';
@@ -354,6 +355,17 @@ requestAnimationFrame(() => {
 void initMobile();
 
 scheduleStreakReminder();
+
+// Application Android : bilan hebdomadaire reprogrammé au lancement et à chaque mise
+// en arrière-plan (les séances du jour sont alors comptées) ; widget et rappel de
+// routine resynchronisés quand la série change hors routine (gel de série).
+void syncWeeklyRecap();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') void syncWeeklyRecap();
+});
+window.addEventListener(STORAGE_KEYS.EVENT_STREAK_UPDATED, () => {
+  (Alpine.store('vitalite') as { _syncNative(): void })._syncNative();
+});
 
 // Migrations schéma IDB, reset quotidien des tâches, puis nettoyage bloat.
 void getDeps()

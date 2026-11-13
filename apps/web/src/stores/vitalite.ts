@@ -10,6 +10,8 @@
 import type { Task } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { sanitizeUserInput } from '../lib/security';
+import { syncWidget } from '../lib/widget';
+import { syncRoutineReminder } from '../lib/reminders';
 
 interface DefaultTaskSpec {
   id: string;
@@ -226,6 +228,7 @@ export function vitaliteStore() {
         this.tasks = buildTasks([]);
       } finally {
         this.loading = false;
+        this._syncNative();
       }
     },
 
@@ -319,10 +322,11 @@ export function vitaliteStore() {
         }
       } catch (err) {
         console.error('[vitalite] complete failed:', err);
-        notify('error', 'Impossible de valider la tache. Reessaie.');
+        notify('error', 'Impossible de valider la tâche. Réessaie.');
       } finally {
         this._pendingIds = this._pendingIds.filter((id) => id !== taskId);
         this.completingId = null;
+        this._syncNative();
       }
     },
 
@@ -350,11 +354,11 @@ export function vitaliteStore() {
         );
 
         if (!result.ok) {
-          notify('error', "Impossible d'annuler. Reessaie.");
+          notify('error', "Impossible d'annuler. Réessaie.");
           return;
         }
         if (!result.undone) {
-          notify('info', "Cette tache n'etait plus completee.");
+          notify('info', "Cette tâche n'était plus validée.");
           return;
         }
 
@@ -377,10 +381,11 @@ export function vitaliteStore() {
         }).catch((err) => console.warn('[vitalite] sync failed after undo:', err));
       } catch (err) {
         console.error('[vitalite] undo failed:', err);
-        notify('error', "Impossible d'annuler. Reessaie.");
+        notify('error', "Impossible d'annuler. Réessaie.");
       } finally {
         this._pendingIds = this._pendingIds.filter((id) => id !== taskId);
         this.completingId = null;
+        this._syncNative();
       }
     },
 
@@ -421,16 +426,17 @@ export function vitaliteStore() {
           createdAt: todayIso(),
         });
         this.tasks = [...this.tasks, newTask];
+        this._syncNative();
 
         this.newTaskTitle = '';
         this.newTaskIcon = '⭐';
         this.newTaskXp = 40;
         this.newTaskPriority = 'med';
         this.showAddForm = false;
-        notify('success', `Tache "${spec.title}" ajoutee`);
+        notify('success', `Tâche « ${spec.title} » ajoutée`);
       } catch (err) {
         console.error('[vitalite] addCustomTask failed:', err);
-        notify('error', "Impossible d'ajouter la tache.");
+        notify('error', "Impossible d'ajouter la tâche.");
       }
     },
 
@@ -444,10 +450,11 @@ export function vitaliteStore() {
         // Mutate in-memory only after storage succeeds
         this.customSpecs = updatedSpecs;
         this.tasks = this.tasks.filter((entry) => entry.id !== id);
-        notify('info', 'Tache supprimee');
+        this._syncNative();
+        notify('info', 'Tâche supprimée');
       } catch (err) {
         console.error('[vitalite] deleteCustomTask failed:', err);
-        notify('error', 'Impossible de supprimer la tache.');
+        notify('error', 'Impossible de supprimer la tâche.');
       } finally {
         this._pendingIds = this._pendingIds.filter((pendingId) => pendingId !== id);
       }
@@ -474,11 +481,12 @@ export function vitaliteStore() {
         // Mutate in-memory only after storage succeeds
         this.hiddenIds = updatedHiddenIds;
         this.tasks = this.tasks.filter((task) => task.id !== id);
+        this._syncNative();
         this._recomputeHiddenSpecsList();
-        notify('info', 'Tache masquee');
+        notify('info', 'Tâche masquée');
       } catch (err) {
         console.error('[vitalite] hideTask failed:', err);
-        notify('error', 'Impossible de masquer la tache.');
+        notify('error', 'Impossible de masquer la tâche.');
       }
     },
 
@@ -514,10 +522,11 @@ export function vitaliteStore() {
               : task,
           );
         this._recomputeHiddenSpecsList();
-        notify('success', 'Tache restauree');
+        this._syncNative();
+        notify('success', 'Tâche restaurée');
       } catch (err) {
         console.error('[vitalite] unhideTask failed:', err);
-        notify('error', 'Impossible de restaurer la tache.');
+        notify('error', 'Impossible de restaurer la tâche.');
       }
     },
 
@@ -586,6 +595,13 @@ export function vitaliteStore() {
       if (this.showHistory && this.historyDays.length === 0) {
         await this.loadHistory();
       }
+    },
+
+    /** Widget d'écran d'accueil et rappel de routine (application Android). */
+    _syncNative(): void {
+      const routine = { done: this.doneCount, total: this.totalCount };
+      void syncWidget(routine);
+      void syncRoutineReminder(routine);
     },
 
     async _refreshXpStore(): Promise<void> {

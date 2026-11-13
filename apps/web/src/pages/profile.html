@@ -311,6 +311,70 @@
     </div>
   </div>
 
+  <!-- Rappels et widget (application Android) -->
+  <div x-show="nativeApp">
+    <h2 class="k-section mb-2.5">Rappels et widget</h2>
+    <div class="k-list">
+      <label class="k-row cursor-pointer select-none">
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Rappel de routine</span>
+          <span class="block text-xs text-gray-500">Seulement si elle n'est pas terminée</span>
+        </span>
+        <input
+          type="checkbox"
+          class="peer sr-only"
+          :checked="reminderRoutine"
+          @change="toggleRoutineReminder()"
+        />
+        <span
+          aria-hidden="true"
+          class="relative flex-shrink-0 w-[51px] h-[31px] rounded-full bg-kinetic-raised transition-colors duration-200 peer-checked:bg-kinetic-teal peer-focus-visible:ring-2 peer-focus-visible:ring-kinetic-neon after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:w-[27px] after:h-[27px] after:rounded-full after:bg-white after:shadow-md after:transition-transform after:duration-200 peer-checked:after:translate-x-5"
+        ></span>
+      </label>
+      <label class="k-row" x-show="reminderRoutine">
+        <span class="flex-1 min-w-0 text-base text-white">Heure du rappel</span>
+        <input
+          type="time"
+          :value="reminderTime"
+          @change="setReminderTime($event)"
+          class="flex-shrink-0 h-9 px-3 rounded-lg bg-kinetic-elevated text-white text-base tabular-nums"
+        />
+      </label>
+      <label class="k-row cursor-pointer select-none">
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Bilan de la semaine</span>
+          <span class="block text-xs text-gray-500">Le dimanche à 18 h</span>
+        </span>
+        <input
+          type="checkbox"
+          class="peer sr-only"
+          :checked="reminderWeekly"
+          @change="toggleWeeklyRecap()"
+        />
+        <span
+          aria-hidden="true"
+          class="relative flex-shrink-0 w-[51px] h-[31px] rounded-full bg-kinetic-raised transition-colors duration-200 peer-checked:bg-kinetic-teal peer-focus-visible:ring-2 peer-focus-visible:ring-kinetic-neon after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:w-[27px] after:h-[27px] after:rounded-full after:bg-white after:shadow-md after:transition-transform after:duration-200 peer-checked:after:translate-x-5"
+        ></span>
+      </label>
+      <button type="button" class="k-row" @click="addWidget()">
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Ajouter le widget</span>
+          <span class="block text-xs text-gray-500">Série et routine sur l'écran d'accueil</span>
+        </span>
+        <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+          <path
+            d="M1 1l6 6-6 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+    <div class="mb-8" aria-hidden="true"></div>
+  </div>
+
   <!-- Préférences -->
   <h2 class="k-section mb-2.5">Préférences</h2>
   <div class="bg-kinetic-surface rounded-2xl p-4 mb-8 space-y-5">

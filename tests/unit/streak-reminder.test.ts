@@ -179,31 +179,17 @@ describe('scheduleStreakReminder', () => {
     expect(notifSpy).not.toHaveBeenCalled();
   });
 
-  it('calls LocalNotifications.schedule when on native platform with permission granted', async () => {
+  it('does nothing on the native app (reminders are scheduled by reminders.ts)', async () => {
     vi.setSystemTime(new Date('2026-05-16T12:00:00'));
-    vi.mocked(getDeps).mockResolvedValue(makeDeps() as ReturnType<typeof getDeps>);
     vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
-    vi.mocked(LocalNotifications.checkPermissions).mockResolvedValue({ display: 'granted' } as any);
-    vi.mocked(LocalNotifications.schedule).mockResolvedValue({ notifications: [] });
 
     const { scheduleStreakReminder } = await import('../../apps/web/src/lib/streak-reminder.js');
+    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
     scheduleStreakReminder();
-    await vi.runAllTimersAsync();
 
-    expect(LocalNotifications.schedule).toHaveBeenCalledOnce();
-  });
-
-  it('skips LocalNotifications.schedule when native permission is not granted', async () => {
-    vi.setSystemTime(new Date('2026-05-16T12:00:00'));
-    vi.mocked(getDeps).mockResolvedValue(makeDeps() as ReturnType<typeof getDeps>);
-    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
-    vi.mocked(LocalNotifications.checkPermissions).mockResolvedValue({ display: 'denied' } as any);
-
-    const { scheduleStreakReminder } = await import('../../apps/web/src/lib/streak-reminder.js');
-    scheduleStreakReminder();
-    await vi.runAllTimersAsync();
-
+    expect(setTimeoutSpy).not.toHaveBeenCalled();
     expect(LocalNotifications.schedule).not.toHaveBeenCalled();
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
   });
 
   it('shouldRemind catch block swallows storage errors (covers lines 39-40)', async () => {
@@ -243,27 +229,5 @@ describe('scheduleStreakReminder', () => {
 
     // notification fired (shouldRemind=true), markReminderSentToday error swallowed silently
     expect(notifSpy).toHaveBeenCalledOnce();
-  });
-
-  it('sendStreakNotificationNative catch block logs warning when schedule throws (covers lines 70-71)', async () => {
-    vi.setSystemTime(new Date('2026-05-16T12:00:00'));
-    vi.mocked(getDeps).mockResolvedValue(makeDeps() as ReturnType<typeof getDeps>);
-    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
-    vi.mocked(LocalNotifications.checkPermissions).mockResolvedValue({ display: 'granted' } as any);
-    vi.mocked(LocalNotifications.schedule).mockImplementation(() =>
-      Promise.reject(new Error('notification service crash')),
-    );
-
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const { scheduleStreakReminder } = await import('../../apps/web/src/lib/streak-reminder.js');
-    scheduleStreakReminder();
-    await vi.runAllTimersAsync();
-    // Extra microtask flush to ensure the catch block has completed
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(warnSpy).toHaveBeenCalled();
-    expect(warnSpy.mock.calls[0]?.[0]).toContain('[streak-reminder]');
-    warnSpy.mockRestore();
   });
 });

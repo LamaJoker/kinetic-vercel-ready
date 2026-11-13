@@ -27,6 +27,15 @@ import {
 } from '../lib/training/import';
 import { compactStorage, getStorageUsage, formatBytes } from '../lib/storage-maintenance';
 import type { Exercise } from '../lib/training/types';
+import { Capacitor } from '@capacitor/core';
+import {
+  getReminderPrefs,
+  setReminderPrefs,
+  requestReminderPermission,
+  remindersPermitted,
+  syncWeeklyRecap,
+} from '../lib/reminders';
+import { canPinWidget, requestPinWidget } from '../lib/widget';
 
 interface ProfileShape {
   displayName?: string;
@@ -63,6 +72,11 @@ export function profile() {
     pushSupported: false,
     pushSubscribed: false,
     pushBusy: false,
+    nativeApp: false,
+    reminderRoutine: true,
+    reminderTime: '20:00',
+    reminderWeekly: true,
+    widgetPinSupported: false,
     locale: 'fr' as Locale,
     themeMode: 'dark' as ThemeMode,
     density: 'simple' as DisplayDensity,
@@ -168,12 +182,69 @@ export function profile() {
 
         await this._refreshStorageUsage();
         this._refreshPushStatus();
+        this.nativeApp = Capacitor.isNativePlatform();
+        const reminders = getReminderPrefs();
+        const permitted = await remindersPermitted();
+        this.reminderRoutine = permitted && reminders.routine;
+        this.reminderTime = reminders.routineTime;
+        this.reminderWeekly = permitted && reminders.weekly;
+        this.widgetPinSupported = await canPinWidget();
         this.locale = getLocale();
         this.themeMode = getThemeMode();
         this.density = getDisplayDensity();
       } catch (err) {
         console.error('[profile] init failed:', err);
       }
+    },
+
+    /** Applique un réglage de rappel ; demande l'autorisation système à l'activation. */
+    async _saveReminders(patch: {
+      routine?: boolean;
+      routineTime?: string;
+      weekly?: boolean;
+    }): Promise<void> {
+      const enabling = patch.routine === true || patch.weekly === true;
+      if (enabling && !(await requestReminderPermission())) {
+        patch = { ...patch, routine: false, weekly: false };
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: {
+              kind: 'error',
+              message: 'Notifications refusées. Autorise-les dans les réglages du téléphone.',
+            },
+          }),
+        );
+      }
+      const prefs = setReminderPrefs(patch);
+      this.reminderRoutine = prefs.routine;
+      this.reminderTime = prefs.routineTime;
+      this.reminderWeekly = prefs.weekly;
+      (Alpine.store('vitalite') as { _syncNative(): void })._syncNative();
+      void syncWeeklyRecap();
+    },
+
+    toggleRoutineReminder(): Promise<void> {
+      return this._saveReminders({ routine: !this.reminderRoutine });
+    },
+
+    toggleWeeklyRecap(): Promise<void> {
+      return this._saveReminders({ weekly: !this.reminderWeekly });
+    },
+
+    setReminderTime(event: Event): Promise<void> {
+      return this._saveReminders({ routineTime: (event.target as HTMLInputElement).value });
+    },
+
+    async addWidget(): Promise<void> {
+      if (await requestPinWidget()) return;
+      window.dispatchEvent(
+        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+          detail: {
+            kind: 'info',
+            message: "Appui long sur l'écran d'accueil, puis Widgets, puis Kinetic.",
+          },
+        }),
+      );
     },
 
     _refreshPushStatus(): void {

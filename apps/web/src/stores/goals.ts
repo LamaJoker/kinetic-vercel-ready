@@ -133,7 +133,7 @@ export function goalsStore() {
         console.error('[goals] save failed:', err);
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Echec sauvegarde des objectifs. Reessaie.' },
+            detail: { kind: 'error', message: 'Échec de la sauvegarde des objectifs. Réessaie.' },
           }),
         );
       }

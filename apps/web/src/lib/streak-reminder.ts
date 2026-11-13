@@ -1,18 +1,17 @@
 /**
- * Rappel streak — notification locale à 20h si la routine du jour n'est pas complète.
- * - Sur Android natif (Capacitor) : utilise @capacitor/local-notifications (vraies notifs Android).
- * - Sur Web (PWA) : utilise l'API Notification standard.
+ * Rappel de série (web) — notification à 20 h si la routine du jour n'est pas complète.
+ * Ne fonctionne que si l'application est ouverte : sur Android, les rappels sont
+ * programmés auprès du système (voir reminders.ts) et ce module ne fait rien.
  */
 import { Capacitor } from '@capacitor/core';
-import { LocalNotifications } from '@capacitor/local-notifications';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 
 const KEY_REMINDER_DATE = STORAGE_KEYS.REMINDER_DATE;
-const NOTIF_ID = 1001; // ID fixe pour le rappel streak
 
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 /** Millisecondes jusqu'à 20h00 aujourd'hui (négatif si déjà passé). */
@@ -49,31 +48,9 @@ async function markReminderSentToday(): Promise<void> {
   }
 }
 
-async function sendStreakNotificationNative(): Promise<void> {
-  try {
-    const { display } = await LocalNotifications.checkPermissions();
-    if (display !== 'granted') return;
-
-    await LocalNotifications.schedule({
-      notifications: [
-        {
-          id: NOTIF_ID,
-          title: '🔥 Garde ton streak !',
-          body: 'Il reste moins de 4h pour valider ta routine du jour.',
-          smallIcon: 'ic_stat_kinetic',
-          iconColor: '#39FF14',
-          schedule: { at: new Date(Date.now() + 500) }, // immédiat (déjà en callback 20h)
-        },
-      ],
-    });
-  } catch (err) {
-    console.warn('[streak-reminder] native notification failed:', err);
-  }
-}
-
 function sendStreakNotificationWeb(): void {
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-  new Notification('🔥 Garde ton streak !', {
+  new Notification('Garde ta série', {
     body: 'Il reste moins de 4h pour valider ta routine du jour.',
     icon: '/icons/icon-96.png',
     tag: 'streak-reminder',
@@ -82,7 +59,7 @@ function sendStreakNotificationWeb(): void {
 }
 
 export function scheduleStreakReminder(): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || Capacitor.isNativePlatform()) return;
 
   const delay = msUntil20h();
   if (delay < 0 || delay > 12 * 60 * 60 * 1000) return;
@@ -91,11 +68,7 @@ export function scheduleStreakReminder(): void {
     const remind = await shouldRemind();
     if (!remind) return;
 
-    if (Capacitor.isNativePlatform()) {
-      await sendStreakNotificationNative();
-    } else {
-      sendStreakNotificationWeb();
-    }
+    sendStreakNotificationWeb();
     // Only record "reminded today" after the notification was actually sent
     await markReminderSentToday();
   }, delay);

@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS } from '@kinetic/core';
+import { deepLinkRoute } from './deep-link';
 
 // Structural type — avoids SupabaseClient generic-mismatch errors when
 // supabase-js adds new class generics (e.g. ClientOptions in 2.105+).
@@ -35,6 +36,12 @@ function debugLog(msg: string): void {
   }
 }
 
+/** Affiche une page de l'application sans recharger (widget, notification). */
+function openRoute(route: string): void {
+  if (window.location.pathname !== route) window.history.replaceState({}, '', route);
+  window.dispatchEvent(new PopStateEvent('popstate'));
+}
+
 /**
  * initMobile — initialise les plugins Capacitor natifs.
  * Gère aussi le retour OAuth (deep link ou launch URL).
@@ -45,7 +52,7 @@ export async function initMobile(): Promise<void> {
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar');
     await StatusBar.setStyle({ style: Style.Dark });
-    await StatusBar.setBackgroundColor({ color: '#0b0f1a' });
+    await StatusBar.setBackgroundColor({ color: '#000000' });
   } catch {
     /* ignore */
   }
@@ -65,7 +72,9 @@ export async function initMobile(): Promise<void> {
     const launch = await CapApp.getLaunchUrl();
     if (launch?.url) {
       debugLog(`launchUrl: ${launch.url.slice(0, 200)}`);
-      if (launch.url.startsWith('com.lamajoker.kinetic://')) {
+      const route = deepLinkRoute(launch.url);
+      if (route) openRoute(route);
+      else if (launch.url.startsWith('com.lamajoker.kinetic://')) {
         const { supabase } = await import('@kinetic/adapters-web');
         if (supabase) {
           await handleOAuthCallback(supabase, launch.url);
@@ -79,6 +88,11 @@ export async function initMobile(): Promise<void> {
     // ── Cas 2 : app en ARRIÈRE-PLAN → deep link reçu ───────────────────
     CapApp.addListener('appUrlOpen', async ({ url }) => {
       debugLog(`appUrlOpen: ${url.slice(0, 200)}`);
+      const route = deepLinkRoute(url);
+      if (route) {
+        openRoute(route);
+        return;
+      }
       if (!url.startsWith('com.lamajoker.kinetic://')) return;
       const { supabase } = await import('@kinetic/adapters-web');
       if (supabase) await handleOAuthCallback(supabase, url);
@@ -94,6 +108,17 @@ export async function initMobile(): Promise<void> {
     });
   } catch (err) {
     debugLog(`initMobile error: ${String(err).slice(0, 200)}`);
+  }
+
+  // Appui sur un rappel : ouvrir la page concernée.
+  try {
+    const { LocalNotifications } = await import('@capacitor/local-notifications');
+    await LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
+      const route = (action.notification.extra as { route?: unknown } | undefined)?.route;
+      if (typeof route === 'string' && /^\/[a-z-]*$/.test(route)) openRoute(route);
+    });
+  } catch {
+    /* ignore */
   }
 }
 

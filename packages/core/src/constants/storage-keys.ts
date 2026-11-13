@@ -129,6 +129,7 @@ export const STORAGE_KEYS = {
   // ─── Rappels & Notifications ──────────────────────────────────
   NOTIFICATIONS_ENABLED: 'kinetic:notifications:enabled' as const,
   REMINDER_DATE: 'kinetic:reminder:lastDate' as const,
+  REMINDER_PREFS: 'kinetic:reminder:prefs' as const, // localStorage, réglages des rappels
   DAILY_LOG: (date: string) => `kinetic:dailyLog:${date}` as const,
   PUSH_SUBSCRIPTION: 'kinetic:push:subscription' as const, // localStorage, cache de la subscription
   LOCALE: 'kinetic:locale' as const, // localStorage, langue UI choisie

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_background">#1C1C1E</color>
+    <color name="widget_track">#3A3A3C</color>
+    <color name="widget_accent">#FFD60A</color>
+    <color name="widget_text">#FFFFFF</color>
+    <color name="widget_text_secondary">#AEAEB2</color>
+    <color name="widget_success">#30D158</color>
+    <color name="widget_danger">#FF6961</color>
+
+    <dimen name="widget_radius">22dp</dimen>
+
+    <string name="widget_name">Série et routine</string>
+    <string name="widget_description">Ta série de jours et l\'avancement de ta routine du jour.</string>
+    <string name="widget_brand">KINETIC</string>
+    <string name="widget_routine_title">Routine du jour</string>
+    <string name="widget_count">%1$d / %2$d</string>
+    <string name="widget_status_empty">Ouvre Kinetic pour commencer</string>
+    <string name="widget_status_done">Routine terminée</string>
+    <string name="widget_status_at_risk">Série à sauver aujourd\'hui</string>
+    <string name="widget_a11y_routine">Routine du jour : %1$d sur %2$d</string>
+
+    <plurals name="widget_streak_label">
+        <item quantity="one">jour de série</item>
+        <item quantity="other">jours de série</item>
+    </plurals>
+    <plurals name="widget_status_remaining">
+        <item quantity="one">Encore %d tâche</item>
+        <item quantity="other">Encore %d tâches</item>
+    </plurals>
+    <plurals name="widget_a11y_streak">
+        <item quantity="one">Série de %d jour</item>
+        <item quantity="other">Série de %d jours</item>
+    </plurals>
+</resources>
