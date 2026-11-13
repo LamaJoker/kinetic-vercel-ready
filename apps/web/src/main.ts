@@ -117,6 +117,7 @@ import { getDeps } from './deps';
 import { initRouter } from './router';
 import { scheduleStreakReminder } from './lib/streak-reminder';
 import { syncWeeklyRecap } from './lib/reminders';
+import { localIsoDate } from './lib/widget';
 import { autoCompactOnStartup } from './lib/storage-maintenance';
 import { runMigrationsIfNeeded } from './lib/migrations';
 import { initMobile } from './lib/mobile';
@@ -366,6 +367,25 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener(STORAGE_KEYS.EVENT_STREAK_UPDATED, () => {
   (Alpine.store('vitalite') as { _syncNative(): void })._syncNative();
 });
+
+// Passage à un nouveau jour, application restée ouverte : la routine repart de zéro.
+let currentDay = localIsoDate();
+async function refreshOnNewDay(): Promise<void> {
+  const today = localIsoDate();
+  if (today === currentDay) return;
+  currentDay = today;
+  try {
+    const deps = await getDeps();
+    await resetDailyTasks({ storage: deps.storage, clock: deps.clock });
+    await (Alpine.store('vitalite') as { init(): Promise<void> }).init();
+  } catch (err) {
+    console.warn('[kinetic] new-day refresh failed:', err);
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') void refreshOnNewDay();
+});
+setInterval(() => void refreshOnNewDay(), 60_000);
 
 // Migrations schéma IDB, reset quotidien des tâches, puis nettoyage bloat.
 void getDeps()

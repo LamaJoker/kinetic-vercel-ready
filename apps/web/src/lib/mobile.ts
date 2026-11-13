@@ -49,10 +49,22 @@ function openRoute(route: string): void {
 export async function initMobile(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
 
+  // Barre d'état assortie au thème (sombre ou clair), y compris quand il change.
+  const syncStatusBar = async (): Promise<void> => {
+    try {
+      const { StatusBar, Style } = await import('@capacitor/status-bar');
+      const light =
+        typeof document !== 'undefined' &&
+        document.documentElement.getAttribute('data-mode') === 'light';
+      await StatusBar.setStyle({ style: light ? Style.Light : Style.Dark });
+      await StatusBar.setBackgroundColor({ color: light ? '#f2f2f7' : '#000000' });
+    } catch {
+      /* ignore */
+    }
+  };
+  await syncStatusBar();
   try {
-    const { StatusBar, Style } = await import('@capacitor/status-bar');
-    await StatusBar.setStyle({ style: Style.Dark });
-    await StatusBar.setBackgroundColor({ color: '#000000' });
+    window.addEventListener(STORAGE_KEYS.EVENT_THEME_CHANGED, () => void syncStatusBar());
   } catch {
     /* ignore */
   }
