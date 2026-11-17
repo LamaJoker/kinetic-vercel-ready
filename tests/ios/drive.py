@@ -1,64 +1,74 @@
 """Parcourt Kinetic dans le simulateur iPhone et capture chaque écran.
 
 Usage : python3 tests/ios/drive.py <UDID> <dossier de sortie>
-Aucun outil de toucher : la navigation passe par les liens internes
-com.lamajoker.kinetic://open/<page>, et open/demo charge la démonstration
-(installation neuve uniquement). Chaque étape est journalisée, sans arrêt
-à la première erreur.
+
+Aucun toucher ni lien : le script dépose un plan (kinetic-autotest.json) dans
+le dossier Documents privé de l'application, qui charge la démonstration et
+affiche chaque écran (voir apps/web/src/lib/autotest.ts). L'application écrit
+l'étape en cours dans kinetic-autotest-step.json ; la capture suit chaque étape.
 """
 import json
+import os
 import subprocess
 import sys
 import time
 
 UDID, OUT = sys.argv[1], sys.argv[2]
 BUNDLE = "com.lamajoker.kinetic"
-PAGES = [
-    "seances", "vitalite", "nutrition", "profile", "progression", "records",
-    "bodyweight", "mensurations", "achievements", "programs", "plates", "program",
+ROUTES = [
+    "/", "/seances", "/vitalite", "/nutrition", "/profile", "/progression", "/records",
+    "/bodyweight", "/mensurations", "/achievements", "/programs", "/plates", "/program",
 ]
-shot_index = 0
 problems = []
 
 
 def run(*args, check=False):
     proc = subprocess.run(list(args), capture_output=True, text=True)
-    if check and proc.returncode != 0:
-        raise RuntimeError(f"{' '.join(args)} -> {proc.stderr.strip()[:300]}")
     if proc.returncode != 0:
-        problems.append(f"{' '.join(args[:4])} : {proc.stderr.strip()[:200]}")
+        msg = f"{' '.join(args[:4])} : {proc.stderr.strip()[:200]}"
+        if check:
+            raise RuntimeError(msg)
+        problems.append(msg)
     return proc.stdout
 
 
 def shot(name):
-    global shot_index
-    shot_index += 1
-    path = f"{OUT}/{shot_index:02d}-{name}.png"
+    path = f"{OUT}/{name}.png"
     run("xcrun", "simctl", "io", UDID, "screenshot", path)
     print("capture", path, flush=True)
 
 
-def open_page(page, wait=2.5):
-    run("xcrun", "simctl", "openurl", UDID, f"{BUNDLE}://open/{page}")
-    time.sleep(wait)
-
+docs = os.path.join(run("xcrun", "simctl", "get_app_container", UDID, BUNDLE, "data", check=True).strip(), "Documents")
+os.makedirs(docs, exist_ok=True)
+step_file = os.path.join(docs, "kinetic-autotest-step.json")
+with open(os.path.join(docs, "kinetic-autotest.json"), "w") as fh:
+    json.dump({"demo": True, "routes": ROUTES, "stepMs": 3000}, fh)
 
 t0 = time.time()
-out = run("xcrun", "simctl", "launch", UDID, BUNDLE, check=True)
-print(f"lancement : {out.strip()} en {time.time() - t0:.1f} s", flush=True)
-time.sleep(4)
-shot("demarrage-4s")
-time.sleep(6)
-shot("onboarding")
+run("xcrun", "simctl", "launch", UDID, BUNDLE, check=True)
+time.sleep(3)
+shot("00-demarrage-3s")
 
-open_page("demo", wait=6)
-shot("accueil")
-for page in PAGES:
-    open_page(page)
-    shot(page)
-open_page("vitalite", wait=1)
-open_page("", wait=2)
-shot("retour-accueil")
+seen = 0
+deadline = time.time() + 240
+while time.time() < deadline:
+    try:
+        with open(step_file) as fh:
+            step = json.load(fh)
+    except (OSError, ValueError):
+        step = None
+    if step and step["step"] != seen:
+        seen = step["step"]
+        if seen == 1:
+            print(f"premier écran de démo affiché après {time.time() - t0:.1f} s", flush=True)
+        if step["route"] == "fin":
+            break
+        time.sleep(0.8)
+        name = step["route"].strip("/") or "accueil"
+        shot(f"{seen:02d}-{name}")
+    time.sleep(0.3)
+else:
+    problems.append(f"parcours incomplet : dernière étape {seen}/{len(ROUTES)}")
 
 alive = run("xcrun", "simctl", "spawn", UDID, "launchctl", "list")
 if BUNDLE not in alive:

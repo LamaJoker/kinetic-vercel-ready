@@ -36,27 +36,8 @@ function debugLog(msg: string): void {
   }
 }
 
-/**
- * `com.lamajoker.kinetic://open/demo` : charge la démonstration, seulement sur
- * une installation neuve (aucun profil) — sert au parcours automatique dans le
- * simulateur iPhone et ne peut jamais écraser des données existantes.
- */
-async function openDemo(): Promise<void> {
-  const { getDeps } = await import('../deps');
-  const deps = await getDeps();
-  if (await deps.storage.get(STORAGE_KEYS.USER_PROFILE)) return;
-  const { loadDemoData } = await import('./demo');
-  await loadDemoData(deps.storage);
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_ONBOARDING_COMPLETE));
-  window.location.assign('/');
-}
-
 /** Affiche une page de l'application sans recharger (widget, notification). */
 function openRoute(route: string): void {
-  if (route === '/demo') {
-    openDemo().catch((err) => debugLog(`demo: ${String(err).slice(0, 200)}`));
-    return;
-  }
   if (window.location.pathname !== route) window.history.replaceState({}, '', route);
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
@@ -87,6 +68,10 @@ export async function initMobile(): Promise<void> {
   } catch {
     /* ignore */
   }
+
+  void import('./autotest')
+    .then(({ runAutotest }) => runAutotest(openRoute))
+    .catch((err) => debugLog(`autotest: ${String(err).slice(0, 200)}`));
 
   try {
     const { SplashScreen } = await import('@capacitor/splash-screen');
