@@ -115,6 +115,7 @@ export function profile() {
     profileShareUrl: '',
     sharingProfile: false,
     nativeApp: false,
+    androidApp: false,
     reminderRoutine: true,
     reminderTime: '20:00',
     reminderWeekly: true,
@@ -225,6 +226,7 @@ export function profile() {
 
         await this._refreshStorageUsage();
         this.nativeApp = Capacitor.isNativePlatform();
+        this.androidApp = this.nativeApp && Capacitor.getPlatform() === 'android';
         const reminders = getReminderPrefs();
         const permitted = await remindersPermitted();
         this.reminderRoutine = permitted && reminders.routine;

@@ -7,6 +7,21 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
   },
+  ios: {
+    // Health Connect et le scanner Google n'existent que sur Android.
+    includePlugins: [
+      '@capacitor/app',
+      '@capacitor/browser',
+      '@capacitor/camera',
+      '@capacitor/filesystem',
+      '@capacitor/haptics',
+      '@capacitor/local-notifications',
+      '@capacitor/share',
+      '@capacitor/splash-screen',
+      '@capacitor/status-bar',
+    ],
+    contentInset: 'never',
+  },
   plugins: {
     LocalNotifications: {
       smallIcon: 'ic_stat_kinetic',

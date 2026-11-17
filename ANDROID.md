@@ -74,7 +74,7 @@ adb install apps/web/android/app/build/outputs/apk/debug/app-debug.apk
    ```
 
 The version shown in the store comes from `apps/web/package.json` (`version`):
-`9.3.0` becomes `versionName 9.3.0` / `versionCode 90300`. Bump it before every
+`9.4.0` becomes `versionName 9.4.0` / `versionCode 90400`. Bump it before every
 upload — Play refuses a `versionCode` it has already seen.
 
 ## Open in Android Studio
@@ -153,10 +153,10 @@ The launcher icon is vector (`res/drawable/ic_launcher_foreground.xml`, plus
 splash screens are rendered from the same logo:
 
 ```bash
-pnpm android:assets
+pnpm assets
 ```
 
-Edit the SVG at the top of `scripts/generate-android-assets.mjs` to change the logo.
+Edit the SVG at the top of `scripts/generate-native-assets.mjs` to change the logo.
 
 ## Publishing
 

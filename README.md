@@ -14,6 +14,11 @@ Application mobile PWA progressive pour la productivité et le fitness, construi
 
 ---
 
+## Installer l'application
+
+- **Android** : APK dans les [versions](https://github.com/LamaJoker/kinetic-vercel-ready/releases) ; voir [`ANDROID.md`](ANDROID.md).
+- **iPhone** : `.ipa` dans les mêmes versions, à installer gratuitement avec AltStore ou SideStore ; voir [`docs/iphone.md`](docs/iphone.md).
+
 ## 👀 Aperçu
 
 | Séance du jour                                                                                                                                                                             | Chargement de barre                                                                                                                                                          | Progression                                                                                                                                                                | Poids corporel                                                                                                                                                  |

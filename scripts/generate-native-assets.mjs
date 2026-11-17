@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Génère les icônes launcher (anciens Android) et les écrans de démarrage à partir
- * du logo Kinetic (disque de fonte jaune, identique à public/favicon.svg).
+ * Génère les icônes et écrans de démarrage Android et iOS à partir du logo Kinetic
+ * (disque de fonte jaune, identique à public/favicon.svg).
  * L'icône adaptative (Android 8+) est vectorielle : res/drawable/ic_launcher_foreground.xml.
  *
- * Usage : node scripts/generate-android-assets.mjs
+ * Usage : node scripts/generate-native-assets.mjs
  * (PLAYWRIGHT_CHROMIUM=/chemin/vers/chromium pour imposer un navigateur)
  */
 import { chromium } from '@playwright/test';
@@ -12,10 +12,9 @@ import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const RES = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  '../apps/web/android/app/src/main/res',
-);
+const APP = resolve(dirname(fileURLToPath(import.meta.url)), '../apps/web');
+const RES = resolve(APP, 'android/app/src/main/res');
+const IOS_ASSETS = resolve(APP, 'ios/App/App/Assets.xcassets');
 const INK = '#16171A';
 const GOLD = '#F2C230';
 
@@ -29,8 +28,7 @@ const icon = (round) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="100%" height="100%">
     <rect width="32" height="32" rx="${round ? 16 : 7}" fill="${INK}"/>${plate}</svg>`;
 
-const splash = (w, h) => {
-  const d = Math.round(Math.min(w, h) * 0.3);
+const splash = (w, h, d = Math.round(Math.min(w, h) * 0.3)) => {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="100%" height="100%">
     <rect width="${w}" height="${h}" fill="${INK}"/>
     <svg x="${(w - d) / 2}" y="${(h - d) / 2}" width="${d}" height="${d}" viewBox="0 0 32 32">${plate}</svg></svg>`;
@@ -56,8 +54,8 @@ const browser = await chromium.launch(
 );
 const page = await browser.newPage();
 
-async function render(svg, w, h, file, transparent = false) {
-  const path = resolve(RES, file);
+async function render(svg, w, h, file, transparent = false, root = RES) {
+  const path = resolve(root, file);
   mkdirSync(dirname(path), { recursive: true });
   await page.setViewportSize({ width: w, height: h });
   await page.setContent(
@@ -73,5 +71,20 @@ for (const [density, size] of Object.entries(LAUNCHER)) {
 }
 for (const [folder, [w, h]] of Object.entries(SPLASHES)) {
   await render(splash(w, h), w, h, `${folder}/splash.png`);
+}
+// iOS : icône carrée opaque (le système arrondit les coins), écran de démarrage
+// 2732×2732 recadré au centre par LaunchScreen.storyboard (3 copies attendues).
+const iosIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="100%" height="100%">
+    <rect width="32" height="32" fill="${INK}"/>${plate}</svg>`;
+await render(iosIcon, 1024, 1024, 'AppIcon.appiconset/AppIcon-512@2x.png', false, IOS_ASSETS);
+for (const suffix of ['', '-1', '-2']) {
+  await render(
+    splash(2732, 2732, 420),
+    2732,
+    2732,
+    `Splash.imageset/splash-2732x2732${suffix}.png`,
+    false,
+    IOS_ASSETS,
+  );
 }
 await browser.close();

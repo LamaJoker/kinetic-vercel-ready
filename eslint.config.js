@@ -107,6 +107,7 @@ export default [
       '**/dist/**',
       '**/node_modules/**',
       'apps/web/android/**',
+      'apps/web/ios/**',
       'apps/web/public/sw.js',
       'packages/adapter-web/src/supabase/database.types.ts',
       // storage-keys.ts is the definitions file — it must declare the literal strings

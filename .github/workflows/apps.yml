@@ -1,0 +1,190 @@
+name: Applications
+
+on:
+  push:
+    branches: [main, 'claude/**']
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '9.15.9'
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: APK Android
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read app version
+        id: version
+        run: echo "version=$(node -p "require('./apps/web/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+
+      - name: Install Android SDK platform 36
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+            "platforms;android-36" \
+            "build-tools;35.0.0" \
+            "platform-tools"
+
+      - uses: pnpm/action-setup@v6
+        with: { version: '${{ env.PNPM_VERSION }}' }
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '${{ env.NODE_VERSION }}'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: |
+          pnpm --filter @kinetic/core build
+          pnpm --filter @kinetic/adapters-web build
+
+      - name: Build web app
+        run: pnpm --filter @kinetic/web build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_APP_VERSION: ${{ steps.version.outputs.version }}
+
+      - name: Sync Capacitor
+        working-directory: apps/web
+        run: pnpm exec cap sync android --inline
+
+      - name: Build debug APK
+        working-directory: apps/web/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: mv apps/web/android/app/build/outputs/apk/debug/app-debug.apk kinetic-v${{ steps.version.outputs.version }}.apk
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android
+          path: kinetic-v${{ steps.version.outputs.version }}.apk
+          retention-days: 30
+
+  ios:
+    name: Application iPhone (non signée)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read app version
+        id: version
+        run: |
+          v=$(node -p "require('./apps/web/package.json').version")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "build=$(node -p "'$v'.split('.').map(Number).reduce((a, n) => a * 100 + n, 0)")" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v6
+        with: { version: '${{ env.PNPM_VERSION }}' }
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '${{ env.NODE_VERSION }}'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: |
+          pnpm --filter @kinetic/core build
+          pnpm --filter @kinetic/adapters-web build
+
+      - name: Build web app
+        run: pnpm --filter @kinetic/web build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_APP_VERSION: ${{ steps.version.outputs.version }}
+
+      - name: Sync Capacitor
+        working-directory: apps/web
+        run: pnpm exec cap sync ios
+
+      # Construite sans signature : AltStore ou SideStore la signe à l'installation
+      # avec le compte Apple (gratuit) de l'utilisateur.
+      - name: Build app
+        working-directory: apps/web/ios/App
+        run: |
+          xcodebuild -version
+          xcodebuild build \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            MARKETING_VERSION=${{ steps.version.outputs.version }} \
+            CURRENT_PROJECT_VERSION=${{ steps.version.outputs.build }} \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            > build.log 2>&1 || { grep -E "error:|BUILD FAILED" build.log | head -60; tail -40 build.log; exit 1; }
+          tail -5 build.log
+
+      - name: Package IPA
+        run: |
+          mkdir Payload
+          cp -R apps/web/ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qry kinetic-v${{ steps.version.outputs.version }}.ipa Payload
+          ls -la kinetic-v${{ steps.version.outputs.version }}.ipa
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios
+          path: kinetic-v${{ steps.version.outputs.version }}.ipa
+          retention-days: 30
+
+  release:
+    name: Publier la version
+    needs: [android, ios]
+    # L'APK est publié même si la construction iPhone échoue.
+    if: always() && github.ref == 'refs/heads/main' && needs.android.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: out
+          merge-multiple: true
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v${{ needs.android.outputs.version }}
+          name: Kinetic ${{ needs.android.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          overwrite_files: true
+          files: out/*
+          body: |
+            ## Kinetic ${{ needs.android.outputs.version }}
+
+            Carnet de musculation hors-ligne : séance du jour, suivi des charges et des records,
+            nutrition, poids et mensurations, récupération.
+
+            **Android :** télécharge `kinetic-v${{ needs.android.outputs.version }}.apk` sur ton
+            téléphone, ouvre-le et autorise l'installation depuis cette source.
+            Avant de mettre à jour, fais une sauvegarde JSON depuis le Profil.
+
+            **iPhone :** installe `kinetic-v${{ needs.android.outputs.version }}.ipa` avec SideStore ou
+            AltStore et ton compte Apple (gratuit). Mode d'emploi : `docs/iphone.md` dans le dépôt.
+
+            **Essayer sans compte :** au premier lancement, choisis « Voir la démo ».
