@@ -4,4 +4,5 @@
     <string name="title_activity_main">Kinetic</string>
     <string name="package_name">com.lamajoker.kinetic</string>
     <string name="custom_url_scheme">com.lamajoker.kinetic</string>
+    <string name="health_connect_privacy_policy_url">https://kinetic-prod.vercel.app/legal/confidentialite</string>
 </resources>

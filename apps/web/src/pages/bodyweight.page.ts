@@ -1,4 +1,6 @@
-﻿import { loc } from '../lib/num';
+﻿import { writeBodyweight } from '../lib/health';
+import { localIsoDate } from '../lib/widget';
+import { loc } from '../lib/num';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 
@@ -110,7 +112,7 @@ export function bodyweight() {
 
     async addEntry(): Promise<void> {
       if (!this.newWeight || this.newWeight < 30) return;
-      const today = new Date().toISOString().slice(0, 10);
+      const today = localIsoDate();
       const idx = this.entries.findIndex((e) => e.date === today);
       const entry: BodyweightEntry = {
         date: today,
@@ -129,6 +131,7 @@ export function bodyweight() {
           await deps.storage.set(STORAGE_KEY_GOAL, this.goalWeight);
         }
         this.entries = next;
+        void writeBodyweight(entry.weight, entry.bodyFatPct);
         this.newWeight = null;
         this.newBf = null;
         this.newNote = '';

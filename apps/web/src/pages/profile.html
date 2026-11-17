@@ -356,6 +356,68 @@
           class="relative flex-shrink-0 w-[51px] h-[31px] rounded-full bg-kinetic-raised transition-colors duration-200 peer-checked:bg-kinetic-teal peer-focus-visible:ring-2 peer-focus-visible:ring-kinetic-neon after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:w-[27px] after:h-[27px] after:rounded-full after:bg-white after:shadow-md after:transition-transform after:duration-200 peer-checked:after:translate-x-5"
         ></span>
       </label>
+      <label class="k-row cursor-pointer select-none">
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Rappel de séance</span>
+          <span class="block text-xs text-gray-500"
+            >Les jours choisis, sauf si tu t'es déjà entraîné</span
+          >
+        </span>
+        <input
+          type="checkbox"
+          class="peer sr-only"
+          :checked="reminderSession"
+          @change="toggleSessionReminder()"
+        />
+        <span
+          aria-hidden="true"
+          class="relative flex-shrink-0 w-[51px] h-[31px] rounded-full bg-kinetic-raised transition-colors duration-200 peer-checked:bg-kinetic-teal peer-focus-visible:ring-2 peer-focus-visible:ring-kinetic-neon after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:w-[27px] after:h-[27px] after:rounded-full after:bg-white after:shadow-md after:transition-transform after:duration-200 peer-checked:after:translate-x-5"
+        ></span>
+      </label>
+      <div class="k-row" x-show="reminderSession">
+        <span class="flex-1 min-w-0 text-base text-white">Jours</span>
+        <div class="flex gap-1" role="group" aria-label="Jours d'entraînement">
+          <template x-for="chip in weekChips" :key="chip.day">
+            <button
+              type="button"
+              @click="toggleSessionDay(chip.day)"
+              :aria-pressed="isSessionDay(chip.day) ? 'true' : 'false'"
+              :aria-label="chip.name"
+              class="w-8 h-8 rounded-full text-sm font-semibold"
+              :class="isSessionDay(chip.day) ? 'k-on' : 'k-off'"
+              x-text="chip.label"
+            ></button>
+          </template>
+        </div>
+      </div>
+      <label class="k-row" x-show="reminderSession">
+        <span class="flex-1 min-w-0 text-base text-white">Heure de la séance</span>
+        <input
+          type="time"
+          :value="reminderSessionTime"
+          @change="setSessionTime($event)"
+          class="flex-shrink-0 h-9 px-3 rounded-lg bg-kinetic-elevated text-white text-base tabular-nums"
+        />
+      </label>
+      <label class="k-row cursor-pointer select-none" x-show="!cloudSynced">
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Rappel de sauvegarde</span>
+          <span
+            class="block text-xs text-gray-500"
+            x-text="lastBackupLabel + ' · tous les 30 jours'"
+          ></span>
+        </span>
+        <input
+          type="checkbox"
+          class="peer sr-only"
+          :checked="reminderBackup"
+          @change="toggleBackupReminder()"
+        />
+        <span
+          aria-hidden="true"
+          class="relative flex-shrink-0 w-[51px] h-[31px] rounded-full bg-kinetic-raised transition-colors duration-200 peer-checked:bg-kinetic-teal peer-focus-visible:ring-2 peer-focus-visible:ring-kinetic-neon after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:w-[27px] after:h-[27px] after:rounded-full after:bg-white after:shadow-md after:transition-transform after:duration-200 peer-checked:after:translate-x-5"
+        ></span>
+      </label>
       <button type="button" class="k-row" @click="addWidget()">
         <span class="flex-1 min-w-0">
           <span class="block text-base text-white">Ajouter le widget</span>
@@ -373,6 +435,46 @@
       </button>
     </div>
     <div class="mb-8" aria-hidden="true"></div>
+
+    <h2 class="k-section mb-2.5" x-show="healthState !== 'unsupported'">Santé</h2>
+    <div class="k-list" x-show="healthState !== 'unsupported'">
+      <label class="k-row cursor-pointer select-none" x-show="healthState === 'available'">
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Health Connect</span>
+          <span class="block text-xs text-gray-500"
+            >Enregistre tes pesées, lit tes pas et ton sommeil pour cocher la routine</span
+          >
+        </span>
+        <input type="checkbox" class="peer sr-only" :checked="healthOn" @change="toggleHealth()" />
+        <span
+          aria-hidden="true"
+          class="relative flex-shrink-0 w-[51px] h-[31px] rounded-full bg-kinetic-raised transition-colors duration-200 peer-checked:bg-kinetic-teal peer-focus-visible:ring-2 peer-focus-visible:ring-kinetic-neon after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:w-[27px] after:h-[27px] after:rounded-full after:bg-white after:shadow-md after:transition-transform after:duration-200 peer-checked:after:translate-x-5"
+        ></span>
+      </label>
+      <button
+        type="button"
+        class="k-row"
+        x-show="healthState === 'not-installed'"
+        @click="toggleHealth()"
+      >
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Installer Health Connect</span>
+          <span class="block text-xs text-gray-500"
+            >Nécessaire pour relier tes pas, ton sommeil et ton poids</span
+          >
+        </span>
+        <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+          <path
+            d="M1 1l6 6-6 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+    <div class="mb-8" aria-hidden="true" x-show="healthState !== 'unsupported'"></div>
   </div>
 
   <!-- Préférences -->
@@ -502,7 +604,7 @@
             >PRO</span
           >
         </span>
-        <span class="block text-xs text-gray-500">Sauvegarde complète ou tableur</span>
+        <span class="block text-xs text-gray-500" x-text="lastBackupLabel"></span>
       </span>
       <button
         @click="exportJson()"

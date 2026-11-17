@@ -13,21 +13,25 @@ import { STORAGE_KEYS } from '@kinetic/core';
 import type { WorkoutSession, Exercise } from './types';
 
 export interface ExportBundle {
-  version: 1;
+  version: 1 | 2;
   exportedAt: string; // ISO
   sessions: readonly WorkoutSession[];
   exercises: readonly Exercise[];
+  /** Version 2 : toutes les autres données de l'application (cf. lib/backup.ts). */
+  data?: Record<string, unknown>;
 }
 
 export function buildJsonExport(
   sessions: readonly WorkoutSession[],
   exercises: readonly Exercise[],
+  data?: Record<string, unknown>,
 ): string {
   const bundle: ExportBundle = {
-    version: 1,
+    version: data ? 2 : 1,
     exportedAt: new Date().toISOString(),
     sessions,
     exercises,
+    ...(data ? { data } : {}),
   };
   return JSON.stringify(bundle, null, 2);
 }
@@ -163,10 +167,12 @@ function downloadWeb(content: string, filename: string, mime: string): void {
 export async function exportAsJson(
   sessions: readonly WorkoutSession[],
   exercises: readonly Exercise[],
+  data?: Record<string, unknown>,
 ): Promise<void> {
-  const content = buildJsonExport(sessions, exercises);
+  const content = buildJsonExport(sessions, exercises, data);
   const stamp = new Date().toISOString().slice(0, 10);
-  await downloadOrShare(content, `kinetic-export-${stamp}.json`, 'application/json');
+  const name = data ? `kinetic-sauvegarde-${stamp}.json` : `kinetic-export-${stamp}.json`;
+  await downloadOrShare(content, name, 'application/json');
 }
 
 export async function exportAsCsv(

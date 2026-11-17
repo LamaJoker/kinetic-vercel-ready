@@ -34,8 +34,55 @@ import {
   requestReminderPermission,
   remindersPermitted,
   syncWeeklyRecap,
+  syncSessionReminder,
+  syncBackupReminder,
+  hasChosenSessionDays,
+  recordBackup,
+  lastBackupAt,
+  type ReminderPrefs,
 } from '../lib/reminders';
+import {
+  healthAvailability,
+  healthEnabled,
+  enableHealth,
+  disableHealth,
+  openHealthSettings,
+} from '../lib/health';
+
+const WEEK_CHIPS = [
+  { day: 1, label: 'L', name: 'lundi' },
+  { day: 2, label: 'M', name: 'mardi' },
+  { day: 3, label: 'M', name: 'mercredi' },
+  { day: 4, label: 'J', name: 'jeudi' },
+  { day: 5, label: 'V', name: 'vendredi' },
+  { day: 6, label: 'S', name: 'samedi' },
+  { day: 0, label: 'D', name: 'dimanche' },
+];
+
+function backupLabel(now: Date = new Date()): string {
+  const at = lastBackupAt();
+  if (!at) return 'Jamais sauvegardé';
+  const days = Math.floor((now.getTime() - at.getTime()) / 86_400_000);
+  if (days <= 0) return "Dernière sauvegarde aujourd'hui";
+  if (days === 1) return 'Dernière sauvegarde hier';
+  return `Dernière sauvegarde il y a ${days} jours`;
+}
+
+function isCloudSynced(): boolean {
+  const auth = Alpine.store('auth') as { isAuthenticated: boolean; isGuest: boolean };
+  return auth.isAuthenticated && !auth.isGuest;
+}
+
+async function programTrainingDays(): Promise<number[] | null> {
+  const deps = await getDeps();
+  const program = await deps.storage.get<{ schedule?: { dayOfWeek: number; restDay: boolean }[] }>(
+    STORAGE_KEYS.PROGRAM_ACTIVE,
+  );
+  const days = program?.schedule?.filter((d) => !d.restDay).map((d) => d.dayOfWeek) ?? [];
+  return days.length > 0 ? days : null;
+}
 import { canPinWidget, requestPinWidget } from '../lib/widget';
+import { snapshotStorage, restoreStorage } from '../lib/backup';
 
 interface ProfileShape {
   displayName?: string;
@@ -77,6 +124,15 @@ export function profile() {
     reminderTime: '20:00',
     reminderWeekly: true,
     widgetPinSupported: false,
+    reminderSession: true,
+    reminderSessionTime: '18:00',
+    reminderSessionDays: [] as number[],
+    reminderBackup: true,
+    weekChips: WEEK_CHIPS,
+    lastBackupLabel: '',
+    cloudSynced: false,
+    healthState: 'unsupported' as 'unsupported' | 'not-installed' | 'available',
+    healthOn: false,
     locale: 'fr' as Locale,
     themeMode: 'dark' as ThemeMode,
     density: 'simple' as DisplayDensity,
@@ -188,7 +244,20 @@ export function profile() {
         this.reminderRoutine = permitted && reminders.routine;
         this.reminderTime = reminders.routineTime;
         this.reminderWeekly = permitted && reminders.weekly;
+        if (!hasChosenSessionDays()) {
+          const fromProgram = await programTrainingDays();
+          if (fromProgram)
+            reminders.sessionDays = setReminderPrefs({ sessionDays: fromProgram }).sessionDays;
+        }
+        this.reminderSession = permitted && reminders.session;
+        this.reminderSessionTime = reminders.sessionTime;
+        this.reminderSessionDays = reminders.sessionDays;
+        this.reminderBackup = permitted && reminders.backup;
+        this.lastBackupLabel = backupLabel();
+        this.cloudSynced = isCloudSynced();
         this.widgetPinSupported = await canPinWidget();
+        this.healthState = await healthAvailability();
+        this.healthOn = this.healthState === 'available' && healthEnabled();
         this.locale = getLocale();
         this.themeMode = getThemeMode();
         this.density = getDisplayDensity();
@@ -198,14 +267,14 @@ export function profile() {
     },
 
     /** Applique un réglage de rappel ; demande l'autorisation système à l'activation. */
-    async _saveReminders(patch: {
-      routine?: boolean;
-      routineTime?: string;
-      weekly?: boolean;
-    }): Promise<void> {
-      const enabling = patch.routine === true || patch.weekly === true;
+    async _saveReminders(patch: Partial<ReminderPrefs>): Promise<void> {
+      const enabling =
+        patch.routine === true ||
+        patch.weekly === true ||
+        patch.session === true ||
+        patch.backup === true;
       if (enabling && !(await requestReminderPermission())) {
-        patch = { ...patch, routine: false, weekly: false };
+        patch = { ...patch, routine: false, weekly: false, session: false, backup: false };
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
             detail: {
@@ -219,8 +288,14 @@ export function profile() {
       this.reminderRoutine = prefs.routine;
       this.reminderTime = prefs.routineTime;
       this.reminderWeekly = prefs.weekly;
+      this.reminderSession = prefs.session;
+      this.reminderSessionTime = prefs.sessionTime;
+      this.reminderSessionDays = prefs.sessionDays;
+      this.reminderBackup = prefs.backup;
       (Alpine.store('vitalite') as { _syncNative(): void })._syncNative();
       void syncWeeklyRecap();
+      void syncSessionReminder();
+      void syncBackupReminder(isCloudSynced());
     },
 
     toggleRoutineReminder(): Promise<void> {
@@ -233,6 +308,54 @@ export function profile() {
 
     setReminderTime(event: Event): Promise<void> {
       return this._saveReminders({ routineTime: (event.target as HTMLInputElement).value });
+    },
+
+    toggleSessionReminder(): Promise<void> {
+      return this._saveReminders({ session: !this.reminderSession });
+    },
+
+    setSessionTime(event: Event): Promise<void> {
+      return this._saveReminders({ sessionTime: (event.target as HTMLInputElement).value });
+    },
+
+    isSessionDay(day: number): boolean {
+      return this.reminderSessionDays.includes(day);
+    },
+
+    toggleSessionDay(day: number): Promise<void> {
+      const days = this.isSessionDay(day)
+        ? this.reminderSessionDays.filter((d) => d !== day)
+        : [...this.reminderSessionDays, day];
+      return this._saveReminders({ sessionDays: days });
+    },
+
+    toggleBackupReminder(): Promise<void> {
+      return this._saveReminders({ backup: !this.reminderBackup });
+    },
+
+    async toggleHealth(): Promise<void> {
+      if (this.healthState === 'not-installed') {
+        await openHealthSettings();
+        return;
+      }
+      if (this.healthOn) {
+        disableHealth();
+        this.healthOn = false;
+        return;
+      }
+      this.healthOn = await enableHealth();
+      if (this.healthOn) {
+        void (Alpine.store('vitalite') as { syncHealth(): Promise<void> }).syncHealth();
+      } else {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: {
+              kind: 'error',
+              message: 'Accès refusé. Tu peux l’autoriser dans Health Connect.',
+            },
+          }),
+        );
+      }
     },
 
     async addWidget(): Promise<void> {
@@ -478,14 +601,9 @@ export function profile() {
         ]);
         const s = Array.isArray(sessions) ? sessions : [];
         const e = Array.isArray(exercises) ? exercises : [];
-        if (s.length === 0) {
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'info', message: 'Aucune séance à exporter pour le moment.' },
-            }),
-          );
-        }
-        await exportAsJson(s, e);
+        await exportAsJson(s, e, await snapshotStorage(deps.storage));
+        recordBackup();
+        this.lastBackupLabel = backupLabel();
       } catch (err) {
         console.error('[profile] exportJson failed:', err);
         window.dispatchEvent(
@@ -558,6 +676,19 @@ export function profile() {
           csvSkipped = r.skipped;
         }
 
+        const deps = await getDeps();
+        if (bundle.data && Object.keys(bundle.data).length > 0) {
+          await restoreStorage(deps.storage, bundle.data);
+          if (bundle.sessions.length > 0) await mergeIntoStorage(deps.storage, bundle, format);
+          window.dispatchEvent(
+            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+              detail: { kind: 'success', message: 'Sauvegarde restaurée. Redémarrage…' },
+            }),
+          );
+          setTimeout(() => window.location.reload(), 1200);
+          return;
+        }
+
         if (bundle.sessions.length === 0) {
           window.dispatchEvent(
             new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
@@ -570,7 +701,6 @@ export function profile() {
           return;
         }
 
-        const deps = await getDeps();
         const report = await mergeIntoStorage(deps.storage, bundle, format);
         this.lastImportReport = { ...report, skippedRows: csvSkipped };
 

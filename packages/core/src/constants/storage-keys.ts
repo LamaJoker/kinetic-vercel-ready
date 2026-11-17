@@ -130,6 +130,10 @@ export const STORAGE_KEYS = {
   NOTIFICATIONS_ENABLED: 'kinetic:notifications:enabled' as const,
   REMINDER_DATE: 'kinetic:reminder:lastDate' as const,
   REMINDER_PREFS: 'kinetic:reminder:prefs' as const, // localStorage, réglages des rappels
+  BACKUP_LAST_AT: 'kinetic:backup:lastAt' as const, // localStorage, date du dernier export
+  FIRST_SEEN_AT: 'kinetic:firstSeenAt' as const, // localStorage, premier lancement
+  BACKUP_REMINDED_AT: 'kinetic:backup:remindedAt' as const, // localStorage, dernier rappel de sauvegarde programmé
+  HEALTH_ENABLED: 'kinetic:health:enabled' as const, // localStorage, Health Connect activé
   DAILY_LOG: (date: string) => `kinetic:dailyLog:${date}` as const,
   PUSH_SUBSCRIPTION: 'kinetic:push:subscription' as const, // localStorage, cache de la subscription
   LOCALE: 'kinetic:locale' as const, // localStorage, langue UI choisie

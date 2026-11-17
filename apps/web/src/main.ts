@@ -116,7 +116,7 @@ import { getDeps } from './deps';
 
 import { initRouter } from './router';
 import { scheduleStreakReminder } from './lib/streak-reminder';
-import { syncWeeklyRecap } from './lib/reminders';
+import { syncWeeklyRecap, syncSessionReminder, syncBackupReminder } from './lib/reminders';
 import { localIsoDate } from './lib/widget';
 import { autoCompactOnStartup } from './lib/storage-maintenance';
 import { runMigrationsIfNeeded } from './lib/migrations';
@@ -357,13 +357,24 @@ void initMobile();
 
 scheduleStreakReminder();
 
-// Application Android : bilan hebdomadaire reprogrammé au lancement et à chaque mise
-// en arrière-plan (les séances du jour sont alors comptées) ; widget et rappel de
-// routine resynchronisés quand la série change hors routine (gel de série).
-void syncWeeklyRecap();
+// Application Android : rappels reprogrammés au lancement et à chaque mise en
+// arrière-plan (les séances du jour sont alors comptées) ; pas et sommeil relus
+// dans Health Connect au retour dans l'application.
+function cloudSynced(): boolean {
+  const auth = Alpine.store('auth') as { isAuthenticated: boolean; isGuest: boolean };
+  return auth.isAuthenticated && !auth.isGuest;
+}
+function syncReminders(): void {
+  void syncWeeklyRecap();
+  void syncSessionReminder();
+  void syncBackupReminder(cloudSynced());
+}
+window.addEventListener(STORAGE_KEYS.EVENT_AUTH_READY, syncReminders, { once: true });
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') void syncWeeklyRecap();
+  if (document.visibilityState === 'hidden') syncReminders();
+  else void (Alpine.store('vitalite') as { syncHealth(): Promise<void> }).syncHealth();
 });
+window.addEventListener(STORAGE_KEYS.EVENT_SESSION_SAVED, () => void syncSessionReminder());
 window.addEventListener(STORAGE_KEYS.EVENT_STREAK_UPDATED, () => {
   (Alpine.store('vitalite') as { _syncNative(): void })._syncNative();
 });

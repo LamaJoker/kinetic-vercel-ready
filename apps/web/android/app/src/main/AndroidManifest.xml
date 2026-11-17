@@ -34,6 +34,11 @@
 
         </activity>
 
+        <!-- Scanner de code-barres Google (téléchargé par les services Google Play) -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode_ui" />
+
         <receiver
             android:name=".KineticWidgetProvider"
             android:exported="true"
@@ -65,4 +70,5 @@
     <!-- Required for scheduling exact-time local notifications -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.CAMERA" />
 </manifest>

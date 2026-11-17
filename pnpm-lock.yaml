@@ -98,6 +98,9 @@ importers:
       '@alpinejs/csp':
         specifier: ^3.15.12
         version: 3.15.12
+      '@capacitor-mlkit/barcode-scanning':
+        specifier: 8.2.2
+        version: 8.2.2(@capacitor/core@8.3.4)
       '@capacitor/app':
         specifier: ^8.1.0
         version: 8.1.0(@capacitor/core@8.3.4)
@@ -128,6 +131,9 @@ importers:
       '@capacitor/status-bar':
         specifier: ^8.0.2
         version: 8.0.2(@capacitor/core@8.3.4)
+      '@capgo/capacitor-health':
+        specifier: 8.13.0
+        version: 8.13.0(@capacitor/core@8.3.4)
       '@fontsource-variable/inter':
         specifier: ^5.3.0
         version: 5.3.0
@@ -238,6 +244,11 @@ packages:
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
 
+  '@capacitor-mlkit/barcode-scanning@8.2.2':
+    resolution: {integrity: sha512-ifQbo09HDAveFpu89H9jhKbYw1sISdHCpXOi3qJDp/geVuxtJC2GDffBLAL3R6mXNDSjm8jO00AIP2Z1GlV8hQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
   '@capacitor/android@8.3.4':
     resolution: {integrity: sha512-7gJjrG3X32Am1QMLqgMztWTYMLMVNE+VZwhekNxhvYizH4mOV05vH+rC9B+f17bCkYZfyu/qXQX6hoY7kLeVZw==}
     peerDependencies:
@@ -298,6 +309,11 @@ packages:
 
   '@capacitor/synapse@1.0.4':
     resolution: {integrity: sha512-/C1FUo8/OkKuAT4nCIu/34ny9siNHr9qtFezu4kxm6GY1wNFxrCFWjfYx5C1tUhVGz3fxBABegupkpjXvjCHrw==}
+
+  '@capgo/capacitor-health@8.13.0':
+    resolution: {integrity: sha512-O0OnPmqliPNYDvsvZkeV1nghaM+8C+aK18NMj0M+oStOBWW7pGD5HcuC2bzGvrFg993CaKqBVW5dQvKmj82LJw==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -2848,6 +2864,10 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
+  '@capacitor-mlkit/barcode-scanning@8.2.2(@capacitor/core@8.3.4)':
+    dependencies:
+      '@capacitor/core': 8.3.4
+
   '@capacitor/android@8.3.4(@capacitor/core@8.3.4)':
     dependencies:
       '@capacitor/core': 8.3.4
@@ -2916,6 +2936,10 @@ snapshots:
       '@capacitor/core': 8.3.4
 
   '@capacitor/synapse@1.0.4': {}
+
+  '@capgo/capacitor-health@8.13.0(@capacitor/core@8.3.4)':
+    dependencies:
+      '@capacitor/core': 8.3.4
 
   '@esbuild/aix-ppc64@0.21.5':
     optional: true

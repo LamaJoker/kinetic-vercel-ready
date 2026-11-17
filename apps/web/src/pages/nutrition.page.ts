@@ -1,4 +1,5 @@
-﻿import Alpine from 'alpinejs';
+﻿import { cameraScanSupported, scanBarcodeWithCamera } from '../lib/barcode-camera';
+import Alpine from 'alpinejs';
 import { mealTimingPlan, STORAGE_KEYS, type MealTiming, type NutritionPlan } from '@kinetic/core';
 
 interface ScannedFoodEntry {
@@ -54,6 +55,7 @@ export function nutrition() {
 
     // ── Scan code-barres (OpenFoodFacts) ──────────────────────────────────────
     barcode: '',
+    cameraScan: cameraScanSupported(),
     scanning: false,
 
     get mealTimings(): MealTiming[] {
@@ -103,6 +105,24 @@ export function nutrition() {
     },
 
     /** Cherche un produit par code-barres (OpenFoodFacts) et pré-remplit le formulaire. */
+    async scanWithCamera(): Promise<void> {
+      if (this.scanning) return;
+      const result = await scanBarcodeWithCamera();
+      if (result.status === 'ok') {
+        this.barcode = result.code;
+        await this.scanProduct();
+      } else if (result.status === 'unavailable') {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: {
+              kind: 'info',
+              message: 'Le scanner se prépare (première utilisation). Réessaie dans un instant.',
+            },
+          }),
+        );
+      }
+    },
+
     async scanProduct(): Promise<void> {
       if (!this.canScan) {
         window.dispatchEvent(

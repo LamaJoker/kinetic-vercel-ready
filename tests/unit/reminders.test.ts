@@ -13,15 +13,28 @@ vi.mock('@capacitor/local-notifications', () => ({
   },
 }));
 vi.mock('../../apps/web/src/deps.js', () => ({ getDeps: vi.fn() }));
-vi.mock('../../apps/web/src/lib/training/storage.js', () => ({ loadSessions: vi.fn() }));
+vi.mock('../../apps/web/src/lib/training/storage.js', () => ({
+  loadSessions: vi.fn(),
+  loadTemplates: vi.fn(),
+}));
 
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { getDeps } from '../../apps/web/src/deps.js';
-import { loadSessions } from '../../apps/web/src/lib/training/storage.js';
+import { loadSessions, loadTemplates } from '../../apps/web/src/lib/training/storage.js';
 import {
+  BACKUP_NOTIF_ID,
   DEFAULT_REMINDER_PREFS,
   ROUTINE_NOTIF_ID,
+  SESSION_NOTIF_ID,
+  daysSinceBackup,
+  hasChosenSessionDays,
+  lastBackupAt,
+  nextBackupReminderAt,
+  nextSessionReminderAt,
+  recordBackup,
+  syncBackupReminder,
+  syncSessionReminder,
   WEEKLY_NOTIF_ID,
   getReminderPrefs,
   nextRoutineReminderAt,
@@ -70,7 +83,11 @@ describe('réglages', () => {
 
   it('enregistre un changement et le relit', () => {
     setReminderPrefs({ routine: false, routineTime: '07:30' });
-    expect(getReminderPrefs()).toEqual({ routine: false, routineTime: '07:30', weekly: true });
+    expect(getReminderPrefs()).toEqual({
+      ...DEFAULT_REMINDER_PREFS,
+      routine: false,
+      routineTime: '07:30',
+    });
   });
 
   it('écarte une heure invalide et un contenu corrompu', () => {
@@ -268,5 +285,164 @@ describe('syncWeeklyRecap', () => {
     await expect(syncWeeklyRecap(wednesday)).resolves.toBeUndefined();
     expect(LocalNotifications.schedule).not.toHaveBeenCalled();
     warn.mockRestore();
+  });
+});
+
+describe('jours de séance', () => {
+  it('lit, trie et dédoublonne les jours choisis', () => {
+    expect(hasChosenSessionDays()).toBe(false);
+    setReminderPrefs({ sessionDays: [5, 1, 5, 3] });
+    expect(getReminderPrefs().sessionDays).toEqual([1, 3, 5]);
+    expect(hasChosenSessionDays()).toBe(true);
+  });
+
+  it('ignore une liste invalide', () => {
+    localStorage.setItem('kinetic:reminder:prefs', '{"sessionDays":[1,9],"sessionTime":"x"}');
+    expect(getReminderPrefs().sessionDays).toEqual(DEFAULT_REMINDER_PREFS.sessionDays);
+    expect(getReminderPrefs().sessionTime).toBe('18:00');
+    expect(hasChosenSessionDays()).toBe(false);
+  });
+});
+
+describe('nextSessionReminderAt', () => {
+  // 2026-05-13 est un mercredi
+  const wedNoon = new Date(2026, 4, 13, 12, 0);
+
+  it("vise aujourd'hui si c'est un jour choisi et l'heure à venir", () => {
+    expect(nextSessionReminderAt(wedNoon, '18:00', [1, 3, 5], false)).toEqual(
+      new Date(2026, 4, 13, 18, 0),
+    );
+  });
+
+  it("passe au jour choisi suivant si la séance du jour est faite ou l'heure passée", () => {
+    expect(nextSessionReminderAt(wedNoon, '18:00', [1, 3, 5], true)).toEqual(
+      new Date(2026, 4, 15, 18, 0),
+    );
+    expect(nextSessionReminderAt(wedNoon, '07:00', [3], false)).toEqual(
+      new Date(2026, 4, 20, 7, 0),
+    );
+  });
+
+  it('renvoie null sans jour choisi', () => {
+    expect(nextSessionReminderAt(wedNoon, '18:00', [], false)).toBeNull();
+  });
+});
+
+describe('sauvegarde', () => {
+  it('note la date et calcule les jours écoulés', () => {
+    const now = new Date(2026, 4, 20, 12, 0);
+    expect(lastBackupAt()).toBeNull();
+    expect(daysSinceBackup(now)).toBe(0);
+    expect(daysSinceBackup(new Date(2026, 4, 25, 12, 0))).toBe(5);
+    recordBackup(new Date(2026, 4, 24, 12, 0));
+    expect(lastBackupAt()).toEqual(new Date(2026, 4, 24, 12, 0));
+    expect(daysSinceBackup(new Date(2026, 4, 25, 12, 0))).toBe(1);
+  });
+
+  it('vise 30 jours après la dernière sauvegarde, à 19 h', () => {
+    const last = new Date(2026, 4, 1, 10, 0).getTime();
+    expect(nextBackupReminderAt(new Date(2026, 4, 2), last)).toEqual(new Date(2026, 4, 31, 19, 0));
+  });
+
+  it('en retard : le soir même, ou le lendemain si 19 h est passé', () => {
+    const last = new Date(2026, 0, 1).getTime();
+    expect(nextBackupReminderAt(new Date(2026, 4, 2, 9, 0), last)).toEqual(
+      new Date(2026, 4, 2, 19, 0),
+    );
+    expect(nextBackupReminderAt(new Date(2026, 4, 2, 20, 0), last)).toEqual(
+      new Date(2026, 4, 3, 19, 0),
+    );
+  });
+});
+
+describe('syncSessionReminder', () => {
+  const wedNoon = new Date(2026, 4, 13, 12, 0);
+  const templates = [
+    {
+      id: 'tpl-push-a',
+      name: 'Push A',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      exercises: [{ exerciseId: 'bench', sets: 3, targetReps: 8, targetRpe: 8 }],
+    },
+  ];
+
+  beforeEach(() => {
+    vi.mocked(getDeps).mockResolvedValue({ storage: new InMemoryStorage() } as never);
+    vi.mocked(loadTemplates).mockResolvedValue(templates as never);
+  });
+
+  it('programme le rappel du jour avec la prochaine séance', async () => {
+    vi.mocked(loadSessions).mockResolvedValue([]);
+    await syncSessionReminder(wedNoon);
+    const notif = scheduled();
+    expect(notif.id).toBe(SESSION_NOTIF_ID);
+    expect(notif.schedule?.at).toEqual(new Date(2026, 4, 13, 18, 0));
+    expect(notif.body).toContain('Push A');
+    expect(notif.extra).toEqual({ route: '/seances' });
+  });
+
+  it("saute aujourd'hui quand une séance est déjà enregistrée", async () => {
+    vi.mocked(loadSessions).mockResolvedValue([
+      {
+        id: 's1',
+        name: 'Push A',
+        templateId: 'tpl-push-a',
+        startedAt: new Date(2026, 4, 13, 8, 0).toISOString(),
+        endedAt: new Date(2026, 4, 13, 9, 0).toISOString(),
+        entries: [{ exerciseId: 'bench', sets: [{ reps: 5, weightKg: 80, performedAt: '' }] }],
+      },
+    ] as never);
+    await syncSessionReminder(wedNoon);
+    expect(scheduled().schedule?.at).toEqual(new Date(2026, 4, 15, 18, 0));
+  });
+
+  it('annule sans reprogrammer si désactivé', async () => {
+    setReminderPrefs({ session: false });
+    await syncSessionReminder(wedNoon);
+    expect(LocalNotifications.cancel).toHaveBeenCalledWith({
+      notifications: [{ id: SESSION_NOTIF_ID }],
+    });
+    expect(LocalNotifications.schedule).not.toHaveBeenCalled();
+  });
+
+  it('avale les erreurs de lecture', async () => {
+    vi.mocked(loadSessions).mockRejectedValue(new Error('IDB'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    await expect(syncSessionReminder(wedNoon)).resolves.toBeUndefined();
+    warn.mockRestore();
+  });
+});
+
+describe('syncBackupReminder', () => {
+  it('ne rappelle rien quand un compte synchronise les données', async () => {
+    await syncBackupReminder(true, new Date(2026, 4, 2));
+    expect(LocalNotifications.cancel).toHaveBeenCalledWith({
+      notifications: [{ id: BACKUP_NOTIF_ID }],
+    });
+    expect(LocalNotifications.schedule).not.toHaveBeenCalled();
+  });
+
+  it('programme le rappel 30 jours après le premier lancement', async () => {
+    await syncBackupReminder(false, new Date(2026, 4, 2, 10, 0));
+    const notif = scheduled();
+    expect(notif.id).toBe(BACKUP_NOTIF_ID);
+    expect(notif.schedule?.at).toEqual(new Date(2026, 5, 1, 19, 0));
+    expect(notif.extra).toEqual({ route: '/profile' });
+  });
+
+  it('une fois le rappel en retard passé, le suivant revient 30 jours plus tard', async () => {
+    recordBackup(new Date(2026, 0, 1));
+    await syncBackupReminder(false, new Date(2026, 4, 2, 10, 0));
+    expect(scheduled().schedule?.at).toEqual(new Date(2026, 4, 2, 19, 0));
+
+    vi.mocked(LocalNotifications.schedule).mockClear();
+    await syncBackupReminder(false, new Date(2026, 4, 3, 10, 0));
+    expect(scheduled().schedule?.at).toEqual(new Date(2026, 5, 1, 19, 0));
+  });
+
+  it('ne fait rien sur le web', async () => {
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
+    await syncBackupReminder(false);
+    expect(LocalNotifications.cancel).not.toHaveBeenCalled();
   });
 });

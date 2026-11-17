@@ -12,6 +12,17 @@ import { getDeps } from '../deps';
 import { sanitizeUserInput } from '../lib/security';
 import { syncWidget } from '../lib/widget';
 import { syncRoutineReminder } from '../lib/reminders';
+import { readHealthToday, SLEEP_GOAL_MIN, STEPS_GOAL } from '../lib/health';
+
+const PRIORITY_LABEL = { high: 'haute', med: 'moyenne', low: 'faible' } as const;
+const STEPS_TASK = 'evening-walk';
+const SLEEP_TASK = 'sleep-routine';
+
+function formatSleep(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, '0')}`;
+}
 
 interface DefaultTaskSpec {
   id: string;
@@ -137,6 +148,8 @@ export function vitaliteStore() {
     tasks: [] as Task[],
     customSpecs: [] as CustomTaskSpec[],
     loading: true,
+    healthSteps: null as number | null,
+    healthSleep: null as number | null,
     _intervalLastDone: {} as Record<string, string>,
     completingId: null as string | null,
     _pendingIds: [] as string[],
@@ -229,6 +242,7 @@ export function vitaliteStore() {
       } finally {
         this.loading = false;
         this._syncNative();
+        void this.syncHealth();
       }
     },
 
@@ -594,6 +608,33 @@ export function vitaliteStore() {
       this.showHistory = !this.showHistory;
       if (this.showHistory && this.historyDays.length === 0) {
         await this.loadHistory();
+      }
+    },
+
+    /** Texte sous le titre d'une tâche ; pas et sommeil lus dans Health Connect. */
+    taskMeta(task: Task): string {
+      const fmt = (n: number) => n.toLocaleString('fr-FR');
+      if (task.id === STEPS_TASK && this.healthSteps !== null) {
+        return `${fmt(this.healthSteps)} / ${fmt(STEPS_GOAL)} pas aujourd'hui`;
+      }
+      if (task.id === SLEEP_TASK && this.healthSleep !== null) {
+        return `${formatSleep(this.healthSleep)} de sommeil cette nuit`;
+      }
+      if (task.done) return 'Terminé';
+      return `+${task.xp} XP · Priorité ${PRIORITY_LABEL[task.priority as keyof typeof PRIORITY_LABEL] ?? ''}`;
+    },
+
+    /** Lit Health Connect et valide les tâches pas / sommeil quand l'objectif est atteint. */
+    async syncHealth(): Promise<void> {
+      const { steps, sleepMinutes } = await readHealthToday();
+      this.healthSteps = steps;
+      this.healthSleep = sleepMinutes;
+      const reached: string[] = [];
+      if (steps !== null && steps >= STEPS_GOAL) reached.push(STEPS_TASK);
+      if (sleepMinutes !== null && sleepMinutes >= SLEEP_GOAL_MIN) reached.push(SLEEP_TASK);
+      for (const id of reached) {
+        const task = this.tasks.find((entry) => entry.id === id);
+        if (task && !task.done) await this.complete(id);
       }
     },
 

@@ -28,6 +28,8 @@ export interface ImportBundle {
   exercises: readonly Exercise[];
   /** Exercices détectés mais à fusionner (créés si inconnus). */
   createdExercises: readonly Exercise[];
+  /** Sauvegarde complète (export JSON version 2) : autres données de l'application. */
+  data?: Record<string, unknown>;
 }
 
 export interface ImportReport {
@@ -59,10 +61,13 @@ export function parseKineticJson(content: string): ImportBundle {
   const data = JSON.parse(content);
   const sessions = Array.isArray(data?.sessions) ? data.sessions : [];
   const exercises = Array.isArray(data?.exercises) ? data.exercises : [];
+  const extra = data?.data;
+  const hasData = extra !== null && typeof extra === 'object' && !Array.isArray(extra);
   return {
     sessions: sessions.filter(isValidSession),
     exercises: exercises.filter(isValidExercise),
     createdExercises: [],
+    ...(hasData ? { data: extra as Record<string, unknown> } : {}),
   };
 }
 

@@ -424,10 +424,7 @@
                 >! </span
               ><span x-text="task.title"></span>
             </p>
-            <p
-              class="text-xs mt-0.5 text-gray-500"
-              x-text="task.done ? 'Terminé' : '+' + task.xp + ' XP · Priorité ' + { high: 'haute', med: 'moyenne', low: 'faible' }[task.priority]"
-            ></p>
+            <p class="text-xs mt-0.5 text-gray-500" x-text="$store.vitalite.taskMeta(task)"></p>
           </div>
 
           <!-- Spinner -->

@@ -74,7 +74,7 @@ adb install apps/web/android/app/build/outputs/apk/debug/app-debug.apk
    ```
 
 The version shown in the store comes from `apps/web/package.json` (`version`):
-`9.1.0` becomes `versionName 9.1.0` / `versionCode 90100`. Bump it before every
+`9.2.0` becomes `versionName 9.2.0` / `versionCode 90200`. Bump it before every
 upload — Play refuses a `versionCode` it has already seen.
 
 ## Open in Android Studio
@@ -128,6 +128,23 @@ Users add it from Profile → "Ajouter le widget", or by long-pressing the home 
 Profile, skipped once the routine is done) and the Sunday 6 pm weekly recap.
 They fire with the app closed. Android 13+ asks for the notification permission
 the first time a reminder is enabled.
+
+## Health Connect, barcode camera, backups
+
+- **Health Connect** (`src/lib/health.ts`, plugin `@capgo/capacitor-health`):
+  opt-in from Profile → Santé. Writes weigh-ins (weight, body fat) and reads
+  today's steps and last night's sleep to tick the "8 000 pas" and "Dormir 7 h"
+  routine tasks. Requires Android 8+ (minSdk 26) and the Health Connect app
+  (built in from Android 14). Health Connect shows the privacy policy from
+  `health_connect_privacy_policy_url` in `res/values/strings.xml`.
+- **Barcode camera** (`src/lib/barcode-camera.ts`, plugin
+  `@capacitor-mlkit/barcode-scanning`): Google code scanner from Play services;
+  the module downloads on first use.
+- **Full backup**: the JSON export (version 2) now carries every app key
+  (`src/lib/backup.ts`); importing it restores everything. Without a synced
+  account, a reminder fires 30 days after the last backup.
+- **Session reminder**: on the training days chosen in Profile (prefilled from
+  the active program), skipped once a session is logged that day.
 
 ## Customizing the icon & splash
 
