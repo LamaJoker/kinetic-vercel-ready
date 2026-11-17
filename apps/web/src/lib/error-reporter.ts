@@ -26,7 +26,7 @@ interface ErrorReport {
   source: 'unhandled_rejection' | 'uncaught_error' | 'manual';
 }
 
-// Lecture lazy (cf. ai-coach.ts) pour rester testable.
+// Lecture lazy pour rester testable (vi.stubEnv).
 function envUrl(): string | undefined {
   const meta = import.meta as ImportMeta & { env?: Record<string, string> };
   return meta.env?.VITE_SUPABASE_URL;

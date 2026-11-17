@@ -7,10 +7,6 @@ interface ImportMetaEnv {
   readonly VITE_APP_VERSION: string;
   /** 'true' uniquement dans les builds E2E (pnpm build:e2e). */
   readonly VITE_E2E?: string;
-  /** 'true' pour autoriser l'activation Pro locale en démo (sans paiement). */
-  readonly VITE_DEMO_UNLOCK_PRO?: string;
-  /** 'true' pour activer l'offre Pro (sinon tout est gratuit). */
-  readonly VITE_ENABLE_PRO?: string;
   /** URL de collecte des Web Vitals (optionnel ; sinon rien n'est envoyé). */
   readonly VITE_VITALS_ENDPOINT?: string;
 }

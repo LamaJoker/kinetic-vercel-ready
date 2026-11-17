@@ -1,5 +1,11 @@
 # Kinetic — Roadmap
 
+> **Novembre 2026 — usage personnel.** L'offre Pro (entitlements), le push web,
+> le coach IA et l'interface anglaise ont été retirés du client : tout est gratuit,
+> en français, et les rappels passent par l'application Android. Les fonctions
+> serveur (`supabase/functions`) et les migrations restent en place mais ne sont
+> plus appelées. Les sections ci-dessous qui les citent sont historiques.
+
 > Source de vérité produit/technique. Remplace le blueprint Codex (qui décrivait
 > un état du repo largement périmé : il listait en « à faire » des features déjà
 > livrées et dépassées). Dernière vérification du code : **2026-05-28**.

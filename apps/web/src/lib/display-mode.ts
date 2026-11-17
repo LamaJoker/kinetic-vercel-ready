@@ -2,7 +2,7 @@
  * Display density (Simple / Avancé) — levier global de déclutter.
  *
  * Problème : un testeur débutant trouve toutes les pages trop chargées
- * (coach IA, périodisation, scores Wilks/IPF GL/DOTS, équilibre musculaire...).
+ * (notes du coach, périodisation, scores Wilks/IPF GL/DOTS, équilibre musculaire...).
  *
  * Solution : un attribut `data-density="simple|advanced"` sur <html>.
  * En mode `simple` (défaut), tout élément taggé `.adv-only` est masqué en CSS.

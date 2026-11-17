@@ -74,7 +74,7 @@ adb install apps/web/android/app/build/outputs/apk/debug/app-debug.apk
    ```
 
 The version shown in the store comes from `apps/web/package.json` (`version`):
-`9.2.0` becomes `versionName 9.2.0` / `versionCode 90200`. Bump it before every
+`9.3.0` becomes `versionName 9.3.0` / `versionCode 90300`. Bump it before every
 upload — Play refuses a `versionCode` it has already seen.
 
 ## Open in Android Studio

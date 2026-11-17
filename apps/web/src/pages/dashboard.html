@@ -105,7 +105,7 @@
       <span class="min-w-0">
         <span
           class="block text-sm font-semibold text-white leading-tight line-clamp-2"
-          x-text="$t('nav.progression')"
+          x-text="'Progression'"
         ></span>
       </span>
     </a>
@@ -130,7 +130,7 @@
       <span class="min-w-0">
         <span
           class="block text-sm font-semibold text-white leading-tight line-clamp-2"
-          x-text="$t('nav.records')"
+          x-text="'Records'"
         ></span>
       </span>
     </a>
@@ -179,7 +179,7 @@
       <span class="min-w-0">
         <span
           class="block text-sm font-semibold text-white leading-tight line-clamp-2"
-          x-text="$locale() === 'en' ? 'Body' : 'Poids'"
+          x-text="'Poids'"
         ></span>
       </span>
     </a>
@@ -204,7 +204,7 @@
       <span class="min-w-0">
         <span
           class="block text-sm font-semibold text-white leading-tight line-clamp-2"
-          x-text="$num.loc($t('tools.plates'))"
+          x-text="'Chargement de barre'"
         ></span>
       </span>
     </a>
@@ -228,7 +228,7 @@
       <span class="min-w-0">
         <span
           class="block text-sm font-semibold text-white leading-tight line-clamp-2"
-          x-text="$t('tools.achievements')"
+          x-text="'Succès'"
         ></span>
         <span class="block text-xs text-gray-500 truncate tabular-nums">
           <span x-text="$store.achievements ? $store.achievements.unlockedCount : 0"></span>/<span
@@ -237,145 +237,6 @@
         </span>
       </span>
     </a>
-  </div>
-
-  <!-- ── AI Coach ────────────────────────────────────────────────────────── -->
-  <template x-if="aiCoachAvailable">
-    <button
-      @click="openCoachModal()"
-      class="w-full mb-3 bg-kinetic-surface rounded-2xl px-4 py-3 flex items-center gap-3 active:bg-kinetic-elevated transition-colors"
-    >
-      <div class="flex-1 text-left min-w-0">
-        <p class="text-base font-semibold text-white">Coach IA</p>
-        <p class="text-xs text-gray-500 truncate">Pose une question sur ta progression</p>
-      </div>
-      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
-        <path
-          d="m1 1 6 6-6 6"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
-  </template>
-
-  <!-- ── AI Coach : feuille ──────────────────────────────────────────────── -->
-  <div
-    x-show="showCoachModal"
-    @click.self="closeCoachModal()"
-    @keydown.escape.window="closeCoachModal()"
-    class="k-backdrop fixed"
-    style="display: none"
-  >
-    <div class="k-sheet" role="dialog" aria-modal="true" aria-labelledby="coach-title" @click.stop>
-      <div class="flex items-center justify-between gap-3 mb-1">
-        <h2 id="coach-title" class="text-lg font-semibold text-white">Coach IA</h2>
-        <button type="button" @click="closeCoachModal()" class="k-icon-btn" aria-label="Fermer">
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.4"
-            stroke-linecap="round"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path d="M6 6l12 12M18 6 6 18" />
-          </svg>
-        </button>
-      </div>
-
-      <p class="text-sm text-gray-500 mb-5">
-        Pose une question : j'analyse tes 50 dernières séances avec Claude.
-      </p>
-
-      <!-- Suggestions -->
-      <div x-show="!coachAnswer && !coachLoading" class="mb-4">
-        <p class="k-label">Suggestions</p>
-        <div class="rounded-xl bg-kinetic-ink overflow-hidden">
-          <template x-for="suggestion in coachSuggestions" :key="suggestion">
-            <button
-              type="button"
-              @click="coachQuestion = suggestion"
-              class="k-row text-sm text-white active:bg-kinetic-elevated"
-            >
-              <span class="flex-1 min-w-0" x-text="$num.loc(suggestion)"></span>
-              <svg
-                class="w-4 h-4 flex-shrink-0 text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path d="M7 17 17 7M9 7h8v8" />
-              </svg>
-            </button>
-          </template>
-        </div>
-      </div>
-
-      <!-- Saisie -->
-      <div class="flex items-center gap-2" x-show="!coachAnswer">
-        <input
-          x-model="coachQuestion"
-          @keydown.enter="askCoachAi()"
-          :disabled="coachLoading"
-          placeholder="Pourquoi je stagne au bench ?"
-          aria-label="Ta question au coach"
-          maxlength="500"
-          class="k-field disabled:opacity-50"
-        />
-        <button
-          type="button"
-          @click="askCoachAi()"
-          :disabled="coachLoading || !coachQuestion.trim()"
-          aria-label="Envoyer la question"
-          class="w-11 h-11 flex-shrink-0 rounded-full bg-kinetic-neon text-gray-950 flex items-center justify-center transition active:scale-90 active:brightness-90 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <span x-show="!coachLoading">
-            <svg
-              class="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.4"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path d="M12 19V5M6 11l6-6 6 6" />
-            </svg>
-          </span>
-          <span x-show="coachLoading">
-            <span
-              class="block w-4 h-4 rounded-full border-2 border-gray-950 border-t-transparent animate-spin"
-              aria-hidden="true"
-            ></span>
-            <span class="sr-only">Analyse en cours…</span>
-          </span>
-        </button>
-      </div>
-
-      <!-- Réponse -->
-      <template x-if="coachAnswer">
-        <div class="rounded-xl bg-kinetic-ink p-4 mb-5" aria-live="polite">
-          <p
-            class="text-base text-white leading-relaxed whitespace-pre-wrap"
-            x-text="coachAnswer"
-          ></p>
-        </div>
-      </template>
-
-      <div class="grid grid-cols-2 gap-2" x-show="coachAnswer">
-        <button type="button" @click="resetCoach()" class="k-btn-2">Autre question</button>
-        <button type="button" @click="closeCoachModal()" class="k-btn">Fermer</button>
-      </div>
-    </div>
   </div>
 
   <!-- Série : deux tuiles -->

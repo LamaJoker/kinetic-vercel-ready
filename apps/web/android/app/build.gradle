@@ -37,6 +37,14 @@ android {
             }
         }
     }
+    packaging {
+        jniLibs {
+            // Lecteur de codes-barres embarqué par @capacitor-mlkit (~19 Mo, toutes
+            // architectures) : inutile, l'application utilise le scanner Google des
+            // services Play (BarcodeScanner.scan), qui ne charge pas cette bibliothèque.
+            excludes += ['**/libbarhopper_v3.so']
+        }
+    }
     buildTypes {
         release {
             if (keystoreFile.exists()) {

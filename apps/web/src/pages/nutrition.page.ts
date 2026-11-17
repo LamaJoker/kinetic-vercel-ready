@@ -98,12 +98,6 @@ export function nutrition() {
       this.foodResults = [];
     },
 
-    /** Le scan code-barres est une feature Pro. */
-    get canScan(): boolean {
-      const ent = Alpine.store('entitlement') as { can(f: string): boolean } | undefined;
-      return ent ? ent.can('nutrition_scanner') : false;
-    },
-
     /** Cherche un produit par code-barres (OpenFoodFacts) et pré-remplit le formulaire. */
     async scanWithCamera(): Promise<void> {
       if (this.scanning) return;
@@ -124,18 +118,6 @@ export function nutrition() {
     },
 
     async scanProduct(): Promise<void> {
-      if (!this.canScan) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'warning',
-              message:
-                'Le scan code-barres est une fonctionnalité Pro. Active l’essai ou passe Pro.',
-            },
-          }),
-        );
-        return;
-      }
       const code = this.barcode.trim();
       if (!code || this.scanning) return;
       this.scanning = true;

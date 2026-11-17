@@ -150,7 +150,8 @@ export const REWARDS: readonly Reward[] = [
     level: 3,
     emoji: '🎯',
     title: 'Coach Avancé',
-    description: "Le Coach IA affiche des notes de périodisation et l'indice de fatigue RPE.",
+    description:
+      "Le coach de séance affiche des notes de périodisation et l'indice de fatigue RPE.",
     kind: 'coach',
   },
   {

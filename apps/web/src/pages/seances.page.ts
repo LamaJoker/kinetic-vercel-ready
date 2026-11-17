@@ -109,7 +109,7 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-// ─── Objectifs Coach IA ──────────────────────────────────────────────────────
+// ─── Objectifs du coach ──────────────────────────────────────────────────────
 
 type CoachGoal = 'force' | 'hypertrophie' | 'endurance';
 
@@ -1168,7 +1168,7 @@ export function seances() {
       }
     },
 
-    // ─── Coach IA ────────────────────────────────────────────────────────────
+    // ─── Coach ────────────────────────────────────────────────────────────
 
     setCoachGoal(goal: CoachGoal): void {
       if (!isCoachGoal(goal)) return;

@@ -45,36 +45,9 @@
     </div>
   </template>
 
-  <!-- Upsell analytics avancées (gratuit) -->
-  <div
-    x-show="totalSessions > 0 && !$store.entitlement.can('advanced_analytics')"
-    class="bg-kinetic-surface rounded-2xl p-4 mb-6"
-  >
-    <div class="flex items-center gap-2">
-      <svg
-        class="w-5 h-5 text-kinetic-purple flex-shrink-0"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M3 17l6-6 4 4 8-8M14 7h7v7" />
-      </svg>
-      <p class="k-card-title">Analytics avancées</p>
-      <span class="k-badge ml-auto">PRO</span>
-    </div>
-    <p class="text-sm text-gray-500 mt-2 mb-4">
-      Bilan hebdo, tendances, volume par muscle et courbes de force — passe Pro pour les débloquer.
-    </p>
-    <a href="/profile" class="k-btn">Passer Pro</a>
-  </div>
-
   <!-- Bilan de la semaine -->
   <section
-    x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics')"
+    x-show="totalSessions > 0"
     class="bg-kinetic-surface rounded-2xl p-4 mb-6"
     aria-labelledby="prog-week-title"
   >
@@ -204,10 +177,7 @@
   </section>
 
   <!-- Onglets -->
-  <div
-    x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics')"
-    class="k-seg mb-3"
-  >
+  <div x-show="totalSessions > 0" class="k-seg mb-3">
     <button
       type="button"
       @click="setTab('force')"
@@ -251,10 +221,7 @@
   </div>
 
   <!-- ─── Onglet FORCE ──────────────────────────────────────── -->
-  <div
-    x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics') && activeTab === 'force'"
-    x-transition.opacity.duration.200ms
-  >
+  <div x-show="totalSessions > 0 && activeTab === 'force'" x-transition.opacity.duration.200ms>
     <div class="bg-kinetic-surface rounded-2xl p-4">
       <label for="f-progression-1" class="k-label">Exercice</label>
       <select id="f-progression-1" x-model="selectedExerciseId" class="k-field">
@@ -309,10 +276,7 @@
   </div>
 
   <!-- ─── Onglet VOLUME ─────────────────────────────────────── -->
-  <div
-    x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics') && activeTab === 'volume'"
-    x-transition.opacity.duration.200ms
-  >
+  <div x-show="totalSessions > 0 && activeTab === 'volume'" x-transition.opacity.duration.200ms>
     <div class="bg-kinetic-surface rounded-2xl p-4">
       <div class="flex items-baseline justify-between gap-3">
         <h2 class="k-card-title">Tonnage hebdomadaire</h2>
@@ -370,10 +334,7 @@
   </div>
 
   <!-- ─── Onglet MUSCLES ────────────────────────────────────── -->
-  <div
-    x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics') && activeTab === 'muscles'"
-    x-transition.opacity.duration.200ms
-  >
+  <div x-show="totalSessions > 0 && activeTab === 'muscles'" x-transition.opacity.duration.200ms>
     <template x-if="muscles.length === 0">
       <div class="k-empty">
         <p>Aucune donnée</p>
@@ -409,10 +370,7 @@
   </div>
 
   <!-- ─── Onglet HEATMAP ──────────────────────────────────────── -->
-  <div
-    x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics') && activeTab === 'heatmap'"
-    x-transition.opacity.duration.200ms
-  >
+  <div x-show="totalSessions > 0 && activeTab === 'heatmap'" x-transition.opacity.duration.200ms>
     <div class="bg-kinetic-surface rounded-2xl p-4">
       <div class="flex items-baseline justify-between gap-3 mb-4">
         <h2 class="k-card-title">Activité</h2>
@@ -489,10 +447,7 @@
   </div>
 
   <!-- ─── Onglet RECORDS ────────────────────────────────────── -->
-  <div
-    x-show="totalSessions > 0 && $store.entitlement.can('advanced_analytics') && activeTab === 'records'"
-    x-transition.opacity.duration.200ms
-  >
+  <div x-show="totalSessions > 0 && activeTab === 'records'" x-transition.opacity.duration.200ms>
     <template x-if="records.length === 0">
       <div class="k-empty">
         <p>Pas encore de record</p>

@@ -42,51 +42,6 @@
     </div>
   </template>
 
-  <!-- Abonnement (masqué tant que l'offre Pro n'est pas activée) -->
-  <div x-show="$store.entitlement.enabled" class="bg-kinetic-surface rounded-2xl p-4 mb-3">
-    <div class="flex items-center justify-between mb-2">
-      <p class="text-xs text-gray-500 font-semibold">Abonnement</p>
-      <span
-        class="text-xs font-bold"
-        :class="$store.entitlement.isPro ? 'text-kinetic-neon' : 'text-gray-400'"
-        x-text="$store.entitlement.isPro ? ($store.entitlement.isOnTrial ? 'Essai Pro' : 'Pro') : 'Gratuit'"
-      ></span>
-    </div>
-    <p
-      class="text-xs text-gray-400 mb-3"
-      x-show="$store.entitlement.isOnTrial"
-      x-text="'Essai Pro : ' + $plural($store.entitlement.trialDaysLeft, 'jour restant', 'jours restants')"
-    ></p>
-    <p class="text-xs text-gray-500 mb-3" x-show="!$store.entitlement.isPro">
-      Débloque l'intelligence : auto-progression, conseiller de deload, analytics avancées, AI
-      coach, scan nutrition et export.
-    </p>
-    <template x-if="$store.entitlement.canSelfUpgrade">
-      <div>
-        <button
-          x-show="!$store.entitlement.isPro"
-          @click="$store.entitlement.setTier('pro')"
-          class="w-full bg-kinetic-neon text-gray-950 font-bold rounded-xl py-2.5 text-sm hover:brightness-110 active:scale-95"
-        >
-          Activer Pro (mode démo)
-        </button>
-        <button
-          x-show="$store.entitlement.isPro && !$store.entitlement.isOnTrial"
-          @click="$store.entitlement.setTier('free')"
-          class="w-full bg-kinetic-elevated text-gray-400 rounded-xl py-2 text-xs hover:text-white"
-        >
-          Revenir au gratuit
-        </button>
-      </div>
-    </template>
-    <p
-      x-show="!$store.entitlement.canSelfUpgrade && !$store.entitlement.isPro"
-      class="text-xs text-gray-500 text-center rounded-xl bg-kinetic-elevated py-2.5"
-    >
-      Abonnement Pro bientôt disponible.
-    </p>
-  </div>
-
   <!-- Chiffres clés -->
   <div class="bg-kinetic-surface rounded-2xl py-4 mb-3 grid grid-cols-3 divide-x divide-white/10">
     <div class="px-3 text-center">
@@ -275,22 +230,6 @@
       >
         Se connecter
       </a>
-    </div>
-    <div class="k-row" x-show="pushSupported">
-      <span class="flex-1 min-w-0">
-        <span class="block text-base text-white">Rappels d'entraînement</span>
-        <span class="block text-xs text-gray-500">Une notification par jour au maximum</span>
-      </span>
-      <button
-        @click="togglePush()"
-        :disabled="pushBusy"
-        class="flex-shrink-0 h-9 px-4 rounded-full text-sm font-semibold disabled:opacity-40"
-        :class="pushSubscribed ? 'bg-kinetic-elevated text-white' : 'bg-kinetic-elevated text-white'"
-      >
-        <span x-show="pushBusy">…</span>
-        <span x-show="!pushBusy && !pushSubscribed">Activer</span>
-        <span x-show="!pushBusy && pushSubscribed">Désactiver</span>
-      </button>
     </div>
     <div
       class="k-row"
@@ -596,14 +535,7 @@
   <div class="k-list mb-3">
     <div class="k-row">
       <span class="flex-1 min-w-0">
-        <span class="flex items-center gap-2 text-base text-white">
-          Exporter
-          <span
-            x-show="!$store.entitlement.can('data_export')"
-            class="text-[10px] font-semibold text-kinetic-neon"
-            >PRO</span
-          >
-        </span>
+        <span class="flex items-center gap-2 text-base text-white"> Exporter </span>
         <span class="block text-xs text-gray-500" x-text="lastBackupLabel"></span>
       </span>
       <button

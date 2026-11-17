@@ -12,8 +12,6 @@ import { getDeps } from '../deps';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import { loadSessions, loadExercises } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
-import { enablePush, disablePush, isPushAvailable, getPushStatus } from '../lib/push';
-import { getLocale, setLocale, type Locale } from '../lib/i18n';
 import { getThemeMode, setThemeMode, type ThemeMode } from '../lib/theme';
 import { getDisplayDensity, setDisplayDensity, type DisplayDensity } from '../lib/display-mode';
 import {
@@ -116,9 +114,6 @@ export function profile() {
     profilePseudo: '',
     profileShareUrl: '',
     sharingProfile: false,
-    pushSupported: false,
-    pushSubscribed: false,
-    pushBusy: false,
     nativeApp: false,
     reminderRoutine: true,
     reminderTime: '20:00',
@@ -133,7 +128,6 @@ export function profile() {
     cloudSynced: false,
     healthState: 'unsupported' as 'unsupported' | 'not-installed' | 'available',
     healthOn: false,
-    locale: 'fr' as Locale,
     themeMode: 'dark' as ThemeMode,
     density: 'simple' as DisplayDensity,
 
@@ -145,13 +139,6 @@ export function profile() {
     setDensity(density: DisplayDensity): void {
       this.density = density;
       setDisplayDensity(density);
-    },
-
-    setUiLocale(locale: Locale): void {
-      this.locale = locale;
-      setLocale(locale);
-      // Soft reload : force le re-render des templates en redispatchant
-      window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_LOCALE_RELOAD));
     },
 
     showDeleteAccount: false,
@@ -237,7 +224,6 @@ export function profile() {
         }
 
         await this._refreshStorageUsage();
-        this._refreshPushStatus();
         this.nativeApp = Capacitor.isNativePlatform();
         const reminders = getReminderPrefs();
         const permitted = await remindersPermitted();
@@ -258,7 +244,6 @@ export function profile() {
         this.widgetPinSupported = await canPinWidget();
         this.healthState = await healthAvailability();
         this.healthOn = this.healthState === 'available' && healthEnabled();
-        this.locale = getLocale();
         this.themeMode = getThemeMode();
         this.density = getDisplayDensity();
       } catch (err) {
@@ -368,50 +353,6 @@ export function profile() {
           },
         }),
       );
-    },
-
-    _refreshPushStatus(): void {
-      this.pushSupported = isPushAvailable();
-      const status = getPushStatus();
-      this.pushSubscribed = status.subscribed && status.permission === 'granted';
-    },
-
-    async togglePush(): Promise<void> {
-      if (this.pushBusy) return;
-      this.pushBusy = true;
-      try {
-        if (this.pushSubscribed) {
-          await disablePush();
-          this.pushSubscribed = false;
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'info', message: 'Notifications push désactivées.' },
-            }),
-          );
-        } else {
-          const sub = await enablePush();
-          if (sub) {
-            this.pushSubscribed = true;
-            window.dispatchEvent(
-              new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-                detail: { kind: 'success', message: 'Notifications push activées ✓' },
-              }),
-            );
-          } else {
-            window.dispatchEvent(
-              new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-                detail: {
-                  kind: 'warning',
-                  message:
-                    'Activation refusée — vérifie la permission Notifications dans ton navigateur.',
-                },
-              }),
-            );
-          }
-        }
-      } finally {
-        this.pushBusy = false;
-      }
     },
 
     async _refreshStorageUsage(): Promise<void> {
@@ -573,25 +514,7 @@ export function profile() {
       }
     },
 
-    /** L'export des données est une feature Pro. */
-    get canExport(): boolean {
-      const ent = Alpine.store('entitlement') as { can(f: string): boolean } | undefined;
-      return ent ? ent.can('data_export') : false;
-    },
-
-    _exportBlockedNotify(): void {
-      window.dispatchEvent(
-        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: {
-            kind: 'warning',
-            message: 'L’export des données est une fonctionnalité Pro.',
-          },
-        }),
-      );
-    },
-
     async exportJson(): Promise<void> {
-      if (!this.canExport) return this._exportBlockedNotify();
       this.exportLoading = true;
       try {
         const deps = await getDeps();
@@ -617,7 +540,6 @@ export function profile() {
     },
 
     async exportCsv(): Promise<void> {
-      if (!this.canExport) return this._exportBlockedNotify();
       this.exportLoading = true;
       try {
         const deps = await getDeps();

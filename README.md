@@ -194,12 +194,11 @@ vercel --prod
 
 Se référer à `.env.example` (unique source de vérité — copier vers `apps/web/.env.local`).
 
-| Variable                 | Scope  | Description                                          |
-| ------------------------ | ------ | ---------------------------------------------------- |
-| `VITE_SUPABASE_URL`      | Client | URL projet Supabase                                  |
-| `VITE_SUPABASE_ANON_KEY` | Client | Clé anonyme Supabase                                 |
-| `VITE_PUBLIC_SITE_URL`   | Client | URL canonique (requis pour APK Android OAuth)        |
-| `VITE_DEMO_UNLOCK_PRO`   | Client | `true` = activation Pro locale (démo, sans paiement) |
+| Variable                 | Scope  | Description                                   |
+| ------------------------ | ------ | --------------------------------------------- |
+| `VITE_SUPABASE_URL`      | Client | URL projet Supabase                           |
+| `VITE_SUPABASE_ANON_KEY` | Client | Clé anonyme Supabase                          |
+| `VITE_PUBLIC_SITE_URL`   | Client | URL canonique (requis pour APK Android OAuth) |
 
 > ⚠️ Ne mets **jamais** `SUPABASE_SERVICE_ROLE_KEY` dans Vercel : aucun code ne s'exécute côté serveur sur Vercel. Elle vit uniquement dans les secrets des Edge Functions Supabase (injectée automatiquement).
 

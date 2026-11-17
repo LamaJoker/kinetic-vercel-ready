@@ -6,15 +6,13 @@
  * avec « Accessing global variables is prohibited ». Ces fonctions sont nos
  * propres fonctions, donc autorisées.
  */
-import { getLocale } from './i18n';
-
 /**
- * Séparateur décimal de la langue affichée : « 77.6 kg » devient « 77,6 kg » en
- * français. S'applique à un texte déjà formaté (toFixed, concaténation).
+ * Séparateur décimal français : « 77.6 kg » devient « 77,6 kg ».
+ * S'applique à un texte déjà formaté (toFixed, concaténation).
  */
 export function loc(value: string | number | null | undefined): string {
   const text = value == null ? '' : String(value);
-  return getLocale() === 'fr' ? text.replace(/(\d)\.(\d)/g, '$1,$2') : text;
+  return text.replace(/(\d)\.(\d)/g, '$1,$2');
 }
 
 export const num = {

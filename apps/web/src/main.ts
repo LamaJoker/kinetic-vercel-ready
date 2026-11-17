@@ -81,7 +81,6 @@ import { offlineStore } from './stores/offline';
 import { nutritionStore } from './stores/nutrition';
 import { goalsStore } from './stores/goals';
 import { achievementsStore } from './stores/achievements';
-import { entitlementStore } from './stores/entitlement';
 import { registerSvgDirective } from './lib/svg-directive';
 import { plural } from './lib/plural';
 import { num } from './lib/num';
@@ -103,7 +102,6 @@ import { programsPage } from './pages/programs.page';
 import { glossairePage } from './pages/glossaire.page';
 import { helpTip } from './components/help-tip';
 import { authCallback } from './pages/auth-callback.page';
-import { installAlpineI18nMagic } from './lib/i18n';
 import { initPwaInstallPrompt, pwaInstallPrompt } from './lib/pwa-install';
 import { initTheme } from './lib/theme';
 import { initDisplayDensity } from './lib/display-mode';
@@ -148,7 +146,6 @@ Alpine.store('rewards', rewardsStore());
 Alpine.store('nutrition', nutritionStore());
 Alpine.store('goals', goalsStore());
 Alpine.store('achievements', achievementsStore());
-Alpine.store('entitlement', entitlementStore());
 
 // ─── Composants Alpine ───────────────────────────────────────
 Alpine.data('dashboard', dashboard);
@@ -169,9 +166,6 @@ Alpine.data('helpTip', helpTip);
 Alpine.data('pwaInstallPrompt', pwaInstallPrompt);
 Alpine.data('authCallback', authCallback);
 Alpine.data('mensurations', mensurations);
-
-// ─── i18n magic helper ($t dans les templates) ──────────────────────────────
-installAlpineI18nMagic(Alpine);
 
 // ─── PWA install bus (capture beforeinstallprompt avant qu'Alpine init) ─────
 initPwaInstallPrompt();
@@ -343,8 +337,6 @@ window.Alpine = Alpine;
 // ─── Démarrage ───────────────────────────────────────────────
 Alpine.start();
 initAnalytics();
-// Note : le store `entitlement` est initialisé automatiquement par Alpine.store()
-// (méthode init). Un second appel explicite doublait le travail et les erreurs.
 
 // Démarrer le router APRÈS Alpine.start()
 // Le store auth dispatche kinetic:auth-ready dans son init()
