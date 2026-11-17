@@ -46,7 +46,9 @@ def open_page(page, wait=2.5):
 t0 = time.time()
 out = run("xcrun", "simctl", "launch", UDID, BUNDLE, check=True)
 print(f"lancement : {out.strip()} en {time.time() - t0:.1f} s", flush=True)
-time.sleep(5)
+time.sleep(4)
+shot("demarrage-4s")
+time.sleep(6)
 shot("onboarding")
 
 open_page("demo", wait=6)
