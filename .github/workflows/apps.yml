@@ -143,6 +143,14 @@ jobs:
         run: |
           mkdir Payload
           cp -R apps/web/ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
+          app=Payload/App.app
+          echo "--- Contenu"; du -sh "$app" "$app"/* | sort -h | tail -15
+          echo "--- Bibliothèques liées"; otool -L "$app/App"
+          # Garde-fous : l'application doit embarquer le site et ses bibliothèques dynamiques.
+          test -f "$app/public/index.html"
+          for lib in $(otool -L "$app/App" | awk '/@rpath/ {print $1}'); do
+            test -e "$app/Frameworks/${lib#@rpath/}" || { echo "Manque : $lib"; exit 1; }
+          done
           zip -qry kinetic-v${{ steps.version.outputs.version }}.ipa Payload
           ls -la kinetic-v${{ steps.version.outputs.version }}.ipa
 
