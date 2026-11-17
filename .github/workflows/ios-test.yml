@@ -1,0 +1,103 @@
+name: Test iPhone (simulateur)
+
+# Lance l'application dans le simulateur iPhone, la parcourt et rapporte captures,
+# vidéo et journal d'erreurs (artefact « ios-test »).
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths:
+      - 'apps/web/**'
+      - 'tests/ios/**'
+      - '.github/workflows/ios-test.yml'
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '9.15.9'
+
+jobs:
+  simulator:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v6
+        with: { version: '${{ env.PNPM_VERSION }}' }
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '${{ env.NODE_VERSION }}'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: |
+          pnpm --filter @kinetic/core build
+          pnpm --filter @kinetic/adapters-web build
+          pnpm --filter @kinetic/web build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Sync Capacitor
+        working-directory: apps/web
+        run: pnpm exec cap sync ios
+
+      - name: Build for simulator
+        working-directory: apps/web/ios/App
+        run: |
+          xcodebuild build -project App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO \
+            > build.log 2>&1 || { grep -E "error:|BUILD FAILED" build.log | head -60; tail -40 build.log; exit 1; }
+          tail -3 build.log
+
+      - name: Install idb
+        run: |
+          brew tap facebook/fb
+          brew install idb-companion
+          pip3 install --break-system-packages fb-idb || pip3 install fb-idb
+          idb --help > /dev/null
+
+      - name: Boot simulator
+        id: sim
+        run: |
+          udid=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          devices = [d for rt in json.load(sys.stdin)['devices'].values() for d in rt]
+          phones = [d for d in devices if d['name'].startswith('iPhone') and 'Pro Max' not in d['name'] and 'Plus' not in d['name']]
+          print(sorted(phones, key=lambda d: d['name'])[-1]['udid'])")
+          xcrun simctl list devices | grep "$udid"
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl ui "$udid" appearance dark
+          xcrun simctl status_bar "$udid" override --time 9:41 --batteryState charged --batteryLevel 100
+          xcrun simctl install "$udid" apps/web/ios/App/build/Build/Products/Debug-iphonesimulator/App.app
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+
+      - name: Drive the app
+        run: |
+          mkdir -p ios-test
+          xcrun simctl io ${{ steps.sim.outputs.udid }} recordVideo --codec h264 ios-test/parcours.mp4 &
+          rec=$!
+          python3 tests/ios/drive.py ${{ steps.sim.outputs.udid }} ios-test || echo "pilotage interrompu"
+          kill -INT $rec; sleep 3
+
+      - name: Collect logs
+        if: always()
+        run: |
+          mkdir -p ios-test
+          xcrun simctl spawn ${{ steps.sim.outputs.udid }} log show --last 10m --style compact \
+            --predicate 'process == "App"' > ios-test/app.log 2>&1 || true
+          grep -iE "error|fault|exception|⚡️  \[error\]|ERROR MESSAGE" ios-test/app.log | tail -80 > ios-test/errors.log || true
+          cp -R ~/Library/Logs/DiagnosticReports/App* ios-test/ 2>/dev/null || true
+          ls -la ios-test
+          echo "--- erreurs"; cat ios-test/errors.log
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ios-test
+          path: ios-test
+          retention-days: 14
