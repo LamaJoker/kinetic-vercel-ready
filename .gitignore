@@ -26,3 +26,4 @@ apps/web/android/app/src/main/assets/capacitor.config.json
 apps/web/android/app/src/main/assets/capacitor.plugins.json
 
 .vercel
+__pycache__/
