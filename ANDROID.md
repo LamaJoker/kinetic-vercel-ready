@@ -77,6 +77,21 @@ The version shown in the store comes from `apps/web/package.json` (`version`):
 `9.5.0` becomes `versionName 9.5.0` / `versionCode 90500`. Bump it before every
 upload — Play refuses a `versionCode` it has already seen.
 
+### Signed APKs from GitHub Actions
+
+The `Applications` workflow signs the APK with a fixed key when two repository
+secrets exist (Settings → Secrets and variables → Actions):
+
+| Secret                      | Value                                    |
+| --------------------------- | ---------------------------------------- |
+| `KINETIC_KEYSTORE_BASE64`   | `base64 -w0 kinetic-release.jks` output  |
+| `KINETIC_KEYSTORE_PASSWORD` | store and key password (alias `kinetic`) |
+
+Every APK is then signed with the same certificate, so a new version installs
+over the previous one and keeps the data. Without the secrets the workflow falls
+back to a debug APK signed with a throwaway key (warning in the run summary).
+Keep a copy of the `.jks` file and its password outside the repository.
+
 ## Open in Android Studio
 
 ```bash

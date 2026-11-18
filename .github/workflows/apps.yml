@@ -64,14 +64,48 @@ jobs:
         working-directory: apps/web
         run: pnpm exec cap sync android --inline
 
-      - name: Build debug APK
+      # Clé de signature fixe (secrets KINETIC_KEYSTORE_BASE64 et KINETIC_KEYSTORE_PASSWORD) :
+      # chaque APK est signé pareil, donc s'installe par-dessus le précédent en gardant
+      # les données. Sans ces secrets, repli sur un APK de débogage (clé jetable).
+      - name: Prepare signing key
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KINETIC_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KINETIC_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::warning::Secrets de signature absents : APK de débogage, non installable par-dessus une version précédente."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/kinetic-release.jks"
+          {
+            echo "storeFile=$RUNNER_TEMP/kinetic-release.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=kinetic"
+            echo "keyPassword=$KEYSTORE_PASSWORD"
+          } > apps/web/android/keystore.properties
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Build APK
         working-directory: apps/web/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          if [ "${{ steps.signing.outputs.signed }}" = "true" ]; then
+            ./gradlew assembleRelease --no-daemon --stacktrace
+            apk=app/build/outputs/apk/release/app-release.apk
+          else
+            ./gradlew assembleDebug --no-daemon --stacktrace
+            apk=app/build/outputs/apk/debug/app-debug.apk
+          fi
+          mv "$apk" "$GITHUB_WORKSPACE/kinetic-v${{ steps.version.outputs.version }}.apk"
+          rm -f keystore.properties "$RUNNER_TEMP/kinetic-release.jks"
 
-      - name: Rename APK
-        run: mv apps/web/android/app/build/outputs/apk/debug/app-debug.apk kinetic-v${{ steps.version.outputs.version }}.apk
+      - name: Check APK signature
+        if: steps.signing.outputs.signed == 'true'
+        run: |
+          apksigner=$(ls $ANDROID_HOME/build-tools/*/apksigner | tail -1)
+          $apksigner verify --print-certs kinetic-v${{ steps.version.outputs.version }}.apk | grep -i "SHA-256"
 
       - uses: actions/upload-artifact@v7
         with:
