@@ -1,5 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+// Environnement node : localStorage minimal.
+if (typeof globalThis.localStorage === 'undefined') {
+  const mem = new Map<string, string>();
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (k: string) => mem.get(k) ?? null,
+      setItem: (k: string, v: string) => void mem.set(k, String(v)),
+      removeItem: (k: string) => void mem.delete(k),
+      clear: () => mem.clear(),
+    },
+  });
+}
+
 // Mock @capacitor/core and @capacitor/haptics before importing haptics.ts
 vi.mock('@capacitor/core', () => ({
   Capacitor: {
@@ -12,8 +26,8 @@ vi.mock('@capacitor/haptics', () => ({
     impact: vi.fn().mockResolvedValue(undefined),
     notification: vi.fn().mockResolvedValue(undefined),
   },
-  ImpactStyle: { Light: 'Light', Medium: 'Medium', Heavy: 'Heavy' },
-  NotificationType: { Success: 'SUCCESS', Error: 'ERROR' },
+  ImpactStyle: { Light: 'LIGHT', Medium: 'MEDIUM', Heavy: 'HEAVY' },
+  NotificationType: { Success: 'SUCCESS', Warning: 'WARNING', Error: 'ERROR' },
 }));
 
 import {
@@ -21,141 +35,136 @@ import {
   hapticMedium,
   hapticHeavy,
   hapticSuccess,
+  hapticWarning,
   hapticError,
+  hapticTap,
+  hapticCelebrate,
+  hapticsEnabled,
+  hapticsSupported,
+  setHapticsEnabled,
+  HAPTICS_PREF_KEY,
+  HAPTIC_MIN_GAP_MS,
+  _takeSlot,
+  _resetHapticsForTests,
 } from '../../apps/web/src/lib/haptics.js';
 import { Capacitor } from '@capacitor/core';
 import { Haptics } from '@capacitor/haptics';
 
-describe('Haptics (web platform)', () => {
-  let vibrateMock: ReturnType<typeof vi.fn>;
+/** Laisse l'import dynamique et la promesse se résoudre. */
+const flush = async (): Promise<void> => {
+  await vi.dynamicImportSettled();
+  await new Promise((r) => setTimeout(r, 0));
+};
 
+beforeEach(() => {
+  _resetHapticsForTests();
+  localStorage.removeItem(HAPTICS_PREF_KEY);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.clearAllMocks();
+});
+
+describe('Haptics (web : aucune vibration)', () => {
   beforeEach(() => {
-    vibrateMock = vi.fn();
     vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
-    vi.stubGlobal('navigator', { vibrate: vibrateMock });
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.clearAllMocks();
-  });
-
-  it('hapticLight calls navigator.vibrate(40)', async () => {
+  it('ne fait rien sur le web, même si navigator.vibrate existe', async () => {
+    const vibrate = vi.fn();
+    vi.stubGlobal('navigator', { vibrate });
     hapticLight();
-    await new Promise((r) => setTimeout(r, 0)); // flush microtasks
-    expect(vibrateMock).toHaveBeenCalledWith(40);
-  });
-
-  it('hapticMedium calls navigator.vibrate(80)', async () => {
-    hapticMedium();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(vibrateMock).toHaveBeenCalledWith(80);
-  });
-
-  it('hapticHeavy calls navigator.vibrate(150)', async () => {
-    hapticHeavy();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(vibrateMock).toHaveBeenCalledWith(150);
-  });
-
-  it('hapticSuccess calls navigator.vibrate with pattern', async () => {
     hapticSuccess();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(vibrateMock).toHaveBeenCalledWith([50, 40, 100]);
+    hapticCelebrate();
+    await flush();
+    expect(vibrate).not.toHaveBeenCalled();
+    expect(Haptics.impact).not.toHaveBeenCalled();
+    expect(Haptics.notification).not.toHaveBeenCalled();
   });
 
-  it('hapticError calls navigator.vibrate with error pattern', async () => {
-    hapticError();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(vibrateMock).toHaveBeenCalledWith([100, 50, 100, 50, 100]);
+  it('hapticsSupported() est faux sur le web', () => {
+    expect(hapticsSupported()).toBe(false);
   });
 });
 
-describe('Haptics (native platform)', () => {
+describe('Haptics (natif)', () => {
   beforeEach(() => {
     vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
-    vi.stubGlobal('navigator', {});
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.clearAllMocks();
+  it.each([
+    ['hapticLight', hapticLight, 'LIGHT'],
+    ['hapticTap', hapticTap, 'LIGHT'],
+    ['hapticMedium', hapticMedium, 'MEDIUM'],
+    ['hapticHeavy', hapticHeavy, 'HEAVY'],
+    ['hapticCelebrate', hapticCelebrate, 'HEAVY'],
+  ])('%s → Haptics.impact(%s)', async (_name, fn, style) => {
+    fn();
+    await flush();
+    expect(Haptics.impact).toHaveBeenCalledWith({ style });
   });
 
-  it('hapticLight calls Haptics.impact', async () => {
-    hapticLight();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(Haptics.impact).toHaveBeenCalled();
+  it.each([
+    ['hapticSuccess', hapticSuccess, 'SUCCESS'],
+    ['hapticWarning', hapticWarning, 'WARNING'],
+    ['hapticError', hapticError, 'ERROR'],
+  ])('%s → Haptics.notification(%s)', async (_name, fn, type) => {
+    fn();
+    await flush();
+    expect(Haptics.notification).toHaveBeenCalledWith({ type });
   });
 
-  it('hapticMedium calls Haptics.impact', async () => {
-    hapticMedium();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(Haptics.impact).toHaveBeenCalled();
+  it('avale les erreurs du plugin', async () => {
+    vi.mocked(Haptics.impact).mockRejectedValueOnce(new Error('not supported'));
+    vi.mocked(Haptics.notification).mockRejectedValueOnce(new Error('not supported'));
+    expect(() => {
+      hapticLight();
+      hapticSuccess();
+    }).not.toThrow();
+    await flush();
   });
 
-  it('hapticHeavy calls Haptics.impact', async () => {
-    hapticHeavy();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(Haptics.impact).toHaveBeenCalled();
-  });
-
-  it('hapticSuccess calls Haptics.notification', async () => {
+  it('respecte le réglage « Vibrations » coupé', async () => {
+    setHapticsEnabled(false);
+    expect(hapticsEnabled()).toBe(false);
+    hapticTap();
     hapticSuccess();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(Haptics.notification).toHaveBeenCalled();
+    await flush();
+    expect(Haptics.impact).not.toHaveBeenCalled();
+    expect(Haptics.notification).not.toHaveBeenCalled();
+
+    setHapticsEnabled(true);
+    expect(hapticsEnabled()).toBe(true);
+    hapticTap();
+    await flush();
+    expect(Haptics.impact).toHaveBeenCalledTimes(1);
   });
 
-  it('hapticError calls Haptics.notification', async () => {
-    hapticError();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(Haptics.notification).toHaveBeenCalled();
+  it('pas de rafale : deux appels rapprochés ne vibrent qu’une fois', async () => {
+    hapticTap();
+    hapticTap();
+    hapticTap();
+    await flush();
+    expect(Haptics.impact).toHaveBeenCalledTimes(1);
   });
 });
 
-describe('Haptics (native platform — API throws)', () => {
-  beforeEach(() => {
-    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
-    vi.stubGlobal('navigator', {});
+describe('anti-rafale (_takeSlot)', () => {
+  it('refuse un second retour du même type avant HAPTIC_MIN_GAP_MS', () => {
+    expect(_takeSlot('light', 1000)).toBe(true);
+    expect(_takeSlot('light', 1000 + HAPTIC_MIN_GAP_MS - 1)).toBe(false);
+    expect(_takeSlot('light', 1000 + HAPTIC_MIN_GAP_MS)).toBe(true);
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.clearAllMocks();
+  it('les types sont indépendants', () => {
+    expect(_takeSlot('light', 1000)).toBe(true);
+    expect(_takeSlot('success', 1001)).toBe(true);
   });
+});
 
-  it('hapticLight swallows Haptics.impact errors silently', async () => {
-    vi.mocked(Haptics.impact).mockRejectedValueOnce(new Error('not supported'));
-    hapticLight();
-    await new Promise((r) => setTimeout(r, 0));
-    // No error propagated — catch block executed
-  });
-
-  it('hapticMedium swallows Haptics.impact errors silently', async () => {
-    vi.mocked(Haptics.impact).mockRejectedValueOnce(new Error('not supported'));
-    hapticMedium();
-    await new Promise((r) => setTimeout(r, 0));
-    // No error propagated — catch block executed
-  });
-
-  it('hapticHeavy swallows Haptics.impact errors silently', async () => {
-    vi.mocked(Haptics.impact).mockRejectedValueOnce(new Error('not supported'));
-    hapticHeavy();
-    await new Promise((r) => setTimeout(r, 0));
-    // No error propagated — catch block executed
-  });
-
-  it('hapticSuccess swallows Haptics.notification errors silently', async () => {
-    vi.mocked(Haptics.notification).mockRejectedValueOnce(new Error('not supported'));
-    hapticSuccess();
-    await new Promise((r) => setTimeout(r, 0));
-    // No error propagated — catch block executed
-  });
-
-  it('hapticError swallows Haptics.notification errors silently', async () => {
-    vi.mocked(Haptics.notification).mockRejectedValueOnce(new Error('not supported'));
-    hapticError();
-    await new Promise((r) => setTimeout(r, 0));
-    // No error propagated — catch block executed
+describe('réglage par défaut', () => {
+  it('actif quand rien n’est enregistré', () => {
+    expect(hapticsEnabled()).toBe(true);
   });
 });

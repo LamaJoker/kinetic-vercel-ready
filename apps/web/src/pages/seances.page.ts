@@ -38,6 +38,7 @@ import { loadUserProfile } from '../lib/user/storage';
 import { suggestedRestSec, requestNotificationPermission } from '../lib/training/rest-timer';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import { hapticLight, hapticMedium, hapticSuccess, hapticHeavy } from '../lib/haptics';
+import { celebrate, recordCelebration } from '../lib/celebration';
 
 type Draft = { reps: number; weightKg: number; rpe: number; note: string; tempo: string };
 
@@ -345,15 +346,6 @@ export function seances() {
         }),
       );
     },
-    // ── PR Celebration ────────────────────────────────────────
-    prCelebration: null as {
-      exerciseName: string;
-      weightKg: number;
-      reps: number;
-      e1rmKg: number;
-    } | null,
-    _prDismissTimer: null as ReturnType<typeof setTimeout> | null,
-
     // Cache for progressionSuggestion — keyed by exerciseId, invalidated when
     // sessions array changes (tracked via its length as a cheap version counter).
     _suggestionCache: null as Map<string, ProgressionSuggestion | null> | null,
@@ -552,6 +544,22 @@ export function seances() {
       }
     },
 
+    /**
+     * Tirer pour rafraîchir (lib/native-gestures.ts) : relit exercices, modèles et
+     * historique sans toucher à la séance en cours ni aux imports en attente.
+     */
+    async refresh(): Promise<void> {
+      try {
+        const deps = await getDeps();
+        this.exercises = await loadExercises(deps.storage);
+        this.templates = await loadTemplates(deps.storage);
+        this.sessions = await loadSessions(deps.storage);
+        this.userProfile = await loadUserProfile(deps.storage);
+      } catch (err) {
+        console.warn('[seances] refresh failed:', err);
+      }
+    },
+
     // Alpine calls destroy() automatically via destroyTree() when the router
     // replaces the page. Clears the 1-second ticker and any pending rest timer
     // so they don't accumulate across SPA navigations.
@@ -561,10 +569,6 @@ export function seances() {
         this.tickHandle = null;
       }
       this.stopRest();
-      if (this._prDismissTimer) {
-        clearTimeout(this._prDismissTimer);
-        this._prDismissTimer = null;
-      }
     },
 
     // ─── Records (PR) ────────────────────────────────────────
@@ -853,13 +857,14 @@ export function seances() {
       return this.restRemainingSec() <= 5;
     },
 
-    startRest(): void {
+    /** `quiet` : déjà signalé par une vibration (série validée), pas de seconde secousse. */
+    startRest(quiet = false): void {
       const sec = Math.max(15, Math.min(600, Math.floor(Number(this.restPresetSec)) || 90));
       this.restPresetSec = sec;
       this.restTotalSec = sec;
       this.restEndsAtMs = this.nowMs + sec * 1000;
       this.fullscreenRest = true;
-      hapticMedium();
+      if (quiet !== true) hapticMedium();
       this._scheduleRestEndCallback(sec);
     },
 
@@ -1045,34 +1050,16 @@ export function seances() {
       this.setActiveEntry(exerciseId);
 
       if (isPr && hadRecord) {
-        const e1rmKg = Math.round(estimateE1rmKg(weightKg, reps) * 10) / 10;
-        this.prCelebration = {
-          exerciseName: this.exerciseName(exerciseId),
-          weightKg,
-          reps,
-          e1rmKg,
-        };
-        hapticSuccess();
-        // Dismiss automatique après 5 s
-        if (this._prDismissTimer) clearTimeout(this._prDismissTimer);
-        this._prDismissTimer = setTimeout(() => {
-          this.prCelebration = null;
-        }, 5000);
+        // Carte flottante de la coquille (lib/celebration.ts) : ne bloque pas la
+        // saisie et vibre elle-même (impact fort, une fois).
+        celebrate(recordCelebration(this.exerciseName(exerciseId), weightKg, reps));
       } else {
-        hapticLight();
+        hapticSuccess(); // série validée
       }
 
       // Auto-démarrer le chrono de repos après chaque série (durée basée sur le RPE)
       this.restPresetSec = this.smartRestSec();
-      this.startRest();
-    },
-
-    dismissPrCelebration(): void {
-      this.prCelebration = null;
-      if (this._prDismissTimer) {
-        clearTimeout(this._prDismissTimer);
-        this._prDismissTimer = null;
-      }
+      this.startRest(true);
     },
 
     /** Historique de sets pour un exercice, toutes séances confondues (du plus ancien au plus récent). */
@@ -1508,7 +1495,7 @@ export function seances() {
         this.currentSession = null;
         this.templateName = '';
         this.stopRest();
-        this.dismissPrCelebration();
+        hapticSuccess(); // séance sauvegardée
 
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {

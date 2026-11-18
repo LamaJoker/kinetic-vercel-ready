@@ -645,3 +645,40 @@ describe('initMobile — kinetic:// launch URL with non-null supabase (covers li
     await expect(initMobile()).resolves.toBeUndefined();
   });
 });
+
+describe('openRoute (widget, notification) — index d’historique conservé', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+    vi.resetModules();
+  });
+
+  it('garde kIdx dans history.state pour le sens des transitions', async () => {
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+    const { App } = await import('@capacitor/app');
+    vi.mocked(App.getLaunchUrl).mockResolvedValue({
+      url: 'com.lamajoker.kinetic://open/vitalite',
+    } as any);
+    vi.mocked(App.addListener).mockImplementation(() => Promise.resolve() as any);
+    vi.stubGlobal('localStorage', makeFakeLocalStorage());
+    const replaceState = vi.fn();
+    vi.stubGlobal('window', {
+      location: { pathname: '/' },
+      history: { replaceState },
+      dispatchEvent: vi.fn(),
+    });
+    vi.stubGlobal(
+      'PopStateEvent',
+      class {
+        constructor(public type: string) {}
+      },
+    );
+
+    const { setHistoryIdx } = await import('../../apps/web/src/lib/nav-motion.js');
+    setHistoryIdx(3);
+    const { initMobile } = await import('../../apps/web/src/lib/mobile.js');
+    await initMobile();
+
+    expect(replaceState).toHaveBeenCalledWith({ kIdx: 3 }, '', '/vitalite');
+  });
+});

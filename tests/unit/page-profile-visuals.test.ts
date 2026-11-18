@@ -27,3 +27,31 @@ describe('onboarding — présentation', () => {
     expect(goalCardClass(false)).toBe('');
   });
 });
+
+describe('profil — tirer pour rafraîchir', () => {
+  it('refresh() relit la page sans écraser un prénom en cours de saisie', async () => {
+    const { profile } = await import('../../apps/web/src/pages/profile.page.js');
+    const page = profile();
+    page.displayName = 'Léa';
+    page.displayNameInput = 'Lé';
+    page.init = vi.fn(async () => {
+      page.displayNameInput = page.displayName;
+    });
+    await page.refresh();
+    expect(page.init).toHaveBeenCalledTimes(1);
+    expect(page.displayNameInput).toBe('Lé');
+  });
+
+  it('refresh() reprend le nom enregistré quand rien n’est en cours de saisie', async () => {
+    const { profile } = await import('../../apps/web/src/pages/profile.page.js');
+    const page = profile();
+    page.displayName = 'Léa';
+    page.displayNameInput = 'Léa';
+    page.init = vi.fn(async () => {
+      page.displayName = 'Lou';
+      page.displayNameInput = 'Lou';
+    });
+    await page.refresh();
+    expect(page.displayNameInput).toBe('Lou');
+  });
+});

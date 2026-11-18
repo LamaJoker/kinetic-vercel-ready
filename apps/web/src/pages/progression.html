@@ -170,13 +170,18 @@
     </div>
   </section>
 
-  <!-- Onglets : pastilles -->
-  <div x-show="totalSessions > 0" class="k-scroll-x mb-3">
+  <!-- Onglets : contrôle segmenté -->
+  <div
+    x-show="totalSessions > 0"
+    class="k-seg mb-3"
+    role="group"
+    aria-label="Onglets de progression"
+  >
     <button
       type="button"
       @click="setTab('force')"
       :aria-pressed="activeTab === 'force' ? 'true' : 'false'"
-      class="k-chip"
+      class="k-seg-item"
     >
       Force
     </button>
@@ -184,7 +189,7 @@
       type="button"
       @click="setTab('volume')"
       :aria-pressed="activeTab === 'volume' ? 'true' : 'false'"
-      class="k-chip"
+      class="k-seg-item"
     >
       Volume
     </button>
@@ -192,7 +197,7 @@
       type="button"
       @click="setTab('muscles')"
       :aria-pressed="activeTab === 'muscles' ? 'true' : 'false'"
-      class="k-chip"
+      class="k-seg-item"
     >
       Muscles
     </button>
@@ -200,7 +205,7 @@
       type="button"
       @click="setTab('records')"
       :aria-pressed="activeTab === 'records' ? 'true' : 'false'"
-      class="k-chip"
+      class="k-seg-item"
     >
       Records
     </button>
@@ -208,7 +213,7 @@
       type="button"
       @click="setTab('heatmap')"
       :aria-pressed="activeTab === 'heatmap' ? 'true' : 'false'"
-      class="k-chip"
+      class="k-seg-item"
     >
       Activité
     </button>

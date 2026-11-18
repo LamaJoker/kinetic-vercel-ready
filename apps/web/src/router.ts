@@ -7,6 +7,15 @@ import Alpine from 'alpinejs';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from './deps';
 import { ric } from './lib/performance';
+import {
+  type NavDirection,
+  navDirection,
+  currentHistoryIdx,
+  setHistoryIdx,
+  readHistoryIdx,
+  takeForcedDirection,
+  prefersReducedMotion,
+} from './lib/nav-motion';
 
 /**
  * Templates HTML chargés à la demande : un chunk par page au lieu de tout
@@ -153,7 +162,22 @@ async function hasCompletedOnboarding(): Promise<boolean> {
   }
 }
 
-async function render(path: string): Promise<void> {
+/** Chemin de la page affichée (sens des transitions). */
+let renderedPath: string | null = null;
+/** Jeton de la View Transition en cours (on ne nettoie que la sienne). */
+let navToken = 0;
+
+/** View Transitions disponibles (WKWebView iOS 18+, WebView Chrome 111+) et souhaitées. */
+function canViewTransition(): boolean {
+  return (
+    typeof document !== 'undefined' &&
+    typeof (document as Document & { startViewTransition?: unknown }).startViewTransition ===
+      'function' &&
+    !prefersReducedMotion()
+  );
+}
+
+async function render(path: string, direction: NavDirection = 'none'): Promise<void> {
   const seq = ++renderSeq;
   // FIX #3 : Préserver le hash AVANT toute navigation — Supabase en a besoin
   // pour les magic links et OAuth (tokens dans le fragment #access_token=...)
@@ -180,38 +204,88 @@ async function render(path: string): Promise<void> {
   const html = await resolveHtml(normalizedPath);
   if (seq !== renderSeq) return; // une navigation plus récente a pris la main
 
-  host.querySelectorAll<HTMLElement>('[x-data]').forEach((el) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = (el as any)._x_dataStack?.[0];
-    if (data && typeof data.destroy === 'function') {
-      try {
-        data.destroy();
-      } catch (err) {
-        console.warn('[router] component destroy failed:', err);
+  const useViewTransition = direction !== 'none' && renderedPath !== null && canViewTransition();
+  renderedPath = normalizedPath;
+
+  const swap = (): void => {
+    // Rendu plus récent arrivé pendant la capture de la View Transition : on le laisse faire.
+    if (seq !== renderSeq) return;
+    host.querySelectorAll<HTMLElement>('[x-data]').forEach((el) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = (el as any)._x_dataStack?.[0];
+      if (data && typeof data.destroy === 'function') {
+        try {
+          data.destroy();
+        } catch (err) {
+          console.warn('[router] component destroy failed:', err);
+        }
       }
+    });
+
+    host.innerHTML = html;
+    // Reste éventuel du geste « retour » (native-gestures.ts) : la page sortante
+    // était décalée sous le doigt ; la nouvelle doit repartir sans transformation.
+    host.style.removeProperty('transform');
+    host.style.removeProperty('transition');
+    host.classList.remove('k-route-in', 'k-swiping-back', 'k-ptr-settling');
+    if (useViewTransition) {
+      // La View Transition anime l'écran entier : nouvel écran capturé en haut de page.
+      window.scrollTo(0, 0);
+    } else {
+      // Entrée de page en cascade (styles.css → #app-outlet.k-route-in). On remet la
+      // classe en forçant un reflow pour rejouer l'animation à chaque page.
+      void host.offsetWidth;
+      host.classList.add('k-route-in');
     }
-  });
 
-  host.innerHTML = html;
-  // Entrée de page en cascade (styles.css → #app-outlet.k-route-in). On retire puis
-  // remet la classe en forçant un reflow pour rejouer l'animation à chaque page.
-  host.classList.remove('k-route-in');
-  void host.offsetWidth;
-  host.classList.add('k-route-in');
+    // FIX #3 : Restaurer le hash après injection du HTML pour que Supabase Auth JS
+    // puisse le lire lors de l'init du composant auth-callback
+    if (hash && normalizedPath === '/auth-callback') {
+      // Ne pas utiliser history.replaceState ici — ça effacerait le hash dont
+      // Supabase a besoin. On laisse le hash intact dans la barre d'adresse.
+      // Alpine init se fait avec le hash toujours présent dans window.location.hash
+    }
 
-  // FIX #3 : Restaurer le hash après injection du HTML pour que Supabase Auth JS
-  // puisse le lire lors de l'init du composant auth-callback
-  if (hash && normalizedPath === '/auth-callback') {
-    // Ne pas utiliser history.replaceState ici — ça effacerait le hash dont
-    // Supabase a besoin. On laisse le hash intact dans la barre d'adresse.
-    // Alpine init se fait avec le hash toujours présent dans window.location.hash
+    try {
+      Alpine.initTree(host);
+    } catch (e) {
+      console.warn('[router] Alpine.initTree failed:', e);
+    }
+  };
+
+  if (useViewTransition) {
+    // Transition façon iOS (nav-motion.ts + styles/native-feel.css). Le sens est posé
+    // sur <html data-k-nav> le temps de l'animation ; seule la dernière l'efface.
+    const root = document.documentElement;
+    const token = ++navToken;
+    root.dataset.kNav = direction;
+    try {
+      const vt = (
+        document as Document & {
+          startViewTransition(cb: () => void): {
+            updateCallbackDone: Promise<void>;
+            ready: Promise<void>;
+            finished: Promise<void>;
+          };
+        }
+      ).startViewTransition(swap);
+      // Transition sautée (onglet masqué, taille de fenêtre changée…) : `ready` est
+      // rejetée ; ce n'est pas une erreur, le rendu a bien eu lieu.
+      vt.ready.catch(() => undefined);
+      void vt.finished
+        .catch(() => undefined)
+        .then(() => {
+          if (token === navToken) delete root.dataset.kNav;
+        });
+      await vt.updateCallbackDone.catch(() => undefined);
+    } catch {
+      delete root.dataset.kNav;
+      swap();
+    }
+  } else {
+    swap();
   }
-
-  try {
-    Alpine.initTree(host);
-  } catch (e) {
-    console.warn('[router] Alpine.initTree failed:', e);
-  }
+  if (seq !== renderSeq) return;
 
   requestAnimationFrame(() => {
     host.setAttribute('aria-busy', 'false');
@@ -252,12 +326,17 @@ function hasRenderedPage(): boolean {
 
 export function navigate(path: string, replace = false): void {
   const target = path.startsWith('/') ? path : `/${path}`;
+  const from = renderedPath ?? window.location.pathname;
+  const idx = currentHistoryIdx();
+  let kind: 'push' | 'replace' = 'replace';
   if (replace) {
-    window.history.replaceState({}, '', target);
+    window.history.replaceState({ kIdx: idx }, '', target);
   } else if (target !== window.location.pathname) {
-    window.history.pushState({}, '', target);
+    window.history.pushState({ kIdx: idx + 1 }, '', target);
+    setHistoryIdx(idx + 1);
+    kind = 'push';
   }
-  void render(target);
+  void render(target, navDirection(from, target, kind));
 }
 
 export function initRouter(): void {
@@ -277,7 +356,41 @@ export function initRouter(): void {
     { capture: true },
   );
 
-  window.addEventListener('popstate', () => void render(window.location.pathname || '/'));
+  // Index d'historique (sens avant / arrière des popstate, geste « retour »).
+  // L'entrée de lancement n'a pas de kIdx : on le pose (sans toucher à l'URL ni au
+  // hash OAuth), sinon le retour vers elle serait un simple fondu au lieu d'un « back ».
+  const initialIdx = readHistoryIdx(window.history.state);
+  setHistoryIdx(initialIdx ?? 0);
+  if (initialIdx === null) {
+    try {
+      const prev: unknown = window.history.state;
+      const base = prev && typeof prev === 'object' ? (prev as Record<string, unknown>) : {};
+      window.history.replaceState({ ...base, kIdx: 0 }, '');
+    } catch {
+      /* état d'historique non clonable : sens par défaut (fondu) */
+    }
+  }
+  window.addEventListener('popstate', (e) => {
+    const to = window.location.pathname || '/';
+    const fromIdx = currentHistoryIdx();
+    const toIdx = readHistoryIdx(e.state);
+    if (toIdx !== null) setHistoryIdx(toIdx);
+    const dir =
+      takeForcedDirection() ??
+      navDirection(
+        renderedPath ?? to,
+        to,
+        renderedPath === null ? 'initial' : 'pop',
+        fromIdx,
+        toIdx,
+      );
+    void render(to, dir);
+  });
+
+  // Gestes natifs (retour par le bord, tirer pour rafraîchir), chargés à part.
+  void import('./lib/native-gestures')
+    .then(({ initNativeGestures }) => initNativeGestures())
+    .catch(() => undefined);
 
   if (typeof window.addEventListener === 'function') {
     window.addEventListener('load', () => prefetchPages(), { once: true });

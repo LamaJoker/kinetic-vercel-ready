@@ -1,0 +1,250 @@
+/* celebrations — voir le commentaire en tête de chaque bloc. CSS simple (pas de directives Tailwind) ; utiliser les variables de styles.css. */
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Célébrations : record battu, niveau gagné, routine du jour à 100 %
+   (composant lib/celebration.ts, monté une fois dans index.html).
+
+   - Carte en verre flottante dans le tiers haut de l'écran, au-dessus du
+     minuteur de repos (z 60), des feuilles (70) et des toasts (80).
+   - Le calque .k-cel laisse passer le toucher : seule la carte le capte
+     (toucher = fermer). La saisie de la séance reste utilisable dessous.
+   - Entrée sur ressort (--k-spring), médaille qui « pop », anneau qui
+     s'élargit, éclats d'accent (12 <i> générés en JS) ; sortie en fondu.
+     On n'anime que transform et opacity.
+   - Les animations n'existent que sous .is-in : passer à .is-out les retire,
+     repasser à .is-in (carte suivante) les relance depuis le début.
+   - prefers-reduced-motion : apparition simple, sans particules ni anneau.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.k-cel {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 14vh);
+  left: 0;
+  right: 0;
+  z-index: 85;
+  display: flex;
+  justify-content: center;
+  padding: 0 1rem;
+  pointer-events: none;
+}
+
+.k-cel-card {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(19rem, 100%);
+  padding: 1.5rem 1.25rem 1.25rem;
+  border: 0;
+  border-radius: 28px;
+  font: inherit;
+  text-align: center;
+  color: var(--tx);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgb(var(--kinetic-neon) / 0.2), transparent 65%),
+    linear-gradient(rgb(var(--surface) / 0.55), rgb(var(--surface) / 0.55)), var(--material);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(24px);
+  box-shadow:
+    inset 0 1px 0 var(--k-edge-top),
+    0 0 0 0.5px var(--separator),
+    0 22px 50px -14px rgba(0, 0, 0, 0.55),
+    0 0 44px -12px rgb(var(--kinetic-neon) / 0.45);
+}
+.k-cel-card:focus-visible {
+  outline: 2px solid rgb(var(--kinetic-neon));
+  outline-offset: 3px;
+}
+
+/* ─── Médaille ─── */
+.k-cel-medal {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 9999px;
+  color: #0a0a0c; /* texte posé sur l'accent : toujours sombre (cf. finitions.css) */
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0) 45%),
+    linear-gradient(150deg, rgb(var(--kinetic-neon)), rgb(var(--kinetic-neon) / 0.72));
+  box-shadow:
+    inset 0 -3px 6px rgba(0, 0, 0, 0.18),
+    0 10px 24px -8px rgb(var(--kinetic-neon) / 0.7);
+}
+.k-cel-medal svg {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+.k-cel-medal b {
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+/* Anneau qui s'élargit autour de la médaille */
+.k-cel-medal::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px solid rgb(var(--kinetic-neon) / 0.7);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ─── Éclats ─── */
+.k-cel-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.k-cel-burst i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 9999px;
+  background: rgb(var(--kinetic-neon));
+  opacity: 0;
+}
+.k-cel-burst i:nth-child(3n) {
+  background: rgb(var(--kinetic-electric));
+}
+.k-cel-burst i:nth-child(even) {
+  width: 4px;
+  height: 11px;
+  margin: -5.5px 0 0 -2px;
+  border-radius: 2px;
+}
+
+/* ─── Texte ─── */
+.k-cel-title {
+  margin-top: 0.9rem;
+  font-size: 1.1875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.022em;
+}
+.k-cel-sub {
+  margin-top: 0.25rem;
+  max-width: 100%;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  color: var(--tx2);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+/* ─── Mouvement ─── */
+.k-cel-card.is-in {
+  animation: k-cel-in 560ms var(--k-spring) backwards;
+}
+.k-cel-card.is-in .k-cel-medal {
+  animation: k-cel-medal 680ms var(--k-spring) 70ms backwards;
+}
+.k-cel-card.is-in .k-cel-medal::after {
+  animation: k-cel-ring 900ms cubic-bezier(0.2, 0.7, 0.3, 1) 180ms;
+}
+.k-cel-card.is-in .k-cel-burst i {
+  animation: k-cel-spark 780ms cubic-bezier(0.15, 0.7, 0.3, 1) 170ms;
+}
+.k-cel-card.is-in .k-cel-burst i:nth-child(even) {
+  animation-delay: 210ms;
+}
+.k-cel-card.is-in .k-cel-title,
+.k-cel-card.is-in .k-cel-sub {
+  animation: k-cel-text 420ms var(--k-ease) 160ms backwards;
+}
+.k-cel-card.is-in .k-cel-sub {
+  animation-delay: 220ms;
+}
+.k-cel-card.is-out {
+  animation: k-cel-out 240ms ease-in forwards;
+}
+
+@keyframes k-cel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes k-cel-out {
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+}
+@keyframes k-cel-medal {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-24deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes k-cel-ring {
+  from {
+    opacity: 0.9;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.55);
+  }
+}
+@keyframes k-cel-spark {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--k-cel-a)) translateY(-30px) scale(0.6);
+  }
+  15% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--k-cel-a)) translateY(calc(-30px - var(--k-cel-d))) scale(0.2);
+  }
+}
+@keyframes k-cel-text {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Mouvement réduit : la carte apparaît / disparaît simplement (les durées sont
+   déjà ramenées à ~0 par styles.css), sans éclats ni anneau. */
+@media (prefers-reduced-motion: reduce) {
+  .k-cel-burst,
+  .k-cel-medal::after {
+    display: none;
+  }
+  .k-cel-card.is-in,
+  .k-cel-card.is-in .k-cel-medal,
+  .k-cel-card.is-in .k-cel-title,
+  .k-cel-card.is-in .k-cel-sub {
+    animation: none;
+  }
+}

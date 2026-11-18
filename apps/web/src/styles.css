@@ -133,6 +133,34 @@
   --k-btn-glow: 0.3;
   color-scheme: light;
 }
+/* Accent en mode clair : deux usages distincts (cf. styles/finitions.css).
+   --kinetic-neon      accent GRAPHIQUE (anneaux, barres, courbes, pastilles,
+                       dégradé du bouton principal) : couleur vive, texte posé
+                       dessus toujours sombre (#0a0a0c, ≥ 4,5:1).
+   --kinetic-neon-ink  accent pour le TEXTE (.text-kinetic-neon) : variante
+                       foncée, ≥ 4,5:1 sur --ink, --surface et --elevated. */
+[data-mode='light']:not([data-theme]),
+[data-mode='light'][data-theme='electrique'] {
+  --kinetic-neon: 255 200 0; /* jaune système (clair) */
+  --kinetic-neon-ink: 138 99 0; /* or foncé : 4,9:1 sur --ink */
+}
+[data-mode='light'][data-theme='cyber'] {
+  --kinetic-neon: 50 173 230;
+  --kinetic-neon-ink: 0 110 160;
+}
+[data-mode='light'][data-theme='violet'] {
+  --kinetic-neon: 175 82 222;
+  --kinetic-neon-ink: 137 68 171;
+}
+[data-mode='light'][data-theme='phoenix'] {
+  --kinetic-neon: 255 149 0;
+  --kinetic-neon-ink: 165 80 0;
+}
+[data-mode='light'][data-theme='fantome'] {
+  /* Le gris très clair du sombre disparaît sur blanc : gris moyen (3,3:1). */
+  --kinetic-neon: 142 142 147;
+  --kinetic-neon-ink: 72 72 74;
+}
 
 /* ─── Base ─── */
 html {

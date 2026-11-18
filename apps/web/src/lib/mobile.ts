@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { deepLinkRoute } from './deep-link';
+import { currentHistoryIdx } from './nav-motion';
 
 // Structural type — avoids SupabaseClient generic-mismatch errors when
 // supabase-js adds new class generics (e.g. ClientOptions in 2.105+).
@@ -38,7 +39,10 @@ function debugLog(msg: string): void {
 
 /** Affiche une page de l'application sans recharger (widget, notification). */
 function openRoute(route: string): void {
-  if (window.location.pathname !== route) window.history.replaceState({}, '', route);
+  // kIdx conservé : le sens des transitions (nav-motion.ts) reste juste ensuite.
+  if (window.location.pathname !== route) {
+    window.history.replaceState({ kIdx: currentHistoryIdx() }, '', route);
+  }
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 

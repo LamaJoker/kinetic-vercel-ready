@@ -13,6 +13,12 @@ export default defineConfig({
       { find: '@test-helpers', replacement: resolve(__dirname, 'tests/helpers') },
       // idb-keyval is a browser-only package — replace with in-memory stub for Node tests.
       // The real IdbStorage adapter is excluded from coverage and tested via E2E.
+      // Mêmes coquilles vides qu'au build (vite.config.ts) pour les sous-modules
+      // supabase-js inutilisés : les tests tournent sur le même client qu'en prod.
+      ...['realtime', 'storage', 'functions'].map((name) => ({
+        find: new RegExp(`^@supabase/${name}-js$`),
+        replacement: resolve(__dirname, `apps/web/src/lib/supabase-stubs/${name}.ts`),
+      })),
       {
         find: 'idb-keyval',
         replacement: resolve(__dirname, 'tests/helpers/idb-keyval.mock.ts'),
@@ -27,7 +33,12 @@ export default defineConfig({
     // Tests that need finer control can override with their own vi.mock() calls.
     server: {
       deps: {
-        inline: ['@capacitor/core', '@capacitor/filesystem', '@capacitor/share'],
+        inline: [
+          '@capacitor/core',
+          '@capacitor/filesystem',
+          '@capacitor/share',
+          '@supabase/supabase-js',
+        ],
       },
     },
     coverage: {

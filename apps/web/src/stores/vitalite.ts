@@ -13,6 +13,8 @@ import { sanitizeUserInput } from '../lib/security';
 import { syncWidget } from '../lib/widget';
 import { syncRoutineReminder } from '../lib/reminders';
 import { readHealthToday, SLEEP_GOAL_MIN, STEPS_GOAL } from '../lib/health';
+import { hapticSuccess } from '../lib/haptics';
+import { celebrate, routineCelebration } from '../lib/celebration';
 
 const PRIORITY_LABEL = { high: 'haute', med: 'moyenne', low: 'faible' } as const;
 const STEPS_TASK = 'evening-walk';
@@ -246,7 +248,8 @@ export function vitaliteStore() {
       }
     },
 
-    async complete(taskId: string): Promise<void> {
+    /** `byUser` : coche faite au doigt (vibration de succès) ; false pour Health Connect. */
+    async complete(taskId: string, byUser = true): Promise<void> {
       if (this._pendingIds.includes(taskId)) return;
       const task = this.tasks.find((entry) => entry.id === taskId);
       if (!task || task.done) return;
@@ -288,6 +291,10 @@ export function vitaliteStore() {
               }
             : entry,
         );
+
+        if (byUser === true) hapticSuccess(); // tâche cochée
+        // Dernière tâche cochée à la main : routine du jour à 100 %.
+        if (byUser === true && this.allDone) celebrate(routineCelebration(this.totalCount));
 
         const doneKey = STORAGE_KEYS.VITALITE_DONE(today);
         const doneIds = (await deps.storage.get<string[]>(doneKey)) ?? [];
@@ -647,7 +654,7 @@ export function vitaliteStore() {
       if (sleepMinutes !== null && sleepMinutes >= SLEEP_GOAL_MIN) reached.push(SLEEP_TASK);
       for (const id of reached) {
         const task = this.tasks.find((entry) => entry.id === id);
-        if (task && !task.done) await this.complete(id);
+        if (task && !task.done) await this.complete(id, false);
       }
     },
 

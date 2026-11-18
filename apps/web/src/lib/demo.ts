@@ -11,6 +11,7 @@ import type { WorkoutSession, SetEntry } from './training/types';
 import { DEFAULT_TEMPLATES } from './training/seed';
 import { saveSession, sessionStorageKey } from './training/storage';
 import { localIsoDate } from './training/next-session';
+import { setCelebrationsMuted } from './celebration';
 
 /** Charges de départ (kg) et incrément toutes les 2 semaines. */
 const START_KG: Record<string, [number, number]> = {
@@ -237,15 +238,21 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
 export async function loadDemoData(storage: StoragePort, now: Date = new Date()): Promise<number> {
   const { sessions, values } = buildDemoData(now);
   const written: StorageKey[] = [];
-  for (const [key, value] of values) {
-    await storage.set(key, value);
-    written.push(key);
+  // Pas de pluie de records / niveaux pendant l'écriture des 8 semaines de démo.
+  setCelebrationsMuted(true);
+  try {
+    for (const [key, value] of values) {
+      await storage.set(key, value);
+      written.push(key);
+    }
+    for (const s of sessions) {
+      await saveSession(storage, s);
+      written.push(sessionStorageKey(s.id));
+    }
+    await storage.set(STORAGE_KEYS.DEMO_MANIFEST, written);
+  } finally {
+    setCelebrationsMuted(false);
   }
-  for (const s of sessions) {
-    await saveSession(storage, s);
-    written.push(sessionStorageKey(s.id));
-  }
-  await storage.set(STORAGE_KEYS.DEMO_MANIFEST, written);
   return sessions.length;
 }
 

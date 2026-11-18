@@ -1,0 +1,238 @@
+/* finitions — voir le commentaire en tête de chaque bloc. CSS simple (pas de directives Tailwind) ; utiliser les variables de styles.css. */
+
+/* ═══════════════════════════════════════════════════════════════════════
+   1. Un seul langage de sélection
+   ───────────────────────────────────────────────────────────────────────
+   Contrôle segmenté unique de l'app (choix exclusif parmi 2 à 6 options :
+   période, objectif, barre, apparence, onglets, tri, filtres…) :
+
+     <div class="k-seg" role="group" aria-label="…">
+       <button type="button" class="k-seg-item" :aria-pressed="…">30 j</button>
+       …
+     </div>
+
+   - Piste en capsule translucide (remplissage système iOS), segments de
+     largeur égale.
+   - Le segment actif ([aria-pressed|aria-selected="true"] ou .on) est une
+     pastille d'accent (même dégradé que le bouton principal) dessinée par
+     .k-seg::before, qui GLISSE d'un segment à l'autre (transform seul).
+     Position et nombre de segments viennent de :has() + :nth-of-type, donc
+     aucun JS, et les <template x-for> intercalés ne comptent pas.
+   - Sans :has() (vieux WebView), le segment actif porte lui-même l'aplat.
+   Les choix multiples (jours, disques, icônes) gardent leurs pastilles
+   .k-on / .k-off, alignées sur le même code : sélection = aplat d'accent,
+   texte sombre.
+   ═══════════════════════════════════════════════════════════════════════ */
+.k-seg {
+  --k-seg-pad: 3px;
+  --k-seg-gap: 2px;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  gap: var(--k-seg-gap);
+  padding: var(--k-seg-pad);
+  border-radius: 9999px;
+  /* Remplissage translucide : lisible sur la page comme dans une carte */
+  background: rgba(118, 118, 128, 0.24);
+}
+.bg-kinetic-surface .k-seg {
+  background: rgba(118, 118, 128, 0.24);
+}
+[data-mode='light'] .k-seg {
+  background: rgba(118, 118, 128, 0.12);
+}
+
+.k-seg > .k-seg-item {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 2.25rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 500;
+  color: var(--tx);
+  background: transparent;
+  box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 300ms var(--k-spring);
+}
+.k-seg > .k-seg-item:active {
+  transform: scale(0.95);
+  transition-duration: 120ms;
+}
+/* Cinq ou six segments (onglets Progression, filtres Trophées) : marges réduites */
+.k-seg:has(> button:nth-of-type(5)) > .k-seg-item {
+  padding-inline: 0.25rem;
+}
+.k-seg:has(> button:nth-of-type(6)) > .k-seg-item {
+  padding-inline: 0.125rem;
+  font-size: 0.75rem;
+  letter-spacing: -0.01em;
+}
+.k-seg > .k-seg-item:is(.on, [aria-pressed='true'], [aria-selected='true']) {
+  font-weight: 600;
+  color: #0a0a0c;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Pastille d'accent glissante */
+.k-seg::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: var(--k-seg-pad);
+  bottom: var(--k-seg-pad);
+  left: var(--k-seg-pad);
+  width: calc(
+    (100% - 2 * var(--k-seg-pad) - (var(--k-seg-n, 1) - 1) * var(--k-seg-gap)) / var(--k-seg-n, 1)
+  );
+  border-radius: 9999px;
+  pointer-events: none;
+  background-color: rgb(var(--kinetic-neon));
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(
+      115deg,
+      rgb(var(--kinetic-electric) / 0) 35%,
+      rgb(var(--kinetic-electric) / 0.32) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 4px 12px -6px rgb(var(--kinetic-neon) / var(--k-btn-glow));
+  opacity: 0;
+  transform: translateX(calc(var(--k-seg-i, 0) * (100% + var(--k-seg-gap))));
+  transition:
+    transform 420ms cubic-bezier(0.3, 1.25, 0.5, 1),
+    opacity 160ms ease;
+}
+.k-seg:has(> :is(.on, [aria-pressed='true'], [aria-selected='true']))::before {
+  opacity: 1;
+}
+/* Nombre de segments */
+.k-seg:has(> button:nth-of-type(2):last-of-type) {
+  --k-seg-n: 2;
+}
+.k-seg:has(> button:nth-of-type(3):last-of-type) {
+  --k-seg-n: 3;
+}
+.k-seg:has(> button:nth-of-type(4):last-of-type) {
+  --k-seg-n: 4;
+}
+.k-seg:has(> button:nth-of-type(5):last-of-type) {
+  --k-seg-n: 5;
+}
+.k-seg:has(> button:nth-of-type(6):last-of-type) {
+  --k-seg-n: 6;
+}
+/* Rang du segment actif (0 = premier) */
+.k-seg:has(> button:nth-of-type(2):is(.on, [aria-pressed='true'], [aria-selected='true'])) {
+  --k-seg-i: 1;
+}
+.k-seg:has(> button:nth-of-type(3):is(.on, [aria-pressed='true'], [aria-selected='true'])) {
+  --k-seg-i: 2;
+}
+.k-seg:has(> button:nth-of-type(4):is(.on, [aria-pressed='true'], [aria-selected='true'])) {
+  --k-seg-i: 3;
+}
+.k-seg:has(> button:nth-of-type(5):is(.on, [aria-pressed='true'], [aria-selected='true'])) {
+  --k-seg-i: 4;
+}
+.k-seg:has(> button:nth-of-type(6):is(.on, [aria-pressed='true'], [aria-selected='true'])) {
+  --k-seg-i: 5;
+}
+/* Plus de six segments : pas de pastille glissante, l'aplat va sur le segment */
+.k-seg:has(> button:nth-of-type(7))::before {
+  display: none;
+}
+.k-seg:has(> button:nth-of-type(7))
+  > .k-seg-item:is(.on, [aria-pressed='true'], [aria-selected='true']) {
+  background: rgb(var(--kinetic-neon));
+}
+@supports not selector(:has(*)) {
+  .k-seg::before {
+    display: none;
+  }
+  .k-seg > .k-seg-item:is(.on, [aria-pressed='true'], [aria-selected='true']) {
+    background: rgb(var(--kinetic-neon));
+  }
+}
+
+/* Pastilles de choix multiple : même code que le segment actif */
+.k-on {
+  background-color: rgb(var(--kinetic-neon));
+  color: #0a0a0c;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-seg::before,
+  .k-seg > .k-seg-item {
+    transition: none;
+  }
+  .k-seg > .k-seg-item:active {
+    transform: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   2. Avatar (accueil, profil) : initiale ou silhouette dans l'anneau d'accent
+   ───────────────────────────────────────────────────────────────────────
+   Sans initiale connue ($store.auth.avatarText vide), <svg class="k-avatar-icon">
+   (silhouette) : 55 % du disque, couleur du texte atténuée (suit le fond).
+   ═══════════════════════════════════════════════════════════════════════ */
+.k-avatar-icon {
+  width: 55%;
+  height: 55%;
+  opacity: 0.6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   3. Mode clair : accent pour le texte ≠ accent pour le graphique
+   ───────────────────────────────────────────────────────────────────────
+   Variables dans styles.css (zone « mode clair ») :
+     --kinetic-neon      vif : anneaux, barres, courbes, pastilles, dégradés
+     --kinetic-neon-ink  foncé (AA) : texte .text-kinetic-neon
+   En sombre, les deux sont identiques.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root:not([data-mode='light']) {
+  --kinetic-neon-ink: var(--kinetic-neon);
+}
+[data-mode='light'] .text-kinetic-neon {
+  color: rgb(var(--kinetic-neon-ink));
+}
+/* Tracés SVG colorés par currentColor (anneaux k-ring, courbes) : graphique vif */
+[data-mode='light'] .text-kinetic-neon > .k-ring,
+[data-mode='light'] svg .text-kinetic-neon {
+  color: rgb(var(--kinetic-neon));
+}
+[data-mode='light'] .text-kinetic-electric > .k-ring,
+[data-mode='light'] svg .text-kinetic-electric {
+  color: rgb(var(--kinetic-electric));
+}
+[data-mode='light'] .text-kinetic-teal > .k-ring,
+[data-mode='light'] svg .text-kinetic-teal {
+  color: #34c759;
+}
+[data-mode='light'] .text-kinetic-purple > .k-ring,
+[data-mode='light'] svg .text-kinetic-purple {
+  color: #007aff;
+}
+[data-mode='light'] .text-kinetic-coral > .k-ring,
+[data-mode='light'] svg .text-kinetic-coral {
+  color: #ff3b30;
+}
+/* Piste des anneaux un peu plus marquée sur fond blanc */
+[data-mode='light'] .k-ring-track {
+  stroke-opacity: 0.2;
+}
+/* Anneau de focus : l'accent vif est trop pâle sur blanc */
+[data-mode='light'] :focus-visible {
+  outline-color: rgb(var(--kinetic-neon-ink));
+}

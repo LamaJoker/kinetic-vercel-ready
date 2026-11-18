@@ -80,12 +80,11 @@
   <!-- Liste des records : cartes trophées -->
   <section class="mb-8" x-show="!loading && records.length > 0">
     <h2 class="k-section mb-2.5">Tous les records · e1RM</h2>
-    <div class="k-scroll-x mb-3" role="group" aria-label="Trier les records">
+    <div class="k-seg mb-3" role="group" aria-label="Trier les records">
       <button
         type="button"
         @click="sort = 'recent'"
-        class="k-chip"
-        :class="sort === 'recent' ? 'on' : ''"
+        class="k-seg-item"
         :aria-pressed="sort === 'recent' ? 'true' : 'false'"
       >
         Récents
@@ -93,8 +92,7 @@
       <button
         type="button"
         @click="sort = 'e1rm'"
-        class="k-chip"
-        :class="sort === 'e1rm' ? 'on' : ''"
+        class="k-seg-item"
         :aria-pressed="sort === 'e1rm' ? 'true' : 'false'"
       >
         Top e1RM
@@ -102,8 +100,7 @@
       <button
         type="button"
         @click="sort = 'name'"
-        class="k-chip"
-        :class="sort === 'name' ? 'on' : ''"
+        class="k-seg-item"
         :aria-pressed="sort === 'name' ? 'true' : 'false'"
       >
         A–Z

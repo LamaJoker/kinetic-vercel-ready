@@ -14,6 +14,7 @@ import { loadSessions, loadExercises } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
 import { getThemeMode, setThemeMode, type ThemeMode } from '../lib/theme';
 import { getDisplayDensity, setDisplayDensity, type DisplayDensity } from '../lib/display-mode';
+import { hapticsEnabled, setHapticsEnabled, hapticTap } from '../lib/haptics';
 import {
   detectFormat,
   parseKineticJson,
@@ -154,10 +155,26 @@ export function profile() {
     healthOn: false,
     themeMode: 'dark' as ThemeMode,
     density: 'simple' as DisplayDensity,
+    /** Réglage « Vibrations » (app native seulement, voir lib/haptics.ts). */
+    hapticsOn: true,
 
     setTheme(mode: ThemeMode): void {
       this.themeMode = mode;
       setThemeMode(mode);
+    },
+
+    /** Tirer pour rafraîchir (lib/native-gestures.ts) : relit tout sans perdre un prénom en cours de saisie. */
+    async refresh(): Promise<void> {
+      const draft = this.displayNameInput;
+      const editing = draft !== this.displayName;
+      await this.init();
+      if (editing) this.displayNameInput = draft;
+    },
+
+    toggleHaptics(): void {
+      this.hapticsOn = !this.hapticsOn;
+      setHapticsEnabled(this.hapticsOn);
+      hapticTap(); // confirme l'activation (ne fait rien si on vient de couper)
     },
 
     setDensity(density: DisplayDensity): void {
@@ -239,6 +256,7 @@ export function profile() {
           this.displayName = profileData.displayName ?? '';
           this.displayNameInput = this.displayName;
         }
+        this._syncAvatarName();
         if (streakData && typeof streakData === 'object') {
           this.streak = streakData.count ?? 0;
           this.bestStreak = streakData.best ?? 0;
@@ -271,6 +289,7 @@ export function profile() {
         this.healthOn = this.healthState === 'available' && healthEnabled();
         this.themeMode = getThemeMode();
         this.density = getDisplayDensity();
+        this.hapticsOn = hapticsEnabled();
       } catch (err) {
         console.error('[profile] init failed:', err);
       }
@@ -419,6 +438,14 @@ export function profile() {
       }
     },
 
+    /** Partage le prénom local avec le store auth (initiale de l'avatar, accueil compris). */
+    _syncAvatarName(): void {
+      const auth = Alpine.store('auth') as
+        | { setProfileName?: (name: string | undefined) => void }
+        | undefined;
+      auth?.setProfileName?.(this.displayName);
+    },
+
     async saveName(): Promise<void> {
       const name = this.displayNameInput.trim().slice(0, 40);
       try {
@@ -426,6 +453,7 @@ export function profile() {
         const profileData = (await deps.storage.get<ProfileShape>(STORAGE_KEYS.PROFILE)) ?? {};
         await deps.storage.set(STORAGE_KEYS.PROFILE, { ...profileData, displayName: name });
         this.displayName = name;
+        this._syncAvatarName();
         const now = new Date();
         this.savedAt = `Sauvegardé à ${now.getHours()}h${String(now.getMinutes()).padStart(2, '0')}`;
         setTimeout(() => {

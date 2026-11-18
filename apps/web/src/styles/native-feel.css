@@ -1,0 +1,215 @@
+/* native-feel — voir le commentaire en tête de chaque bloc. CSS simple (pas de directives Tailwind) ; utiliser les variables de styles.css. */
+
+/* ─── Transitions entre écrans façon iOS (View Transitions API) ───
+   router.ts pose <html data-k-nav="forward|back|tab|swipe"> le temps d'une
+   document.startViewTransition() (logique : lib/nav-motion.ts). Sans l'API, ou
+   sous mouvement réduit, le routeur garde l'entrée en cascade k-route-in.
+   - forward : le nouvel écran glisse depuis la droite PAR-DESSUS l'ancien, qui
+     recule d'un tiers (parallaxe) et s'estompe un peu ;
+   - back    : l'écran courant repart vers la droite, le précédent revient ;
+   - swipe   : après le geste « retour » (l'écran courant est déjà sorti sous le
+     doigt) : seul le précédent revient de la gauche ;
+   - tab     : fondu court entre onglets, comme iOS.
+   La barre d'onglets a son propre nom de transition : elle ne bouge pas.
+   Seules transform et opacity sont animées. */
+:root {
+  --k-ios-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --k-nav-ms: 350ms;
+}
+
+html[data-k-nav] .k-tabbar-dock {
+  view-transition-name: k-tabbar;
+}
+::view-transition-group(k-tabbar),
+::view-transition-new(k-tabbar) {
+  animation: none;
+}
+::view-transition-old(k-tabbar) {
+  display: none;
+}
+
+html[data-k-nav='forward']::view-transition-old(root),
+html[data-k-nav='forward']::view-transition-new(root),
+html[data-k-nav='back']::view-transition-old(root),
+html[data-k-nav='back']::view-transition-new(root),
+html[data-k-nav='swipe']::view-transition-old(root),
+html[data-k-nav='swipe']::view-transition-new(root) {
+  mix-blend-mode: normal;
+  animation-duration: var(--k-nav-ms);
+  animation-timing-function: var(--k-ios-ease);
+  animation-fill-mode: both;
+}
+
+/* L'écran qui passe au-dessus porte une ombre sur son bord gauche (statique). */
+html[data-k-nav='forward']::view-transition-new(root),
+html[data-k-nav='back']::view-transition-old(root) {
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.32);
+}
+
+html[data-k-nav='forward']::view-transition-old(root) {
+  animation-name: k-nav-recede;
+}
+html[data-k-nav='forward']::view-transition-new(root) {
+  animation-name: k-nav-enter-right;
+}
+
+html[data-k-nav='back']::view-transition-old(root) {
+  z-index: 1;
+  animation-name: k-nav-exit-right;
+}
+html[data-k-nav='back']::view-transition-new(root) {
+  animation-name: k-nav-return;
+}
+
+html[data-k-nav='swipe']::view-transition-old(root) {
+  animation: none;
+  opacity: 0;
+}
+html[data-k-nav='swipe']::view-transition-new(root) {
+  animation-name: k-nav-return;
+  animation-duration: 260ms;
+}
+
+html[data-k-nav='tab']::view-transition-old(root),
+html[data-k-nav='tab']::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: ease-out;
+}
+
+@keyframes k-nav-enter-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes k-nav-recede {
+  from {
+    transform: none;
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-30%);
+    opacity: 0.7;
+  }
+}
+@keyframes k-nav-exit-right {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes k-nav-return {
+  from {
+    transform: translateX(-30%);
+    opacity: 0.7;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ─── Retour par glissement depuis le bord (lib/native-gestures.ts) ───
+   Pendant le geste, #app-outlet suit le doigt (transform en ligne) ; ombre sur
+   son bord gauche. Le routeur retire la classe et la transformation au rendu. */
+#app-outlet.k-swiping-back {
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.32);
+  will-change: transform;
+}
+
+/* ─── Tirer pour rafraîchir (lib/native-gestures.ts) ───
+   .k-ptr : pastille ronde en verre, créée par le script, cachée au-dessus de
+   l'écran ; le script la fait descendre avec le doigt (transform + opacity en
+   ligne) et remplit l'arc (.k-ptr-arc). .is-armed : seuil franchi (accent).
+   .is-refreshing : l'anneau tourne. .is-settling / #app-outlet.k-ptr-settling :
+   retour en place animé. */
+.k-ptr {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) - 2.75rem);
+  left: 50%;
+  z-index: 70;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-50%, 0, 0);
+  background: var(--material);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    0 0 0 0.5px var(--separator),
+    0 8px 20px rgba(0, 0, 0, 0.28);
+  color: var(--tx);
+}
+.k-ptr.is-settling,
+#app-outlet.k-ptr-settling {
+  transition:
+    transform 300ms var(--k-ios-ease),
+    opacity 200ms ease;
+}
+.k-ptr-ring {
+  width: 1.375rem;
+  height: 1.375rem;
+  transform: rotate(-90deg);
+}
+.k-ptr-track {
+  stroke: currentColor;
+  opacity: 0.15;
+}
+.k-ptr-arc {
+  stroke: currentColor;
+}
+.k-ptr.is-armed .k-ptr-arc,
+.k-ptr.is-refreshing .k-ptr-arc {
+  stroke: rgb(var(--kinetic-neon));
+}
+.k-ptr.is-refreshing .k-ptr-ring {
+  animation: k-ptr-spin 800ms linear infinite;
+}
+@keyframes k-ptr-spin {
+  from {
+    transform: rotate(-90deg);
+  }
+  to {
+    transform: rotate(270deg);
+  }
+}
+
+/* ─── Mouvement réduit : rien ne glisse ni ne tourne ─── */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+  .k-ptr.is-refreshing .k-ptr-ring {
+    animation: none;
+  }
+  .k-ptr.is-settling,
+  #app-outlet.k-ptr-settling {
+    transition: opacity 150ms ease;
+  }
+}
+
+/* ─── Barre d'onglets pendant une View Transition ───
+   Son instantané (k-tabbar) est une image plate : le flou d'arrière-plan
+   (backdrop-filter) y est perdu et le contenu qui glisse dessous apparaîtrait
+   net à travers le verre. Le temps de la transition, la capsule passe donc sur
+   un fond presque opaque de la même teinte que --material. */
+:root {
+  --k-tabbar-solid: rgba(30, 30, 34, 0.95);
+}
+[data-mode='light'] {
+  --k-tabbar-solid: rgba(250, 250, 252, 0.96);
+}
+html[data-k-nav] .k-tabbar {
+  background: var(--k-tabbar-solid);
+}

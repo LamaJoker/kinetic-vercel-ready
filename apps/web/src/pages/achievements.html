@@ -53,18 +53,14 @@
     </div>
   </section>
 
-  <!-- Filtres catégorie (défilement horizontal) -->
-  <div
-    class="-mx-4 px-4 py-1 mb-3 flex gap-2 overflow-x-auto"
-    role="group"
-    aria-label="Filtrer par catégorie"
-  >
+  <!-- Filtres catégorie : contrôle segmenté -->
+  <div class="k-seg mb-3" role="group" aria-label="Filtrer par catégorie">
     <template x-for="cat in categories" :key="cat.key">
       <button
         type="button"
         @click="filter = cat.key"
         :aria-pressed="filter === cat.key ? 'true' : 'false'"
-        class="k-chip relative flex-shrink-0 whitespace-nowrap after:absolute after:inset-x-0 after:-inset-y-1 after:content-['']"
+        class="k-seg-item"
         x-text="$num.loc(cat.label)"
       ></button>
     </template>

@@ -291,6 +291,33 @@ describe('authStore', () => {
     });
   });
 
+  describe('avatarText / showAvatarIcon', () => {
+    it('shows the person icon (no « ? ») when nobody is signed in', () => {
+      store.user = null;
+      expect(store.avatarText).toBe('');
+      expect(store.showAvatarIcon).toBe(true);
+    });
+
+    it('shows the person icon for the guest account', () => {
+      store.user = { id: 'guest', email: null, full_name: 'Invité', avatar_url: null };
+      expect(store.showAvatarIcon).toBe(true);
+    });
+
+    it('uses the local profile first name initial, even as a guest', () => {
+      store.user = { id: 'guest', email: null, full_name: 'Invité', avatar_url: null };
+      store.setProfileName('  élodie ');
+      expect(store.profileName).toBe('élodie');
+      expect(store.avatarText).toBe('É');
+      expect(store.showAvatarIcon).toBe(false);
+    });
+
+    it('falls back to account initials when no local name exists', () => {
+      store.user = { id: 'u1', email: null, full_name: 'Alice Martin', avatar_url: null };
+      store.setProfileName(undefined);
+      expect(store.avatarText).toBe('AM');
+    });
+  });
+
   describe('initials', () => {
     it('returns initials from full_name', () => {
       store.user = { id: 'u1', email: null, full_name: 'Alice Martin', avatar_url: null };

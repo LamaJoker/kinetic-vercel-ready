@@ -57,6 +57,18 @@ function compactPageHtml(): Plugin {
   };
 }
 
+/**
+ * Sous-modules de supabase-js jamais utilisés par Kinetic (Realtime, Storage,
+ * Edge Functions) mais importés et instanciés par createClient() : remplacés
+ * par des coquilles vides (~22 KiB gzip de JS en moins). Voir
+ * src/lib/supabase-stubs/unused.ts pour le détail et comment les réactiver.
+ */
+export const SUPABASE_UNUSED_STUBS: Record<string, string> = {
+  '@supabase/realtime-js': resolve(__dirname, 'src/lib/supabase-stubs/realtime.ts'),
+  '@supabase/storage-js': resolve(__dirname, 'src/lib/supabase-stubs/storage.ts'),
+  '@supabase/functions-js': resolve(__dirname, 'src/lib/supabase-stubs/functions.ts'),
+};
+
 export default defineConfig({
   plugins: [compactPageHtml(), injectSwVersion()],
 
@@ -67,6 +79,7 @@ export default defineConfig({
       alpinejs: '@alpinejs/csp',
       '@kinetic/core': resolve(__dirname, '../../packages/core/src/index.ts'),
       '@kinetic/adapters-web': resolve(__dirname, '../../packages/adapter-web/src/index.ts'),
+      ...SUPABASE_UNUSED_STUBS,
     },
   },
 

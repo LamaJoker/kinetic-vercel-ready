@@ -120,7 +120,11 @@ import { autoCompactOnStartup } from './lib/storage-maintenance';
 import { runMigrationsIfNeeded } from './lib/migrations';
 import { initMobile } from './lib/mobile';
 import { initAnalytics } from './lib/analytics';
+import { celebration } from './lib/celebration';
 import './styles.css';
+import './styles/native-feel.css';
+import './styles/finitions.css';
+import './styles/celebrations.css';
 
 // ─── Stores ──────────────────────────────────────────────────
 // Directive x-svg : remplace x-html, interdit par le build CSP d'Alpine.
@@ -166,6 +170,7 @@ Alpine.data('helpTip', helpTip);
 Alpine.data('pwaInstallPrompt', pwaInstallPrompt);
 Alpine.data('authCallback', authCallback);
 Alpine.data('mensurations', mensurations);
+Alpine.data('celebration', celebration); // célébrations (record, niveau), monté dans index.html
 
 // ─── PWA install bus (capture beforeinstallprompt avant qu'Alpine init) ─────
 initPwaInstallPrompt();
@@ -272,30 +277,6 @@ Alpine.data('authDiagPanel', () => ({
     (this as { callbackUrl: string }).callbackUrl =
       auth?._diagCallbackUrl?.() ?? '(non disponible)';
     (this as { supabaseUrl: string }).supabaseUrl = auth?._diagSupabaseUrl?.() ?? '(non configuré)';
-  },
-}));
-
-Alpine.data('levelUpOverlay', () => ({
-  show: false,
-  level: 0,
-  title: '',
-  _timer: null as ReturnType<typeof setTimeout> | null,
-  init(this: {
-    show: boolean;
-    level: number;
-    title: string;
-    _timer: ReturnType<typeof setTimeout> | null;
-  }) {
-    window.addEventListener(STORAGE_KEYS.EVENT_LEVELUP, (e) => {
-      const detail = (e as CustomEvent<{ level: number; title: string }>).detail;
-      this.level = detail.level;
-      this.title = detail.title;
-      this.show = true;
-      if (this._timer !== null) clearTimeout(this._timer);
-      this._timer = setTimeout(() => {
-        this.show = false;
-      }, 4500);
-    });
   },
 }));
 

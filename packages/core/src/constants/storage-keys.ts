@@ -140,6 +140,7 @@ export const STORAGE_KEYS = {
   STRENGTH_SCORE_PROFILE: 'kinetic:strength-score-profile' as const, // bw + sex pour Wilks/IPF GL/DOTS
   THEME_MODE: 'kinetic:theme-mode' as const, // 'system' | 'dark' | 'light' — defaut dark
   DISPLAY_DENSITY: 'kinetic:display-density' as const, // 'simple' | 'advanced' — defaut simple
+  HAPTICS_ENABLED: 'kinetic:haptics' as const, // localStorage, '0' = vibrations coupées (défaut : actives)
 
   // ─── Schéma IDB & Diagnostics ─────────────────────────────────
   SCHEMA_VERSION: 'kinetic:schema-version' as const,
@@ -154,6 +155,7 @@ export const STORAGE_KEYS = {
   EVENT_DEPS_READY: 'kinetic:deps-ready' as const,
   EVENT_ONBOARDING_COMPLETE: 'kinetic:onboarding-complete' as const,
   EVENT_LEVELUP: 'kinetic:levelup' as const,
+  EVENT_CELEBRATE: 'kinetic:celebrate' as const, // record battu, routine à 100 % (lib/celebration.ts)
   EVENT_XP_UPDATED: 'kinetic:xp-updated' as const,
   EVENT_STREAK_UPDATED: 'kinetic:streak-updated' as const,
   EVENT_SESSION_SAVED: 'kinetic:session-saved' as const,
@@ -161,6 +163,7 @@ export const STORAGE_KEYS = {
   EVENT_ROUTE_CHANGED: 'kinetic:route-changed' as const,
   EVENT_THEME_CHANGED: 'kinetic:theme-changed' as const,
   EVENT_DENSITY_CHANGED: 'kinetic:density-changed' as const,
+  EVENT_REFRESH: 'kinetic:refresh' as const, // tirer pour rafraîchir (lib/native-gestures.ts)
   ERRORS_LAST_FLUSH: 'kinetic:errors:last-flush' as const, // localStorage, throttle exfiltration
 } as const;
 

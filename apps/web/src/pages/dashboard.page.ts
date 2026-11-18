@@ -147,6 +147,17 @@ export function dashboard() {
       try {
         const deps = await getDeps();
 
+        // Avatar : initiale du prénom saisi dans le profil (même sans compte)
+        void deps.storage
+          .get<{ displayName?: string }>(STORAGE_KEYS.PROFILE)
+          .then((profile) => {
+            const auth = Alpine.store('auth') as
+              | { setProfileName?: (name: string | undefined) => void }
+              | undefined;
+            auth?.setProfileName?.(profile?.displayName);
+          })
+          .catch(() => undefined);
+
         const streakData = await deps.storage.get<StreakState>(STORAGE_KEYS.STREAK);
         if (streakData) {
           this.streak = streakData.count ?? 0;

@@ -41,12 +41,12 @@ describe('vitalité × Health Connect', () => {
     vi.mocked(readHealthToday).mockResolvedValueOnce({ steps: 9100, sleepMinutes: 380 });
     await store.syncHealth();
     expect(complete).toHaveBeenCalledTimes(1);
-    expect(complete).toHaveBeenCalledWith('evening-walk');
+    expect(complete).toHaveBeenCalledWith('evening-walk', false); // false : pas de vibration (coche automatique)
 
     store.tasks = [task('evening-walk', true), task('sleep-routine')];
     vi.mocked(readHealthToday).mockResolvedValueOnce({ steps: 9500, sleepMinutes: 430 });
     await store.syncHealth();
-    expect(complete).toHaveBeenLastCalledWith('sleep-routine');
+    expect(complete).toHaveBeenLastCalledWith('sleep-routine', false);
     expect(complete).toHaveBeenCalledTimes(2);
   });
 });

@@ -28,6 +28,7 @@ import type { AuthUser } from '@kinetic/adapters-web';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { isValidEmail } from '../lib/security.js';
 import { flushAndResetDeps, resetDeps } from '../deps';
+import { avatarText as computeAvatarText } from '../lib/avatar.js';
 
 // FIX #4 : Log explicite plutôt que dégradation silencieuse
 const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'] as string | undefined;
@@ -63,6 +64,8 @@ export function authStore() {
     _initDone: false,
     /** H5 FIX : handle pour unsubscribe à la destruction */
     _authSubscription: null as { unsubscribe: () => void } | null,
+    /** Nom de profil local (Profil → prénom), renseigné par les pages accueil et profil. */
+    profileName: '',
 
     async init(): Promise<void> {
       _authReadyDispatched = false; // reset au cas où le store est réinstancié
@@ -239,6 +242,21 @@ export function authStore() {
     /** Mode invité (aucun compte) : données uniquement sur cet appareil. */
     get isGuest(): boolean {
       return this.user?.id === 'guest';
+    },
+
+    /** Mémorise le nom de profil local (pour l'initiale de l'avatar). */
+    setProfileName(name: string | null | undefined): void {
+      this.profileName = typeof name === 'string' ? name.trim() : '';
+    },
+
+    /** Texte de l'avatar : initiale du prénom local, sinon du compte ; '' → silhouette. */
+    get avatarText(): string {
+      return computeAvatarText(this.profileName, this.user);
+    },
+
+    /** Aucune initiale connue : l'avatar affiche une silhouette. */
+    get showAvatarIcon(): boolean {
+      return this.avatarText === '';
     },
 
     get initials(): string {
