@@ -32,14 +32,9 @@
   gap: var(--k-seg-gap);
   padding: var(--k-seg-pad);
   border-radius: 9999px;
-  /* Remplissage translucide : lisible sur la page comme dans une carte */
-  background: rgba(118, 118, 128, 0.24);
-}
-.bg-kinetic-surface .k-seg {
-  background: rgba(118, 118, 128, 0.24);
-}
-[data-mode='light'] .k-seg {
-  background: rgba(118, 118, 128, 0.12);
+  /* Remplissage translucide bleuté : lisible sur la page comme dans une carte
+     (--k-seg-bg, styles.css : sombre et clair) */
+  background: var(--k-seg-bg);
 }
 
 .k-seg > .k-seg-item {
@@ -77,7 +72,7 @@
 }
 .k-seg > .k-seg-item:is(.on, [aria-pressed='true'], [aria-selected='true']) {
   font-weight: 600;
-  color: #0a0a0c;
+  color: rgb(var(--k-on-accent));
   background: transparent;
   box-shadow: none;
 }
@@ -167,7 +162,7 @@
 /* Pastilles de choix multiple : même code que le segment actif */
 .k-on {
   background-color: rgb(var(--kinetic-neon));
-  color: #0a0a0c;
+  color: rgb(var(--k-on-accent));
   font-weight: 600;
 }
 
@@ -204,9 +199,6 @@
 :root:not([data-mode='light']) {
   --kinetic-neon-ink: var(--kinetic-neon);
 }
-[data-mode='light'] .text-kinetic-neon {
-  color: rgb(var(--kinetic-neon-ink));
-}
 /* Tracés SVG colorés par currentColor (anneaux k-ring, courbes) : graphique vif */
 [data-mode='light'] .text-kinetic-neon > .k-ring,
 [data-mode='light'] svg .text-kinetic-neon {
@@ -218,19 +210,19 @@
 }
 [data-mode='light'] .text-kinetic-teal > .k-ring,
 [data-mode='light'] svg .text-kinetic-teal {
-  color: #34c759;
+  color: rgb(var(--k-success));
 }
 [data-mode='light'] .text-kinetic-purple > .k-ring,
 [data-mode='light'] svg .text-kinetic-purple {
-  color: #007aff;
+  color: rgb(var(--k-info));
 }
 [data-mode='light'] .text-kinetic-coral > .k-ring,
 [data-mode='light'] svg .text-kinetic-coral {
-  color: #ff3b30;
+  color: rgb(var(--k-danger));
 }
-/* Piste des anneaux un peu plus marquée sur fond blanc */
-[data-mode='light'] .k-ring-track {
-  stroke-opacity: 0.2;
+[data-mode='light'] .text-kinetic-gold > .k-ring,
+[data-mode='light'] svg .text-kinetic-gold {
+  color: rgb(var(--k-warning));
 }
 /* Anneau de focus : l'accent vif est trop pâle sur blanc */
 [data-mode='light'] :focus-visible {

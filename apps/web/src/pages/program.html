@@ -36,7 +36,7 @@
             :class="{
                  'k-on': day.isToday && !day.rest && !day.done,
                  'bg-kinetic-elevated text-white': !day.isToday && !day.rest && !day.done,
-                 'bg-kinetic-teal text-gray-950': day.done,
+                 'bg-kinetic-teal text-kinetic-on-accent': day.done,
                  'text-gray-500': day.rest && !day.done,
                }"
             x-text="day.rest ? '—' : day.focus.charAt(0)"
@@ -108,7 +108,7 @@
           >
             <span
               class="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-300"
-              :class="ex.done ? 'bg-kinetic-neon text-gray-950' : 'ring-2 ring-inset ring-gray-500'"
+              :class="ex.done ? 'bg-kinetic-neon text-kinetic-on-accent' : 'ring-2 ring-inset ring-gray-500'"
             >
               <svg
                 x-show="ex.done"

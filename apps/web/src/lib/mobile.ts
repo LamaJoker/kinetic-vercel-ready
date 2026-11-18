@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { deepLinkRoute } from './deep-link';
 import { currentHistoryIdx } from './nav-motion';
+import { pageBackground } from './palette';
 
 // Structural type — avoids SupabaseClient generic-mismatch errors when
 // supabase-js adds new class generics (e.g. ClientOptions in 2.105+).
@@ -61,7 +62,7 @@ export async function initMobile(): Promise<void> {
         typeof document !== 'undefined' &&
         document.documentElement.getAttribute('data-mode') === 'light';
       await StatusBar.setStyle({ style: light ? Style.Light : Style.Dark });
-      await StatusBar.setBackgroundColor({ color: light ? '#f2f2f7' : '#000000' });
+      await StatusBar.setBackgroundColor({ color: pageBackground(light ? 'light' : 'dark') });
     } catch {
       /* ignore */
     }

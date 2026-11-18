@@ -31,11 +31,11 @@ export interface Theme {
 }
 
 export const THEMES: readonly Theme[] = [
-  { id: 'electrique', label: 'Électrique', emoji: '', neon: '#FFD60A', accent: '#FF453A' },
+  { id: 'electrique', label: 'Électrique', emoji: '', neon: '#FF7A66', accent: '#FF5C8A' },
   { id: 'cyber', label: 'Cyber', emoji: '', neon: '#00E0FF', accent: '#0070FF' },
   { id: 'violet', label: 'Violet', emoji: '', neon: '#C060FF', accent: '#FF40A0' },
   { id: 'phoenix', label: 'Phoenix', emoji: '', neon: '#FFD200', accent: '#FF3C32' },
-  { id: 'fantome', label: 'Fantôme', emoji: '', neon: '#DCDCE6', accent: '#8C8CA0' },
+  { id: 'fantome', label: 'Fantôme', emoji: '', neon: '#E5E5EA', accent: '#8E96B4' },
 ] as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

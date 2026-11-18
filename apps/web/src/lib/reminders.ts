@@ -16,6 +16,7 @@ import { STORAGE_KEYS, buildWeeklyReview } from '@kinetic/core';
 import type { AnalyticsSet, WeeklyReview } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { loadSessions, loadTemplates } from './training/storage';
+import { ACCENT_HEX } from './palette';
 import { buildTrainingSnapshot } from './training/next-session';
 import type { RoutineProgress } from './widget';
 
@@ -265,7 +266,7 @@ export async function syncRoutineReminder(
             ? `Encore ${remaining} tâche${remaining > 1 ? 's' : ''} pour garder ta série.`
             : 'Quelques minutes suffisent pour garder ta série.',
           smallIcon: 'ic_stat_kinetic',
-          iconColor: '#F2C230',
+          iconColor: ACCENT_HEX,
           schedule: { at, allowWhileIdle: true },
           extra: { route: '/vitalite' },
         },
@@ -305,7 +306,7 @@ export async function syncWeeklyRecap(now: Date = new Date()): Promise<void> {
           title: 'Ton bilan de la semaine',
           body: weeklyRecapBody(buildWeeklyReview(sets, at.toISOString())),
           smallIcon: 'ic_stat_kinetic',
-          iconColor: '#F2C230',
+          iconColor: ACCENT_HEX,
           schedule: { at, allowWhileIdle: true },
           extra: { route: '/progression' },
         },
@@ -341,7 +342,7 @@ export async function syncSessionReminder(now: Date = new Date()): Promise<void>
           title: "C'est jour d'entraînement",
           body: next ? `Au programme : ${next.name}.` : 'Ta séance du jour t’attend.',
           smallIcon: 'ic_stat_kinetic',
-          iconColor: '#F2C230',
+          iconColor: ACCENT_HEX,
           schedule: { at, allowWhileIdle: true },
           extra: { route: '/seances' },
         },
@@ -378,7 +379,7 @@ export async function syncBackupReminder(
           title: 'Sauvegarde tes données',
           body: 'Exporte ton historique ou connecte un compte pour ne rien perdre.',
           smallIcon: 'ic_stat_kinetic',
-          iconColor: '#F2C230',
+          iconColor: ACCENT_HEX,
           schedule: { at, allowWhileIdle: true },
           extra: { route: '/profile' },
         },

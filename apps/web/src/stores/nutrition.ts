@@ -6,6 +6,7 @@ import { buildNutritionPlan, macroProgress, STORAGE_KEYS } from '@kinetic/core';
 import type { NutritionPlan } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { fetchFoodByBarcode, normalizeBarcode } from '../lib/openfoodfacts';
+import { MACRO_COLORS } from '../lib/palette';
 
 // FIX: défini ici au lieu d'être importé depuis @kinetic/core
 export interface FoodEntry {
@@ -36,10 +37,11 @@ export interface MacroBar {
   style: { width: string; backgroundColor: string };
 }
 
+// Mêmes couleurs que la page Nutrition (lib/palette.ts) : une seule source.
 const MACRO_DEFS: Array<{ key: MacroBar['key']; label: string; color: string }> = [
-  { key: 'proteinG', label: 'Protéines', color: '#FF453A' },
-  { key: 'carbsG', label: 'Glucides', color: '#FFD60A' },
-  { key: 'fatG', label: 'Lipides', color: '#8B9099' },
+  { key: 'proteinG', label: 'Protéines', color: MACRO_COLORS.proteinG.from },
+  { key: 'carbsG', label: 'Glucides', color: MACRO_COLORS.carbsG.from },
+  { key: 'fatG', label: 'Lipides', color: MACRO_COLORS.fatG.from },
 ];
 
 function fmt(n: number): string {

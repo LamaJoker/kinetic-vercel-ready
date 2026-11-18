@@ -1,5 +1,6 @@
 ﻿import { cameraScanSupported, scanBarcodeWithCamera } from '../lib/barcode-camera';
 import Alpine from 'alpinejs';
+import { MACRO_COLORS } from '../lib/palette';
 import { mealTimingPlan, STORAGE_KEYS, type MealTiming, type NutritionPlan } from '@kinetic/core';
 
 interface ScannedFoodEntry {
@@ -39,15 +40,11 @@ interface MacroBarLike {
 }
 
 /**
- * Couleurs système distinctes des trois macros (mêmes pastilles que la
- * « Répartition recommandée ») : rouge, bleu, orange. Fixes : elles ne suivent
- * pas le thème d'accent, qui colore déjà l'anneau des calories.
+ * Couleurs des trois macros (lib/palette.ts, partagées avec le store) :
+ * protéines violet, glucides turquoise, lipides ambre. Elles ne suivent pas le
+ * thème d'accent, qui colore déjà l'anneau des calories.
  */
-export const MACRO_COLORS: Record<MacroBarLike['key'], { from: string; to: string }> = {
-  proteinG: { from: '#FF453A', to: '#FF6961' },
-  carbsG: { from: '#0A84FF', to: '#64D2FF' },
-  fatG: { from: '#FF9F0A', to: '#FFB340' },
-};
+export { MACRO_COLORS };
 
 export interface MacroView {
   key: MacroBarLike['key'];
@@ -86,7 +83,7 @@ export function macroViews(bars: readonly MacroBarLike[]): MacroView[] {
       detail: b.detail,
       over: b.over,
       pct,
-      barStyle: `width: ${width}%; background-image: linear-gradient(90deg, ${c.from}, ${c.to}); box-shadow: 0 0 12px -2px ${c.from}80`,
+      barStyle: `width: ${width}%; background-image: linear-gradient(90deg, ${c.from}, ${c.to}); box-shadow: 0 0 12px -2px ${c.glow}`,
       dotStyle: `background-color: ${c.from}`,
     };
   });

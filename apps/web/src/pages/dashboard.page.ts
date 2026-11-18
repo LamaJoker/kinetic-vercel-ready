@@ -15,6 +15,7 @@ import {
   type TrainingSnapshot,
 } from '../lib/training/next-session';
 import { navigate } from '../router';
+import { loadActiveSession } from '../lib/training/active-session';
 import { hapticLight } from '../lib/haptics';
 
 const PATTERN_LABELS: Record<'push' | 'pull' | 'legs', string> = {
@@ -39,6 +40,12 @@ export function dashboard() {
 
     _allSessions: [] as WorkoutSession[],
     training: null as TrainingSnapshot | null,
+    /** Une séance non terminée est enregistrée : le bouton la reprend au lieu d'en démarrer une. */
+    hasActiveSession: false,
+
+    startLabel(): string {
+      return this.hasActiveSession ? 'Reprendre la séance' : 'Commencer la séance';
+    },
 
     /** « 3 exercices, 10 séries » */
     get nextDetail(): string {
@@ -102,7 +109,7 @@ export function dashboard() {
     },
 
     weekDayClass(day: { trained: boolean; isToday: boolean; isFuture: boolean }): string {
-      if (day.trained) return 'bg-kinetic-neon text-gray-950 font-bold';
+      if (day.trained) return 'bg-kinetic-neon text-kinetic-on-accent font-bold';
       if (day.isToday) return 'ring-2 ring-inset ring-kinetic-neon text-white font-bold';
       return 'bg-white/5 text-gray-500';
     },
@@ -110,7 +117,8 @@ export function dashboard() {
     /** Démarre la séance proposée (même mécanisme que « Programme du jour »). */
     startNextSession(): void {
       const next = this.training?.next;
-      if (!next) {
+      if (!next || this.hasActiveSession) {
+        hapticLight();
         navigate('/seances');
         return;
       }
@@ -146,6 +154,10 @@ export function dashboard() {
 
       try {
         const deps = await getDeps();
+
+        void loadActiveSession(deps.storage).then((snap) => {
+          this.hasActiveSession = !!snap;
+        });
 
         // Avatar : initiale du prénom saisi dans le profil (même sans compte)
         void deps.storage

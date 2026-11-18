@@ -226,9 +226,10 @@ export function progression() {
       if (pts.length < 2) return '';
       // Couleurs du thème : l'accent suit --kinetic-neon (thèmes débloqués,
       // mode clair) via la classe text-kinetic-neon + currentColor, car x-svg
-      // retire les attributs style ; le record reste or.
+      // retire les attributs style ; le record reste ambre (--k-warning, via
+      // la classe text-kinetic-gold posée sur ses propres tracés).
       const LINE = 'currentColor';
-      const BEST = '#FFD60A';
+      const BEST_CLASS = 'text-kinetic-gold';
       const W = 320,
         H = 172,
         padL = 4,
@@ -293,10 +294,11 @@ export function progression() {
       const [lx, ly] = xy[lastIdx]!;
       const best =
         bestIdx !== lastIdx
-          ? `<circle cx="${f(bx)}" cy="${f(by)}" r="4.5" fill="${BEST}" stroke="#000" stroke-opacity="0.35" stroke-width="1.5"><title>Record ${pts[bestIdx]!.label} : ${loc(rawMax.toFixed(1))} kg</title></circle>`
+          ? `<circle cx="${f(bx)}" cy="${f(by)}" r="4.5" class="${BEST_CLASS}" fill="currentColor" stroke="#000" stroke-opacity="0.35" stroke-width="1.5"><title>Record ${pts[bestIdx]!.label} : ${loc(rawMax.toFixed(1))} kg</title></circle>`
           : '';
-      const lastFill = bestIdx === lastIdx ? BEST : LINE;
-      const last = `<line x1="${f(lx)}" x2="${f(lx)}" y1="${f(ly)}" y2="${base}" stroke="${lastFill}" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/><circle cx="${f(lx)}" cy="${f(ly)}" r="9" fill="${lastFill}" fill-opacity="0.2"/><circle cx="${f(lx)}" cy="${f(ly)}" r="4.5" fill="${lastFill}" stroke="#fff" stroke-opacity="0.85" stroke-width="1.5"><title>${pts[lastIdx]!.label} : ${pts[lastIdx]!.y.toFixed(1)} kg</title></circle>`;
+      const lastClass = bestIdx === lastIdx ? ` class="${BEST_CLASS}"` : '';
+      const lastFill = LINE;
+      const last = `<g${lastClass}><line x1="${f(lx)}" x2="${f(lx)}" y1="${f(ly)}" y2="${base}" stroke="${lastFill}" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/><circle cx="${f(lx)}" cy="${f(ly)}" r="9" fill="${lastFill}" fill-opacity="0.2"/><circle cx="${f(lx)}" cy="${f(ly)}" r="4.5" fill="${lastFill}" stroke="#fff" stroke-opacity="0.85" stroke-width="1.5"><title>${pts[lastIdx]!.label} : ${pts[lastIdx]!.y.toFixed(1)} kg</title></circle></g>`;
 
       // Dates de début et de fin sous l'axe
       const xLabels =
@@ -371,7 +373,7 @@ export function progression() {
     /** Médaillon de record : or pour le premier, accent atténué ensuite. */
     prGlyphClass(i: number): string {
       return i === 0
-        ? 'bg-gradient-to-br from-kinetic-gold to-amber-500 text-gray-950'
+        ? 'bg-gradient-to-br from-kinetic-gold to-kinetic-neon text-kinetic-on-accent'
         : 'bg-kinetic-neon/15 text-kinetic-neon';
     },
 

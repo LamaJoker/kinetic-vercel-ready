@@ -19,24 +19,33 @@ export default {
   ],
   theme: {
     extend: {
+      // Palette « Nuit profonde & corail » : toutes les couleurs lisent les
+      // variables de styles.css (sombre / clair / thème d'accent).
       colors: {
-        // Couleurs système iOS (variante sombre) : bleu, vert, rouge, jaune.
-        'kinetic-purple': '#0A84FF',
-        'kinetic-teal': '#30D158',
-        'kinetic-coral': '#FF453A',
-        'kinetic-gold': '#FFD60A',
+        // Rôles sémantiques (variante GRAPHIQUE : aplats, anneaux, barres)
+        'kinetic-purple': 'rgb(var(--k-info) / <alpha-value>)', // violet : XP, info
+        'kinetic-teal': 'rgb(var(--k-success) / <alpha-value>)', // turquoise : succès
+        'kinetic-coral': 'rgb(var(--k-danger) / <alpha-value>)', // erreur, priorité haute
+        'kinetic-gold': 'rgb(var(--k-warning) / <alpha-value>)', // ambre : attention, records
+        'kinetic-on-accent': 'rgb(var(--k-on-accent) / <alpha-value>)', // texte sur aplat d'accent
+        // Macros (protéines, glucides, lipides)
+        'kinetic-protein': 'rgb(var(--k-macro-p) / <alpha-value>)',
+        'kinetic-carbs': 'rgb(var(--k-macro-c) / <alpha-value>)',
+        'kinetic-fat': 'rgb(var(--k-macro-f) / <alpha-value>)',
+        // Gris bleutés (accordés au fond bleu nuit) ; en clair, les textes gris
+        // sont retournés dans styles.css (« Texte : contraste WCAG AA »).
         gray: {
-          50: '#f9f9fb',
-          100: '#f2f2f7',
-          200: '#e5e5ea',
-          300: '#d1d1d6',
-          400: '#aeaeb2',
-          500: '#98989f',
-          600: '#8e8e93',
-          700: '#636366',
-          800: '#3a3a3c',
-          900: '#1c1c1e',
-          950: '#0a0a0c',
+          50: '#f8f8fc',
+          100: '#f1f1f8',
+          200: '#e3e4ef',
+          300: '#cdd1e0',
+          400: '#b4b9cf',
+          500: '#a3a9c2',
+          600: '#8c92ad',
+          700: '#4a5275',
+          800: '#2b3250',
+          900: '#151a2c',
+          950: '#0b0e1a',
         },
         // Couleurs thématiques pilotées par variables CSS (cf. styles.css)
         'kinetic-neon': 'rgb(var(--kinetic-neon) / <alpha-value>)',
@@ -46,6 +55,16 @@ export default {
         'kinetic-surface': 'rgb(var(--surface) / <alpha-value>)',
         'kinetic-elevated': 'rgb(var(--elevated) / <alpha-value>)',
         'kinetic-raised': 'rgb(var(--raised) / <alpha-value>)',
+      },
+      // Accents EN TEXTE : variante -ink (identique en sombre, foncée en clair
+      // pour un contraste AA ≥ 4,5:1 sur fond lavande et cartes blanches).
+      textColor: {
+        'kinetic-neon': 'rgb(var(--kinetic-neon-ink) / <alpha-value>)',
+        'kinetic-electric': 'rgb(var(--kinetic-electric-ink) / <alpha-value>)',
+        'kinetic-purple': 'rgb(var(--k-info-ink) / <alpha-value>)',
+        'kinetic-teal': 'rgb(var(--k-success-ink) / <alpha-value>)',
+        'kinetic-coral': 'rgb(var(--k-danger-ink) / <alpha-value>)',
+        'kinetic-gold': 'rgb(var(--k-warning-ink) / <alpha-value>)',
       },
       fontFamily: {
         // Appareils Apple : San Francisco. Ailleurs (Android, Windows) : Inter, très proche.

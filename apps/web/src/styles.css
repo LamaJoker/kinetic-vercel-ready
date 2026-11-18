@@ -54,112 +54,202 @@
    plus bas.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* ─── Couleurs d'accent (thèmes débloqués par niveau) ─── */
+/* ═══════════════════════════════════════════════════════════════════════
+   Palette « Nuit profonde & corail »
+   ───────────────────────────────────────────────────────────────────────
+   Fond bleu nuit, cartes ardoise bleutée, accent corail → rose ; rôles
+   secondaires violet (info, XP), turquoise (succès), ambre (attention).
+   Toutes les couleurs passent par ces variables (format "R G B" pour
+   l'opacité Tailwind) : tailwind.config.js les expose en kinetic-*.
+   Chaque rôle a deux variantes :
+     --k-<rôle>       GRAPHIQUE (aplats, anneaux, barres, courbes, pastilles)
+     --k-<rôle>-ink   TEXTE (text-kinetic-*) : ≥ 4,5:1 sur ink/surface/elevated
+   En sombre elles sont presque identiques ; en clair, -ink est foncée.
+   Contrastes mesurés (texte, WCAG) — sombre, sur --surface #151A2C :
+     texte 15,8 · secondaire 7,4 · corail 6,8 · rose 7,2 · violet 6,9
+     turquoise 10,7 · ambre 11,1 · erreur 6,3 · --k-on-accent sur corail 7,4
+   Clair, sur --ink #F4F3FA (pire cas hors --raised) :
+     texte 16,0 · secondaire 5,6 · corail 5,9 · rose 5,9 · violet 5,8
+     turquoise 5,8 · ambre 6,4 · erreur 5,8
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── Couleurs d'accent (thèmes débloqués par niveau) ───
+   « Électrique » (défaut) : corail → rose. */
 :root,
 [data-theme='electrique'] {
-  --kinetic-neon: 255 214 10; /* jaune système */
-  --kinetic-electric: 255 69 58; /* rouge système */
+  --kinetic-neon: 255 122 102; /* corail #FF7A66 */
+  --kinetic-electric: 255 92 138; /* rose #FF5C8A : 2e couleur du dégradé */
+  --kinetic-electric-ink: 255 126 156; /* rose en texte #FF7E9C */
 }
 [data-theme='cyber'] {
   --kinetic-neon: 100 210 255;
   --kinetic-electric: 10 132 255;
+  --kinetic-electric-ink: 100 160 255;
 }
 [data-theme='violet'] {
   --kinetic-neon: 191 90 242;
   --kinetic-electric: 255 55 95;
+  --kinetic-electric-ink: 255 110 140;
+}
+/* Sombre : le violet vif ne fait que 4,2:1 sur --elevated ; texte un ton plus clair (6,2:1). */
+:root:not([data-mode='light'])[data-theme='violet'] {
+  --kinetic-neon-ink: 208 138 247; /* #D08AF7 */
 }
 [data-theme='phoenix'] {
   --kinetic-neon: 255 159 10;
   --kinetic-electric: 255 69 58;
+  --kinetic-electric-ink: 255 112 102;
 }
 [data-theme='fantome'] {
   --kinetic-neon: 229 229 234;
-  --kinetic-electric: 142 142 147;
+  --kinetic-electric: 142 150 180;
+  --kinetic-electric-ink: 178 184 206;
 }
 
-/* ─── Surfaces : mode sombre (défaut) ─── */
+/* ─── Surfaces et rôles : mode sombre (défaut) ─── */
 :root {
-  --ink: 0 0 0; /* fond de page */
-  --surface: 28 28 30; /* cartes */
-  --elevated: 44 44 46; /* éléments posés dans une carte */
-  --raised: 58 58 60; /* niveau au-dessus (pastille active, feuille) */
-  --well: 44 44 46; /* champs et pistes à l'intérieur d'une carte */
-  --chip: 44 44 46; /* pastille de choix non sélectionnée */
-  --on-tx: 0 0 0; /* texte sur pastille sélectionnée */
-  --tx-rgb: 255 255 255;
+  --ink: 11 14 26; /* #0B0E1A  fond de page bleu nuit */
+  --surface: 21 26 44; /* #151A2C  cartes */
+  --elevated: 32 38 59; /* #20263B  éléments posés dans une carte */
+  --raised: 43 50 80; /* #2B3250  niveau au-dessus (pastille active, feuille) */
+  --well: 29 34 53; /* #1D2235  champs et pistes à l'intérieur d'une carte */
+  --chip: 32 38 59; /* #20263B  pastille de choix non sélectionnée */
+  --on-tx: 11 14 26; /* texte sur pastille sélectionnée (fond = --tx) */
+  --tx-rgb: 246 244 250; /* #F6F4FA  blanc très légèrement chaud */
   --tx: rgb(var(--tx-rgb));
-  --tx2: #98989f; /* libellé secondaire */
-  --separator: rgba(84, 84, 88, 0.65);
-  --border: rgba(84, 84, 88, 0.4);
-  --border-hi: rgba(84, 84, 88, 0.8);
-  --material: rgba(30, 30, 34, 0.64); /* barre d'onglets et feuilles (verre) */
+  --tx2-rgb: 163 169 194;
+  --tx2: rgb(var(--tx2-rgb)); /* #A3A9C2  libellé secondaire, gris bleuté */
+  --separator: rgba(108, 118, 160, 0.32);
+  --border: rgba(108, 118, 160, 0.22);
+  --border-hi: rgba(108, 118, 160, 0.45);
+  --material: rgba(20, 24, 42, 0.7); /* barre d'onglets et feuilles (verre) */
+  --k-tabbar-solid: rgba(20, 24, 42, 0.95); /* barre d'onglets opaque (View Transition) */
+  /* Texte posé sur un aplat d'accent (corail, turquoise, ambre…) : toujours sombre */
+  --k-on-accent: 26 13 18; /* #1A0D12 */
+  /* Rôles sémantiques */
+  --k-success: 94 224 200; /* #5EE0C8  turquoise : succès, récup, baisse de poids */
+  --k-success-ink: 94 224 200;
+  --k-info: 168 149 255; /* #A895FF  violet : XP, info, contre-lueur */
+  --k-info-ink: 168 149 255;
+  --k-warning: 255 197 107; /* #FFC56B  ambre : priorité moyenne, records */
+  --k-warning-ink: 255 197 107;
+  --k-danger: 255 107 129; /* #FF6B81  erreur, priorité haute */
+  --k-danger-ink: 255 107 129;
+  /* Macros : protéines violet, glucides turquoise, lipides ambre (le corail
+     reste la couleur des calories). -2 : seconde couleur du dégradé. */
+  --k-macro-p: 143 123 255; /* #8F7BFF */
+  --k-macro-p-2: 196 181 255; /* #C4B5FF */
+  --k-macro-c: 63 201 176; /* #3FC9B0 */
+  --k-macro-c-2: 143 240 222; /* #8FF0DE */
+  --k-macro-f: 255 178 77; /* #FFB24D */
+  --k-macro-f-2: 255 214 153; /* #FFD699 */
+  /* Contrôle segmenté et pistes */
+  --k-seg-bg: rgba(110, 120, 175, 0.18);
+  --k-fill: 110 120 175; /* remplissages translucides neutres (bleutés) */
+  --k-ring-track-opacity: 0.16;
   /* Matière des cartes et lumière (cf. principes 1 à 3) */
-  --k-sheen: rgba(255, 255, 255, 0.05); /* dégradé vertical : haut de carte plus clair */
-  --k-edge: rgba(255, 255, 255, 0.05); /* liseré 1 px autour de la carte */
-  --k-edge-top: rgba(255, 255, 255, 0.07); /* filet clair intérieur, en haut */
-  --k-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 14px 32px -18px rgba(0, 0, 0, 0.9);
-  --k-glow: 0.24; /* lueur ambiante d'accent en haut de page */
-  --k-glow-2: 0.1; /* contre-lueur (--kinetic-electric), coin haut droit */
-  --k-hero-a: 0.26; /* teinte d'accent de la carte héros */
-  --k-btn-glow: 0.45; /* ombre colorée du bouton principal */
+  --k-sheen: rgba(180, 190, 255, 0.045); /* dégradé vertical : haut de carte plus clair */
+  --k-edge: rgba(170, 180, 255, 0.07); /* liseré 1 px autour de la carte */
+  --k-edge-top: rgba(200, 210, 255, 0.09); /* filet clair intérieur, en haut */
+  --k-shadow: 0 1px 2px rgba(2, 4, 14, 0.5), 0 14px 32px -18px rgba(2, 4, 14, 0.95);
+  --k-glow-2-rgb: var(--k-info); /* contre-lueur : violet, coin haut droit */
+  --k-glow: 0.22; /* lueur ambiante d'accent en haut de page */
+  --k-glow-2: 0.2; /* intensité de la contre-lueur */
+  --k-hero-a: 0.24; /* teinte d'accent de la carte héros */
+  --k-hero-2: 0.16; /* contre-teinte violette de la carte héros */
+  --k-btn-glow: 0.5; /* ombre colorée du bouton principal */
   --k-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --k-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   color-scheme: dark;
 }
+/* Thèmes débloqués autres qu'« Électrique » : la contre-lueur reprend leur
+   seconde couleur d'accent (le violet est propre à la palette corail). */
+[data-theme]:not([data-theme='electrique']) {
+  --k-glow-2-rgb: var(--kinetic-electric);
+  --k-glow-2: 0.12;
+  --k-hero-2: 0.12;
+}
 
-/* ─── Surfaces : mode clair (data-mode="light" sur <html>) ───
-   Orthogonal à data-theme : on peut combiner les deux. */
+/* ─── Surfaces et rôles : mode clair (data-mode="light" sur <html>) ───
+   Orthogonal à data-theme : on peut combiner les deux. Fond lavande très
+   clair, cartes blanches, texte bleu nuit. */
 [data-mode='light'] {
-  --ink: 242 242 247;
+  --ink: 244 243 250; /* #F4F3FA */
   --surface: 255 255 255;
-  --elevated: 242 242 247;
-  --raised: 229 229 234;
-  --well: 239 239 244;
-  --chip: 229 229 234;
+  --elevated: 237 236 245; /* #EDECF5 */
+  --raised: 226 225 237; /* #E2E1ED */
+  --well: 239 238 247; /* #EFEEF7 */
+  --chip: 230 229 240; /* #E6E5F0 */
   --on-tx: 255 255 255;
-  --tx-rgb: 0 0 0;
-  --tx2: #636366;
-  --separator: rgba(60, 60, 67, 0.22);
-  --border: rgba(60, 60, 67, 0.14);
-  --border-hi: rgba(60, 60, 67, 0.3);
-  --material: rgba(250, 250, 252, 0.72);
+  --tx-rgb: 20 24 40; /* #141828 */
+  --tx2-rgb: 85 91 116; /* #555B74 : 5,6:1 sur --ink */
+  --separator: rgba(60, 64, 100, 0.2);
+  --border: rgba(60, 64, 100, 0.13);
+  --border-hi: rgba(60, 64, 100, 0.28);
+  --material: rgba(250, 249, 254, 0.74);
+  --k-tabbar-solid: rgba(250, 249, 254, 0.96);
+  --k-success: 35 181 154; /* #23B59A */
+  --k-success-ink: 10 107 89; /* #0A6B59 */
+  --k-info: 110 87 232; /* #6E57E8 */
+  --k-info-ink: 91 69 214; /* #5B45D6 */
+  --k-warning: 240 165 49; /* #F0A531 */
+  --k-warning-ink: 122 80 0; /* #7A5000 */
+  --k-danger: 232 54 92; /* #E8365C */
+  --k-danger-ink: 184 28 64; /* #B81C40 */
+  --k-macro-p: 110 87 232;
+  --k-macro-p-2: 160 144 245;
+  --k-macro-c: 35 181 154;
+  --k-macro-c-2: 110 220 198;
+  --k-macro-f: 240 165 49;
+  --k-macro-f-2: 250 204 128;
+  --k-seg-bg: rgba(90, 96, 140, 0.12);
+  --k-fill: 90 96 140;
+  --k-ring-track-opacity: 0.2;
   --k-sheen: rgba(255, 255, 255, 0);
-  --k-edge: rgba(0, 0, 0, 0.05);
+  --k-edge: rgba(30, 34, 80, 0.06);
   --k-edge-top: rgba(255, 255, 255, 0.9);
-  --k-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 24px -16px rgba(0, 0, 0, 0.22);
-  --k-glow: 0.1;
-  --k-glow-2: 0.04;
+  --k-shadow: 0 1px 2px rgba(20, 24, 60, 0.05), 0 10px 24px -16px rgba(20, 24, 60, 0.22);
+  --k-glow: 0.12;
+  --k-glow-2: 0.07;
   --k-hero-a: 0.16;
+  --k-hero-2: 0.08;
   --k-btn-glow: 0.3;
   color-scheme: light;
 }
 /* Accent en mode clair : deux usages distincts (cf. styles/finitions.css).
    --kinetic-neon      accent GRAPHIQUE (anneaux, barres, courbes, pastilles,
                        dégradé du bouton principal) : couleur vive, texte posé
-                       dessus toujours sombre (#0a0a0c, ≥ 4,5:1).
+                       dessus toujours sombre (--k-on-accent, ≥ 4,5:1).
    --kinetic-neon-ink  accent pour le TEXTE (.text-kinetic-neon) : variante
                        foncée, ≥ 4,5:1 sur --ink, --surface et --elevated. */
 [data-mode='light']:not([data-theme]),
 [data-mode='light'][data-theme='electrique'] {
-  --kinetic-neon: 255 200 0; /* jaune système (clair) */
-  --kinetic-neon-ink: 138 99 0; /* or foncé : 4,9:1 sur --ink */
+  --kinetic-neon: 255 122 102; /* corail vif (graphique) */
+  --kinetic-neon-ink: 169 53 34; /* #A93522 corail foncé : 5,9:1 sur --ink */
+  --kinetic-electric: 255 79 128; /* #FF4F80 */
+  --kinetic-electric-ink: 181 30 72; /* #B51E48 : 5,9:1 sur --ink */
 }
 [data-mode='light'][data-theme='cyber'] {
   --kinetic-neon: 50 173 230;
-  --kinetic-neon-ink: 0 110 160;
+  --kinetic-neon-ink: 0 104 152;
+  --kinetic-electric-ink: 0 88 200;
 }
 [data-mode='light'][data-theme='violet'] {
   --kinetic-neon: 175 82 222;
-  --kinetic-neon-ink: 137 68 171;
+  --kinetic-neon-ink: 130 60 168;
+  --kinetic-electric-ink: 184 20 66;
 }
 [data-mode='light'][data-theme='phoenix'] {
   --kinetic-neon: 255 149 0;
-  --kinetic-neon-ink: 165 80 0;
+  --kinetic-neon-ink: 160 76 0;
+  --kinetic-electric-ink: 184 30 20;
 }
 [data-mode='light'][data-theme='fantome'] {
-  /* Le gris très clair du sombre disparaît sur blanc : gris moyen (3,3:1). */
-  --kinetic-neon: 142 142 147;
-  --kinetic-neon-ink: 72 72 74;
+  /* Le gris très clair du sombre disparaît sur blanc : gris bleuté moyen. */
+  --kinetic-neon: 138 144 168;
+  --kinetic-neon-ink: 66 72 96;
+  --kinetic-electric: 100 108 140;
+  --kinetic-electric-ink: 70 76 104;
 }
 
 /* ─── Base ─── */
@@ -197,9 +287,9 @@ body::before {
       rgb(var(--kinetic-neon) / 0) 72%
     ),
     radial-gradient(
-      70% 42% at 105% -6%,
-      rgb(var(--kinetic-electric) / var(--k-glow-2)) 0%,
-      rgb(var(--kinetic-electric) / 0) 70%
+      90% 50% at 110% -8%,
+      rgb(var(--k-glow-2-rgb) / var(--k-glow-2)) 0%,
+      rgb(var(--k-glow-2-rgb) / 0) 70%
     );
 }
 
@@ -387,7 +477,7 @@ h5,
   will-change: transform;
 }
 [data-mode='light'] .k-tab-pill {
-  background: rgba(118, 118, 128, 0.14);
+  background: rgb(var(--k-fill) / 0.14);
   box-shadow: none;
 }
 .k-tab {
@@ -404,9 +494,10 @@ h5,
 .k-tab[aria-current='page'] {
   color: rgb(var(--kinetic-neon));
 }
-/* Clair : le jaune ne se lit pas sur fond blanc, l'onglet actif passe en noir */
+/* Clair : l'accent vif est trop pâle sur le verre blanc, l'onglet actif prend
+   la variante texte (corail foncé par défaut, ≥ 4,5:1). */
 [data-mode='light'] .k-tab[aria-current='page'] {
-  color: var(--tx);
+  color: rgb(var(--kinetic-neon-ink));
 }
 .k-tab[aria-current='page'] svg {
   stroke-width: 2.2;
@@ -519,7 +610,7 @@ textarea::placeholder {
 select {
   -webkit-appearance: none;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='16' viewBox='0 0 12 16' fill='none' stroke='%2398989f' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6l3-3 3 3M3 10l3 3 3-3'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='16' viewBox='0 0 12 16' fill='none' stroke='%238c92ad' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6l3-3 3 3M3 10l3 3 3-3'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   padding-right: 2.25rem !important;
@@ -602,7 +693,7 @@ a {
     0 1px 1px rgba(0, 0, 0, 0.04);
 }
 [data-mode='light'] .k-seg {
-  background: rgba(118, 118, 128, 0.12);
+  background: var(--k-seg-bg);
 }
 [data-mode='light'] .k-seg-item.on,
 [data-mode='light'] .k-seg-item[aria-pressed='true'],
@@ -692,7 +783,7 @@ button.k-row:active {
 @layer components {
   /* Bouton principal (une seule action principale par écran) */
   .k-btn {
-    @apply inline-flex h-[3.125rem] w-full items-center justify-center gap-2 rounded-xl bg-kinetic-neon px-5 text-base font-semibold text-gray-950 transition active:scale-[0.98] active:brightness-90 disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex h-[3.125rem] w-full items-center justify-center gap-2 rounded-xl bg-kinetic-neon px-5 text-base font-semibold text-kinetic-on-accent transition active:scale-[0.98] active:brightness-90 disabled:cursor-not-allowed disabled:opacity-40;
   }
   /* Bouton secondaire, même gabarit, sur fond gris */
   .k-btn-2 {
@@ -707,7 +798,7 @@ button.k-row:active {
     @apply inline-flex h-9 flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-kinetic-elevated px-4 text-sm font-medium text-white transition active:scale-95 active:bg-kinetic-raised disabled:cursor-not-allowed disabled:opacity-40;
   }
   .k-pill-accent {
-    @apply inline-flex h-9 flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-kinetic-neon px-4 text-sm font-semibold text-gray-950 transition active:scale-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex h-9 flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-kinetic-neon px-4 text-sm font-semibold text-kinetic-on-accent transition active:scale-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-40;
   }
   /* Lien-texte d'action (couleur d'accent, sans fond) */
   .k-link {
@@ -749,10 +840,11 @@ button.k-row:active {
   .k-empty > :first-child {
     @apply text-base font-semibold text-white;
   }
-  /* Pastille d'icône colorée (réglages, raccourcis). Dans le calque
-     « components » pour qu'une classe text-* puisse remplacer le blanc. */
+  /* Pastille d'icône colorée (réglages, raccourcis). Icône sombre : les teintes
+     de la palette sont claires. Dans le calque « components » pour qu'une
+     classe text-* puisse la remplacer. */
   .k-glyph {
-    @apply inline-flex h-[1.875rem] w-[1.875rem] flex-shrink-0 items-center justify-center rounded-[7px] text-white;
+    @apply inline-flex h-[1.875rem] w-[1.875rem] flex-shrink-0 items-center justify-center rounded-[7px] text-kinetic-on-accent;
   }
   /* Rangée défilant horizontalement (filtres) sans barre de défilement */
   .k-scroll-x {
@@ -811,13 +903,13 @@ button.k-row:active {
       ),
       radial-gradient(
         80% 70% at 100% 0%,
-        rgb(var(--kinetic-electric) / calc(var(--k-hero-a) * 0.45)) 0%,
-        rgb(var(--kinetic-electric) / 0) 65%
+        rgb(var(--k-glow-2-rgb) / var(--k-hero-2)) 0%,
+        rgb(var(--k-glow-2-rgb) / 0) 65%
       ),
       linear-gradient(180deg, var(--k-sheen), rgba(255, 255, 255, 0) 70%);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.1),
-      0 0 0 1px rgb(var(--kinetic-neon) / 0.14),
+      inset 0 1px 0 rgba(255, 220, 220, 0.09),
+      0 0 0 1px rgb(var(--kinetic-neon) / 0.16),
       var(--k-shadow);
     --ink: var(--well);
   }
@@ -844,7 +936,7 @@ button.k-row:active {
      Pleine largeur, 50 px. Une seule action principale par écran. */
   .k-btn-primary {
     @apply inline-flex h-[3.125rem] w-full items-center justify-center gap-2 rounded-[14px] px-5 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-40;
-    color: #0a0a0c;
+    color: rgb(var(--k-on-accent));
     background-color: rgb(var(--kinetic-neon));
   }
 
@@ -889,7 +981,7 @@ button.k-row:active {
     stroke-width: var(--k-ring-w, 3.4);
   }
   .k-ring-track {
-    stroke-opacity: 0.15;
+    stroke-opacity: var(--k-ring-track-opacity);
   }
   .k-ring-value {
     stroke-linecap: round;
@@ -942,7 +1034,7 @@ button.k-row:active {
   .k-chip[aria-selected='true'] {
     @apply inline-flex h-9 flex-shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-sm;
     font-weight: 600;
-    color: #0a0a0c;
+    color: rgb(var(--k-on-accent));
     background-color: rgb(var(--kinetic-neon));
   }
 }
@@ -1319,20 +1411,13 @@ html[data-density='advanced'] .adv-badge {
    Texte : contraste WCAG AA (4,5:1) sur chaque surface
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* Sombre : libellés secondaires, tous au même gris (lisible jusque sur --raised) */
+/* Sombre : libellés secondaires, tous au même gris bleuté (lisible jusque sur --raised).
+   Les accents EN TEXTE (text-kinetic-*) lisent leur variante -ink : cf.
+   textColor dans tailwind.config.js, rien à surcharger ici. */
 :root:not([data-mode='light']) .text-gray-500,
 :root:not([data-mode='light']) .text-gray-600,
 :root:not([data-mode='light']) .text-gray-700 {
-  color: #a1a1a8;
-}
-/* Sombre : les accents utilisés EN TEXTE passent en variante « accessible » ;
-   les aplats (bg-*) gardent la couleur système exacte. */
-:root:not([data-mode='light']) .text-kinetic-electric,
-:root:not([data-mode='light']) .text-kinetic-coral {
-  color: #ff6961;
-}
-:root:not([data-mode='light']) .text-kinetic-purple {
-  color: #409cff;
+  color: var(--tx2);
 }
 
 /* Clair : les classes écrites pour le sombre (text-white, bg-white/X, ring-white/X)
@@ -1342,76 +1427,57 @@ html[data-density='advanced'] .adv-badge {
 }
 [data-mode='light'] .text-gray-100,
 [data-mode='light'] .text-gray-200 {
-  color: #1c1c1e !important;
+  color: #1b2034 !important;
 }
 [data-mode='light'] .text-gray-300 {
-  color: #3a3a3c !important;
+  color: #343a52 !important;
 }
 [data-mode='light'] .text-gray-400 {
-  color: #545458 !important;
+  color: #4b5169 !important;
 }
-[data-mode='light'] .text-gray-500 {
-  color: #5f5f64 !important;
-}
+[data-mode='light'] .text-gray-500,
 [data-mode='light'] .text-gray-600,
 [data-mode='light'] .text-gray-700 {
-  color: #636368 !important;
+  color: var(--tx2) !important;
 }
 /* Le texte posé sur un aplat d'accent reste sombre dans les deux modes */
 [data-mode='light'] .bg-kinetic-neon.text-white,
-[data-mode='light'] .bg-kinetic-neon .text-white {
-  color: #0a0a0c !important;
+[data-mode='light'] .bg-kinetic-neon .text-white,
+[data-mode='light'] .bg-kinetic-teal.text-white,
+[data-mode='light'] .bg-kinetic-gold.text-white {
+  color: rgb(var(--k-on-accent)) !important;
 }
-[data-mode='light'] .bg-kinetic-electric.text-white,
-[data-mode='light'] .bg-kinetic-purple.text-white,
-[data-mode='light'] .bg-kinetic-teal.text-white {
+/* Violet et rouge du mode clair sont assez foncés pour un texte blanc (≥ 4,5:1). */
+[data-mode='light'] .bg-kinetic-purple.text-white {
   color: #fff !important;
 }
-/* Pastille de priorité « moyenne » (Récupération) : le jaune pur disparaît sur blanc. */
-[data-mode='light'] .k-prio-dot.bg-kinetic-gold {
-  background-color: #d99a00;
-}
-[data-mode='light'] .text-kinetic-neon,
-[data-mode='light'] .text-kinetic-gold,
-[data-mode='light'] .text-yellow-400 {
-  color: #7a5a00;
-}
-[data-mode='light'] .text-kinetic-electric,
-[data-mode='light'] .text-kinetic-coral {
-  color: #c4001a;
-}
-[data-mode='light'] .text-kinetic-purple {
-  color: #0058d0;
-}
-[data-mode='light'] .text-kinetic-teal {
-  color: #177a34;
-}
+/* Accents en texte (text-kinetic-*) : variantes foncées -ink, cf. tailwind.config.js. */
 [data-mode='light'] .bg-white\/5 {
-  background-color: rgba(118, 118, 128, 0.08) !important;
+  background-color: rgb(var(--k-fill) / 0.08) !important;
 }
 [data-mode='light'] .bg-white\/10 {
-  background-color: rgba(118, 118, 128, 0.12) !important;
+  background-color: rgb(var(--k-fill) / 0.12) !important;
 }
 [data-mode='light'] .bg-white\/20 {
-  background-color: rgba(118, 118, 128, 0.2) !important;
+  background-color: rgb(var(--k-fill) / 0.2) !important;
 }
 [data-mode='light'] .hover\:bg-white\/5:hover {
-  background-color: rgba(118, 118, 128, 0.1) !important;
+  background-color: rgb(var(--k-fill) / 0.1) !important;
 }
 [data-mode='light'] .hover\:bg-white\/10:hover {
-  background-color: rgba(118, 118, 128, 0.16) !important;
+  background-color: rgb(var(--k-fill) / 0.16) !important;
 }
 [data-mode='light'] .hover\:bg-white\/20:hover {
-  background-color: rgba(118, 118, 128, 0.24) !important;
+  background-color: rgb(var(--k-fill) / 0.24) !important;
 }
 [data-mode='light'] .ring-white\/20 {
-  --tw-ring-color: rgba(60, 60, 67, 0.18) !important;
+  --tw-ring-color: rgba(60, 64, 100, 0.18) !important;
 }
 [data-mode='light'] .ring-white\/30 {
-  --tw-ring-color: rgba(60, 60, 67, 0.26) !important;
+  --tw-ring-color: rgba(60, 64, 100, 0.26) !important;
 }
 [data-mode='light'] .border-white\/20 {
-  border-color: rgba(60, 60, 67, 0.2) !important;
+  border-color: rgba(60, 64, 100, 0.2) !important;
 }
 
 /* Menus et bulles flottants (position absolue) : un cran plus clairs que la carte, avec ombre */

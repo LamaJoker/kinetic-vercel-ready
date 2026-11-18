@@ -203,13 +203,8 @@ html[data-k-nav='tab']::view-transition-new(root) {
    Son instantané (k-tabbar) est une image plate : le flou d'arrière-plan
    (backdrop-filter) y est perdu et le contenu qui glisse dessous apparaîtrait
    net à travers le verre. Le temps de la transition, la capsule passe donc sur
-   un fond presque opaque de la même teinte que --material. */
-:root {
-  --k-tabbar-solid: rgba(30, 30, 34, 0.95);
-}
-[data-mode='light'] {
-  --k-tabbar-solid: rgba(250, 250, 252, 0.96);
-}
+   un fond presque opaque de la même teinte que --material (--k-tabbar-solid,
+   défini avec la palette dans styles.css). */
 html[data-k-nav] .k-tabbar {
   background: var(--k-tabbar-solid);
 }

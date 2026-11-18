@@ -15,6 +15,7 @@ const SKIP_KEYS = new Set<string>([
   STORAGE_KEYS.TRAINING_EXERCISES,
   STORAGE_KEYS.DEVICE_ID,
   STORAGE_KEYS.DEMO_MANIFEST,
+  STORAGE_KEYS.TRAINING_ACTIVE_SESSION,
 ]);
 
 export function isBackedUpKey(key: string): boolean {

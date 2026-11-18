@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 const WEB = resolve(__dirname, '../../apps/web/src');
 const styles = readFileSync(resolve(WEB, 'styles.css'), 'utf8');
 const finitions = readFileSync(resolve(WEB, 'styles/finitions.css'), 'utf8');
+const tailwind = readFileSync(resolve(WEB, '../tailwind.config.js'), 'utf8');
 
 type Rgb = [number, number, number];
 
@@ -44,9 +45,9 @@ function varIn(selector: RegExp, name: string): Rgb {
 const darkThemes = [...styles.matchAll(/\[data-theme='([a-z]+)'\]\s*\{/g)].map((m) => m[1]!);
 
 describe('mode clair : accent texte vs accent graphique', () => {
-  const PAGE: Rgb = [242, 242, 247]; // --ink clair
+  const PAGE: Rgb = [244, 243, 250]; // --ink clair (lavande)
   const CARD: Rgb = [255, 255, 255]; // --surface clair
-  const ON_ACCENT: Rgb = [10, 10, 12]; // texte posé sur l'accent
+  const ON_ACCENT: Rgb = [26, 13, 18]; // --k-on-accent : texte posé sur l'accent
 
   it('lists every unlockable theme', () => {
     expect(darkThemes).toEqual(
@@ -75,8 +76,9 @@ describe('mode clair : accent texte vs accent graphique', () => {
   });
 
   it('text accent follows --kinetic-neon-ink, rings and charts follow --kinetic-neon', () => {
-    expect(finitions).toMatch(
-      /\[data-mode='light'\] \.text-kinetic-neon \{\s*color: rgb\(var\(--kinetic-neon-ink\)\);/,
+    // Texte : textColor de tailwind.config.js (variante -ink de chaque accent)
+    expect(tailwind).toContain(
+      "textColor: {\n        'kinetic-neon': 'rgb(var(--kinetic-neon-ink) / <alpha-value>)',",
     );
     expect(finitions).toMatch(/\[data-mode='light'\] \.text-kinetic-neon > \.k-ring,/);
     expect(finitions).toMatch(
@@ -121,5 +123,54 @@ describe('contrôle segmenté unique (.k-seg)', () => {
   it('turns motion off under prefers-reduced-motion', () => {
     const rm = finitions.slice(finitions.indexOf('@media (prefers-reduced-motion: reduce)'));
     expect(rm).toMatch(/\.k-seg::before,\s*\.k-seg > \.k-seg-item \{\s*transition: none;/);
+  });
+});
+
+describe('palette « Nuit profonde & corail » : contrastes texte (WCAG AA)', () => {
+  const DARK = { ink: [11, 14, 26], surface: [21, 26, 44], elevated: [32, 38, 59] } as const;
+  const LIGHT = {
+    ink: [244, 243, 250],
+    surface: [255, 255, 255],
+    elevated: [237, 236, 245],
+  } as const;
+  const darkRoot = /:root (?=\{\n {2}--ink: 11 14 26;)/;
+  const lightRoot = /\[data-mode='light'\] (?=\{\n {2}--ink: 244 243 250;)/;
+
+  it('surfaces bleu nuit et accent corail par défaut', () => {
+    expect(varIn(darkRoot, '--ink')).toEqual([11, 14, 26]);
+    expect(varIn(darkRoot, '--surface')).toEqual([21, 26, 44]);
+    expect(varIn(/:root,\s*\[data-theme='electrique'\]/, '--kinetic-neon')).toEqual([
+      255, 122, 102,
+    ]);
+  });
+
+  it.each(['--k-success-ink', '--k-info-ink', '--k-warning-ink', '--k-danger-ink', '--tx2-rgb'])(
+    'sombre : %s ≥ 4,5:1 sur ink, surface et elevated',
+    (name) => {
+      const c = varIn(darkRoot, name);
+      for (const bg of Object.values(DARK))
+        expect(contrast(c, [...bg])).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it.each(['--k-success-ink', '--k-info-ink', '--k-warning-ink', '--k-danger-ink', '--tx2-rgb'])(
+    'clair : %s ≥ 4,5:1 sur ink, surface et elevated',
+    (name) => {
+      const c = varIn(lightRoot, name);
+      for (const bg of Object.values(LIGHT))
+        expect(contrast(c, [...bg])).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it('le texte sombre --k-on-accent se lit sur le corail (≥ 4,5:1)', () => {
+    const onAccent = varIn(darkRoot, '--k-on-accent');
+    expect(contrast(onAccent, [255, 122, 102])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('les couleurs Tailwind kinetic-* lisent les variables de la palette', () => {
+    expect(tailwind).toContain("'kinetic-teal': 'rgb(var(--k-success) / <alpha-value>)'");
+    expect(tailwind).toContain("'kinetic-purple': 'rgb(var(--k-info) / <alpha-value>)'");
+    expect(tailwind).toContain("'kinetic-gold': 'rgb(var(--k-warning) / <alpha-value>)'");
+    expect(tailwind).toContain("'kinetic-coral': 'rgb(var(--k-danger) / <alpha-value>)'");
   });
 });

@@ -101,6 +101,7 @@ import { photosPage } from './pages/photos.page';
 import { programsPage } from './pages/programs.page';
 import { glossairePage } from './pages/glossaire.page';
 import { helpTip } from './components/help-tip';
+import { activeSessionBanner } from './components/active-session-banner';
 import { authCallback } from './pages/auth-callback.page';
 import { initPwaInstallPrompt, pwaInstallPrompt } from './lib/pwa-install';
 import { initTheme } from './lib/theme';
@@ -167,6 +168,7 @@ Alpine.data('photosPage', photosPage);
 Alpine.data('programsPage', programsPage);
 Alpine.data('glossairePage', glossairePage);
 Alpine.data('helpTip', helpTip);
+Alpine.data('activeSessionBanner', activeSessionBanner); // bandeau « Séance en cours » (index.html)
 Alpine.data('pwaInstallPrompt', pwaInstallPrompt);
 Alpine.data('authCallback', authCallback);
 Alpine.data('mensurations', mensurations);

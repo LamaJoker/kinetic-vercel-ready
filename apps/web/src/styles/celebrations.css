@@ -68,7 +68,7 @@
   width: 4.5rem;
   height: 4.5rem;
   border-radius: 9999px;
-  color: #0a0a0c; /* texte posé sur l'accent : toujours sombre (cf. finitions.css) */
+  color: rgb(var(--k-on-accent)); /* texte posé sur l'accent : toujours sombre */
   background:
     radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0) 45%),
     linear-gradient(150deg, rgb(var(--kinetic-neon)), rgb(var(--kinetic-neon) / 0.72));

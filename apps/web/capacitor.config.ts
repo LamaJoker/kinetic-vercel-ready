@@ -25,18 +25,18 @@ const config: CapacitorConfig = {
   plugins: {
     LocalNotifications: {
       smallIcon: 'ic_stat_kinetic',
-      iconColor: '#F2C230',
+      iconColor: '#FF7A66', // corail (ACCENT_HEX, src/lib/palette.ts)
     },
     SplashScreen: {
       launchShowDuration: 1500,
-      backgroundColor: '#16171A',
+      backgroundColor: '#0B0E1A', // fond bleu nuit (PAGE_BG_DARK)
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
     },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#000000',
+      backgroundColor: '#0B0E1A',
     },
   },
 };

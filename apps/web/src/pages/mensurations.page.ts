@@ -1,4 +1,5 @@
 ﻿import { loc } from '../lib/num';
+import { ROLE_COLORS } from '../lib/palette';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { Capacitor } from '@capacitor/core';
@@ -40,18 +41,19 @@ interface MetricDef {
   color: string;
 }
 
+// Couleurs des séries : rôles de la palette (lib/palette.ts), suivent le mode clair.
 const METRICS: readonly MetricDef[] = [
-  { key: 'chest', label: 'Poitrine', color: '#FFD60A' },
-  { key: 'waist', label: 'Taille', color: '#FF453A' },
-  { key: 'hips', label: 'Hanches', color: '#0A84FF' },
-  { key: 'shoulders', label: 'Épaules', color: '#30D158' },
-  { key: 'leftBicep', label: 'Bras G', color: '#FFD60A' },
-  { key: 'rightBicep', label: 'Bras D', color: '#FFD60A' },
-  { key: 'leftThigh', label: 'Cuisse G', color: '#FF453A' },
-  { key: 'rightThigh', label: 'Cuisse D', color: '#FF453A' },
-  { key: 'leftCalf', label: 'Mollet G', color: '#30D158' },
-  { key: 'rightCalf', label: 'Mollet D', color: '#30D158' },
-  { key: 'neck', label: 'Cou', color: '#FFD60A' },
+  { key: 'chest', label: 'Poitrine', color: ROLE_COLORS.warning },
+  { key: 'waist', label: 'Taille', color: ROLE_COLORS.accent },
+  { key: 'hips', label: 'Hanches', color: ROLE_COLORS.info },
+  { key: 'shoulders', label: 'Épaules', color: ROLE_COLORS.success },
+  { key: 'leftBicep', label: 'Bras G', color: ROLE_COLORS.warning },
+  { key: 'rightBicep', label: 'Bras D', color: ROLE_COLORS.warning },
+  { key: 'leftThigh', label: 'Cuisse G', color: ROLE_COLORS.accent },
+  { key: 'rightThigh', label: 'Cuisse D', color: ROLE_COLORS.accent },
+  { key: 'leftCalf', label: 'Mollet G', color: ROLE_COLORS.success },
+  { key: 'rightCalf', label: 'Mollet D', color: ROLE_COLORS.success },
+  { key: 'neck', label: 'Cou', color: ROLE_COLORS.warning },
 ] as const;
 
 const STORAGE_KEY = STORAGE_KEYS.MEASUREMENTS_ENTRIES;
@@ -277,7 +279,7 @@ export function mensurations() {
     /** Pastille de couleur d'une mesure (tuiles « Toutes les mesures »). */
     metricDot(key: MetricKey): string {
       const def = (this.metrics as MetricDef[]).find((m) => m.key === key);
-      return `background-color: ${def ? def.color : '#8E8E93'}`;
+      return `background-color: ${def ? def.color : ROLE_COLORS.muted}`;
     },
 
     hasData(key: MetricKey): boolean {
@@ -696,8 +698,11 @@ export function mensurations() {
       const sx = (d: number) => padL + ((d - minX) / dx) * plotW;
       const sy = (y: number) => chartH - padY - ((y - minY) / dy) * (chartH - padY * 2);
 
-      // Une seule teinte neutre (bleu système) pour la série : le jaune reste réservé à l'action principale.
-      const color = '#0A84FF';
+      // Une seule teinte pour la série : violet (--k-info), l'accent corail
+      // reste réservé à l'action principale. Classes Tailwind (fill-/stroke-,
+      // currentColor des dégradés) car x-svg retire les attributs style.
+      const FILL = 'fill-kinetic-purple';
+      const STROKE = 'stroke-kinetic-purple';
 
       const linePath = smoothLine(pts.map((p) => [sx(p.x), sy(p.y)] as const));
 
@@ -733,7 +738,7 @@ export function mensurations() {
               .map(
                 (p) =>
                   `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="2.5"` +
-                  ` fill="${color}" class="stroke-kinetic-surface" stroke-width="1.5"/>`,
+                  ` class="${FILL} stroke-kinetic-surface" stroke-width="1.5"/>`,
               )
               .join('')
           : '';
@@ -746,27 +751,27 @@ export function mensurations() {
       const fmt = (d: Date) => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe ${metricDef.label}" class="block overflow-visible">
-        <defs>
+        <defs class="text-kinetic-purple">
           <linearGradient id="mens-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="${color}" stop-opacity="0.34"/>
-            <stop offset="0.6" stop-color="${color}" stop-opacity="0.07"/>
-            <stop offset="1" stop-color="${color}" stop-opacity="0"/>
+            <stop offset="0" stop-color="currentColor" stop-opacity="0.34"/>
+            <stop offset="0.6" stop-color="currentColor" stop-opacity="0.07"/>
+            <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
           </linearGradient>
           <linearGradient id="mens-line" gradientUnits="userSpaceOnUse" x1="${padL}" y1="0" x2="${W - padR}" y2="0">
-            <stop offset="0" stop-color="#64D2FF"/>
-            <stop offset="1" stop-color="${color}"/>
+            <stop offset="0" stop-color="currentColor" stop-opacity="0.6"/>
+            <stop offset="1" stop-color="currentColor"/>
           </linearGradient>
         </defs>
         ${gridLines}
         <path d="${areaPath}" fill="url(#mens-area)"/>
-        <path d="${linePath}" fill="none" stroke="${color}" stroke-opacity="0.22" stroke-width="7"
+        <path d="${linePath}" fill="none" class="${STROKE}" stroke-opacity="0.22" stroke-width="7"
               stroke-linecap="round" stroke-linejoin="round"/>
         <path d="${linePath}" fill="none" stroke="url(#mens-line)" stroke-width="2.75"
               stroke-linecap="round" stroke-linejoin="round"/>
         ${dots}
-        <circle cx="${lastCx}" cy="${lastCy}" r="9" fill="${color}" fill-opacity="0.22"/>
-        <circle cx="${lastCx}" cy="${lastCy}" r="5.5" fill="${color}"
-                class="stroke-kinetic-surface" stroke-width="2.5"/>
+        <circle cx="${lastCx}" cy="${lastCy}" r="9" class="${FILL}" fill-opacity="0.22"/>
+        <circle cx="${lastCx}" cy="${lastCy}" r="5.5"
+                class="${FILL} stroke-kinetic-surface" stroke-width="2.5"/>
         <text x="${padL}" y="${H - 2}" fill="currentColor" font-size="12">${fmt(d0)}</text>
         <text x="${W - padR}" y="${H - 2}" text-anchor="end" fill="currentColor" font-size="12">${fmt(dN)}</text>
       </svg>`;

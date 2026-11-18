@@ -86,6 +86,8 @@ const LOCAL_ONLY_KEYS: ReadonlySet<string> = new Set([
   SYNC_FLAG_KEY,
   SYNC_LAST_AT_KEY,
   STORAGE_KEYS.SCHEMA_VERSION,
+  // Brouillon de la séance en cours : propre à cet appareil (écrit à chaque série).
+  STORAGE_KEYS.TRAINING_ACTIVE_SESSION,
 ]);
 
 const EPOCH = '1970-01-01T00:00:00.000Z';

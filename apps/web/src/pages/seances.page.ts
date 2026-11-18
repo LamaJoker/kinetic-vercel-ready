@@ -39,6 +39,19 @@ import { suggestedRestSec, requestNotificationPermission } from '../lib/training
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import { hapticLight, hapticMedium, hapticSuccess, hapticHeavy } from '../lib/haptics';
 import { celebrate, recordCelebration } from '../lib/celebration';
+import {
+  type ActiveSessionSnapshot,
+  type ActiveSessionWriter,
+  announceActiveSession,
+  createActiveSessionWriter,
+  isActiveSessionStale,
+  loadActiveSession,
+  restoreActiveSession,
+  snapshotActiveSession,
+  summarizeActiveSession,
+  writeActiveSession,
+  formatActiveAge,
+} from '../lib/training/active-session';
 
 type Draft = { reps: number; weightKg: number; rpe: number; note: string; tempo: string };
 
@@ -265,6 +278,17 @@ export function seances() {
     restTotalSec: 90,
     fullscreenRest: false,
     _restNotifTimer: null as ReturnType<typeof setTimeout> | null,
+
+    // ─── Séance en cours persistée (lib/training/active-session.ts) ─────
+    /** Séance enregistrée de plus de 12 h : on demande avant de la reprendre. */
+    resumePrompt: null as ActiveSessionSnapshot | null,
+    confirmAbandon: false,
+    _activeWriter: null as ActiveSessionWriter | null,
+    /** Coupé au démontage : stopRest() du destroy ne doit pas effacer le repos enregistré. */
+    _persistOff: false,
+    _onHide: null as (() => void) | null,
+    // Alpine attache $watch dynamiquement — typage minimal
+    $watch: undefined as ((path: string, cb: () => void) => void) | undefined,
 
     // ─── Consignes d'exécution ───────────────────────────────
     cuesFor: null as string | null,
@@ -507,6 +531,14 @@ export function seances() {
           console.warn('[seances] shared import handling failed:', err);
         }
 
+        // ── Reprise de la séance en cours (changement d'onglet, rechargement,
+        // app fermée par l'OS) : automatique sous 12 h, sinon on demande.
+        const saved = await loadActiveSession(deps.storage);
+        if (saved && !this.currentSession) {
+          if (isActiveSessionStale(saved, Date.now())) this.resumePrompt = saved;
+          else this._applyActiveSnapshot(saved);
+        }
+
         // ── Auto-démarrer depuis le programme du jour ─────────────────────
         // sessionStorage peut throw en mode privé / WebView restreint
         let autoTemplateId: string | null = null;
@@ -517,7 +549,14 @@ export function seances() {
           /* sessionStorage indisponible — on saute silencieusement */
         }
 
-        if (autoTemplateId) {
+        if (autoTemplateId && this.currentSession) {
+          // Une séance est déjà en cours : on ne l'écrase pas.
+          window.dispatchEvent(
+            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+              detail: { kind: 'info', message: 'Séance en cours reprise.' },
+            }),
+          );
+        } else if (autoTemplateId) {
           const t = this.templates.find((x) => x.id === autoTemplateId);
           if (t) {
             this.startFromTemplate(t.id);
@@ -542,6 +581,123 @@ export function seances() {
           this.nowMs = Date.now();
         }, 1000) as unknown as number;
       }
+      this._watchActiveSession();
+    },
+
+    /**
+     * Enregistre la séance en cours à chaque changement significatif (séries,
+     * exercices, repos). Les frappes dans le brouillon ne déclenchent rien.
+     */
+    _watchActiveSession(): void {
+      if (this._activeWriter || typeof window === 'undefined') return;
+      this._activeWriter = createActiveSessionWriter(async (snap) => {
+        const deps = await getDeps();
+        await writeActiveSession(deps.storage, snap);
+      });
+      const persist = (): void => this._persistActive();
+      this.$watch?.('currentSession', persist);
+      this.$watch?.('restEndsAtMs', persist);
+      this.$watch?.('activeExerciseId', persist);
+      // iOS peut tuer l'app en arrière-plan : on écrit tout de suite en partant.
+      this._onHide = () => {
+        if (document.visibilityState === 'hidden') void this._activeWriter?.flush();
+      };
+      document.addEventListener('visibilitychange', this._onHide);
+      window.addEventListener('pagehide', this._onHide);
+      // La séance reprise (ou démarrée pendant le chargement) est réenregistrée.
+      if (this.currentSession) persist();
+    },
+
+    _persistActive(): void {
+      if (this._persistOff || !this._activeWriter) return;
+      if (this.currentSession) {
+        this.resumePrompt = null;
+        this.confirmAbandon = false;
+      } else if (this.resumePrompt) {
+        return; // séance ancienne en attente de décision : on ne l'efface pas
+      }
+      const snap = snapshotActiveSession(
+        {
+          session: this.currentSession,
+          restEndsAtMs: this.restEndsAtMs,
+          restTotalSec: this.restTotalSec,
+          restPresetSec: Number(this.restPresetSec),
+          activeExerciseId: this.activeExerciseId,
+        },
+        Date.now(),
+      );
+      this._activeWriter.schedule(snap);
+      announceActiveSession(summarizeActiveSession(snap));
+    },
+
+    /** Réinjecte une séance enregistrée : durée depuis l'heure de début, repos restant recalculé. */
+    _applyActiveSnapshot(snap: ActiveSessionSnapshot): void {
+      const now = Date.now();
+      const state = restoreActiveSession(snap, now);
+      this.nowMs = now;
+      this.currentSession = state.session;
+      this.restPresetSec = state.restPresetSec;
+      this.restTotalSec = state.restTotalSec;
+      if (state.activeExerciseId) this.setActiveEntry(state.activeExerciseId);
+      if (state.restRemainingSec > 0) {
+        this.restEndsAtMs = state.restEndsAtMs;
+        this.fullscreenRest = true;
+        this._scheduleRestEndCallback(state.restRemainingSec);
+      } else {
+        this.restEndsAtMs = 0;
+      }
+    },
+
+    /** Âge de la séance ancienne proposée à la reprise (« 13 h »). */
+    resumePromptAge(): string {
+      return this.resumePrompt
+        ? formatActiveAge(this.resumePrompt.session.startedAt, this.nowMs)
+        : '';
+    },
+
+    resumePromptName(): string {
+      return this.resumePrompt?.session.name ?? '';
+    },
+
+    /** Reprend la séance ancienne malgré son âge. */
+    resumeSavedSession(): void {
+      const snap = this.resumePrompt;
+      if (!snap) return;
+      this.resumePrompt = null;
+      this._applyActiveSnapshot(snap);
+    },
+
+    /** Abandonne la séance ancienne enregistrée (rien n'est ajouté à l'historique). */
+    discardSavedSession(): void {
+      this.resumePrompt = null;
+      if (!this.currentSession) {
+        this._activeWriter?.schedule(null);
+        announceActiveSession(null);
+      }
+    },
+
+    askAbandon(): void {
+      this.confirmAbandon = true;
+    },
+
+    cancelAbandon(): void {
+      this.confirmAbandon = false;
+    },
+
+    /** Abandon explicite de la séance en cours : rien n'est enregistré dans l'historique. */
+    abandonCurrentSession(): void {
+      if (!this.currentSession) return;
+      this.stopRest();
+      this.currentSession = null;
+      this.confirmAbandon = false;
+      this.templateName = '';
+      this._persistActive();
+      hapticMedium();
+      window.dispatchEvent(
+        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+          detail: { kind: 'info', message: 'Séance abandonnée.' },
+        }),
+      );
     },
 
     /**
@@ -567,6 +723,14 @@ export function seances() {
       if (this.tickHandle !== null) {
         window.clearInterval(this.tickHandle);
         this.tickHandle = null;
+      }
+      // La séance reste enregistrée (bandeau « Séance en cours » sur les autres écrans).
+      void this._activeWriter?.flush();
+      this._persistOff = true;
+      if (this._onHide) {
+        document.removeEventListener('visibilitychange', this._onHide);
+        window.removeEventListener('pagehide', this._onHide);
+        this._onHide = null;
       }
       this.stopRest();
     },
@@ -1405,7 +1569,7 @@ export function seances() {
     progressSvg(): string {
       const pts = this.progressPoints();
       if (pts.length < 2) return '';
-      // Style « Santé » iOS : courbe bleue, record en rouge (comme « Nouveau
+      // Style « Santé » iOS : courbe à l'accent, record en ambre (comme « Nouveau
       // Record »), quadrillage et libellés en currentColor (gris du conteneur,
       // donc lisibles en mode clair comme en sombre).
       const W = 320,
@@ -1414,8 +1578,11 @@ export function seances() {
         padR = 34, // colonne des valeurs à droite
         padT = 10,
         padB = 22; // ligne des dates en bas
-      const BLUE = '#0A84FF';
-      const RED = '#FF453A';
+      // Palette : courbe à l'accent (corail), record en ambre ; classes
+      // Tailwind car x-svg retire les attributs style.
+      const LINE_FILL = 'fill-kinetic-neon';
+      const LINE_STROKE = 'stroke-kinetic-neon';
+      const RECORD_FILL = 'fill-kinetic-gold';
       const minX = pts[0]!.x,
         maxX = pts.at(-1)!.x;
       const minY = this.progressMin(),
@@ -1444,7 +1611,7 @@ export function seances() {
       const circles = pts
         .map((p) => {
           const isRecord = p.y >= maxY;
-          return `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${isRecord ? 5 : 3}" fill="${isRecord ? RED : BLUE}"${isRecord ? ' class="stroke-kinetic-surface" stroke-width="2.5"' : ''}><title>${p.label} : ${p.y.toFixed(1)}</title></circle>`;
+          return `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${isRecord ? 5 : 3}" class="${isRecord ? `${RECORD_FILL} stroke-kinetic-surface` : LINE_FILL}"${isRecord ? ' stroke-width="2.5"' : ''}><title>${p.label} : ${p.y.toFixed(1)}</title></circle>`;
         })
         .join('');
       const metric =
@@ -1455,8 +1622,8 @@ export function seances() {
             : 'e1RM (kg)';
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="${metric}">
         ${grid}
-        <path d="${area}" fill="${BLUE}" fill-opacity="0.12"/>
-        <path d="${line}" fill="none" stroke="${BLUE}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${area}" class="${LINE_FILL}" fill-opacity="0.12"/>
+        <path d="${line}" class="${LINE_STROKE}" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         ${circles}
         ${dates}
       </svg>`;
@@ -1495,6 +1662,7 @@ export function seances() {
         this.currentSession = null;
         this.templateName = '';
         this.stopRest();
+        this._persistActive(); // séance sauvegardée : plus rien à reprendre
         hapticSuccess(); // séance sauvegardée
 
         window.dispatchEvent(

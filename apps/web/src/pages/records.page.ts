@@ -102,10 +102,10 @@ export function records() {
     /** Médaillon d'un record : or pour le meilleur e1RM, accent si récent. */
     medalClass(r: DisplayRecord): string {
       if (this.records.length > 0 && Math.round(r.e1rmKg) === this.topE1rm) {
-        return 'bg-gradient-to-br from-kinetic-gold to-amber-500 text-gray-950';
+        return 'bg-gradient-to-br from-kinetic-gold to-kinetic-neon text-kinetic-on-accent';
       }
       if (r.isRecent)
-        return 'bg-gradient-to-br from-kinetic-neon to-kinetic-electric text-gray-950';
+        return 'bg-gradient-to-br from-kinetic-neon to-kinetic-electric text-kinetic-on-accent';
       return 'bg-kinetic-neon/15 text-kinetic-neon';
     },
 

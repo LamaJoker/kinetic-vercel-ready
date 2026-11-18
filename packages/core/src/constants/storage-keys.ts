@@ -53,6 +53,9 @@ export const STORAGE_KEYS = {
   TRAINING_SESSION_PREFIX: 'kinetic:training:session:' as const,
   TRAINING_TEMPLATES: 'kinetic:training:templates' as const,
   TRAINING_EXERCISES: 'kinetic:training:exercises' as const,
+  /** Séance en cours (brouillon + repos), locale à l'appareil : survit au changement d'onglet,
+   *  au rechargement et à la fermeture de l'app par l'OS. Effacée à la sauvegarde ou à l'abandon. */
+  TRAINING_ACTIVE_SESSION: 'kinetic:training:active-session' as const,
 
   // ─── Programme ────────────────────────────────────────────────
   PROGRAM: 'kinetic:program' as const,
@@ -159,6 +162,7 @@ export const STORAGE_KEYS = {
   EVENT_XP_UPDATED: 'kinetic:xp-updated' as const,
   EVENT_STREAK_UPDATED: 'kinetic:streak-updated' as const,
   EVENT_SESSION_SAVED: 'kinetic:session-saved' as const,
+  EVENT_ACTIVE_SESSION_CHANGED: 'kinetic:active-session-changed' as const, // bandeau « Séance en cours »
   EVENT_SYNC_FAILED: 'kinetic:sync-failed' as const,
   EVENT_ROUTE_CHANGED: 'kinetic:route-changed' as const,
   EVENT_THEME_CHANGED: 'kinetic:theme-changed' as const,

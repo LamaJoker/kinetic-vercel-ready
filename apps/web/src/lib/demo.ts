@@ -265,5 +265,7 @@ export async function clearDemoData(storage: StoragePort): Promise<void> {
   const manifest = await storage.get<StorageKey[]>(STORAGE_KEYS.DEMO_MANIFEST);
   if (!Array.isArray(manifest)) return;
   for (const key of manifest) await storage.remove(key);
+  // Une séance commencée pendant la démo porte sur ses modèles : elle part avec.
+  await storage.remove(STORAGE_KEYS.TRAINING_ACTIVE_SESSION);
   await storage.remove(STORAGE_KEYS.DEMO_MANIFEST);
 }

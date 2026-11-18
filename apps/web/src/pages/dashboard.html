@@ -84,7 +84,7 @@
               d="M7 4.8v14.4a1 1 0 0 0 1.5.86l12-7.2a1 1 0 0 0 0-1.72l-12-7.2A1 1 0 0 0 7 4.8Z"
             />
           </svg>
-          Commencer la séance
+          <span x-text="startLabel()">Commencer la séance</span>
         </button>
         <a
           href="/seances"
@@ -595,7 +595,7 @@
         class="w-14 h-14 rounded-full bg-gradient-to-br from-kinetic-neon to-kinetic-electric flex items-center justify-center flex-shrink-0"
         aria-hidden="true"
       >
-        <span class="k-stat text-2xl text-gray-950" x-text="$store.xp.currentLevel"></span>
+        <span class="k-stat text-2xl text-kinetic-on-accent" x-text="$store.xp.currentLevel"></span>
       </div>
       <div class="min-w-0 flex-1">
         <h2 class="k-card-title truncate">

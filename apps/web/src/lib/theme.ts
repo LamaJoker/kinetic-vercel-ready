@@ -22,6 +22,7 @@
  */
 
 import { STORAGE_KEYS } from '@kinetic/core';
+import { pageBackground } from './palette';
 
 export type ThemeMode = 'system' | 'dark' | 'light';
 
@@ -59,7 +60,7 @@ export function applyThemeMode(mode: ThemeMode): void {
   // Met à jour aussi <meta name="theme-color"> pour la status bar mobile.
   try {
     const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    if (meta) meta.content = effective === 'light' ? '#f2f2f7' : '#000000';
+    if (meta) meta.content = pageBackground(effective);
   } catch {
     /* noop */
   }

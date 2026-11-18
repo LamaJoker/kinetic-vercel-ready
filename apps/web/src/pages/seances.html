@@ -72,6 +72,32 @@
     <span class="ml-auto text-xs text-gray-500" x-text="$today"></span>
   </div>
 
+  <!-- ── Séance enregistrée de plus de 12 h : reprendre ou abandonner ─────── -->
+  <section
+    x-show="resumePrompt"
+    class="mb-6 k-enter"
+    aria-labelledby="seances-resume"
+    style="display: none"
+  >
+    <div class="k-hero">
+      <p id="seances-resume" class="text-sm font-semibold text-white">Séance non terminée</p>
+      <p class="mt-1 text-sm text-gray-400">
+        <span class="text-white" x-text="resumePromptName()"></span>
+        <span>a commencé il y a</span>
+        <span class="tabular-nums" x-text="$num.loc(resumePromptAge())"></span>.
+        <span>Tu la reprends ?</span>
+      </p>
+      <div class="mt-4 flex gap-2">
+        <button type="button" @click="discardSavedSession()" class="k-btn-2 h-11 text-sm">
+          Abandonner
+        </button>
+        <button type="button" @click="resumeSavedSession()" class="k-btn h-11 text-sm">
+          Reprendre
+        </button>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Séance en cours ─────────────────────────────────────────────────── -->
   <section x-show="currentSession" class="mb-8 k-enter">
     <h2 class="k-section mb-2.5">Séance en cours</h2>
@@ -1054,6 +1080,36 @@
           </button>
         </div>
       </div>
+
+      <!-- Abandon explicite (rien n'est ajouté à l'historique) -->
+      <div class="flex justify-center pt-1">
+        <button
+          type="button"
+          x-show="!confirmAbandon"
+          @click="askAbandon()"
+          class="h-11 px-4 text-sm text-gray-500 transition active:opacity-60"
+        >
+          Abandonner la séance
+        </button>
+        <div
+          x-show="confirmAbandon"
+          class="k-card w-full"
+          role="alertdialog"
+          aria-labelledby="seances-abandon"
+        >
+          <p id="seances-abandon" class="text-sm text-white">
+            Abandonner cette séance ? Les séries ne seront pas enregistrées.
+          </p>
+          <div class="mt-3 flex gap-2">
+            <button type="button" @click="cancelAbandon()" class="k-btn-2 h-11 text-sm">
+              Continuer
+            </button>
+            <button type="button" @click="abandonCurrentSession()" class="k-btn h-11 text-sm">
+              Abandonner
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1522,7 +1578,7 @@
                   <button
                     @click="deleteSession(s.id)"
                     :disabled="deletingSession"
-                    class="flex-1 text-sm px-3 py-2.5 rounded-xl bg-kinetic-electric text-white font-semibold active:brightness-90 disabled:opacity-50 transition-all"
+                    class="flex-1 text-sm px-3 py-2.5 rounded-xl bg-kinetic-electric text-kinetic-on-accent font-semibold active:brightness-90 disabled:opacity-50 transition-all"
                   >
                     <span x-show="!deletingSession">Confirmer</span>
                     <span x-show="deletingSession">…</span>

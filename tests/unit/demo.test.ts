@@ -55,4 +55,19 @@ describe('données de démo', () => {
     expect(await loadSessions(storage)).toHaveLength(0);
     expect(await storage.keys()).toEqual(['kinetic:settings']);
   });
+
+  it('retire aussi la séance en cours commencée pendant la démo', async () => {
+    const storage = new InMemoryStorage();
+    await loadDemoData(storage, NOW);
+    await storage.set('kinetic:training:active-session', { v: 1 });
+    await clearDemoData(storage);
+    expect(await storage.get('kinetic:training:active-session')).toBeNull();
+  });
+
+  it('ne touche pas à la séance en cours hors démo', async () => {
+    const storage = new InMemoryStorage();
+    await storage.set('kinetic:training:active-session', { v: 1 });
+    await clearDemoData(storage);
+    expect(await storage.get('kinetic:training:active-session')).toEqual({ v: 1 });
+  });
 });
