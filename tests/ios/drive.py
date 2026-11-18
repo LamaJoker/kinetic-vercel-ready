@@ -62,6 +62,7 @@ while time.time() < deadline:
         seen = step["step"]
         if seen == 1:
             print(f"premier écran de démo affiché après {time.time() - t0:.1f} s", flush=True)
+        print(f"étape {seen} {step['route']} : {json.dumps(step.get('diag'), ensure_ascii=False)}", flush=True)
         if step["route"] == "fin":
             break
         time.sleep(0.8)

@@ -55,8 +55,31 @@ export async function runAutotest(openRoute: (route: string) => void): Promise<v
     await Filesystem.deleteFile({ path: PLAN_FILE, directory: Directory.Documents });
     return;
   }
+  // Diagnostic joint à chaque étape : ce que l'écran affiche vraiment et les erreurs JS,
+  // invisibles sinon dans les journaux du simulateur.
+  const errors: string[] = [];
+  const t0 = Date.now();
+  window.addEventListener('error', (e) => errors.push(`error: ${e.message}`));
+  window.addEventListener('unhandledrejection', (e) =>
+    errors.push(`rejection: ${String((e as PromiseRejectionEvent).reason).slice(0, 200)}`),
+  );
+  const snapshot = () => {
+    const outlet = document.getElementById('app-outlet');
+    return {
+      ms: Date.now() - t0,
+      path: window.location.pathname,
+      busy: outlet?.getAttribute('aria-busy') ?? null,
+      nav: document.documentElement.dataset.kNav ?? null,
+      text: (outlet?.innerText ?? '').replace(/\s+/g, ' ').slice(0, 160),
+      errors: errors.splice(0),
+    };
+  };
   const writeStep = (step: number, route: string) =>
-    Filesystem.writeFile({ path: STEP_FILE, data: JSON.stringify({ step, route }), ...where });
+    Filesystem.writeFile({
+      path: STEP_FILE,
+      data: JSON.stringify({ step, route, diag: snapshot() }),
+      ...where,
+    });
 
   if (plan.demo) {
     const { getDeps } = await import('../deps');
