@@ -19,9 +19,16 @@
  */
 
 import type { StoragePort } from '@kinetic/core';
-import { STORAGE_KEYS } from '@kinetic/core';
+import { STORAGE_KEYS, orderSetEntries } from '@kinetic/core';
 import type { Exercise, WorkoutSession, SessionExerciseEntry, SetEntry } from './types';
-import { loadExercises, loadSessions, saveExercises, saveSessions } from './storage';
+import {
+  loadCustomExercises,
+  loadExercises,
+  loadSessions,
+  saveCustomExercises,
+  saveExercises,
+  saveSessions,
+} from './storage';
 
 export interface ImportBundle {
   sessions: readonly WorkoutSession[];
@@ -181,7 +188,8 @@ export function parseStrongCsv(content: string): { bundle: ImportBundle; skipped
     const reps = Number(pick(r, idx.reps));
     const weight = Number(pick(r, idx.weight));
     const rpeRaw = Number(pick(r, idx.rpe));
-    const setOrder = Math.max(0, Number(pick(r, idx.setOrder)) - 1);
+    const setOrderRaw = pick(r, idx.setOrder);
+    const setOrder = Math.max(0, Number(setOrderRaw) - 1);
 
     if (!date || !exerciseName || !Number.isFinite(reps) || reps <= 0) {
       skipped++;
@@ -205,6 +213,8 @@ export function parseStrongCsv(content: string): { bundle: ImportBundle; skipped
       weightKg: Number.isFinite(weight) ? weight : 0,
       rpe: clamp(Number.isFinite(rpeRaw) && rpeRaw > 0 ? rpeRaw : 7, 6, 10),
       performedAt,
+      // Strong note les échauffements « W » dans « Set Order ».
+      ...(setOrderRaw.toUpperCase() === 'W' ? { kind: 'warmup' as const } : {}),
     });
     session.exerciseNames.set(exId, exerciseName);
   }
@@ -227,6 +237,7 @@ export function parseHevyCsv(content: string): { bundle: ImportBundle; skipped: 
     weight: header.indexOf('weight_kg'),
     reps: header.indexOf('reps'),
     rpe: header.indexOf('rpe'),
+    setType: header.indexOf('set_type'),
   };
 
   const sessionMap = new Map<string, MutableSession>();
@@ -264,6 +275,7 @@ export function parseHevyCsv(content: string): { bundle: ImportBundle; skipped: 
       weightKg: Number.isFinite(weight) ? weight : 0,
       rpe: clamp(Number.isFinite(rpeRaw) && rpeRaw > 0 ? rpeRaw : 7, 6, 10),
       performedAt,
+      ...(pick(r, idx.setType).toLowerCase() === 'warmup' ? { kind: 'warmup' as const } : {}),
     });
     session.exerciseNames.set(exId, exerciseName);
   }
@@ -310,6 +322,11 @@ export async function mergeIntoStorage(
   }
   if (newExercises.length > 0) {
     await saveExercises(storage, [...existingExercises, ...newExercises]);
+    // Exercices perso d'une autre sauvegarde Kinetic : rangés avec ceux de l'utilisateur.
+    const custom = newExercises.filter((e) => e.custom);
+    if (custom.length > 0) {
+      await saveCustomExercises(storage, [...(await loadCustomExercises(storage)), ...custom]);
+    }
   }
 
   // Notifier les stores réactifs (goals, xp) qu'un batch de sessions a atterri.
@@ -373,7 +390,9 @@ function finalizeMutableSessions(
       entries: s.entries.map(
         (e): SessionExerciseEntry => ({
           exerciseId: e.exerciseId,
-          sets: [...e.sets].sort((a, b) => a.setIndex - b.setIndex),
+          // Échauffements (« W » de Strong, sans numéro) d'abord, puis numérotation
+          // contiguë : pas de setIndex en double (clés d'affichage uniques).
+          sets: orderSetEntries([...e.sets].sort((a, b) => a.setIndex - b.setIndex)),
         }),
       ),
     });

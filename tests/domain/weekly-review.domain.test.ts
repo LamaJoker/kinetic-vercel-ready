@@ -96,4 +96,52 @@ describe('buildWeeklyReview', () => {
     expect(r.prs[0]!.exerciseId).toBe('squat');
     expect(r.prs[0]!.weightKg).toBe(110);
   });
+
+  describe('même période de la semaine précédente', () => {
+    it("un mercredi, n'inclut pas la fin de la semaine précédente (pas de faux −84 %)", () => {
+      const sets = [
+        aset({ performedAt: '2026-06-08T10:00:00Z', reps: 10, weightKg: 100 }), // lun. préc. : 1000
+        aset({ performedAt: '2026-06-11T10:00:00Z', reps: 30, weightKg: 100 }), // jeu. préc. : hors période
+        aset({ performedAt: '2026-06-13T10:00:00Z', reps: 20, weightKg: 100 }), // sam. préc. : hors période
+        aset({ performedAt: '2026-06-15T10:00:00Z', reps: 10, weightKg: 100 }), // lun. : 1000
+      ];
+      const r = buildWeeklyReview(sets, REF);
+      expect(r.prevTonnageKg).toBe(1000);
+      expect(r.tonnageDeltaPct).toBe(0);
+      expect(r.trend).toBe('flat');
+    });
+
+    it("s'arrête à la même heure le même jour", () => {
+      const sets = [
+        aset({ performedAt: '2026-06-10T11:59:00Z', reps: 10, weightKg: 100 }), // inclus
+        aset({ performedAt: '2026-06-10T18:00:00Z', reps: 10, weightKg: 100 }), // après l'heure : exclu
+        aset({ performedAt: '2026-06-17T09:00:00Z', reps: 10, weightKg: 100 }),
+      ];
+      const r = buildWeeklyReview(sets, REF);
+      expect(r.prevTonnageKg).toBe(1000);
+      expect(r.tonnageDeltaPct).toBe(0);
+    });
+
+    it('compare la semaine complète le dimanche soir', () => {
+      const sets = [
+        aset({ performedAt: '2026-06-13T10:00:00Z', reps: 10, weightKg: 100 }),
+        aset({ performedAt: '2026-06-20T10:00:00Z', reps: 15, weightKg: 100 }),
+      ];
+      const r = buildWeeklyReview(sets, '2026-06-21T20:00:00.000Z');
+      expect(r.prevTonnageKg).toBe(1000);
+      expect(r.tonnageDeltaPct).toBe(50);
+    });
+
+    it("rien à la même période mais séances plus tard la semaine dernière : en avance, pas 'first'", () => {
+      const sets = [
+        aset({ performedAt: '2026-06-12T10:00:00Z', reps: 10, weightKg: 100 }), // ven. préc.
+        aset({ performedAt: '2026-06-16T10:00:00Z', reps: 10, weightKg: 100 }),
+      ];
+      const r = buildWeeklyReview(sets, REF);
+      expect(r.prevTonnageKg).toBe(0);
+      expect(r.tonnageDeltaPct).toBeNull();
+      expect(r.trend).toBe('up');
+      expect(buildWeeklyReview(sets.slice(0, 1), REF).trend).toBe('flat');
+    });
+  });
 });

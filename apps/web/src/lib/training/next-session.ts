@@ -6,6 +6,7 @@
  * - résumer la dernière séance terminée (volume, séries, durée) ;
  * - afficher la semaine en cours (lundi → dimanche) jour par jour.
  */
+import { workSetsOf } from '@kinetic/core';
 import type { WorkoutSession, WorkoutTemplate } from './types';
 
 export const PPL_ROTATION = [
@@ -65,7 +66,7 @@ export function summarizeSession(s: WorkoutSession): SessionSummary {
   let setCount = 0;
   let volumeKg = 0;
   for (const entry of s.entries) {
-    for (const set of entry.sets) {
+    for (const set of workSetsOf(entry.sets)) {
       setCount++;
       volumeKg += Math.max(0, set.reps) * Math.max(0, set.weightKg);
     }

@@ -53,6 +53,12 @@ export const STORAGE_KEYS = {
   TRAINING_SESSION_PREFIX: 'kinetic:training:session:' as const,
   TRAINING_TEMPLATES: 'kinetic:training:templates' as const,
   TRAINING_EXERCISES: 'kinetic:training:exercises' as const,
+  /** Version du catalogue d'exercices stocké (cf. EXERCISE_CATALOG_VERSION), locale à l'appareil. */
+  TRAINING_CATALOG_VERSION: 'kinetic:training:catalog-version' as const,
+  /** Exercices créés par l'utilisateur (custom: true) : à part du catalogue, qui peut être remplacé. */
+  TRAINING_CUSTOM_EXERCISES: 'kinetic:training:custom-exercises' as const,
+  /** Modèle ouvert dans l'éditeur (sessionStorage, survit au rechargement). */
+  TEMPLATE_EDITOR_ID: 'kinetic:template-editor:id' as const,
   /** Séance en cours (brouillon + repos), locale à l'appareil : survit au changement d'onglet,
    *  au rechargement et à la fermeture de l'app par l'OS. Effacée à la sauvegarde ou à l'abandon. */
   TRAINING_ACTIVE_SESSION: 'kinetic:training:active-session' as const,
@@ -131,7 +137,10 @@ export const STORAGE_KEYS = {
   REMINDER_DATE: 'kinetic:reminder:lastDate' as const,
   REMINDER_PREFS: 'kinetic:reminder:prefs' as const, // localStorage, réglages des rappels
   BACKUP_LAST_AT: 'kinetic:backup:lastAt' as const, // localStorage, date du dernier export
+  AUTO_BACKUP_LAST_AT: 'kinetic:backup:autoLastAt' as const, // localStorage, dernière sauvegarde auto (natif)
+  AUTO_BACKUP_OFF: 'kinetic:backup:autoOff' as const, // localStorage, '1' = sauvegarde auto désactivée
   FIRST_SEEN_AT: 'kinetic:firstSeenAt' as const, // localStorage, premier lancement
+  REST_ALERT_ASKED: 'kinetic:restAlert:asked' as const, // localStorage, permission d'alerte de repos déjà demandée
   BACKUP_REMINDED_AT: 'kinetic:backup:remindedAt' as const, // localStorage, dernier rappel de sauvegarde programmé
   HEALTH_ENABLED: 'kinetic:health:enabled' as const, // localStorage, Health Connect activé
   DAILY_LOG: (date: string) => `kinetic:dailyLog:${date}` as const,

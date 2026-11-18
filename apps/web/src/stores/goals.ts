@@ -92,6 +92,12 @@ export function goalsStore() {
       }
     },
 
+    /** Objectif modifié : enregistré puis relu (progression recalculée). */
+    async commit(): Promise<void> {
+      await this.save();
+      await this.reload();
+    },
+
     async reload(): Promise<void> {
       this.loading = true;
       try {

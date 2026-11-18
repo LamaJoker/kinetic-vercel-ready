@@ -147,8 +147,8 @@
   <div
     x-show="$store.vitalite.showAddForm"
     class="k-backdrop fixed"
-    @click.self="$store.vitalite.showAddForm = false; $store.vitalite.addFormError = ''"
-    @keydown.escape.window="$store.vitalite.showAddForm = false; $store.vitalite.addFormError = ''"
+    @click.self="$store.vitalite.closeAddForm()"
+    @keydown.escape.window="$store.vitalite.closeAddForm()"
     style="display: none"
   >
     <div class="k-sheet" role="dialog" aria-modal="true" aria-labelledby="vit-add-title">
@@ -156,7 +156,7 @@
         <h2 id="vit-add-title" class="text-lg font-semibold text-white">Nouvelle tâche</h2>
         <button
           type="button"
-          @click="$store.vitalite.showAddForm = false; $store.vitalite.addFormError = ''"
+          @click="$store.vitalite.closeAddForm()"
           class="k-icon-btn"
           aria-label="Fermer"
         >
@@ -287,7 +287,7 @@
       <button type="button" @click="$store.vitalite.addCustomTask()" class="k-btn">Ajouter</button>
       <button
         type="button"
-        @click="$store.vitalite.showAddForm = false; $store.vitalite.addFormError = ''"
+        @click="$store.vitalite.closeAddForm()"
         class="mt-1 w-full h-11 text-base font-medium text-gray-400 active:opacity-60"
       >
         Annuler

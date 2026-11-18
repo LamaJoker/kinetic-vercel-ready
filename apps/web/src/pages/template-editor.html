@@ -1,0 +1,307 @@
+<div x-data="templateEditor" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-32">
+  <div class="k-nav">
+    <a href="/seances" class="k-back" aria-label="Retour" x-show="!isExerciseView">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2.4"
+          d="M15 19l-7-7 7-7"
+        />
+      </svg>
+    </a>
+    <button
+      type="button"
+      class="k-back"
+      aria-label="Annuler"
+      x-show="isExerciseView"
+      @click="cancelExercise()"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2.4"
+          d="M15 19l-7-7 7-7"
+        />
+      </svg>
+    </button>
+    <div class="flex-1">
+      <h1 class="font-display font-bold text-white" x-text="title"></h1>
+    </div>
+  </div>
+
+  <p x-show="loading" class="text-gray-500">Chargement…</p>
+
+  <!-- ─── Modèle ──────────────────────────────────────────── -->
+  <section x-show="isTemplateView && !loading" x-cloak>
+    <label for="tpl-name" class="k-label">Nom du modèle</label>
+    <input
+      id="tpl-name"
+      type="text"
+      class="k-field mb-5"
+      maxlength="60"
+      placeholder="Ex. Haut du corps A"
+      x-model="name"
+    />
+
+    <h2 class="k-card-title mb-2">Exercices</h2>
+    <p x-show="lines.length === 0" class="mb-3 text-sm text-gray-500">
+      Aucun exercice pour l’instant.
+    </p>
+    <div class="space-y-3 mb-4">
+      <template x-for="(line, i) in lines" :key="line.exerciseId">
+        <div class="k-card">
+          <div class="flex items-center gap-2 mb-3">
+            <p
+              class="flex-1 min-w-0 font-medium text-white"
+              x-text="exerciseName(line.exerciseId)"
+            ></p>
+            <button
+              type="button"
+              class="k-icon-btn"
+              aria-label="Monter"
+              :disabled="i === 0"
+              @click="moveUp(i)"
+            >
+              <svg
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m6 15 6-6 6 6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="k-icon-btn"
+              aria-label="Descendre"
+              :disabled="isLast(i)"
+              @click="moveDown(i)"
+            >
+              <svg
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <button type="button" class="k-icon-btn" aria-label="Retirer" @click="removeLine(i)">
+              <svg
+                class="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.6"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <p class="text-xs text-gray-500">Séries</p>
+              <p class="text-lg font-semibold text-white tabular-nums" x-text="line.sets"></p>
+              <div class="k-stepper">
+                <button type="button" aria-label="Moins de séries" @click="step(i, 'sets', -1)">
+                  −
+                </button>
+                <button type="button" aria-label="Plus de séries" @click="step(i, 'sets', 1)">
+                  +
+                </button>
+              </div>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Répétitions</p>
+              <p class="text-lg font-semibold text-white tabular-nums" x-text="line.targetReps"></p>
+              <div class="k-stepper">
+                <button
+                  type="button"
+                  aria-label="Moins de répétitions"
+                  @click="step(i, 'targetReps', -1)"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  aria-label="Plus de répétitions"
+                  @click="step(i, 'targetReps', 1)"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">RPE visé</p>
+              <p
+                class="text-lg font-semibold text-white tabular-nums"
+                x-text="decimal(line.targetRpe)"
+              ></p>
+              <div class="k-stepper">
+                <button type="button" aria-label="RPE plus bas" @click="step(i, 'targetRpe', -0.5)">
+                  −
+                </button>
+                <button type="button" aria-label="RPE plus haut" @click="step(i, 'targetRpe', 0.5)">
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <button type="button" class="k-link mb-3" x-show="!picking" @click="togglePicker()">
+      + Ajouter un exercice
+    </button>
+    <div x-show="picking" class="k-card mb-4">
+      <label for="tpl-search" class="k-label">Ajouter un exercice</label>
+      <input
+        id="tpl-search"
+        type="search"
+        class="k-field mb-3"
+        placeholder="Rechercher…"
+        autocomplete="off"
+        x-model="query"
+      />
+      <button
+        type="button"
+        class="k-btn-primary mb-3 w-full"
+        x-show="canCreateFromQuery"
+        @click="newExercise()"
+      >
+        Créer l’exercice « <span x-text="query"></span> »
+      </button>
+      <div class="max-h-72 overflow-y-auto -mx-1 px-1">
+        <template x-for="ex in results" :key="ex.id">
+          <button
+            type="button"
+            class="flex w-full items-center justify-between gap-2 rounded-xl px-2 py-3 text-left active:bg-kinetic-raised"
+            @click="addLine(ex.id)"
+          >
+            <span class="text-white" x-text="ex.name"></span>
+            <span class="text-kinetic-neon text-xl leading-none" aria-hidden="true">+</span>
+          </button>
+        </template>
+        <p x-show="results.length === 0" class="py-2 text-sm text-gray-500">Aucun résultat.</p>
+      </div>
+      <div class="mt-2 flex justify-between">
+        <button type="button" class="k-link" @click="newExercise()">Nouvel exercice</button>
+        <button type="button" class="k-link" @click="togglePicker()">Fermer</button>
+      </div>
+    </div>
+
+    <p x-show="error" class="mb-3 text-sm text-kinetic-coral" role="alert" x-text="error"></p>
+    <button type="button" class="k-btn-primary w-full" :disabled="saving" @click="saveTemplate()">
+      Enregistrer le modèle
+    </button>
+  </section>
+
+  <!-- ─── Mes exercices ───────────────────────────────────── -->
+  <section x-show="isExercisesView && !loading" x-cloak>
+    <p class="mb-4 text-sm text-gray-500">
+      Tes exercices s’ajoutent au catalogue : séances, modèles, records et progression.
+    </p>
+    <button type="button" class="k-btn-primary mb-5 w-full" @click="newExercise()">
+      Nouvel exercice
+    </button>
+    <div x-show="customs.length === 0" class="k-empty">
+      <p>Aucun exercice personnel</p>
+      <p class="mt-1 text-sm text-gray-500">Crée ceux qui manquent au catalogue.</p>
+    </div>
+    <div class="space-y-2">
+      <template x-for="ex in customs" :key="ex.id">
+        <div class="k-card">
+          <p class="font-medium text-white" x-text="ex.name"></p>
+          <p class="text-xs text-gray-500 mb-2" x-text="customMeta(ex)"></p>
+          <div class="flex flex-wrap gap-4">
+            <button type="button" class="k-link" @click="editExercise(ex.id)">Modifier</button>
+            <button
+              type="button"
+              class="k-link"
+              x-show="!isUsed(ex.id)"
+              @click="deleteExercise(ex.id)"
+            >
+              Supprimer
+            </button>
+            <button
+              type="button"
+              class="k-link"
+              x-show="isUsed(ex.id)"
+              @click="toggleHidden(ex.id)"
+              x-text="hideLabel(ex)"
+            ></button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- ─── Formulaire exercice ─────────────────────────────── -->
+  <section x-show="isExerciseView" x-cloak>
+    <label for="ex-name" class="k-label">Nom</label>
+    <input id="ex-name" type="text" class="k-field mb-5" maxlength="60" x-model="form.name" />
+
+    <p class="k-label">Groupes musculaires</p>
+    <div class="mb-5 flex flex-wrap gap-2">
+      <template x-for="m in muscleOptions" :key="m.key">
+        <button
+          type="button"
+          class="h-9 rounded-full bg-kinetic-elevated px-4 text-sm font-medium text-gray-300 transition active:scale-95 aria-pressed:bg-kinetic-neon aria-pressed:font-semibold aria-pressed:text-kinetic-on-accent"
+          :aria-pressed="hasMuscle(m.key)"
+          @click="toggleMuscle(m.key)"
+          x-text="m.label"
+        ></button>
+      </template>
+    </div>
+
+    <p class="k-label">Matériel</p>
+    <div class="mb-5 flex flex-wrap gap-2">
+      <template x-for="o in equipmentOptions" :key="o.key">
+        <button
+          type="button"
+          class="h-9 rounded-full bg-kinetic-elevated px-4 text-sm font-medium text-gray-300 transition active:scale-95 aria-pressed:bg-kinetic-neon aria-pressed:font-semibold aria-pressed:text-kinetic-on-accent"
+          :aria-pressed="isEquipment(o.key)"
+          @click="setEquipment(o.key)"
+          x-text="o.label"
+        ></button>
+      </template>
+    </div>
+
+    <p class="k-label">Incrément de charge</p>
+    <div class="mb-6 flex flex-wrap gap-2">
+      <template x-for="k in incrementOptions" :key="k">
+        <button
+          type="button"
+          class="h-9 rounded-full bg-kinetic-elevated px-4 text-sm font-medium text-gray-300 transition active:scale-95 aria-pressed:bg-kinetic-neon aria-pressed:font-semibold aria-pressed:text-kinetic-on-accent"
+          :aria-pressed="isIncrement(k)"
+          @click="setIncrement(k)"
+          x-text="kgLabel(k)"
+        ></button>
+      </template>
+    </div>
+
+    <p
+      x-show="formError"
+      class="mb-3 text-sm text-kinetic-coral"
+      role="alert"
+      x-text="formError"
+    ></p>
+    <button type="button" class="k-btn-primary w-full" @click="saveExercise()">
+      Enregistrer l’exercice
+    </button>
+  </section>
+</div>

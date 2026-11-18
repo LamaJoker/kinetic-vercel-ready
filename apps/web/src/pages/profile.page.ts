@@ -6,11 +6,12 @@ import {
   computeXpState,
   type SharedProfile,
   type ProfileBestLift,
+  workSetsOf,
 } from '@kinetic/core';
 import Alpine from 'alpinejs';
 import { getDeps } from '../deps';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
-import { loadSessions, loadExercises } from '../lib/training/storage';
+import { loadSessions, loadExercises, loadCustomExercises } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
 import { getThemeMode, setThemeMode, type ThemeMode } from '../lib/theme';
 import { getDisplayDensity, setDisplayDensity, type DisplayDensity } from '../lib/display-mode';
@@ -82,6 +83,27 @@ async function programTrainingDays(): Promise<number[] | null> {
 }
 import { canPinWidget, requestPinWidget } from '../lib/widget';
 import { snapshotStorage, restoreStorage } from '../lib/backup';
+import {
+  autoBackupEnabled,
+  backupFileLabel,
+  lastAutoBackupAt,
+  listBackupFiles,
+  readBackupFile,
+  runAutoBackup,
+  setAutoBackupEnabled,
+} from '../lib/auto-backup';
+
+interface BackupFile {
+  name: string;
+  label: string;
+}
+
+/** Sous-titre « Dernière sauvegarde automatique : … » (app native). */
+export function autoBackupLabel(at: Date | null): string {
+  if (!at) return 'Aucune sauvegarde automatique pour l’instant';
+  const date = at.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  return `Dernière sauvegarde automatique : ${date}`;
+}
 
 interface ProfileShape {
   displayName?: string;
@@ -150,6 +172,13 @@ export function profile() {
     reminderBackup: true,
     weekChips: WEEK_CHIPS,
     lastBackupLabel: '',
+    autoBackupOn: true,
+    autoBackupLabel: '',
+    autoBackupWhere: '',
+    showBackupSheet: false,
+    backupFiles: [] as BackupFile[],
+    backupChoice: null as BackupFile | null,
+    restoringBackup: false,
     cloudSynced: false,
     healthState: 'unsupported' as 'unsupported' | 'not-installed' | 'available',
     healthOn: false,
@@ -186,6 +215,12 @@ export function profile() {
     deleteConfirmText: '',
     deletingAccount: false,
     deleteAccountError: '',
+
+    openDeleteAccount(): void {
+      this.showDeleteAccount = true;
+      this.deleteConfirmText = '';
+      this.deleteAccountError = '';
+    },
 
     /** Suppression définitive : serveur (cascade) puis appareil, puis déconnexion. */
     async confirmDeleteAccount(): Promise<void> {
@@ -283,6 +318,7 @@ export function profile() {
         this.reminderSessionDays = reminders.sessionDays;
         this.reminderBackup = permitted && reminders.backup;
         this.lastBackupLabel = backupLabel();
+        this._refreshAutoBackup();
         this.cloudSynced = isCloudSynced();
         this.widgetPinSupported = await canPinWidget();
         this.healthState = await healthAvailability();
@@ -488,7 +524,7 @@ export function profile() {
         const bestByEx = new Map<string, ProfileBestLift>();
         for (const s of sessions) {
           for (const entry of s.entries) {
-            for (const set of entry.sets) {
+            for (const set of workSetsOf(entry.sets)) {
               const e1 = estimateE1rmKg(set.weightKg, set.reps);
               const prev = bestByEx.get(entry.exerciseId);
               if (!prev || e1 > prev.e1rmKg) {
@@ -567,16 +603,87 @@ export function profile() {
       }
     },
 
+    // ─── Sauvegarde automatique (app native, lib/auto-backup.ts) ─────────────
+
+    _refreshAutoBackup(): void {
+      this.autoBackupOn = autoBackupEnabled();
+      this.autoBackupLabel = autoBackupLabel(lastAutoBackupAt());
+      this.autoBackupWhere = this.autoBackupOn
+        ? this.androidApp
+          ? 'Chaque semaine dans Documents'
+          : 'Chaque semaine dans Fichiers › Sur mon iPhone › Kinetic'
+        : 'Désactivée';
+      this.lastBackupLabel = backupLabel();
+    },
+
+    async toggleAutoBackup(): Promise<void> {
+      setAutoBackupEnabled(!this.autoBackupOn);
+      this._refreshAutoBackup();
+      if (this.autoBackupOn) {
+        const deps = await getDeps();
+        if (await runAutoBackup(deps.storage)) this._refreshAutoBackup();
+      }
+    },
+
+    async openBackupList(): Promise<void> {
+      const names = await listBackupFiles();
+      this.backupFiles = names.map((name) => ({ name, label: backupFileLabel(name) }));
+      this.backupChoice = null;
+      this.showBackupSheet = true;
+    },
+
+    pickBackup(file: BackupFile): void {
+      this.backupChoice = file;
+    },
+
+    closeBackupSheet(): void {
+      if (this.restoringBackup) return;
+      this.showBackupSheet = false;
+      this.backupChoice = null;
+    },
+
+    /** Restaure la sauvegarde choisie (mêmes chemins que l'import d'un fichier Kinetic). */
+    async confirmRestoreBackup(): Promise<void> {
+      const choice = this.backupChoice;
+      if (!choice || this.restoringBackup) return;
+      this.restoringBackup = true;
+      try {
+        const bundle = parseKineticJson(await readBackupFile(choice.name));
+        if (!bundle.data || Object.keys(bundle.data).length === 0) {
+          throw new Error('not a full backup');
+        }
+        const deps = await getDeps();
+        await restoreStorage(deps.storage, bundle.data);
+        if (bundle.sessions.length > 0)
+          await mergeIntoStorage(deps.storage, bundle, 'kinetic-json');
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'success', message: 'Sauvegarde restaurée. Redémarrage…' },
+          }),
+        );
+        setTimeout(() => window.location.reload(), 1200);
+      } catch (err) {
+        console.error('[profile] restore backup failed:', err);
+        this.restoringBackup = false;
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Sauvegarde illisible. Choisis-en une autre.' },
+          }),
+        );
+      }
+    },
+
     async exportJson(): Promise<void> {
       this.exportLoading = true;
       try {
         const deps = await getDeps();
-        const [sessions, exercises] = await Promise.all([
+        const [sessions, exercises, custom] = await Promise.all([
           loadSessions(deps.storage),
           deps.storage.get<Exercise[]>(STORAGE_KEYS.TRAINING_EXERCISES),
+          loadCustomExercises(deps.storage),
         ]);
         const s = Array.isArray(sessions) ? sessions : [];
-        const e = Array.isArray(exercises) ? exercises : [];
+        const e = [...(Array.isArray(exercises) ? exercises : []), ...custom];
         await exportAsJson(s, e, await snapshotStorage(deps.storage));
         recordBackup();
         this.lastBackupLabel = backupLabel();
@@ -596,12 +703,13 @@ export function profile() {
       this.exportLoading = true;
       try {
         const deps = await getDeps();
-        const [sessions, exercises] = await Promise.all([
+        const [sessions, exercises, custom] = await Promise.all([
           loadSessions(deps.storage),
           deps.storage.get<Exercise[]>(STORAGE_KEYS.TRAINING_EXERCISES),
+          loadCustomExercises(deps.storage),
         ]);
         const s = Array.isArray(sessions) ? sessions : [];
-        const e = Array.isArray(exercises) ? exercises : [];
+        const e = [...(Array.isArray(exercises) ? exercises : []), ...custom];
         if (s.length === 0) {
           window.dispatchEvent(
             new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {

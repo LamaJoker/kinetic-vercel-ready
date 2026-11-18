@@ -62,6 +62,7 @@ export function buildCsvExport(
     'rpe',
     'e1rm_kg',
     'performed_at',
+    'set_type',
   ];
 
   const CRLF = '\r\n';
@@ -91,6 +92,7 @@ export function buildCsvExport(
             String(set.rpe),
             e1rm,
             csvCell(set.performedAt),
+            set.kind === 'warmup' ? 'warmup' : 'work',
           ].join(','),
         );
       }

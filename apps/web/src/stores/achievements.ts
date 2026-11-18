@@ -13,6 +13,7 @@ import {
   detectLiftKey,
   newlyUnlocked,
   type Achievement,
+  workSetsOf,
 } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { loadSessions, loadExercises } from '../lib/training/storage';
@@ -119,7 +120,7 @@ export function achievementsStore() {
           for (const entry of s.entries) {
             const name = namesById.get(entry.exerciseId) ?? entry.exerciseId;
             const lift = detectLiftKey(name);
-            for (const set of entry.sets) {
+            for (const set of workSetsOf(entry.sets)) {
               const e1 = estimateE1rmKg(set.weightKg, set.reps);
               totalTonnageKg += set.weightKg * set.reps;
               if (lift) {

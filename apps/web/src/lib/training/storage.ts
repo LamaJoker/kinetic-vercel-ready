@@ -1,5 +1,11 @@
 import type { StoragePort } from '@kinetic/core';
-import { STORAGE_KEYS } from '@kinetic/core';
+import {
+  EXERCISE_CATALOG_VERSION,
+  STORAGE_KEYS,
+  mergeCatalog,
+  mergeExerciseLists,
+  needsCatalogUpdate,
+} from '@kinetic/core';
 import type { Exercise, WorkoutSession, WorkoutTemplate } from './types';
 import { DEFAULT_EXERCISES, DEFAULT_TEMPLATES } from './seed';
 import { localizeExercises } from './exercise-names-fr';
@@ -9,12 +15,60 @@ const KEY_TEMPLATES = STORAGE_KEYS.TRAINING_TEMPLATES;
 const KEY_SESSIONS = STORAGE_KEYS.TRAINING_SESSIONS;
 const EXERCISES_FETCH_TIMEOUT_MS = 8000;
 
-export async function loadExercises(storage: StoragePort): Promise<Exercise[]> {
-  const data = await storage.get<Exercise[]>(KEY_EXERCISES);
-  if (Array.isArray(data) && data.length > 0) return localizeExercises(data);
+const KEY_CUSTOM_EXERCISES = STORAGE_KEYS.TRAINING_CUSTOM_EXERCISES;
+const KEY_CATALOG_VERSION = STORAGE_KEYS.TRAINING_CATALOG_VERSION;
 
-  // Try to bootstrap from a static exercise catalog (can contain 1000+ exercises)
-  // without bundling it into JS. Falls back to a small seed list if missing.
+/** Catalogue + exercices de l'utilisateur (ces derniers survivent à toute mise à jour du catalogue). */
+export async function loadExercises(storage: StoragePort): Promise<Exercise[]> {
+  const [catalog, custom] = await Promise.all([
+    loadCatalogExercises(storage),
+    loadCustomExercises(storage),
+  ]);
+  return mergeExerciseLists(catalog, custom);
+}
+
+/** Exercices créés par l'utilisateur (marqués custom: true), masqués compris. */
+export async function loadCustomExercises(storage: StoragePort): Promise<Exercise[]> {
+  const data = await storage.get<Exercise[]>(KEY_CUSTOM_EXERCISES);
+  return Array.isArray(data)
+    ? data.filter((e) => e && e.id).map((e) => ({ ...e, custom: true }))
+    : [];
+}
+
+export async function saveCustomExercises(storage: StoragePort, list: Exercise[]): Promise<void> {
+  await storage.set(KEY_CUSTOM_EXERCISES, JSON.parse(JSON.stringify(list)));
+}
+
+/** Stockages dont la mise à jour du catalogue a déjà été tentée (évite de re-télécharger hors ligne). */
+const catalogAttempted = new WeakSet<StoragePort>();
+
+async function loadCatalogExercises(storage: StoragePort): Promise<Exercise[]> {
+  const [data, version] = await Promise.all([
+    storage.get<Exercise[]>(KEY_EXERCISES),
+    storage.get<number>(KEY_CATALOG_VERSION),
+  ]);
+  const stored = Array.isArray(data) ? data.filter((e) => e && e.id) : [];
+  if (stored.length > 0 && (catalogAttempted.has(storage) || !needsCatalogUpdate(version))) {
+    return localizeExercises(stored);
+  }
+  catalogAttempted.add(storage);
+
+  // Catalogue statique (hors bundle JS) : premier lancement ou nouvelle version.
+  // Fusion par id : ajouts/corrections appliqués, le reste de la liste stockée conservé.
+  const fresh = await fetchCatalog();
+  if (fresh.length > 0) {
+    const merged = mergeCatalog(stored, fresh);
+    await storage.set(KEY_EXERCISES, merged);
+    await storage.set(KEY_CATALOG_VERSION, EXERCISE_CATALOG_VERSION);
+    return localizeExercises(merged);
+  }
+  if (stored.length > 0) return localizeExercises(stored);
+
+  await storage.set(KEY_EXERCISES, [...DEFAULT_EXERCISES]);
+  return localizeExercises(DEFAULT_EXERCISES);
+}
+
+async function fetchCatalog(): Promise<Exercise[]> {
   try {
     const ctrl = new AbortController();
     const timeoutId = setTimeout(() => ctrl.abort(), EXERCISES_FETCH_TIMEOUT_MS);
@@ -23,36 +77,30 @@ export async function loadExercises(storage: StoragePort): Promise<Exercise[]> {
       signal: ctrl.signal,
     });
     clearTimeout(timeoutId);
-    if (res.ok) {
-      const json = await res.json();
-      if (Array.isArray(json) && json.length > 0) {
-        const normalized = json
-          .filter((x): x is Record<string, unknown> => x !== null && typeof x === 'object')
-          .map((x) => ({
-            id: String(x['id'] ?? ''),
-            name: String(x['name'] ?? ''),
-            muscles: Array.isArray(x['muscles']) ? (x['muscles'] as unknown[]).map(String) : [],
-            equipment: (x['equipment'] ?? 'other') as Exercise['equipment'],
-            incrementKg: Number.isFinite(Number(x['incrementKg'])) ? Number(x['incrementKg']) : 2.5,
-          }))
-          .filter((x) => x.id && x.name);
-
-        if (normalized.length > 0) {
-          await storage.set(KEY_EXERCISES, normalized);
-          return localizeExercises(normalized);
-        }
-      }
-    }
+    if (!res.ok) return [];
+    const json: unknown = await res.json();
+    if (!Array.isArray(json)) return [];
+    return json
+      .filter((x): x is Record<string, unknown> => x !== null && typeof x === 'object')
+      .map((x) => ({
+        id: String(x['id'] ?? ''),
+        name: String(x['name'] ?? ''),
+        muscles: Array.isArray(x['muscles']) ? (x['muscles'] as unknown[]).map(String) : [],
+        equipment: (x['equipment'] ?? 'other') as Exercise['equipment'],
+        incrementKg: Number.isFinite(Number(x['incrementKg'])) ? Number(x['incrementKg']) : 2.5,
+      }))
+      .filter((x) => x.id && x.name);
   } catch {
-    // ignore, fallback below
+    return [];
   }
-
-  await storage.set(KEY_EXERCISES, [...DEFAULT_EXERCISES]);
-  return localizeExercises(DEFAULT_EXERCISES);
 }
 
+/** Enregistre le catalogue. Les exercices perso (custom) ont leur propre clé : ils sont écartés ici. */
 export async function saveExercises(storage: StoragePort, exercises: Exercise[]): Promise<void> {
-  await storage.set(KEY_EXERCISES, exercises);
+  await storage.set(
+    KEY_EXERCISES,
+    exercises.filter((e) => !e.custom),
+  );
 }
 
 export async function loadTemplates(storage: StoragePort): Promise<WorkoutTemplate[]> {

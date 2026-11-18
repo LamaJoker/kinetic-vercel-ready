@@ -259,7 +259,7 @@
               <template x-for="p in restPresets" :key="p.sec">
                 <button
                   type="button"
-                  @click="restPresetSec = p.sec; showRestPresets = false"
+                  @click="pickRestPreset(p.sec)"
                   class="k-seg-item"
                   :aria-pressed="restPresetSec === p.sec ? 'true' : 'false'"
                   x-text="$num.loc(p.label)"
@@ -298,7 +298,7 @@
                   <span
                     class="mt-0.5 block truncate whitespace-nowrap text-xs font-normal text-gray-500 tabular-nums"
                   >
-                    <span x-text="$plural(entry.sets.length, 'série')"></span>
+                    <span x-text="$plural(workSetCount(entry), 'série')"></span>
                     <template x-if="pr(entry.exerciseId)">
                       <span>
                         · Record
@@ -396,6 +396,13 @@
               </button>
             </div>
           </div>
+
+          <!-- La dernière fois (séries de travail de la dernière séance) -->
+          <p
+            x-show="lastTimeLabel(entry.exerciseId)"
+            class="mt-1 truncate text-xs text-gray-500 tabular-nums"
+            x-text="lastTimeLabel(entry.exerciseId)"
+          ></p>
 
           <!-- Alternatives (substitution) -->
           <template x-if="substitutionFor === entry.exerciseId">
@@ -566,8 +573,66 @@
             </p>
           </div>
 
+          <!-- Échauffements : à part, atténués, modifiables -->
+          <div x-show="warmupSets(entry).length > 0" class="mt-3">
+            <ol class="overflow-hidden rounded-2xl bg-kinetic-elevated" aria-label="Échauffement">
+              <template x-for="s in warmupSets(entry)" :key="s.setIndex">
+                <li class="k-item">
+                  <div class="flex items-center gap-2 px-3 min-h-11 py-1.5 text-gray-400">
+                    <button
+                      type="button"
+                      @click="openSetEditor(entry.exerciseId, s.setIndex)"
+                      class="relative flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-kinetic-raised text-xs font-bold after:absolute after:-inset-2.5 after:content-['']"
+                      aria-label="Modifier l'échauffement"
+                    >
+                      É
+                    </button>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      inputmode="decimal"
+                      :value="s.weightKg"
+                      @change="editWarmup(entry.exerciseId, s.setIndex, 'weightKg', $event.target.value)"
+                      aria-label="Charge de l'échauffement (kg)"
+                      class="h-9 w-16 min-w-0 rounded-lg bg-kinetic-raised text-center tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <span class="text-sm">kg ×</span>
+                    <input
+                      type="number"
+                      min="1"
+                      inputmode="numeric"
+                      :value="s.reps"
+                      @change="editWarmup(entry.exerciseId, s.setIndex, 'reps', $event.target.value)"
+                      aria-label="Reps de l'échauffement"
+                      class="h-9 w-12 min-w-0 rounded-lg bg-kinetic-raised text-center tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <button
+                      type="button"
+                      @click="removeWarmup(entry.exerciseId, s.setIndex)"
+                      class="k-icon-btn ml-auto bg-transparent"
+                      aria-label="Retirer cet échauffement"
+                    >
+                      <svg
+                        class="h-3.5 w-3.5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.6"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M6 6l12 12M18 6 6 18" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+              </template>
+            </ol>
+          </div>
+
           <!-- Séries faites -->
-          <div x-show="entry.sets.length > 0" class="mt-3">
+          <div x-show="workSetCount(entry) > 0" class="mt-3">
             <div
               class="grid grid-cols-[1.75rem_1fr_2.75rem_3.25rem] items-center gap-2 px-3 pb-1.5 text-xs text-gray-500"
               aria-hidden="true"
@@ -578,14 +643,17 @@
               <span class="text-right">e1RM</span>
             </div>
             <ol class="overflow-hidden rounded-2xl bg-kinetic-elevated">
-              <template x-for="s in entry.sets" :key="s.setIndex">
+              <template x-for="(s, i) in workSets(entry)" :key="s.setIndex">
                 <li class="k-item animate-slide-up">
-                  <div
-                    class="grid grid-cols-[1.75rem_1fr_2.75rem_3.25rem] items-center gap-2 px-3 min-h-11 py-2"
+                  <button
+                    type="button"
+                    @click="openSetEditor(entry.exerciseId, s.setIndex)"
+                    title="Modifier la série"
+                    class="grid w-full grid-cols-[1.75rem_1fr_2.75rem_3.25rem] items-center gap-2 px-3 min-h-11 py-2 text-left transition-colors active:bg-kinetic-raised"
                   >
                     <span
                       class="flex h-6 w-6 items-center justify-center rounded-full bg-kinetic-neon/15 text-xs font-bold tabular-nums text-kinetic-neon"
-                      x-text="s.setIndex + 1"
+                      x-text="i + 1"
                     ></span>
                     <span class="flex min-w-0 items-baseline gap-1 tabular-nums text-white">
                       <span class="text-lg font-semibold" x-text="$num.loc(s.weightKg)"></span>
@@ -607,7 +675,7 @@
                       :class="isSetPr(entry.exerciseId, s.weightKg, s.reps) ? 'font-semibold text-kinetic-electric' : 'text-gray-500'"
                       x-text="$num.loc(e1rm(s.weightKg, s.reps).toFixed(0))"
                     ></span>
-                  </div>
+                  </button>
                   <template x-if="s.note">
                     <p class="-mt-1 pb-2 pl-[3rem] pr-3 text-xs italic text-gray-500 leading-snug">
                       <span x-text="$num.loc(s.note)"></span>
@@ -681,7 +749,7 @@
                         </div>
                         <button
                           type="button"
-                          @click="draft.weightKg = coachAdvice(entry.exerciseId).weightKg; draft.reps = coachAdvice(entry.exerciseId).reps; draft.rpe = coachAdvice(entry.exerciseId).rpe"
+                          @click="applyCoach(entry.exerciseId)"
                           class="k-pill ml-auto h-11 bg-kinetic-raised"
                         >
                           Appliquer
@@ -738,16 +806,42 @@
               </template>
 
               <div class="mb-2.5 flex items-baseline justify-between gap-2 px-1">
-                <p
-                  class="font-display text-xl font-bold text-white"
-                  x-text="'Série ' + (entry.sets.length + 1)"
-                ></p>
+                <p class="font-display text-xl font-bold text-white" x-text="draftTitle(entry)"></p>
                 <p
                   class="text-sm font-semibold text-kinetic-electric"
-                  x-show="isNewPr(entry.exerciseId, draft.weightKg, draft.reps)"
+                  x-show="!draftWarmup && isNewPr(entry.exerciseId, draft.weightKg, draft.reps)"
                 >
                   Nouveau PR !
                 </p>
+              </div>
+
+              <!-- Raccourcis : même chose que la dernière fois, échauffement -->
+              <div class="mb-2.5 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  x-show="sameAsLastLabel(entry) && !draftWarmup"
+                  @click="repeatLast(entry)"
+                  class="k-pill bg-kinetic-raised"
+                >
+                  Même chose
+                  <span class="tabular-nums opacity-70" x-text="sameAsLastLabel(entry)"></span>
+                </button>
+                <button
+                  type="button"
+                  x-show="canAddWarmup(entry)"
+                  @click="addWarmups(entry.exerciseId)"
+                  class="k-pill bg-kinetic-raised"
+                >
+                  Ajouter l'échauffement
+                </button>
+                <button
+                  type="button"
+                  @click="toggleDraftWarmup()"
+                  :aria-pressed="draftWarmup ? 'true' : 'false'"
+                  :class="draftWarmup ? 'k-pill-accent' : 'k-pill bg-kinetic-raised'"
+                >
+                  É · Échauffement
+                </button>
               </div>
 
               <!-- Charge × reps : gros chiffres, stepper iOS dessous -->
@@ -1217,11 +1311,7 @@
         />
       </svg>
     </button>
-    <button
-      type="button"
-      @click="showTemplates = !showTemplates; showAutoGen = false"
-      class="k-row"
-    >
+    <button type="button" @click="toggleTemplates()" class="k-row">
       <span
         class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-kinetic-teal/15 text-kinetic-teal"
         aria-hidden="true"
@@ -1255,7 +1345,7 @@
         />
       </svg>
     </button>
-    <button type="button" @click="showAutoGen = !showAutoGen; showTemplates = false" class="k-row">
+    <button type="button" @click="toggleAutoGen()" class="k-row">
       <span
         class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-kinetic-purple/15 text-kinetic-purple"
         aria-hidden="true"
@@ -1350,10 +1440,14 @@
       </button>
     </div>
     <template x-if="templates.length === 0">
-      <p class="text-sm text-gray-500">
-        Aucun modèle. Crée une séance puis "Enregistrer comme modèle".
+      <p class="text-sm text-gray-500 mb-3">
+        Aucun modèle. Crée-en un, ou enregistre une séance comme modèle.
       </p>
     </template>
+    <div class="flex flex-wrap gap-x-5 gap-y-1 mb-3">
+      <button type="button" class="k-link" @click="newTemplate()">+ Nouveau modèle</button>
+      <a href="/exercices" class="k-link">Mes exercices</a>
+    </div>
     <div class="space-y-2" x-show="templates.length > 0">
       <template x-for="t in templates" :key="t.id">
         <div class="flex items-center gap-2">
@@ -1365,6 +1459,26 @@
               <p class="text-white font-medium" x-text="t.name"></p>
               <span class="text-xs text-gray-500" x-text="t.exercises.length + ' ex'"></span>
             </div>
+          </button>
+          <button
+            type="button"
+            @click.stop="editTemplate(t.id)"
+            class="k-icon-btn"
+            aria-label="Modifier ce modèle"
+            title="Modifier"
+          >
+            <svg
+              class="h-[18px] w-[18px]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
           </button>
           <button
             type="button"
@@ -1517,9 +1631,37 @@
               ></span>
             </div>
 
+            <!-- Modification : nom et date -->
+            <template x-if="isEditingSession(s.id)">
+              <div class="mb-3 space-y-3">
+                <div>
+                  <label class="k-label" :for="'edit-name-' + s.id">Nom de la séance</label>
+                  <input
+                    :id="'edit-name-' + s.id"
+                    type="text"
+                    maxlength="80"
+                    x-model="editName"
+                    class="k-field bg-kinetic-elevated"
+                  />
+                </div>
+                <div>
+                  <label class="k-label" :for="'edit-start-' + s.id">Date et heure</label>
+                  <input
+                    :id="'edit-start-' + s.id"
+                    type="datetime-local"
+                    x-model="editStart"
+                    class="k-field bg-kinetic-elevated"
+                  />
+                </div>
+                <p class="text-xs text-gray-500">
+                  Touche une série pour la corriger ou la supprimer.
+                </p>
+              </div>
+            </template>
+
             <!-- Liste exercices + sets -->
             <div class="space-y-2 mb-3">
-              <template x-for="entry in s.entries" :key="entry.exerciseId">
+              <template x-for="entry in detailEntries(s)" :key="entry.exerciseId">
                 <div class="rounded-2xl bg-kinetic-elevated p-3.5">
                   <p
                     class="text-sm font-semibold text-white mb-1.5"
@@ -1527,11 +1669,14 @@
                   ></p>
                   <div class="space-y-1">
                     <template x-for="set in entry.sets" :key="set.setIndex">
-                      <div class="flex items-center justify-between text-xs gap-2">
-                        <span
-                          class="text-gray-500 w-6 shrink-0"
-                          x-text="'#' + (set.setIndex + 1)"
-                        ></span>
+                      <button
+                        type="button"
+                        :disabled="!isEditingSession(s.id)"
+                        @click="openPastSetEditor(s.id, entry.exerciseId, set.setIndex)"
+                        class="flex w-full items-center justify-between text-xs gap-2 text-left rounded-lg"
+                        :class="pastSetClass(s.id, set)"
+                      >
+                        <span class="text-gray-500 w-6 shrink-0" x-text="setTag(entry, set)"></span>
                         <span class="text-white flex-1">
                           <span
                             class="tabular-nums font-bold"
@@ -1549,15 +1694,52 @@
                           x-text="$num.loc(setE1rm(set.weightKg, set.reps) + ' kg')"
                           :title="'e1RM estimé'"
                         ></span>
-                      </div>
+                      </button>
                     </template>
                   </div>
+                  <button
+                    type="button"
+                    x-show="isEditingSession(s.id)"
+                    @click="addPastSet(entry.exerciseId)"
+                    class="k-link mt-1.5 text-sm"
+                  >
+                    + Ajouter une série
+                  </button>
                 </div>
               </template>
             </div>
 
             <!-- Actions -->
-            <div class="flex gap-2">
+            <template x-if="isEditingSession(s.id)">
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  @click="cancelEditSession()"
+                  :disabled="savingEdit"
+                  class="flex-1 text-sm px-3 py-2.5 rounded-xl bg-kinetic-elevated text-white font-medium active:bg-kinetic-raised transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  @click="saveEditedSession()"
+                  :disabled="savingEdit"
+                  class="flex-1 text-sm px-3 py-2.5 rounded-xl bg-kinetic-neon text-kinetic-on-accent font-semibold active:brightness-90 disabled:opacity-50 transition-all"
+                >
+                  Enregistrer
+                </button>
+              </div>
+            </template>
+            <div class="flex gap-2" x-show="!isEditingSession(s.id)">
+              <template x-if="confirmDeleteId !== s.id">
+                <button
+                  type="button"
+                  @click="startEditSession(s.id)"
+                  class="flex-1 text-sm px-3 py-2.5 rounded-xl bg-kinetic-elevated text-white font-medium active:bg-kinetic-raised transition-colors"
+                >
+                  Modifier
+                </button>
+              </template>
               <template x-if="confirmDeleteId !== s.id">
                 <button
                   @click="askDeleteSession(s.id)"
@@ -1607,6 +1789,109 @@
         </svg>
       </button>
     </div>
+  </div>
+
+  <!-- ── Corriger une série (séance en cours ou passée) ─────────────────── -->
+  <template x-if="setEditor">
+    <div
+      class="k-backdrop"
+      @click.self="closeSetEditor()"
+      @keydown.escape.window="closeSetEditor()"
+    >
+      <div class="k-sheet" role="dialog" aria-modal="true" aria-labelledby="set-editor-title">
+        <h3
+          id="set-editor-title"
+          class="font-display text-xl font-bold text-white text-center"
+          x-text="setEditorTitle()"
+        ></h3>
+        <div class="k-seg mt-4" role="group" aria-label="Type de série">
+          <button
+            type="button"
+            class="k-seg-item"
+            :aria-pressed="setForm.warmup ? 'false' : 'true'"
+            @click="setFormWork()"
+          >
+            Travail
+          </button>
+          <button
+            type="button"
+            class="k-seg-item"
+            :aria-pressed="setForm.warmup ? 'true' : 'false'"
+            @click="setFormWarmup()"
+          >
+            Échauffement
+          </button>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-2">
+          <div>
+            <label class="k-label" for="set-edit-kg">Charge (kg)</label>
+            <input
+              id="set-edit-kg"
+              type="text"
+              inputmode="decimal"
+              x-model="setForm.weightKg"
+              class="k-field text-center tabular-nums"
+            />
+          </div>
+          <div>
+            <label class="k-label" for="set-edit-reps">Reps</label>
+            <input
+              id="set-edit-reps"
+              type="number"
+              min="1"
+              inputmode="numeric"
+              x-model="setForm.reps"
+              class="k-field text-center tabular-nums"
+            />
+          </div>
+          <div>
+            <label class="k-label" for="set-edit-rpe">RPE</label>
+            <input
+              id="set-edit-rpe"
+              type="text"
+              inputmode="decimal"
+              x-model="setForm.rpe"
+              class="k-field text-center tabular-nums"
+            />
+          </div>
+        </div>
+        <label class="k-label mt-3" for="set-edit-note">Note</label>
+        <input
+          id="set-edit-note"
+          type="text"
+          maxlength="200"
+          x-model="setForm.note"
+          placeholder="Facultatif"
+          class="k-field"
+        />
+        <p
+          x-show="setFormError"
+          x-text="setFormError"
+          class="mt-2 text-sm text-kinetic-electric"
+          role="alert"
+        ></p>
+        <div class="mt-5 space-y-2">
+          <button type="button" class="k-btn-primary" @click="saveSetEditor()">Enregistrer</button>
+          <button type="button" class="k-btn-2" @click="deleteEditedSet()">
+            <span class="text-kinetic-electric">Supprimer la série</span>
+          </button>
+          <button type="button" class="k-link mx-auto flex" @click="closeSetEditor()">
+            Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Série supprimée : annulation possible quelques secondes -->
+  <div
+    x-show="undoSet"
+    style="display: none"
+    class="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-[65] mx-auto flex max-w-md items-center gap-3 rounded-2xl k-toast px-4 py-2.5"
+    role="status"
+  >
+    <span class="flex-1 text-sm text-white">Série supprimée</span>
+    <button type="button" class="k-link" @click="undoDeleteSet()">Annuler</button>
   </div>
 
   <!-- ── Progression & records ──────────────────────────────────────────── -->

@@ -10,6 +10,10 @@ export interface Exercise {
   muscles: readonly string[];
   equipment: 'barbell' | 'dumbbell' | 'machine' | 'bodyweight' | 'cable' | 'other';
   incrementKg: number;
+  /** Créé par l'utilisateur (stocké à part du catalogue). */
+  custom?: boolean;
+  /** Masqué des listes de choix (exercice perso déjà utilisé, conservé pour l'historique). */
+  hidden?: boolean;
 }
 
 export interface TemplateExercise {
@@ -38,6 +42,11 @@ export interface SetEntry {
    * Champ optionnel pour rester rétrocompatible avec les séances historiques.
    */
   note?: string;
+  /**
+   * Type de série : absent = travail. Les échauffements (« warmup ») sont exclus
+   * du tonnage, des records, de l'e1RM, des statistiques et de la progression.
+   */
+  kind?: 'work' | 'warmup';
 }
 
 export interface SessionExerciseEntry {

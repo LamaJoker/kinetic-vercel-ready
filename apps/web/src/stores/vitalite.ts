@@ -410,6 +410,11 @@ export function vitaliteStore() {
       }
     },
 
+    closeAddForm(): void {
+      this.showAddForm = false;
+      this.addFormError = '';
+    },
+
     async addCustomTask(): Promise<void> {
       this.addFormError = '';
       const title = sanitizeUserInput(this.newTaskTitle, 60);

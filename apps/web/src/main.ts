@@ -100,6 +100,7 @@ import { achievements } from './pages/achievements.page';
 import { photosPage } from './pages/photos.page';
 import { programsPage } from './pages/programs.page';
 import { glossairePage } from './pages/glossaire.page';
+import { templateEditor } from './pages/template-editor.page';
 import { helpTip } from './components/help-tip';
 import { activeSessionBanner } from './components/active-session-banner';
 import { authCallback } from './pages/auth-callback.page';
@@ -119,6 +120,7 @@ import { syncWeeklyRecap, syncSessionReminder, syncBackupReminder } from './lib/
 import { localIsoDate } from './lib/widget';
 import { autoCompactOnStartup } from './lib/storage-maintenance';
 import { runMigrationsIfNeeded } from './lib/migrations';
+import { runAutoBackup } from './lib/auto-backup';
 import { initMobile } from './lib/mobile';
 import { initAnalytics } from './lib/analytics';
 import { celebration } from './lib/celebration';
@@ -167,6 +169,7 @@ Alpine.data('achievements', achievements);
 Alpine.data('photosPage', photosPage);
 Alpine.data('programsPage', programsPage);
 Alpine.data('glossairePage', glossairePage);
+Alpine.data('templateEditor', templateEditor);
 Alpine.data('helpTip', helpTip);
 Alpine.data('activeSessionBanner', activeSessionBanner); // bandeau « Séance en cours » (index.html)
 Alpine.data('pwaInstallPrompt', pwaInstallPrompt);
@@ -388,6 +391,18 @@ async function refreshOnNewDay(): Promise<void> {
 }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') void refreshOnNewDay();
+});
+
+// Application native : sauvegarde automatique hebdomadaire dans Documents, au
+// démarrage et au retour au premier plan (sans effet sur le web).
+function autoBackup(): void {
+  void getDeps()
+    .then((deps) => runAutoBackup(deps.storage))
+    .catch(() => undefined);
+}
+setTimeout(autoBackup, 4000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') autoBackup();
 });
 setInterval(() => void refreshOnNewDay(), 60_000);
 

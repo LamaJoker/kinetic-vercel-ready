@@ -12,7 +12,7 @@
  */
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { STORAGE_KEYS, buildWeeklyReview } from '@kinetic/core';
+import { STORAGE_KEYS, buildWeeklyReview, workSetsOf } from '@kinetic/core';
 import type { AnalyticsSet, WeeklyReview } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { loadSessions, loadTemplates } from './training/storage';
@@ -288,7 +288,7 @@ export async function syncWeeklyRecap(now: Date = new Date()): Promise<void> {
     const sessions = await loadSessions(deps.storage);
     const sets: AnalyticsSet[] = sessions.flatMap((session) =>
       session.entries.flatMap((entry) =>
-        entry.sets.map((set) => ({
+        workSetsOf(entry.sets).map((set) => ({
           sessionId: session.id,
           exerciseId: entry.exerciseId,
           muscles: [],

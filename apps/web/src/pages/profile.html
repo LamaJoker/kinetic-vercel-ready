@@ -632,6 +632,43 @@
         <span x-show="exportLoading">…</span>
       </button>
     </div>
+    <!-- Sauvegarde automatique (application native) -->
+    <label class="k-row cursor-pointer select-none" x-show="nativeApp">
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Sauvegarde automatique</span>
+        <span class="block text-xs text-gray-500" x-text="autoBackupWhere"></span>
+      </span>
+      <input
+        type="checkbox"
+        class="peer sr-only"
+        :checked="autoBackupOn"
+        @change="toggleAutoBackup()"
+      />
+      <span
+        aria-hidden="true"
+        class="relative flex-shrink-0 w-[51px] h-[31px] rounded-full bg-kinetic-raised transition-colors duration-200 peer-checked:bg-kinetic-teal peer-focus-visible:ring-2 peer-focus-visible:ring-kinetic-neon after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:w-[27px] after:h-[27px] after:rounded-full after:bg-white after:shadow-md after:transition-transform after:duration-200 peer-checked:after:translate-x-5"
+      ></span>
+    </label>
+    <button
+      type="button"
+      class="k-row w-full text-left"
+      x-show="nativeApp"
+      @click="openBackupList()"
+    >
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Restaurer une sauvegarde</span>
+        <span class="block text-xs text-gray-500" x-text="autoBackupLabel"></span>
+      </span>
+      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
     <label class="k-row cursor-pointer" :class="importing ? 'opacity-40 pointer-events-none' : ''">
       <span class="flex-1 min-w-0">
         <span class="block text-base text-white" x-show="!importing">Importer un fichier</span>
@@ -746,7 +783,7 @@
     <button
       type="button"
       x-show="$store.auth.isAuthenticated && !$store.auth.isGuest"
-      @click="showDeleteAccount = true; deleteConfirmText = ''; deleteAccountError = ''"
+      @click="openDeleteAccount()"
       class="k-row"
     >
       <span class="flex-1 min-w-0">
@@ -833,6 +870,71 @@
     <a href="/legal/cgu" class="underline">Conditions d'utilisation</a>
   </nav>
   <p class="text-center text-xs text-gray-500">Kinetic</p>
+
+  <!-- Feuille : restaurer une sauvegarde automatique (application native) -->
+  <div
+    x-show="showBackupSheet"
+    @click.self="closeBackupSheet()"
+    @keydown.escape.window="closeBackupSheet()"
+    class="k-backdrop fixed"
+    style="display: none"
+  >
+    <div class="k-sheet" role="dialog" aria-modal="true" aria-labelledby="backup-title">
+      <h3 id="backup-title" class="font-display font-bold text-xl text-white text-center">
+        Restaurer une sauvegarde
+      </h3>
+      <template x-if="!backupChoice">
+        <div>
+          <p class="mt-1.5 text-sm text-gray-400 text-center" x-show="backupFiles.length > 0">
+            Les 4 dernières sauvegardes sont gardées sur cet appareil.
+          </p>
+          <p class="mt-1.5 text-sm text-gray-400 text-center" x-show="backupFiles.length === 0">
+            Aucune sauvegarde trouvée dans Documents.
+          </p>
+          <div class="k-list mt-4" x-show="backupFiles.length > 0">
+            <template x-for="file in backupFiles" :key="file.name">
+              <button type="button" class="k-row w-full text-left" @click="pickBackup(file)">
+                <span class="flex-1 min-w-0 text-base text-white" x-text="file.label"></span>
+                <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+                  <path
+                    d="m1 1 6 6-6 6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </template>
+          </div>
+          <button type="button" @click="closeBackupSheet()" class="k-btn-2 mt-4">Fermer</button>
+        </div>
+      </template>
+      <template x-if="backupChoice">
+        <div class="text-center">
+          <p class="mt-1.5 text-sm text-gray-400">
+            Restaurer la sauvegarde du
+            <span class="text-white font-semibold" x-text="backupChoice.label"></span> ?
+          </p>
+          <p class="mt-2 text-sm text-gray-400">
+            Tes réglages, poids, mesures et nutrition seront remplacés par ceux de la sauvegarde ;
+            ses séances absentes d'ici seront ajoutées. L'app redémarre ensuite.
+          </p>
+          <div class="mt-6 space-y-2">
+            <button
+              type="button"
+              @click="confirmRestoreBackup()"
+              :disabled="restoringBackup"
+              class="k-btn-danger disabled:opacity-40"
+            >
+              Restaurer
+            </button>
+            <button type="button" @click="closeBackupSheet()" class="k-btn-2">Annuler</button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
 
   <!-- Feuille : confirmation de réinitialisation -->
   <div

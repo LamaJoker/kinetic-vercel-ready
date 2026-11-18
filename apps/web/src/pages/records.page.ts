@@ -14,6 +14,7 @@ import {
   type AnalyticsSet,
   type StrengthSex,
   type StrengthTier,
+  workSetsOf,
 } from '@kinetic/core';
 import { getDeps } from '../deps';
 import type { Exercise, WorkoutSession } from '../lib/training/types';
@@ -255,7 +256,7 @@ export function records() {
       for (const s of sessions) {
         for (const entry of s.entries) {
           const muscles = musclesById.get(entry.exerciseId) ?? [];
-          for (const set of entry.sets) {
+          for (const set of workSetsOf(entry.sets)) {
             sets.push({
               sessionId: s.id,
               exerciseId: entry.exerciseId,

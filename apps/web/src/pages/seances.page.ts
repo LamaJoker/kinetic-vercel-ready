@@ -9,6 +9,25 @@ import {
   buildShareUrl,
   suggestSubstitutions,
   getExerciseCues,
+  workSetsOf,
+  warmupSetsOf,
+  isWarmupSet,
+  lastPerformance,
+  formatSetsShort,
+  formatSetShort,
+  matchingLastSet,
+  nextSetTarget,
+  warmupRamp,
+  validateSetInput,
+  updateSessionSet,
+  removeSessionSet,
+  insertSessionSet,
+  forgottenSet,
+  retimeSession,
+  workAvgRpe,
+  toLocalInputValue,
+  type LastPerformance,
+  type SetTarget,
   type ProgressionSuggestion,
   type PerformedSet,
   type WorkoutFocus,
@@ -17,8 +36,10 @@ import {
 } from '@kinetic/core';
 import { UuidGenerator } from '@kinetic/adapters-web';
 import { getDeps } from '../deps';
+import { openTemplateEditor } from '../lib/training/template-editor-nav';
 import type {
   Exercise,
+  SetEntry,
   SessionExerciseEntry,
   WorkoutSession,
   WorkoutTemplate,
@@ -36,6 +57,7 @@ import { estimateStrengthWorkoutCaloriesKcal } from '../lib/training/calories';
 import type { UserProfile } from '../lib/user/types';
 import { loadUserProfile } from '../lib/user/storage';
 import { suggestedRestSec, requestNotificationPermission } from '../lib/training/rest-timer';
+import { scheduleRestAlert, cancelRestAlert } from '../lib/training/rest-alert';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import { hapticLight, hapticMedium, hapticSuccess, hapticHeavy } from '../lib/haptics';
 import { celebrate, recordCelebration } from '../lib/celebration';
@@ -217,12 +239,19 @@ export function volumeParts(kg: number, tonnesFrom = 10000): { value: string; un
 
 /** Tonnage (Σ charge × reps) d'une liste d'exercices. */
 export function entriesTonnageKg(
-  entries: ReadonlyArray<{ sets: ReadonlyArray<{ weightKg: number; reps: number }> }>,
+  entries: ReadonlyArray<{
+    sets: ReadonlyArray<{ weightKg: number; reps: number; kind?: string | undefined }>;
+  }>,
 ): number {
   return entries.reduce(
-    (acc, e) => acc + e.sets.reduce((a, s) => a + (s.weightKg || 0) * (s.reps || 0), 0),
+    (acc, e) => acc + workSetsOf(e.sets).reduce((a, s) => a + (s.weightKg || 0) * (s.reps || 0), 0),
     0,
   );
+}
+
+/** Séries réordonnées : échauffements d'abord, puis travail ; setIndex renuméroté. */
+function orderSets(sets: readonly SetEntry[]): SetEntry[] {
+  return [...warmupSetsOf(sets), ...workSetsOf(sets)].map((set, i) => ({ ...set, setIndex: i }));
 }
 
 /** Bilan des 7 derniers jours : nombre de séances, minutes, tonnage. */
@@ -278,6 +307,17 @@ export function seances() {
     restTotalSec: 90,
     fullscreenRest: false,
     _restNotifTimer: null as ReturnType<typeof setTimeout> | null,
+    _restAlertTimer: null as ReturnType<typeof setTimeout> | null,
+
+    // ─── Saisie : la dernière fois, échauffement ─────────────────────────
+    /** Prochaine série saisie en échauffement (pas de repos auto, ni record). */
+    draftWarmup: false,
+    /** Exercice + nombre de séries de travail pour lequel le brouillon a été pré-rempli. */
+    _draftKey: '',
+    _lastCache: new Map<string, LastPerformance<SetEntry> | null>(),
+    _lastCacheVersion: '',
+    /** Réglages du calculateur de disques (barre, disques disponibles). */
+    _plates: null as { barKg?: number; enabledPlates?: number[] } | null,
 
     // ─── Séance en cours persistée (lib/training/active-session.ts) ─────
     /** Séance enregistrée de plus de 12 h : on demande avant de la reprendre. */
@@ -414,13 +454,13 @@ export function seances() {
       ) {
         return chosen === exerciseId;
       }
-      const fallback = entries.find((e) => e.sets.length === 0) ?? entries.at(-1);
+      const fallback = entries.find((e) => workSetsOf(e.sets).length === 0) ?? entries.at(-1);
       return fallback?.exerciseId === exerciseId;
     },
 
     /** Nombre total de séries de la séance en cours. */
     sessionSetCount(): number {
-      return this.currentEntries.reduce((n, e) => n + e.sets.length, 0);
+      return this.currentEntries.reduce((n, e) => n + workSetsOf(e.sets).length, 0);
     },
 
     /** Tonnage de la séance en cours : « 840 kg » ou « 12,4 t ». */
@@ -436,7 +476,7 @@ export function seances() {
 
     /** Exercices entamés (au moins une série) dans la séance en cours. */
     sessionStartedCount(): number {
-      return this.currentEntries.filter((e) => e.sets.length > 0).length;
+      return this.currentEntries.filter((e) => workSetsOf(e.sets).length > 0).length;
     },
 
     /** Anneau de la séance : part des exercices entamés (style CSP « --p: N »). */
@@ -465,6 +505,7 @@ export function seances() {
       const map = new Map<MuscleCategory, Exercise[]>();
       for (const cat of CATEGORY_ORDER) map.set(cat, []);
       for (const ex of this.exercises) {
+        if (ex.hidden) continue; // exercice perso masqué : gardé pour l'historique seulement
         const cat = getMuscleCategory(ex.muscles);
         map.get(cat)!.push(ex);
       }
@@ -493,6 +534,9 @@ export function seances() {
         if (Array.isArray(bwEntries) && bwEntries.length > 0) {
           this.latestBodyweight = bwEntries.at(-1)?.weight ?? null;
         }
+        this._plates = await deps.storage.get<{ barKg?: number; enabledPlates?: number[] }>(
+          STORAGE_KEYS.PLATE_PREFS,
+        );
 
         // ── Import partagé en attente (depuis ?import=… au boot) ─────────
         try {
@@ -598,14 +642,30 @@ export function seances() {
       this.$watch?.('currentSession', persist);
       this.$watch?.('restEndsAtMs', persist);
       this.$watch?.('activeExerciseId', persist);
+      const sync = (): void => this._syncDraft();
+      this.$watch?.('currentSession', sync);
+      this.$watch?.('activeExerciseId', sync);
       // iOS peut tuer l'app en arrière-plan : on écrit tout de suite en partant.
+      // Au retour (déverrouillage, app rouverte), le minuteur figé est recalé.
       this._onHide = () => {
         if (document.visibilityState === 'hidden') void this._activeWriter?.flush();
+        else this._resyncRest();
       };
       document.addEventListener('visibilitychange', this._onHide);
+      document.addEventListener('resume', this._onHide); // Capacitor : app au premier plan
       window.addEventListener('pagehide', this._onHide);
       // La séance reprise (ou démarrée pendant le chargement) est réenregistrée.
       if (this.currentSession) persist();
+      sync();
+    },
+
+    /** Retour au premier plan : temps restant recalculé, repos fini pendant l'absence → terminé. */
+    _resyncRest(): void {
+      this.nowMs = Date.now();
+      if (this.restEndsAtMs <= 0) return;
+      const left = Math.ceil((this.restEndsAtMs - this.nowMs) / 1000);
+      if (left <= 0) this.stopRest();
+      else this._scheduleRestEndCallback(left, false);
     },
 
     _persistActive(): void {
@@ -670,6 +730,7 @@ export function seances() {
     /** Abandonne la séance ancienne enregistrée (rien n'est ajouté à l'historique). */
     discardSavedSession(): void {
       this.resumePrompt = null;
+      void cancelRestAlert();
       if (!this.currentSession) {
         this._activeWriter?.schedule(null);
         announceActiveSession(null);
@@ -729,10 +790,13 @@ export function seances() {
       this._persistOff = true;
       if (this._onHide) {
         document.removeEventListener('visibilitychange', this._onHide);
+        document.removeEventListener('resume', this._onHide);
         window.removeEventListener('pagehide', this._onHide);
         this._onHide = null;
       }
-      this.stopRest();
+      // Minuteurs seulement : le repos reste enregistré et son alerte système
+      // programmée sonne même si on a quitté l'écran Séances.
+      this._clearRestTimers();
     },
 
     // ─── Records (PR) ────────────────────────────────────────
@@ -754,7 +818,7 @@ export function seances() {
       for (const s of this.sessions) {
         const entry = s.entries.find((e) => e.exerciseId === exerciseId);
         if (!entry) continue;
-        for (const set of entry.sets) {
+        for (const set of workSetsOf(entry.sets)) {
           const e1rm = estimateE1rmKg(set.weightKg, set.reps);
           if (e1rm > best) best = e1rm;
         }
@@ -762,7 +826,7 @@ export function seances() {
       // ── Inclure aussi les séries déjà ajoutées à la séance en cours ──
       const currentEntry = this.currentSession?.entries.find((e) => e.exerciseId === exerciseId);
       if (currentEntry) {
-        for (const set of currentEntry.sets) {
+        for (const set of workSetsOf(currentEntry.sets)) {
           const e1rm = estimateE1rmKg(set.weightKg, set.reps);
           if (e1rm > best) best = e1rm;
         }
@@ -963,6 +1027,24 @@ export function seances() {
       this.showTemplates = false;
     },
 
+    // Le build CSP d'Alpine refuse plusieurs instructions dans un @click.
+    toggleTemplates(): void {
+      this.showTemplates = !this.showTemplates;
+      this.showAutoGen = false;
+    },
+    toggleAutoGen(): void {
+      this.showAutoGen = !this.showAutoGen;
+      this.showTemplates = false;
+    },
+
+    /** Éditeur de modèle (page /modele) : modèle existant ou vide. */
+    editTemplate(templateId: string): void {
+      openTemplateEditor(templateId);
+    },
+    newTemplate(): void {
+      openTemplateEditor();
+    },
+
     async deleteTemplate(templateId: string): Promise<void> {
       const deps = await getDeps();
       this.templates = this.templates.filter((t) => t.id !== templateId);
@@ -1036,8 +1118,17 @@ export function seances() {
      * (Re)programme le callback de fin de repos. Extrait pour pouvoir
      * être appelé depuis addRestSec() qui modifie restEndsAtMs en cours.
      */
-    _scheduleRestEndCallback(sec: number): void {
-      if (this._restNotifTimer) clearTimeout(this._restNotifTimer);
+    _scheduleRestEndCallback(sec: number, native = true): void {
+      this._clearRestTimers();
+      const ms = Math.max(0, sec * 1000);
+      // Application : alerte système à l'heure de fin, pour le téléphone verrouillé.
+      if (native) void scheduleRestAlert(Date.now() + ms, this._restExerciseName());
+      // Au premier plan, l'écran prend le relais : l'alerte système ferait doublon.
+      this._restAlertTimer = setTimeout(() => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+          void cancelRestAlert();
+        }
+      }, ms - 1500);
       const fire = (): void => {
         hapticHeavy();
         this.fullscreenRest = false;
@@ -1053,16 +1144,27 @@ export function seances() {
           }
         }
       };
-      this._restNotifTimer = setTimeout(fire, Math.max(0, sec * 1000));
+      this._restNotifTimer = setTimeout(fire, ms);
+    },
+
+    _clearRestTimers(): void {
+      if (this._restNotifTimer) clearTimeout(this._restNotifTimer);
+      if (this._restAlertTimer) clearTimeout(this._restAlertTimer);
+      this._restNotifTimer = null;
+      this._restAlertTimer = null;
+    },
+
+    /** Exercice dont la saisie est ouverte (nom affiché dans l'alerte de fin de repos). */
+    _restExerciseName(): string {
+      const entry = this.currentEntries.find((e) => this.isActiveEntry(e.exerciseId));
+      return entry ? this.exerciseName(entry.exerciseId) : '';
     },
 
     stopRest(): void {
       this.restEndsAtMs = 0;
       this.fullscreenRest = false;
-      if (this._restNotifTimer) {
-        clearTimeout(this._restNotifTimer);
-        this._restNotifTimer = null;
-      }
+      this._clearRestTimers();
+      void cancelRestAlert();
     },
 
     /** Termine immédiatement le repos (déclenche le retour à l'action). */
@@ -1080,6 +1182,20 @@ export function seances() {
       if (next > this.restTotalSec) this.restTotalSec = next;
       this._scheduleRestEndCallback(next);
       hapticLight();
+    },
+
+    pickRestPreset(sec: number): void {
+      this.restPresetSec = sec;
+      this.showRestPresets = false;
+    },
+
+    /** « Appliquer » : la cible du coach remplit la saisie. */
+    applyCoach(exerciseId: string): void {
+      const c = this.coachAdvice(exerciseId);
+      if (!c) return;
+      this.draft.weightKg = c.weightKg;
+      this.draft.reps = c.reps;
+      this.draft.rpe = c.rpe;
     },
 
     // ─── Raccourcis +/- sur le draft ───────────────────────────────────────
@@ -1112,7 +1228,7 @@ export function seances() {
 
     avgRpeOf(session: WorkoutSession | null): number | null {
       if (!session) return null;
-      const rpes: number[] = session.entries.flatMap((e) => e.sets.map((s) => s.rpe));
+      const rpes: number[] = session.entries.flatMap((e) => workSetsOf(e.sets).map((s) => s.rpe));
       if (!rpes.length) return null;
       return Math.round((rpes.reduce((a, b) => a + b, 0) / rpes.length) * 10) / 10;
     },
@@ -1180,9 +1296,10 @@ export function seances() {
 
       const entry = this.currentSession.entries.find((e) => e.exerciseId === exerciseId);
       if (!entry) return;
+      const warmup = this.draftWarmup === true;
 
-      // ── Détecter PR AVANT d'ajouter la série ─────────────────────────────
-      const isPr = this.isNewPr(exerciseId, weightKg, reps);
+      // ── Détecter PR AVANT d'ajouter la série (jamais sur un échauffement) ──
+      const isPr = !warmup && this.isNewPr(exerciseId, weightKg, reps);
       // Pas de célébration plein écran pour la toute première série d'un
       // exercice : ce n'est pas un record battu, juste une première référence.
       const hadRecord = this.pr(exerciseId) !== null;
@@ -1194,7 +1311,7 @@ export function seances() {
           if (e.exerciseId !== exerciseId) return e;
           return {
             ...e,
-            sets: [
+            sets: orderSets([
               ...e.sets,
               {
                 setIndex: e.sets.length,
@@ -1203,8 +1320,9 @@ export function seances() {
                 rpe,
                 performedAt: nowIso(),
                 ...(note ? { note } : {}),
+                ...(warmup ? { kind: 'warmup' as const } : {}),
               },
-            ],
+            ]),
           };
         }),
       };
@@ -1212,6 +1330,10 @@ export function seances() {
       this.draft.note = '';
       // La saisie reste ouverte sur l'exercice qu'on vient de travailler
       this.setActiveEntry(exerciseId);
+      if (warmup) {
+        hapticLight(); // échauffement : ni célébration ni repos automatique
+        return;
+      }
 
       if (isPr && hadRecord) {
         // Carte flottante de la coquille (lib/celebration.ts) : ne bloque pas la
@@ -1230,7 +1352,7 @@ export function seances() {
     _historyForExercise(exerciseId: string): PerformedSet[] {
       const sorted = [...this.sessions].sort((a, b) => a.startedAt.localeCompare(b.startedAt));
       return sorted.flatMap((s) =>
-        (s.entries.find((e) => e.exerciseId === exerciseId)?.sets ?? []).map((set) => ({
+        workSetsOf(s.entries.find((e) => e.exerciseId === exerciseId)?.sets ?? []).map((set) => ({
           reps: set.reps,
           weightKg: set.weightKg,
           rpe: set.rpe,
@@ -1268,6 +1390,193 @@ export function seances() {
     /** Vrai si l'exercice est en état de deload d'après l'historique. */
     exerciseNeedsDeload(exerciseId: string): boolean {
       return needsDeload(this._historyForExercise(exerciseId));
+    },
+
+    // ─── La dernière fois ────────────────────────────────────
+
+    /** Séries de travail de la dernière séance où l'exercice a été fait (hors séance en cours). */
+    lastTime(exerciseId: string): LastPerformance<SetEntry> | null {
+      const version = sessionsCacheVersion(this.sessions);
+      if (this._lastCacheVersion !== version) {
+        this._lastCache = new Map();
+        this._lastCacheVersion = version;
+      }
+      if (!this._lastCache.has(exerciseId)) {
+        this._lastCache.set(
+          exerciseId,
+          lastPerformance(this.sessions, exerciseId, this.currentSession?.id),
+        );
+      }
+      return this._lastCache.get(exerciseId) ?? null;
+    },
+
+    /** « Dernière fois · 40×8 · 42,5×8 · 42,5×7 » (vide sans historique). */
+    lastTimeLabel(exerciseId: string): string {
+      const last = this.lastTime(exerciseId);
+      return last ? `Dernière fois · ${formatSetsShort(last.sets)}` : '';
+    },
+
+    /** Série de la dernière fois qui correspond à la prochaine série de travail. */
+    _sameAsLast(entry: SessionExerciseEntry): SetEntry | null {
+      const last = this.lastTime(entry.exerciseId);
+      return last ? matchingLastSet(last.sets, workSetsOf(entry.sets).length) : null;
+    },
+
+    /** « 42,5×8 » pour le bouton « Même chose » (vide sans historique). */
+    sameAsLastLabel(entry: SessionExerciseEntry): string {
+      const set = this._sameAsLast(entry);
+      return set ? formatSetShort(set) : '';
+    },
+
+    /** Valide en un geste la série correspondante de la dernière fois. */
+    repeatLast(entry: SessionExerciseEntry): void {
+      const set = this._sameAsLast(entry);
+      if (!set) return;
+      this.draftWarmup = false;
+      this.draft.weightKg = set.weightKg;
+      this.draft.reps = set.reps;
+      this.addSet(entry.exerciseId);
+    },
+
+    /** Cible de la n-ième série de travail : la dernière fois, ou le coach s'il propose de monter. */
+    setTarget(exerciseId: string, workIndex: number): SetTarget | null {
+      return nextSetTarget({
+        lastSets: this.lastTime(exerciseId)?.sets ?? [],
+        workIndex,
+        coach: this.coachAdvice(exerciseId),
+      });
+    },
+
+    /**
+     * Pré-remplit charge et reps quand on arrive sur une nouvelle série de travail
+     * (autre exercice, série validée). Rien sans historique : la saisie précédente reste.
+     */
+    _syncDraft(): void {
+      const entry = this.currentEntries.find((e) => this.isActiveEntry(e.exerciseId));
+      if (!entry || this.draftWarmup) return;
+      const n = workSetsOf(entry.sets).length;
+      const key = `${this.currentSession?.id}:${entry.exerciseId}:${n}`;
+      if (key === this._draftKey) return;
+      this._draftKey = key;
+      const target = this.setTarget(entry.exerciseId, n);
+      if (target) {
+        this.draft.weightKg = target.weightKg;
+        this.draft.reps = target.reps;
+      }
+    },
+
+    // ─── Échauffement ────────────────────────────────────────
+
+    isWarmup(set: SetEntry): boolean {
+      return isWarmupSet(set);
+    },
+
+    warmupSets(entry: SessionExerciseEntry): SetEntry[] {
+      return warmupSetsOf(entry.sets);
+    },
+
+    workSets(entry: SessionExerciseEntry): SetEntry[] {
+      return workSetsOf(entry.sets);
+    },
+
+    workSetCount(entry: SessionExerciseEntry): number {
+      return workSetsOf(entry.sets).length;
+    },
+
+    /** « #2 » pour une série de travail, « É » pour un échauffement (historique). */
+    setTag(entry: SessionExerciseEntry, set: SetEntry): string {
+      if (isWarmupSet(set)) return 'É';
+      return `#${workSetsOf(entry.sets).filter((s) => s.setIndex <= set.setIndex).length}`;
+    },
+
+    /** « Série 3 », ou « Échauffement » quand la prochaine série en est un. */
+    draftTitle(entry: SessionExerciseEntry): string {
+      return this.draftWarmup ? 'Échauffement' : `Série ${workSetsOf(entry.sets).length + 1}`;
+    },
+
+    /** Bascule la prochaine série entre échauffement et travail. */
+    toggleDraftWarmup(): void {
+      this.draftWarmup = !this.draftWarmup;
+      this._draftKey = '';
+      this._syncDraft();
+      hapticLight();
+    },
+
+    /** « Ajouter l'échauffement » : avant la première série, et pas au poids du corps. */
+    canAddWarmup(entry: SessionExerciseEntry): boolean {
+      if (entry.sets.length > 0) return false;
+      return this.exercises.find((e) => e.id === entry.exerciseId)?.equipment !== 'bodyweight';
+    },
+
+    /**
+     * Génère l'échauffement pour la charge de travail saisie : barre seule ×10,
+     * 40 % ×8, 60 % ×5, 80 % ×3, arrondis aux disques disponibles (calculateur
+     * de disques) ; sans barre, au pas de charge de l'exercice.
+     */
+    addWarmups(exerciseId: string): void {
+      if (!this.currentSession) return;
+      const ex = this.exercises.find((e) => e.id === exerciseId);
+      const ramp = warmupRamp({
+        workKg: Number(this.draft.weightKg) || 0,
+        barbell: ex?.equipment === 'barbell',
+        ...(this._plates?.barKg ? { barKg: this._plates.barKg } : {}),
+        ...(this._plates?.enabledPlates?.length ? { plates: this._plates.enabledPlates } : {}),
+        ...(ex?.incrementKg ? { incrementKg: ex.incrementKg } : {}),
+      });
+      if (ramp.length === 0) {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'info', message: 'Charge trop légère pour un échauffement.' },
+          }),
+        );
+        return;
+      }
+      const at = nowIso();
+      const warmups: SetEntry[] = ramp.map((w) => ({
+        setIndex: 0,
+        reps: w.reps,
+        weightKg: w.weightKg,
+        rpe: 6,
+        performedAt: at,
+        kind: 'warmup',
+      }));
+      this._updateSets(exerciseId, (sets) => [...warmups, ...workSetsOf(sets)]);
+      hapticLight();
+    },
+
+    /** Corrige la charge ou les reps d'un échauffement. */
+    editWarmup(
+      exerciseId: string,
+      setIndex: number,
+      field: 'weightKg' | 'reps',
+      raw: string,
+    ): void {
+      const v = Number(raw);
+      if (!Number.isFinite(v) || v < 0 || (field === 'reps' && v < 1)) return;
+      this._updateSets(exerciseId, (sets) =>
+        sets.map((s) =>
+          s.setIndex === setIndex && isWarmupSet(s)
+            ? { ...s, [field]: field === 'reps' ? Math.round(v) : v }
+            : s,
+        ),
+      );
+    },
+
+    removeWarmup(exerciseId: string, setIndex: number): void {
+      this._updateSets(exerciseId, (sets) =>
+        sets.filter((s) => !(s.setIndex === setIndex && isWarmupSet(s))),
+      );
+    },
+
+    /** Seul chemin de modification des séries hors saisie : séance remplacée (donc enregistrée). */
+    _updateSets(exerciseId: string, fn: (sets: readonly SetEntry[]) => SetEntry[]): void {
+      if (!this.currentSession) return;
+      this.currentSession = {
+        ...this.currentSession,
+        entries: this.currentSession.entries.map((e) =>
+          e.exerciseId === exerciseId ? { ...e, sets: orderSets(fn(e.sets)) } : e,
+        ),
+      };
     },
 
     /** Durée de repos recommandée selon le dernier RPE du draft. */
@@ -1326,6 +1635,7 @@ export function seances() {
 
     /** Bascule l'affichage détaillé d'une séance dans l'historique. */
     toggleSessionDetail(id: string): void {
+      if (this.editingSession) this.cancelEditSession();
       this.expandedSessionId = this.expandedSessionId === id ? null : id;
     },
 
@@ -1363,6 +1673,289 @@ export function seances() {
         );
       } finally {
         this.deletingSession = false;
+      }
+    },
+
+    // ─── Corriger / supprimer une série, modifier une séance passée ─────────
+    // Séance en cours : la séance est remplacée (donc enregistrée, cf. _watchActiveSession).
+    // Séance passée : on modifie un brouillon, enregistré d'un bloc (saveSession → synchro).
+
+    setEditor: null as {
+      scope: 'current' | 'history';
+      exerciseId: string;
+      setIndex: number;
+      isNew: boolean;
+    } | null,
+    setForm: { weightKg: '', reps: '', rpe: '', note: '', warmup: false } as {
+      weightKg: string | number;
+      reps: string | number;
+      rpe: string | number;
+      note: string;
+      warmup: boolean;
+    },
+    setFormError: '',
+    /** Dernière série supprimée, pour « Annuler » (toast de la page). */
+    undoSet: null as {
+      scope: 'current' | 'history';
+      sessionId: string;
+      exerciseId: string;
+      set: SetEntry;
+    } | null,
+    _undoTimer: null as ReturnType<typeof setTimeout> | null,
+    /** Brouillon de la séance passée en cours de modification. */
+    editingSession: null as WorkoutSession | null,
+    editName: '',
+    editStart: '',
+    savingEdit: false,
+
+    _scopeSession(scope: 'current' | 'history'): WorkoutSession | null {
+      return scope === 'current' ? this.currentSession : this.editingSession;
+    },
+
+    _setScopeSession(scope: 'current' | 'history', session: WorkoutSession): void {
+      if (scope === 'current') this.currentSession = session;
+      else this.editingSession = session;
+    },
+
+    _openSetEditor(
+      scope: 'current' | 'history',
+      exerciseId: string,
+      setIndex: number,
+      isNew = false,
+    ): void {
+      const entry = this._scopeSession(scope)?.entries.find((e) => e.exerciseId === exerciseId);
+      const set = entry?.sets.find((s) => s.setIndex === setIndex);
+      if (!set) return;
+      // Virgule décimale à la française (« 62,5 ») : la saisie l'accepte aussi.
+      const fr = (v: number): string => String(v).replace('.', ',');
+      this.setForm = {
+        weightKg: fr(set.weightKg),
+        reps: set.reps,
+        rpe: fr(set.rpe),
+        note: set.note ?? '',
+        warmup: isWarmupSet(set),
+      };
+      this.setFormError = '';
+      this.setEditor = { scope, exerciseId, setIndex, isNew };
+      hapticLight();
+    },
+
+    /** Toucher une série validée de la séance en cours. */
+    openSetEditor(exerciseId: string, setIndex: number): void {
+      this._openSetEditor('current', exerciseId, setIndex);
+    },
+
+    /** Toucher une série d'une séance passée (en mode « Modifier » seulement). */
+    openPastSetEditor(sessionId: string, exerciseId: string, setIndex: number): void {
+      if (this.editingSession?.id !== sessionId) return;
+      this._openSetEditor('history', exerciseId, setIndex);
+    },
+
+    setEditorTitle(): string {
+      const ed = this.setEditor;
+      if (!ed) return '';
+      const kind = ed.isNew ? 'Série ajoutée' : 'Modifier la série';
+      return `${kind} · ${this.exerciseName(ed.exerciseId)}`;
+    },
+
+    setFormWork(): void {
+      this.setForm.warmup = false;
+    },
+
+    setFormWarmup(): void {
+      this.setForm.warmup = true;
+    },
+
+    /** Ferme sans enregistrer (une série oubliée tout juste ajoutée est retirée). */
+    closeSetEditor(): void {
+      const ed = this.setEditor;
+      this.setEditor = null;
+      if (!ed?.isNew) return;
+      const session = this._scopeSession(ed.scope);
+      if (session) {
+        this._setScopeSession(ed.scope, removeSessionSet(session, ed.exerciseId, ed.setIndex));
+      }
+    },
+
+    saveSetEditor(): void {
+      const ed = this.setEditor;
+      const session = ed ? this._scopeSession(ed.scope) : null;
+      if (!ed || !session) return;
+      // Champ vide = invalide (Number('') vaudrait 0) ; virgule décimale acceptée.
+      const num = (v: string | number): number => {
+        const t = String(v ?? '')
+          .trim()
+          .replace(',', '.');
+        return t === '' ? Number.NaN : Number(t);
+      };
+      const input = {
+        weightKg: num(this.setForm.weightKg),
+        reps: num(this.setForm.reps),
+        rpe: num(this.setForm.rpe),
+        note: String(this.setForm.note ?? ''),
+        warmup: this.setForm.warmup === true,
+      };
+      const error = validateSetInput(input);
+      if (error) {
+        this.setFormError = error;
+        return;
+      }
+      this._setScopeSession(ed.scope, updateSessionSet(session, ed.exerciseId, ed.setIndex, input));
+      this.setEditor = null;
+      hapticSuccess();
+    },
+
+    deleteEditedSet(): void {
+      const ed = this.setEditor;
+      const session = ed ? this._scopeSession(ed.scope) : null;
+      if (!ed || !session) return;
+      const set = session.entries
+        .find((e) => e.exerciseId === ed.exerciseId)
+        ?.sets.find((s) => s.setIndex === ed.setIndex);
+      this._setScopeSession(ed.scope, removeSessionSet(session, ed.exerciseId, ed.setIndex));
+      this.setEditor = null;
+      hapticMedium();
+      if (!set || ed.isNew) return;
+      this.undoSet = {
+        scope: ed.scope,
+        sessionId: session.id,
+        exerciseId: ed.exerciseId,
+        set: { ...set },
+      };
+      if (this._undoTimer) clearTimeout(this._undoTimer);
+      this._undoTimer = setTimeout(() => {
+        this.undoSet = null;
+        this._undoTimer = null;
+      }, 6000);
+    },
+
+    /** « Série supprimée · Annuler » : la série revient à sa place. */
+    undoDeleteSet(): void {
+      const u = this.undoSet;
+      this.undoSet = null;
+      if (this._undoTimer) clearTimeout(this._undoTimer);
+      this._undoTimer = null;
+      const session = u ? this._scopeSession(u.scope) : null;
+      if (!u || !session || session.id !== u.sessionId) return;
+      if (!session.entries.some((e) => e.exerciseId === u.exerciseId)) return;
+      this._setScopeSession(u.scope, insertSessionSet(session, u.exerciseId, u.set));
+      hapticLight();
+    },
+
+    // ── Séance passée ──
+
+    isEditingSession(id: string): boolean {
+      return this.editingSession?.id === id;
+    },
+
+    /** Ligne de série de l'historique : atténuée si échauffement, touchable en modification. */
+    pastSetClass(sessionId: string, set: SetEntry): string {
+      const warm = isWarmupSet(set) ? 'opacity-50 ' : '';
+      return this.editingSession?.id === sessionId
+        ? `${warm}min-h-10 px-2 -mx-2 bg-kinetic-raised/60 active:bg-kinetic-raised`
+        : warm;
+    },
+
+    /** Exercices affichés dans le détail : le brouillon si la séance est en modification. */
+    detailEntries(session: WorkoutSession): readonly SessionExerciseEntry[] {
+      return this.editingSession?.id === session.id ? this.editingSession.entries : session.entries;
+    },
+
+    startEditSession(id: string): void {
+      const s = this.sessions.find((x) => x.id === id);
+      if (!s) return;
+      this.editingSession = JSON.parse(JSON.stringify(s)) as WorkoutSession;
+      this.editName = s.name;
+      this.editStart = toLocalInputValue(s.startedAt);
+      this.confirmDeleteId = null;
+      this.expandedSessionId = id;
+    },
+
+    cancelEditSession(): void {
+      this.editingSession = null;
+      this.setEditor = null;
+      if (this.undoSet?.scope === 'history') this.undoSet = null;
+    },
+
+    /** Ajoute une série oubliée (copie de la dernière) et ouvre son édition. */
+    addPastSet(exerciseId: string): void {
+      const session = this.editingSession;
+      const entry = session?.entries.find((e) => e.exerciseId === exerciseId);
+      if (!session || !entry) return;
+      const set = forgottenSet(entry.sets, session.startedAt);
+      this.editingSession = insertSessionSet(session, exerciseId, set as SetEntry);
+      this._openSetEditor('history', exerciseId, entry.sets.length, true);
+    },
+
+    async saveEditedSession(): Promise<void> {
+      const draft = this.editingSession;
+      if (!draft || this.savingEdit) return;
+      const entries = draft.entries.filter((e) => e.sets.length > 0);
+      if (entries.length === 0) {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: {
+              kind: 'warning',
+              message: 'Plus aucune série : supprime plutôt la séance.',
+            },
+          }),
+        );
+        return;
+      }
+      let next: WorkoutSession = {
+        ...draft,
+        name: this.editName.trim().slice(0, 80) || draft.name,
+        entries,
+      };
+      const start = new Date(this.editStart);
+      if (this.editStart && Number.isFinite(start.getTime())) {
+        next = retimeSession(next, start.toISOString());
+      }
+      // Champs dérivés stockés : RPE moyen et calories recalculés.
+      const avgRpe = workAvgRpe(next);
+      const caloriesKcal = estimateStrengthWorkoutCaloriesKcal({
+        durationMin: Number(next.durationMin) || 0,
+        avgRpe,
+        profile: this.userProfile,
+      });
+      const hadCalories = next.caloriesKcal != null;
+      next = { ...next };
+      delete next.avgRpe;
+      delete next.caloriesKcal;
+      if (avgRpe != null) next.avgRpe = avgRpe;
+      if (hadCalories && caloriesKcal != null) next.caloriesKcal = caloriesKcal;
+      this.savingEdit = true;
+      try {
+        const deps = await getDeps();
+        await saveSession(deps.storage, next);
+        this.sessions = this.sessions
+          .map((s) => (s.id === next.id ? next : s))
+          .sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+        // Caches « la dernière fois » / progression : la séance a pu changer sans changer la longueur.
+        this._lastCacheVersion = '';
+        this._suggestionCacheVersion = '';
+        this.editingSession = null;
+        this.setEditor = null;
+        if (this.undoSet?.scope === 'history') this.undoSet = null;
+        hapticSuccess();
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'success', message: 'Séance modifiée.' },
+          }),
+        );
+        // Objectifs (remplacement par id), succès et progression se recalculent.
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_SESSION_SAVED, { detail: { session: next } }),
+        );
+      } catch (err) {
+        console.error('[seances] saveEditedSession failed:', err);
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Échec de l’enregistrement. Réessaie.' },
+          }),
+        );
+      } finally {
+        this.savingEdit = false;
       }
     },
 
@@ -1535,7 +2128,8 @@ export function seances() {
       const points: { x: number; y: number; label: string }[] = [];
 
       for (const session of this.sessions) {
-        const entry = session.entries.find((e) => e.exerciseId === this.progressExerciseId);
+        const found = session.entries.find((e) => e.exerciseId === this.progressExerciseId);
+        const entry = found ? { sets: workSetsOf(found.sets) } : null;
         if (!entry || !entry.sets.length) continue;
         let y = 0;
         if (this.progressMetric === 'weight') {
@@ -1705,7 +2299,7 @@ export function seances() {
           createdAt: nowIso(),
           exercises: this.currentSession.entries.map((e) => ({
             exerciseId: e.exerciseId,
-            sets: Math.max(1, e.sets.length || 3),
+            sets: Math.max(1, workSetsOf(e.sets).length || 3),
             targetReps: 8,
             targetRpe: 8,
           })),

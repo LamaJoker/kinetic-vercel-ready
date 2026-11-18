@@ -14,6 +14,7 @@ import {
   type MuscleShare,
   type PersonalRecord,
   type WeeklyReview,
+  workSetsOf,
 } from '@kinetic/core';
 import type { Exercise, WorkoutSession } from '../lib/training/types';
 import { loadExercises, loadSessions } from '../lib/training/storage';
@@ -93,7 +94,7 @@ export function progression() {
       for (const ex of this.exercises) muscleByEx.set(ex.id, ex.muscles ?? []);
       this._cachedSets = this.sessions.flatMap((sess) =>
         sess.entries.flatMap((e) =>
-          e.sets.map((s) => ({
+          workSetsOf(e.sets).map((s) => ({
             sessionId: sess.id,
             exerciseId: e.exerciseId,
             muscles: muscleByEx.get(e.exerciseId) ?? [],
@@ -153,7 +154,7 @@ export function progression() {
 
     get totalSets(): number {
       return this.sessions.reduce(
-        (acc, s) => acc + s.entries.reduce((a, e) => a + e.sets.length, 0),
+        (acc, s) => acc + s.entries.reduce((a, e) => a + workSetsOf(e.sets).length, 0),
         0,
       );
     },
@@ -161,7 +162,8 @@ export function progression() {
     get totalTonnage(): number {
       let t = 0;
       for (const s of this.sessions)
-        for (const e of s.entries) for (const set of e.sets) t += set.reps * set.weightKg;
+        for (const e of s.entries)
+          for (const set of workSetsOf(e.sets)) t += set.reps * set.weightKg;
       return Math.round(t);
     },
 
@@ -181,11 +183,13 @@ export function progression() {
       switch (r.trend) {
         case 'up':
         case 'down':
-          return `${this.formatPct(r.tonnageDeltaPct ?? 0)} vs semaine dernière`;
+          return r.tonnageDeltaPct === null
+            ? 'En avance vs sem. passée'
+            : `${this.formatPct(r.tonnageDeltaPct)} vs même période`;
         case 'first':
           return 'Première semaine de données';
         default:
-          return 'Stable vs semaine dernière';
+          return 'Stable vs même période';
       }
     },
 
@@ -202,7 +206,7 @@ export function progression() {
         const entry = session.entries.find((e) => e.exerciseId === this.selectedExerciseId);
         if (!entry || entry.sets.length === 0) continue;
         let best = 0;
-        for (const s of entry.sets) {
+        for (const s of workSetsOf(entry.sets)) {
           const e = estimateE1rmKg(s.weightKg, s.reps);
           if (e > best) best = e;
         }

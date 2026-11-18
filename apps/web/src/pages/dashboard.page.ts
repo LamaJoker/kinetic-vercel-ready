@@ -3,7 +3,7 @@
  * Enregistré dans main.ts via Alpine.data('dashboard', dashboard).
  */
 import Alpine from 'alpinejs';
-import { STORAGE_KEYS, muscleBalance } from '@kinetic/core';
+import { STORAGE_KEYS, muscleBalance, workSetsOf } from '@kinetic/core';
 import type { BalanceReport, StreakState } from '@kinetic/core';
 import { getDeps } from '../deps';
 import type { WorkoutSession, Exercise } from '../lib/training/types';
@@ -195,7 +195,7 @@ export function dashboard() {
         const musclesById = new Map(exercises.map((e: Exercise) => [e.id, e.muscles]));
         const sets = (sessions as WorkoutSession[]).flatMap((s) =>
           s.entries.flatMap((entry) =>
-            entry.sets.map((set) => ({
+            workSetsOf(entry.sets).map((set) => ({
               muscles: musclesById.get(entry.exerciseId) ?? [],
               performedAt: set.performedAt,
             })),

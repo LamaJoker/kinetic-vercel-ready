@@ -80,6 +80,11 @@ export * from './domain/exercise-substitution.domain.js';
 export * from './domain/strength-score.domain.js';
 export * from './domain/tempo.domain.js';
 export * from './domain/glossary.domain.js';
+export * from './domain/exercise-catalog.domain.js';
+export * from './domain/auto-backup.domain.js';
+export * from './domain/workout-sets.domain.js';
+export * from './domain/template-editor.domain.js';
+export * from './domain/session-edit.domain.js';
 
 // ─── Use Cases (orchestration) ────────────────────────────────
 export { completeTask_usecase } from './usecases/complete-task.usecase.js';

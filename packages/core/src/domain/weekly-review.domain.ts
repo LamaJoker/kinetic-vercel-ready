@@ -2,7 +2,8 @@
  * Weekly Review Domain — bilan de la semaine d'entraînement.
  *
  * Agrège les sets d'une semaine ISO (tonnage, séances, jours, exercices, PR) et
- * compare à la semaine précédente. Sert un écran « ta semaine » motivant, sans
+ * compare à la même période de la semaine précédente (lundi → même jour, même
+ * heure) : une semaine entamée n'est jamais comparée à une semaine complète. Sert un écran « ta semaine » motivant, sans
  * dépendre du push : c'est de l'agrégation pure réutilisant analytics.domain.
  *
  * Pur — aucune dépendance externe, aucun I/O.
@@ -30,11 +31,15 @@ export interface WeeklyReview {
   /** Records personnels (e1RM) battus cette semaine. */
   prs: PersonalRecord[];
   prCount: number;
-  /** Tonnage de la semaine précédente (0 si aucune donnée). */
+  /** Tonnage de la même période de la semaine précédente (0 si aucune donnée). */
   prevTonnageKg: number;
-  /** Variation de tonnage vs semaine précédente, en %. null si pas de semaine précédente. */
+  /** Variation de tonnage vs même période de la semaine précédente, en %. null si rien à comparer. */
   tonnageDeltaPct: number | null;
-  /** Tendance lisible : première semaine de données, en hausse, en baisse, stable. */
+  /**
+   * Tendance lisible : première semaine de données, en hausse, en baisse, stable.
+   * 'up' avec tonnageDeltaPct null : rien à la même période la semaine dernière, mais déjà
+   * du volume cette semaine (en avance).
+   */
   trend: 'first' | 'up' | 'down' | 'flat';
 }
 
@@ -54,18 +59,21 @@ function tonnage(sets: readonly AnalyticsSet[]): number {
 
 /**
  * buildWeeklyReview — construit le bilan de la semaine contenant `referenceIso`
- * (par défaut : maintenant), comparé à la semaine précédente.
+ * (par défaut : maintenant), comparé à la même période de la semaine précédente :
+ * séances de la semaine précédente réalisées au plus tard 7 jours avant `referenceIso`.
  */
 export function buildWeeklyReview(
   sets: readonly AnalyticsSet[],
   referenceIso: string = new Date().toISOString(),
 ): WeeklyReview {
   const thisWeek = toIsoWeek(referenceIso);
-  const prevWeek = toIsoWeek(new Date(Date.parse(referenceIso) - 7 * DAY_MS).toISOString());
+  const prevCutoff = Date.parse(referenceIso) - 7 * DAY_MS;
+  const prevWeek = toIsoWeek(new Date(prevCutoff).toISOString());
 
   const weekSets = sets.filter((s) => toIsoWeek(s.performedAt) === thisWeek);
+  const prevWeekSets = sets.filter((s) => toIsoWeek(s.performedAt) === prevWeek);
   const prevTonnageKg = Math.round(
-    tonnage(sets.filter((s) => toIsoWeek(s.performedAt) === prevWeek)),
+    tonnage(prevWeekSets.filter((s) => Date.parse(s.performedAt) <= prevCutoff)),
   );
 
   const tonnageKg = Math.round(tonnage(weekSets));
@@ -79,6 +87,9 @@ export function buildWeeklyReview(
     if (tonnageDeltaPct > FLAT_THRESHOLD_PCT) trend = 'up';
     else if (tonnageDeltaPct < -FLAT_THRESHOLD_PCT) trend = 'down';
     else trend = 'flat';
+  } else if (prevWeekSets.length > 0) {
+    // Rien à la même période la semaine dernière, mais des séances plus tard dans la semaine.
+    trend = tonnageKg > 0 ? 'up' : 'flat';
   } else {
     // Pas de tonnage la semaine précédente → première semaine de données (ou reprise).
     trend = tonnageKg > 0 ? 'first' : 'flat';

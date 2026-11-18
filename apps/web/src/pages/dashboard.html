@@ -523,7 +523,7 @@
             max="14"
             step="1"
             x-model.number="$store.goals.targetSessions"
-            @change="$store.goals.save(); $store.goals.reload()"
+            @change="$store.goals.commit()"
             class="w-20 bg-transparent text-right text-base font-semibold tabular-nums text-white focus:outline-none focus:text-kinetic-neon"
           />
         </label>
@@ -536,7 +536,7 @@
             min="0"
             step="100"
             x-model.number="$store.goals.targetTonnageKg"
-            @change="$store.goals.save(); $store.goals.reload()"
+            @change="$store.goals.commit()"
             placeholder="0 = aucun"
             class="w-28 bg-transparent text-right text-base font-semibold tabular-nums text-white placeholder:font-normal placeholder:text-gray-500 focus:outline-none focus:text-kinetic-neon"
           />

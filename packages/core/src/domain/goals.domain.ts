@@ -7,6 +7,7 @@
  * La règle d'attribution du bonus XP (+100 si all goals atteints) est isolée
  * dans `shouldAwardWeeklyBonusXp` — testable indépendamment du stockage.
  */
+import { workSetsOf } from './workout-sets.domain.js';
 
 export interface WeeklyGoalTargets {
   targetSessions: number;
@@ -17,7 +18,7 @@ export interface SessionLike {
   startedAt: string;
   endedAt?: string;
   entries: ReadonlyArray<{
-    sets: ReadonlyArray<{ reps: number; weightKg: number }>;
+    sets: ReadonlyArray<{ reps: number; weightKg: number; kind?: 'work' | 'warmup' }>;
   }>;
 }
 
@@ -92,7 +93,7 @@ export function evaluateWeeklyGoals(
       (acc, s) =>
         acc +
         s.entries.reduce(
-          (a2, e) => a2 + e.sets.reduce((a3, set) => a3 + set.reps * set.weightKg, 0),
+          (a2, e) => a2 + workSetsOf(e.sets).reduce((a3, set) => a3 + set.reps * set.weightKg, 0),
           0,
         ),
       0,
