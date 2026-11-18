@@ -6,7 +6,7 @@
  * Records, e1RM, tonnage et succès sont recalculés à la volée depuis les séances :
  * corriger une série suffit à corriger tout ce qui en dérive.
  */
-import { warmupSetsOf, workSetsOf } from './workout-sets.domain.js';
+import { isTimedSet, warmupSetsOf, workSetsOf } from './workout-sets.domain.js';
 
 export interface EditableSet {
   setIndex: number;
@@ -16,6 +16,10 @@ export interface EditableSet {
   performedAt: string;
   note?: string;
   kind?: 'work' | 'warmup';
+  /** Série chronométrée (s) ; `reps` vaut alors 0. */
+  durationSec?: number;
+  /** Série de distance (m) ; `reps` vaut alors 0. */
+  distanceM?: number;
 }
 
 interface EditableSession<S extends EditableSet> {
@@ -31,6 +35,9 @@ export interface SetInput {
   rpe: number;
   note?: string;
   warmup?: boolean;
+  /** Série chronométrée ou de distance : `reps` vaut 0 et l'un de ces champs est > 0. */
+  durationSec?: number;
+  distanceM?: number;
 }
 
 const NOTE_MAX = 200;
@@ -40,7 +47,13 @@ export function validateSetInput(input: SetInput): string | null {
   const { weightKg, reps, rpe } = input;
   if (!Number.isFinite(weightKg) || weightKg < 0 || weightKg > 1000)
     return 'Charge invalide (0 à 1000 kg).';
-  if (!Number.isInteger(reps) || reps < 1 || reps > 200) return 'Reps invalides (1 à 200).';
+  if (input.durationSec !== undefined || input.distanceM !== undefined) {
+    const d = Number(input.durationSec ?? 0);
+    const m = Number(input.distanceM ?? 0);
+    if (!Number.isFinite(d) || d < 0 || d > 86_400) return 'Durée invalide (m:ss, 24 h au plus).';
+    if (!Number.isFinite(m) || m < 0 || m > 1_000_000) return 'Distance invalide.';
+    if (d <= 0 && m <= 0) return 'Indique une durée ou une distance.';
+  } else if (!Number.isInteger(reps) || reps < 1 || reps > 200) return 'Reps invalides (1 à 200).';
   if (!Number.isFinite(rpe) || rpe < 6 || rpe > 10) return 'RPE invalide (6–10).';
   return null;
 }
@@ -54,12 +67,19 @@ function applyInput<S extends EditableSet>(set: S, input: SetInput): S {
   const rest: EditableSet = { ...set };
   delete rest.note;
   delete rest.kind;
+  delete rest.durationSec;
+  delete rest.distanceM;
   const note = (input.note ?? '').trim().slice(0, NOTE_MAX);
+  const timed = input.durationSec !== undefined || input.distanceM !== undefined;
+  const d = Math.round(Number(input.durationSec ?? 0));
+  const m = Number(input.distanceM ?? 0);
   return {
     ...rest,
     weightKg: input.weightKg,
-    reps: input.reps,
+    reps: timed ? 0 : input.reps,
     rpe: input.rpe,
+    ...(timed && d > 0 ? { durationSec: d } : {}),
+    ...(timed && m > 0 ? { distanceM: m } : {}),
     ...(note ? { note } : {}),
     ...(input.warmup ? { kind: 'warmup' as const } : {}),
   } as S;
@@ -122,11 +142,14 @@ export function forgottenSet<S extends EditableSet>(
 ): EditableSet {
   const last = workSetsOf(sets).at(-1) ?? sets.at(-1);
   const at = Date.parse(last?.performedAt ?? fallbackAt);
+  const timed = last && isTimedSet(last);
   return {
     setIndex: sets.length,
     weightKg: last?.weightKg ?? 20,
-    reps: last?.reps ?? 8,
+    reps: timed ? 0 : (last?.reps ?? 8),
     rpe: last?.rpe ?? 8,
+    ...(timed && last.durationSec ? { durationSec: last.durationSec } : {}),
+    ...(timed && last.distanceM ? { distanceM: last.distanceM } : {}),
     performedAt: new Date((Number.isFinite(at) ? at : Date.parse(fallbackAt)) + 1000).toISOString(),
   };
 }

@@ -62,6 +62,8 @@ export function buildCsvExport(
     'rpe',
     'e1rm_kg',
     'performed_at',
+    'duration_s',
+    'distance_m',
     'set_type',
   ];
 
@@ -76,7 +78,9 @@ export function buildCsvExport(
       const exName = ex?.name ?? entry.exerciseId;
       const muscles = (ex?.muscles ?? []).join(';');
       for (const set of entry.sets) {
-        const e1rm = (set.weightKg * (1 + set.reps / 30)).toFixed(1);
+        // Série chronométrée (reps = 0) : pas d'e1RM, durée et distance à part.
+        const timed = Number(set.durationSec) > 0 || Number(set.distanceM) > 0;
+        const e1rm = timed ? '' : (set.weightKg * (1 + set.reps / 30)).toFixed(1);
         rows.push(
           [
             csvCell(session.id),
@@ -92,6 +96,8 @@ export function buildCsvExport(
             String(set.rpe),
             e1rm,
             csvCell(set.performedAt),
+            Number(set.durationSec) > 0 ? String(set.durationSec) : '',
+            Number(set.distanceM) > 0 ? String(set.distanceM) : '',
             set.kind === 'warmup' ? 'warmup' : 'work',
           ].join(','),
         );

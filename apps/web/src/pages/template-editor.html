@@ -51,114 +51,151 @@
     </p>
     <div class="space-y-3 mb-4">
       <template x-for="(line, i) in lines" :key="line.exerciseId">
-        <div class="k-card">
-          <div class="flex items-center gap-2 mb-3">
-            <p
-              class="flex-1 min-w-0 font-medium text-white"
-              x-text="exerciseName(line.exerciseId)"
-            ></p>
-            <button
-              type="button"
-              class="k-icon-btn"
-              aria-label="Monter"
-              :disabled="i === 0"
-              @click="moveUp(i)"
-            >
-              <svg
-                class="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="m6 15 6-6 6 6" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="k-icon-btn"
-              aria-label="Descendre"
-              :disabled="isLast(i)"
-              @click="moveDown(i)"
-            >
-              <svg
-                class="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </button>
-            <button type="button" class="k-icon-btn" aria-label="Retirer" @click="removeLine(i)">
-              <svg
-                class="h-3.5 w-3.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.6"
-                stroke-linecap="round"
-                aria-hidden="true"
-              >
-                <path d="M6 6l12 12M18 6 6 18" />
-              </svg>
-            </button>
-          </div>
-          <div class="grid grid-cols-3 gap-2 text-center">
-            <div>
-              <p class="text-xs text-gray-500">Séries</p>
-              <p class="text-lg font-semibold text-white tabular-nums" x-text="line.sets"></p>
-              <div class="k-stepper">
-                <button type="button" aria-label="Moins de séries" @click="step(i, 'sets', -1)">
-                  −
-                </button>
-                <button type="button" aria-label="Plus de séries" @click="step(i, 'sets', 1)">
-                  +
-                </button>
-              </div>
-            </div>
-            <div>
-              <p class="text-xs text-gray-500">Répétitions</p>
-              <p class="text-lg font-semibold text-white tabular-nums" x-text="line.targetReps"></p>
-              <div class="k-stepper">
-                <button
-                  type="button"
-                  aria-label="Moins de répétitions"
-                  @click="step(i, 'targetReps', -1)"
-                >
-                  −
-                </button>
-                <button
-                  type="button"
-                  aria-label="Plus de répétitions"
-                  @click="step(i, 'targetReps', 1)"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-            <div>
-              <p class="text-xs text-gray-500">RPE visé</p>
+        <div>
+          <div :class="lineCardClass(i)">
+            <div class="flex items-center gap-2 mb-3">
+              <span
+                x-show="lineTag(i)"
+                class="flex-shrink-0 rounded-md bg-kinetic-purple/15 px-1.5 py-0.5 text-xs font-bold tabular-nums text-kinetic-purple"
+                x-text="lineTag(i)"
+              ></span>
               <p
-                class="text-lg font-semibold text-white tabular-nums"
-                x-text="decimal(line.targetRpe)"
+                class="flex-1 min-w-0 font-medium text-white"
+                x-text="exerciseName(line.exerciseId)"
               ></p>
-              <div class="k-stepper">
-                <button type="button" aria-label="RPE plus bas" @click="step(i, 'targetRpe', -0.5)">
-                  −
-                </button>
-                <button type="button" aria-label="RPE plus haut" @click="step(i, 'targetRpe', 0.5)">
-                  +
-                </button>
+              <button
+                type="button"
+                class="k-icon-btn"
+                aria-label="Monter"
+                :disabled="i === 0"
+                @click="moveUp(i)"
+              >
+                <svg
+                  class="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m6 15 6-6 6 6" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="k-icon-btn"
+                aria-label="Descendre"
+                :disabled="isLast(i)"
+                @click="moveDown(i)"
+              >
+                <svg
+                  class="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+              <button type="button" class="k-icon-btn" aria-label="Retirer" @click="removeLine(i)">
+                <svg
+                  class="h-3.5 w-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.6"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M6 6l12 12M18 6 6 18" />
+                </svg>
+              </button>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <p class="text-xs text-gray-500">Séries</p>
+                <p class="text-lg font-semibold text-white tabular-nums" x-text="line.sets"></p>
+                <div class="k-stepper">
+                  <button type="button" aria-label="Moins de séries" @click="step(i, 'sets', -1)">
+                    −
+                  </button>
+                  <button type="button" aria-label="Plus de séries" @click="step(i, 'sets', 1)">
+                    +
+                  </button>
+                </div>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500">Répétitions</p>
+                <p
+                  class="text-lg font-semibold text-white tabular-nums"
+                  x-text="line.targetReps"
+                ></p>
+                <div class="k-stepper">
+                  <button
+                    type="button"
+                    aria-label="Moins de répétitions"
+                    @click="step(i, 'targetReps', -1)"
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Plus de répétitions"
+                    @click="step(i, 'targetReps', 1)"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500">RPE visé</p>
+                <p
+                  class="text-lg font-semibold text-white tabular-nums"
+                  x-text="decimal(line.targetRpe)"
+                ></p>
+                <div class="k-stepper">
+                  <button
+                    type="button"
+                    aria-label="RPE plus bas"
+                    @click="step(i, 'targetRpe', -0.5)"
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="RPE plus haut"
+                    @click="step(i, 'targetRpe', 0.5)"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             </div>
+          </div>
+          <!-- Lien avec l'exercice suivant : superset (sans repos entre les deux) -->
+          <div x-show="!isLast(i)" class="flex justify-center pt-1.5">
+            <button
+              type="button"
+              x-show="linkedWithNext(i)"
+              class="k-pill h-9 bg-kinetic-purple/15 text-kinetic-purple"
+              @click="unlinkAt(i)"
+            >
+              Délier le superset
+            </button>
+            <button
+              type="button"
+              x-show="!linkedWithNext(i) && canLink(i)"
+              class="k-pill h-9 bg-kinetic-raised"
+              @click="linkNext(i)"
+            >
+              Lier en superset
+            </button>
           </div>
         </div>
       </template>
@@ -276,6 +313,19 @@
           class="h-9 rounded-full bg-kinetic-elevated px-4 text-sm font-medium text-gray-300 transition active:scale-95 aria-pressed:bg-kinetic-neon aria-pressed:font-semibold aria-pressed:text-kinetic-on-accent"
           :aria-pressed="isEquipment(o.key)"
           @click="setEquipment(o.key)"
+          x-text="o.label"
+        ></button>
+      </template>
+    </div>
+
+    <p class="k-label">Mesure</p>
+    <div class="k-seg mb-5" role="group" aria-label="Mesure de l’exercice">
+      <template x-for="o in measureOptions" :key="o.key">
+        <button
+          type="button"
+          class="k-seg-item"
+          :aria-pressed="isMeasure(o.key) ? 'true' : 'false'"
+          @click="setMeasure(o.key)"
           x-text="o.label"
         ></button>
       </template>

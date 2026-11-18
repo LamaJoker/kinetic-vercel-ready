@@ -85,6 +85,11 @@ export * from './domain/auto-backup.domain.js';
 export * from './domain/workout-sets.domain.js';
 export * from './domain/template-editor.domain.js';
 export * from './domain/session-edit.domain.js';
+export * from './domain/superset.domain.js';
+export * from './domain/exercise-measure.domain.js';
+export * from './domain/training-calendar.domain.js';
+export * from './domain/muscle-map.domain.js';
+export * from './domain/session-share-card.domain.js';
 
 // ─── Use Cases (orchestration) ────────────────────────────────
 export { completeTask_usecase } from './usecases/complete-task.usecase.js';

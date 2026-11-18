@@ -26,6 +26,30 @@ import {
   retimeSession,
   workAvgRpe,
   toLocalInputValue,
+  exerciseMeasure,
+  isTimedSet,
+  loadSetsOf,
+  parseDuration,
+  parseDistance,
+  distanceInputValue,
+  defaultDistanceUnit,
+  formatDuration,
+  formatDistance,
+  validateTimedSetInput,
+  timedSetFields,
+  bestTimed,
+  isTimedRecord,
+  normalizeSupersets,
+  supersetBlocks,
+  supersetLabel,
+  canLinkWithNext,
+  linkWithNext,
+  unlinkSuperset,
+  indexOfExercise,
+  supersetNextStep,
+  type ExerciseMeasure,
+  type SupersetBlock,
+  type TimedBest,
   type LastPerformance,
   type SetTarget,
   type ProgressionSuggestion,
@@ -61,6 +85,9 @@ import { scheduleRestAlert, cancelRestAlert } from '../lib/training/rest-alert';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import { hapticLight, hapticMedium, hapticSuccess, hapticHeavy } from '../lib/haptics';
 import { celebrate, recordCelebration } from '../lib/celebration';
+import { loadTrainingCalendar } from '../lib/lazy-component';
+import { sessionShareSheet } from '../lib/session-share-sheet';
+import { exerciseIllustrations } from '../lib/exercise-illustrations';
 import {
   type ActiveSessionSnapshot,
   type ActiveSessionWriter,
@@ -75,7 +102,16 @@ import {
   formatActiveAge,
 } from '../lib/training/active-session';
 
-type Draft = { reps: number; weightKg: number; rpe: number; note: string; tempo: string };
+type Draft = {
+  reps: number;
+  weightKg: number;
+  rpe: number;
+  note: string;
+  tempo: string;
+  /** Exercice chronométré : durée saisie (« 1:30 ») et distance (dans `draftDistUnit`). */
+  duration: string;
+  distance: string;
+};
 
 // ─── Catégorisation par groupe musculaire ────────────────────────────────────
 
@@ -276,6 +312,10 @@ export function recentStatsOf(
 
 export function seances() {
   return {
+    // « Partager en image » (fin de séance, historique) : lib/session-share-sheet.ts
+    ...sessionShareSheet(),
+    // Schémas d'exercices (consignes, choix d'exercice) : lib/exercise-illustrations.ts
+    ...exerciseIllustrations(),
     loading: false,
     exercises: [] as Exercise[],
     templates: [] as WorkoutTemplate[],
@@ -296,8 +336,24 @@ export function seances() {
     currentSession: null as WorkoutSession | null,
     templateName: '',
 
-    draft: { reps: 8, weightKg: 40, rpe: 8, note: '', tempo: '' } as Draft,
+    draft: {
+      reps: 8,
+      weightKg: 40,
+      rpe: 8,
+      note: '',
+      tempo: '',
+      duration: '',
+      distance: '',
+    } as Draft,
     showSetExtras: false,
+
+    // ─── Exercices chronométrés / distance ─────────────────────────
+    /** Unité du champ distance de la saisie. */
+    draftDistUnit: 'm' as 'm' | 'km',
+    /** Chronomètre de la série en cours (heure de départ absolue). */
+    stopwatch: null as { exerciseId: string; startMs: number } | null,
+    /** Menu « ⋯ » ouvert (superset) : id de l'exercice. */
+    menuFor: null as string | null,
 
     nowMs: Date.now(),
     tickHandle: null as number | null,
@@ -749,6 +805,7 @@ export function seances() {
     abandonCurrentSession(): void {
       if (!this.currentSession) return;
       this.stopRest();
+      this.stopwatch = null; // le chronomètre ne survit pas à la séance
       this.currentSession = null;
       this.confirmAbandon = false;
       this.templateName = '';
@@ -809,6 +866,15 @@ export function seances() {
      */
     /** Record formaté à la française pour l'en-tête d'exercice (« 154 kg », « 97,5 kg »). */
     prLabel(exerciseId: string): string {
+      if (this.isTimed(exerciseId)) {
+        const best = this._bestTimed(exerciseId);
+        if (!best) return '';
+        return best.distanceM > 0 && this.isDistance(exerciseId)
+          ? formatDistance(best.distanceM)
+          : best.durationSec > 0
+            ? formatDuration(best.durationSec)
+            : '';
+      }
       const v = this.pr(exerciseId);
       return v ? v.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' kg' : '';
     },
@@ -836,6 +902,7 @@ export function seances() {
 
     /** True si la série en cours serait un nouveau PR */
     isNewPr(exerciseId: string, weightKg: number, reps: number): boolean {
+      if (exerciseId && this.isTimed(exerciseId)) return this.isNewTimedPr(exerciseId);
       if (!exerciseId || !weightKg || !reps) return false;
       const current = estimateE1rmKg(weightKg, reps);
       const best = this.pr(exerciseId);
@@ -946,7 +1013,13 @@ export function seances() {
         id: newId(),
         name: `${lastFinished.name} (reprise)`,
         startedAt: nowIso(),
-        entries: lastFinished.entries.map((e) => ({ exerciseId: e.exerciseId, sets: [] })),
+        entries: normalizeSupersets(
+          lastFinished.entries.map((e) => ({
+            exerciseId: e.exerciseId,
+            sets: [],
+            ...(e.group ? { group: e.group } : {}),
+          })),
+        ),
       };
       this.showTemplates = false;
       this.showAutoGen = false;
@@ -1022,7 +1095,13 @@ export function seances() {
         name: t.name,
         templateId: t.id,
         startedAt: nowIso(),
-        entries: t.exercises.map((ex) => ({ exerciseId: ex.exerciseId, sets: [] })),
+        entries: normalizeSupersets(
+          t.exercises.map((ex) => ({
+            exerciseId: ex.exerciseId,
+            sets: [],
+            ...(ex.group ? { group: ex.group } : {}),
+          })),
+        ),
       };
       this.showTemplates = false;
     },
@@ -1260,12 +1339,20 @@ export function seances() {
       if (!this.currentSession) return;
       this.currentSession = {
         ...this.currentSession,
-        entries: this.currentSession.entries.filter((e) => e.exerciseId !== exerciseId),
+        entries: normalizeSupersets(
+          this.currentSession.entries.filter((e) => e.exerciseId !== exerciseId),
+        ),
       };
+      if (this.stopwatch?.exerciseId === exerciseId) this.stopwatch = null;
+      if (this.menuFor === exerciseId) this.menuFor = null;
     },
 
     addSet(exerciseId: string): void {
       if (!this.currentSession) return;
+      if (this.isTimed(exerciseId)) {
+        this._addTimedSet(exerciseId);
+        return;
+      }
       const reps = Number(this.draft.reps);
       const weightKg = Number(this.draft.weightKg);
       const rpe = Number(this.draft.rpe);
@@ -1342,17 +1429,263 @@ export function seances() {
       } else {
         hapticSuccess(); // série validée
       }
+      this._afterWorkSet(exerciseId);
+    },
 
-      // Auto-démarrer le chrono de repos après chaque série (durée basée sur le RPE)
+    /**
+     * Après une série de travail : dans un superset, la saisie passe au membre
+     * suivant sans repos ; le repos (durée selon le RPE) ne se lance qu'à la fin
+     * du tour, la saisie revenant au premier exercice du superset.
+     */
+    _afterWorkSet(exerciseId: string): void {
+      const step = supersetNextStep(this.currentEntries, exerciseId);
+      if (step.nextExerciseId) this.setActiveEntry(step.nextExerciseId);
+      if (!step.rest) return;
       this.restPresetSec = this.smartRestSec();
       this.startRest(true);
+    },
+
+    /** Série chronométrée ou de distance : durée (m:ss), distance, charge facultative. */
+    _addTimedSet(exerciseId: string): void {
+      if (!this.currentSession) return;
+      const measure = this.measureOf(exerciseId);
+      if (this.stopwatch?.exerciseId === exerciseId) this.stopStopwatch();
+      const input = {
+        durationSec: parseDuration(this.draft.duration),
+        distanceM:
+          measure === 'distance' ? parseDistance(this.draft.distance, this.draftDistUnit) : 0,
+        weightKg: Number(this.draft.weightKg) || 0,
+        rpe: Number(this.draft.rpe),
+      };
+      const error = validateTimedSetInput(input, measure);
+      if (error) {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'warning', message: error },
+          }),
+        );
+        return;
+      }
+      const warmup = this.draftWarmup === true;
+      const previous = warmup ? null : this._bestTimed(exerciseId);
+      const note = (this.draft.note ?? '').toString().trim().slice(0, 200);
+      const set: SetEntry = {
+        setIndex: 0,
+        ...timedSetFields(input),
+        performedAt: nowIso(),
+        ...(note ? { note } : {}),
+        ...(warmup ? { kind: 'warmup' as const } : {}),
+      };
+      this._updateSets(exerciseId, (sets) => [...sets, set]);
+      this.draft.note = '';
+      this.setActiveEntry(exerciseId);
+      if (warmup) {
+        hapticLight();
+        return;
+      }
+      if (isTimedRecord(set, previous)) {
+        celebrate({
+          kind: 'record',
+          title: 'Nouveau record !',
+          subtitle: `${this.exerciseName(exerciseId)} ${formatSetShort(set)}`,
+        });
+      } else {
+        hapticSuccess();
+      }
+      this._afterWorkSet(exerciseId);
+    },
+
+    // ─── Mesure d'un exercice ────────────────────────────────
+
+    /** Reps × charge, durée ou distance (enregistrée, sinon déduite du catalogue / du nom). */
+    measureOf(exerciseId: string): ExerciseMeasure {
+      return exerciseMeasure(this.exercises.find((e) => e.id === exerciseId) ?? { id: exerciseId });
+    },
+
+    isTimed(exerciseId: string): boolean {
+      return this.measureOf(exerciseId) !== 'reps';
+    },
+
+    isDistance(exerciseId: string): boolean {
+      return this.measureOf(exerciseId) === 'distance';
+    },
+
+    /** Records chronométrés (séances passées + séance en cours). */
+    _bestTimed(exerciseId: string): TimedBest | null {
+      const all = this.currentSession ? [...this.sessions, this.currentSession] : this.sessions;
+      return bestTimed(all, exerciseId);
+    },
+
+    /** Série chronométrée égale au record de durée (ou de distance). */
+    isTimedSetPr(exerciseId: string, set: SetEntry): boolean {
+      const best = this._bestTimed(exerciseId);
+      if (!best || isWarmupSet(set)) return false;
+      const d = Number(set.durationSec) || 0;
+      const m = Number(set.distanceM) || 0;
+      return (d > 0 && d >= best.durationSec) || (m > 0 && m >= best.distanceM);
+    },
+
+    /** La durée (ou distance) saisie battrait le record. */
+    isNewTimedPr(exerciseId: string): boolean {
+      if (this.draftWarmup) return false;
+      const dist =
+        this.measureOf(exerciseId) === 'distance'
+          ? parseDistance(this.draft.distance, this.draftDistUnit)
+          : 0;
+      return isTimedRecord(
+        { durationSec: parseDuration(this.draft.duration) || 0, distanceM: dist || 0 },
+        this._bestTimed(exerciseId),
+      );
+    },
+
+    /** « 1:30 », « 400 m en 1:45 » : valeur principale d'une série chronométrée. */
+    timedMain(set: SetEntry): string {
+      const dist = Number(set.distanceM) > 0 ? formatDistance(Number(set.distanceM)) : '';
+      const dur = Number(set.durationSec) > 0 ? formatDuration(Number(set.durationSec)) : '';
+      return dist && dur ? `${dist} en ${dur}` : dist || dur;
+    },
+
+    /** « 20 kg » (lesté) ou « — » au poids du corps. */
+    timedLoad(set: SetEntry): string {
+      const kg = Number(set.weightKg) || 0;
+      return kg > 0 ? `${kg.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} kg` : '—';
+    },
+
+    isTimedEntrySet(set: SetEntry): boolean {
+      return isTimedSet(set);
+    },
+
+    // ─── Chronomètre intégré ────────────────────────────────
+
+    stopwatchRunning(exerciseId: string): boolean {
+      return this.stopwatch?.exerciseId === exerciseId;
+    },
+
+    /** Temps écoulé du chronomètre (« 0:42 »), suit le tic de la page. */
+    stopwatchLabel(): string {
+      if (!this.stopwatch) return '';
+      return formatDuration(Math.max(0, Math.floor((this.nowMs - this.stopwatch.startMs) / 1000)));
+    },
+
+    /** « Démarrer » / « Arrêter » : à l'arrêt, la durée mesurée remplit la saisie. */
+    toggleStopwatch(exerciseId: string): void {
+      if (this.stopwatch?.exerciseId === exerciseId) {
+        this.stopStopwatch();
+        return;
+      }
+      const now = Date.now();
+      this.nowMs = now;
+      this.stopwatch = { exerciseId, startMs: now };
+      hapticMedium();
+    },
+
+    stopStopwatch(): void {
+      const sw = this.stopwatch;
+      if (!sw) return;
+      const sec = Math.max(1, Math.round((Date.now() - sw.startMs) / 1000));
+      this.stopwatch = null;
+      this.draft.duration = formatDuration(sec);
+      hapticMedium();
+    },
+
+    /** ±5 s / ±15 s sur la durée saisie. */
+    bumpDuration(delta: number): void {
+      const cur = parseDuration(this.draft.duration);
+      const next = Math.max(0, (Number.isFinite(cur) ? cur : 0) + delta);
+      this.draft.duration = next > 0 ? formatDuration(next) : '';
+      hapticLight();
+    },
+
+    /** Change l'unité du champ distance en convertissant la valeur saisie. */
+    setDistUnit(unit: 'm' | 'km'): void {
+      if (unit === this.draftDistUnit) return;
+      const m = parseDistance(this.draft.distance, this.draftDistUnit);
+      this.draftDistUnit = unit;
+      this.draft.distance = Number.isFinite(m) && m > 0 ? distanceInputValue(m, unit) : '';
+    },
+
+    distUnitIs(unit: 'm' | 'km'): boolean {
+      return this.draftDistUnit === unit;
+    },
+
+    // ─── Supersets ───────────────────────────────────────────
+
+    /** Exercices de la séance en blocs : un superset = un cadre, un exercice seul = un bloc. */
+    entryBlocks(): SupersetBlock<SessionExerciseEntry>[] {
+      return supersetBlocks(this.currentEntries);
+    },
+
+    /** Clé stable d'un bloc pour x-for. */
+    blockKey(block: SupersetBlock<SessionExerciseEntry>): string {
+      return block.group ? `g:${block.group}` : `e:${block.items[0]?.exerciseId ?? ''}`;
+    },
+
+    /** « A1 », « A2 »… (vide hors superset). */
+    supersetTag(exerciseId: string): string {
+      return supersetLabel(this.currentEntries, exerciseId);
+    },
+
+    toggleMenu(exerciseId: string): void {
+      this.menuFor = this.menuFor === exerciseId ? null : exerciseId;
+    },
+
+    closeMenu(): void {
+      this.menuFor = null;
+    },
+
+    _entryIndex(exerciseId: string): number {
+      return indexOfExercise(this.currentEntries, exerciseId);
+    },
+
+    canLinkNext(exerciseId: string): boolean {
+      return canLinkWithNext(this.currentEntries, this._entryIndex(exerciseId));
+    },
+
+    canLinkPrev(exerciseId: string): boolean {
+      const i = this._entryIndex(exerciseId);
+      return i > 0 && canLinkWithNext(this.currentEntries, i - 1);
+    },
+
+    /** « Lier en superset avec Tractions » (exercice suivant). */
+    linkNextLabel(exerciseId: string): string {
+      const next = this.currentEntries[this._entryIndex(exerciseId) + 1];
+      return next ? `Lier en superset avec ${this.exerciseName(next.exerciseId)}` : '';
+    },
+
+    linkPrevLabel(exerciseId: string): string {
+      const i = this._entryIndex(exerciseId);
+      const prev = i > 0 ? this.currentEntries[i - 1] : undefined;
+      return prev ? `Lier en superset avec ${this.exerciseName(prev.exerciseId)}` : '';
+    },
+
+    _setEntries(entries: SessionExerciseEntry[]): void {
+      if (!this.currentSession) return;
+      this.currentSession = { ...this.currentSession, entries };
+    },
+
+    linkNext(exerciseId: string): void {
+      this._setEntries(linkWithNext(this.currentEntries, this._entryIndex(exerciseId)));
+      this.menuFor = null;
+      hapticLight();
+    },
+
+    linkPrev(exerciseId: string): void {
+      this._setEntries(linkWithNext(this.currentEntries, this._entryIndex(exerciseId) - 1));
+      this.menuFor = null;
+      hapticLight();
+    },
+
+    unlink(exerciseId: string): void {
+      this._setEntries(unlinkSuperset(this.currentEntries, this._entryIndex(exerciseId)));
+      this.menuFor = null;
+      hapticLight();
     },
 
     /** Historique de sets pour un exercice, toutes séances confondues (du plus ancien au plus récent). */
     _historyForExercise(exerciseId: string): PerformedSet[] {
       const sorted = [...this.sessions].sort((a, b) => a.startedAt.localeCompare(b.startedAt));
       return sorted.flatMap((s) =>
-        workSetsOf(s.entries.find((e) => e.exerciseId === exerciseId)?.sets ?? []).map((set) => ({
+        loadSetsOf(s.entries.find((e) => e.exerciseId === exerciseId)?.sets ?? []).map((set) => ({
           reps: set.reps,
           weightKg: set.weightKg,
           rpe: set.rpe,
@@ -1363,7 +1696,7 @@ export function seances() {
 
     /** Suggestion de progression complète pour l'exercice courant. */
     progressionSuggestion(exerciseId: string): ProgressionSuggestion | null {
-      if (!exerciseId) return null;
+      if (!exerciseId || this.isTimed(exerciseId)) return null;
       // Invalidate cache when sessions array grows (new session saved).
       const cacheVersion = sessionsCacheVersion(this.sessions);
       if (this._suggestionCacheVersion !== cacheVersion) {
@@ -1389,6 +1722,7 @@ export function seances() {
 
     /** Vrai si l'exercice est en état de deload d'après l'historique. */
     exerciseNeedsDeload(exerciseId: string): boolean {
+      if (this.isTimed(exerciseId)) return false;
       return needsDeload(this._historyForExercise(exerciseId));
     },
 
@@ -1434,7 +1768,8 @@ export function seances() {
       if (!set) return;
       this.draftWarmup = false;
       this.draft.weightKg = set.weightKg;
-      this.draft.reps = set.reps;
+      if (this.isTimed(entry.exerciseId)) this._fillTimedDraft(entry.exerciseId, set);
+      else this.draft.reps = set.reps;
       this.addSet(entry.exerciseId);
     },
 
@@ -1458,11 +1793,29 @@ export function seances() {
       const key = `${this.currentSession?.id}:${entry.exerciseId}:${n}`;
       if (key === this._draftKey) return;
       this._draftKey = key;
+      if (this.isTimed(entry.exerciseId)) {
+        if (this.stopwatch && this.stopwatch.exerciseId !== entry.exerciseId) this.stopwatch = null;
+        const last = this._sameAsLast(entry);
+        if (last && isTimedSet(last)) this._fillTimedDraft(entry.exerciseId, last);
+        else this._fillTimedDraft(entry.exerciseId, null);
+        return;
+      }
       const target = this.setTarget(entry.exerciseId, n);
       if (target) {
         this.draft.weightKg = target.weightKg;
         this.draft.reps = target.reps;
       }
+    },
+
+    /** Pré-remplit durée, distance et charge (série de la dernière fois, ou vide). */
+    _fillTimedDraft(exerciseId: string, set: SetEntry | null): void {
+      const ex = this.exercises.find((e) => e.id === exerciseId) ?? { id: exerciseId };
+      const dist = Number(set?.distanceM) || 0;
+      this.draftDistUnit = dist >= 1000 ? 'km' : dist > 0 ? 'm' : defaultDistanceUnit(ex);
+      this.draft.duration =
+        Number(set?.durationSec) > 0 ? formatDuration(Number(set!.durationSec)) : '';
+      this.draft.distance = distanceInputValue(dist, this.draftDistUnit);
+      this.draft.weightKg = Number(set?.weightKg) || 0;
     },
 
     // ─── Échauffement ────────────────────────────────────────
@@ -1504,7 +1857,7 @@ export function seances() {
 
     /** « Ajouter l'échauffement » : avant la première série, et pas au poids du corps. */
     canAddWarmup(entry: SessionExerciseEntry): boolean {
-      if (entry.sets.length > 0) return false;
+      if (entry.sets.length > 0 || this.isTimed(entry.exerciseId)) return false;
       return this.exercises.find((e) => e.id === entry.exerciseId)?.equipment !== 'bodyweight';
     },
 
@@ -1633,6 +1986,41 @@ export function seances() {
       this.historyLimit = this.sessions.length;
     },
 
+    /** Historique en liste ou en calendrier du mois (chargé à la demande). */
+    historyView: 'list' as 'list' | 'calendar',
+    calendarReady: false,
+    calendarError: false,
+
+    setHistoryView(view: 'list' | 'calendar'): void {
+      this.historyView = view;
+      if (view !== 'calendar' || this.calendarReady) return;
+      this.calendarError = false;
+      loadTrainingCalendar().then(
+        () => {
+          this.calendarReady = true;
+        },
+        (err: unknown) => {
+          console.warn('[seances] calendrier indisponible :', err);
+          this.calendarError = true;
+        },
+      );
+    },
+    historyViewPressed(view: 'list' | 'calendar'): string {
+      return this.historyView === view ? 'true' : 'false';
+    },
+    /** Depuis le calendrier : ouvre la séance dépliée dans la liste. */
+    showSessionInList(id: string): void {
+      const fromEnd = this.sessions.length - this.sessions.findIndex((s) => s.id === id);
+      if (fromEnd > this.historyLimit) this.historyLimit = fromEnd;
+      this.historyView = 'list';
+      if (this.expandedSessionId !== id) this.toggleSessionDetail(id);
+      requestAnimationFrame(() => {
+        document
+          .getElementById(`history-${id}`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    },
+
     /** Bascule l'affichage détaillé d'une séance dans l'historique. */
     toggleSessionDetail(id: string): void {
       if (this.editingSession) this.cancelEditSession();
@@ -1686,12 +2074,27 @@ export function seances() {
       setIndex: number;
       isNew: boolean;
     } | null,
-    setForm: { weightKg: '', reps: '', rpe: '', note: '', warmup: false } as {
+    setForm: {
+      weightKg: '',
+      reps: '',
+      rpe: '',
+      note: '',
+      warmup: false,
+      timed: false,
+      distanceOn: false,
+      duration: '',
+      distance: '',
+    } as {
       weightKg: string | number;
       reps: string | number;
       rpe: string | number;
       note: string;
       warmup: boolean;
+      /** Série chronométrée : durée (m:ss) et distance (« 400 m », « 2,5 km ») au lieu des reps. */
+      timed: boolean;
+      distanceOn: boolean;
+      duration: string;
+      distance: string;
     },
     setFormError: '',
     /** Dernière série supprimée, pour « Annuler » (toast de la page). */
@@ -1728,12 +2131,17 @@ export function seances() {
       if (!set) return;
       // Virgule décimale à la française (« 62,5 ») : la saisie l'accepte aussi.
       const fr = (v: number): string => String(v).replace('.', ',');
+      const timed = isTimedSet(set) || this.isTimed(exerciseId);
       this.setForm = {
         weightKg: fr(set.weightKg),
         reps: set.reps,
         rpe: fr(set.rpe),
         note: set.note ?? '',
         warmup: isWarmupSet(set),
+        timed,
+        distanceOn: timed && (this.isDistance(exerciseId) || Number(set.distanceM) > 0),
+        duration: Number(set.durationSec) > 0 ? formatDuration(Number(set.durationSec)) : '',
+        distance: Number(set.distanceM) > 0 ? formatDistance(Number(set.distanceM)) : '',
       };
       this.setFormError = '';
       this.setEditor = { scope, exerciseId, setIndex, isNew };
@@ -1788,12 +2196,20 @@ export function seances() {
           .replace(',', '.');
         return t === '' ? Number.NaN : Number(t);
       };
+      const timed = this.setForm.timed === true;
       const input = {
-        weightKg: num(this.setForm.weightKg),
-        reps: num(this.setForm.reps),
+        weightKg:
+          timed && String(this.setForm.weightKg).trim() === '' ? 0 : num(this.setForm.weightKg),
+        reps: timed ? 0 : num(this.setForm.reps),
         rpe: num(this.setForm.rpe),
         note: String(this.setForm.note ?? ''),
         warmup: this.setForm.warmup === true,
+        ...(timed
+          ? {
+              durationSec: parseDuration(this.setForm.duration),
+              distanceM: this.setForm.distanceOn ? parseDistance(this.setForm.distance, 'm') : 0,
+            }
+          : {}),
       };
       const error = validateSetInput(input);
       if (error) {
@@ -1890,7 +2306,7 @@ export function seances() {
     async saveEditedSession(): Promise<void> {
       const draft = this.editingSession;
       if (!draft || this.savingEdit) return;
-      const entries = draft.entries.filter((e) => e.sets.length > 0);
+      const entries = normalizeSupersets(draft.entries.filter((e) => e.sets.length > 0));
       if (entries.length === 0) {
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
@@ -2035,7 +2451,7 @@ export function seances() {
       science: string;
       periodizationNote: string;
     } | null {
-      if (!exerciseId) return null;
+      if (!exerciseId || this.isTimed(exerciseId)) return null;
       const ex = this.exercises.find((e) => e.id === exerciseId);
       const history = this._historyForExercise(exerciseId);
       const preset = COACH_GOALS[this.coachGoal as CoachGoal];
@@ -2127,12 +2543,22 @@ export function seances() {
       if (!this.progressExerciseId) return [];
       const points: { x: number; y: number; label: string }[] = [];
 
+      const timed = this.isTimed(this.progressExerciseId);
+      const byDistance = timed && this.isDistance(this.progressExerciseId);
       for (const session of this.sessions) {
         const found = session.entries.find((e) => e.exerciseId === this.progressExerciseId);
-        const entry = found ? { sets: workSetsOf(found.sets) } : null;
+        // Exercice chronométré : meilleure durée (ou distance) ; sinon reps × charge seulement.
+        const entry = found
+          ? { sets: timed ? workSetsOf(found.sets) : loadSetsOf(found.sets) }
+          : null;
         if (!entry || !entry.sets.length) continue;
         let y = 0;
-        if (this.progressMetric === 'weight') {
+        if (timed) {
+          y = Math.max(
+            0,
+            ...entry.sets.map((s) => Number(byDistance ? s.distanceM : s.durationSec) || 0),
+          );
+        } else if (this.progressMetric === 'weight') {
           y = Math.max(...entry.sets.map((s) => s.weightKg));
         } else if (this.progressMetric === 'volume') {
           y = entry.sets.reduce((acc, s) => acc + s.weightKg * s.reps, 0);
@@ -2158,6 +2584,81 @@ export function seances() {
     progressMax(): number {
       const pts = this.progressPoints();
       return pts.length ? Math.max(...pts.map((p) => p.y)) : 0;
+    },
+
+    /** Exercice de la courbe mesuré en durée ou distance (pas de choix e1RM/charge/volume). */
+    progressIsTimed(): boolean {
+      return !!this.progressExerciseId && this.isTimed(this.progressExerciseId);
+    },
+
+    progressRecordTitle(): string {
+      if (this.progressIsTimed()) {
+        return this.isDistance(this.progressExerciseId) ? 'Record (distance)' : 'Record (durée)';
+      }
+      if (this.progressMetric === 'volume') return 'Record (volume)';
+      return this.progressMetric === 'weight' ? 'Record (charge max)' : 'Record (e1RM)';
+    },
+
+    /** Valeur seule (« 62,5 », « 1:30 », « 400 m ») ; l'unité kg est à part. */
+    progressValueText(v: number): string {
+      if (!this.progressIsTimed()) return (Number(v) || 0).toFixed(1);
+      return this.isDistance(this.progressExerciseId) ? formatDistance(v) : formatDuration(v);
+    },
+
+    progressUnit(): string {
+      return this.progressIsTimed() ? '' : 'kg';
+    },
+
+    /** Valeur avec unité : « 62.5 kg », « 1:30 », « 400 m ». */
+    progressValueLabel(v: number): string {
+      const unit = this.progressUnit();
+      return unit ? `${this.progressValueText(v)} ${unit}` : this.progressValueText(v);
+    },
+
+    progressLastLabel(): string {
+      return this.progressValueLabel(this.progressPoints().at(-1)?.y ?? 0);
+    },
+
+    // ─── Affichage des séries chronométrées et supersets (historique) ─────
+
+    /** « Durée », « Distance » ou « kg × reps » (en-tête des séries faites). */
+    setsColumnLabel(exerciseId: string): string {
+      const m = this.measureOf(exerciseId);
+      return m === 'time' ? 'Durée' : m === 'distance' ? 'Distance · durée' : 'kg × reps';
+    },
+
+    /** « · Durée » / « · Distance » sous le nom d'un exercice chronométré. */
+    measureLabel(exerciseId: string): string {
+      const m = this.measureOf(exerciseId);
+      return m === 'time' ? ' · Durée' : m === 'distance' ? ' · Distance' : '';
+    },
+
+    /** Colonne de droite d'une série : e1RM, ou charge (« 20 », « — ») si chronométrée. */
+    setSideValue(set: SetEntry): string {
+      if (isTimedSet(set)) {
+        const kg = Number(set.weightKg) || 0;
+        return kg > 0 ? kg.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) : '—';
+      }
+      return estimateE1rmKg(set.weightKg, set.reps).toFixed(0);
+    },
+
+    /** Historique : e1RM (« 85 kg »), ou charge d'une série chronométrée. */
+    pastSetSide(set: SetEntry): string {
+      if (isTimedSet(set)) return this.timedLoad(set) === '—' ? '' : this.timedLoad(set);
+      return `${String(this.setE1rm(set.weightKg, set.reps)).replace('.', ',')} kg`;
+    },
+
+    /** « A1 · Développé couché » dans le détail d'une séance passée. */
+    historyEntryTitle(session: WorkoutSession, entry: SessionExerciseEntry): string {
+      const tag = supersetLabel(session.entries, entry.exerciseId);
+      const name = this.exerciseNameOf(entry.exerciseId);
+      return tag ? `${tag} · ${name}` : name;
+    },
+
+    /** « Superset A » (2 exercices) ou « Circuit A » (3) ; vide pour un exercice seul. */
+    supersetTitle(block: SupersetBlock<SessionExerciseEntry>): string {
+      if (!block.group) return '';
+      return `${block.items.length >= 3 ? 'Circuit' : 'Superset'} ${block.letter}`;
     },
 
     progressSvg(): string {
@@ -2191,7 +2692,14 @@ export function seances() {
         .map((p, i) => `${i === 0 ? 'M' : 'L'} ${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`)
         .join(' ');
       const area = `${line} L ${sx(pts.at(-1)!.x).toFixed(1)} ${plotB} L ${sx(minX).toFixed(1)} ${plotB} Z`;
-      const fmt = (v: number) => v.toLocaleString('fr-FR', { maximumFractionDigits: 0 });
+      const timedProgress = this.isTimed(this.progressExerciseId);
+      const distProgress = timedProgress && this.isDistance(this.progressExerciseId);
+      const fmt = (v: number) =>
+        distProgress
+          ? formatDistance(v)
+          : timedProgress
+            ? formatDuration(v)
+            : v.toLocaleString('fr-FR', { maximumFractionDigits: 0 });
       const gridValues = maxY - minY < 0.5 ? [maxY] : [maxY, (maxY + minY) / 2, minY];
       const grid = gridValues
         .map((v) => {
@@ -2205,15 +2713,19 @@ export function seances() {
       const circles = pts
         .map((p) => {
           const isRecord = p.y >= maxY;
-          return `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${isRecord ? 5 : 3}" class="${isRecord ? `${RECORD_FILL} stroke-kinetic-surface` : LINE_FILL}"${isRecord ? ' stroke-width="2.5"' : ''}><title>${p.label} : ${p.y.toFixed(1)}</title></circle>`;
+          const value = timedProgress ? fmt(p.y) : p.y.toFixed(1);
+          return `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${isRecord ? 5 : 3}" class="${isRecord ? `${RECORD_FILL} stroke-kinetic-surface` : LINE_FILL}"${isRecord ? ' stroke-width="2.5"' : ''}><title>${p.label} : ${value}</title></circle>`;
         })
         .join('');
-      const metric =
-        this.progressMetric === 'weight'
-          ? 'Charge max (kg)'
-          : this.progressMetric === 'volume'
-            ? 'Volume (kg·reps)'
-            : 'e1RM (kg)';
+      const metric = distProgress
+        ? 'Distance max'
+        : timedProgress
+          ? 'Durée max'
+          : this.progressMetric === 'weight'
+            ? 'Charge max (kg)'
+            : this.progressMetric === 'volume'
+              ? 'Volume (kg·reps)'
+              : 'e1RM (kg)';
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="${metric}">
         ${grid}
         <path d="${area}" class="${LINE_FILL}" fill-opacity="0.12"/>
@@ -2256,7 +2768,9 @@ export function seances() {
         this.currentSession = null;
         this.templateName = '';
         this.stopRest();
+        this.stopwatch = null; // le chronomètre s'arrête avec la séance
         this._persistActive(); // séance sauvegardée : plus rien à reprendre
+        this.justSavedSessionId = finalized.id; // carte « Séance terminée » (partage)
         hapticSuccess(); // séance sauvegardée
 
         window.dispatchEvent(
@@ -2297,11 +2811,12 @@ export function seances() {
           id: newId(),
           name,
           createdAt: nowIso(),
-          exercises: this.currentSession.entries.map((e) => ({
+          exercises: normalizeSupersets(this.currentSession.entries).map((e) => ({
             exerciseId: e.exerciseId,
             sets: Math.max(1, workSetsOf(e.sets).length || 3),
             targetReps: 8,
             targetRpe: 8,
+            ...(e.group ? { group: e.group } : {}),
           })),
         };
         const next = [...this.templates, template];

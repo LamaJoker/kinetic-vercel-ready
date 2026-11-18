@@ -337,6 +337,119 @@
 
   <!-- ─── Onglet MUSCLES ────────────────────────────────────── -->
   <div x-show="totalSessions > 0 && activeTab === 'muscles'" x-transition.opacity.duration.200ms>
+    <!-- Carte des muscles (composant chargé à la demande : lib/lazy-component.ts) -->
+    <template x-if="muscleMapReady">
+      <section
+        x-data="muscleMap"
+        x-effect="sync(sessions, exercises)"
+        class="k-card mb-3"
+        aria-labelledby="mm-title"
+      >
+        <div class="flex items-center justify-between gap-3 mb-1">
+          <h2 id="mm-title" class="k-card-title">Carte des muscles</h2>
+          <div class="k-seg w-32" role="group" aria-label="Période de la carte">
+            <button
+              type="button"
+              class="k-seg-item"
+              @click="setDays(7)"
+              :aria-pressed="daysPressed(7)"
+            >
+              7 j
+            </button>
+            <button
+              type="button"
+              class="k-seg-item"
+              @click="setDays(30)"
+              :aria-pressed="daysPressed(30)"
+            >
+              30 j
+            </button>
+          </div>
+        </div>
+        <p class="text-sm text-gray-500 mb-3 tabular-nums" x-text="summary()"></p>
+
+        <!-- Toucher une zone : délégation (x-svg recrée les formes à chaque rendu) -->
+        <div class="k-mm-box" x-svg="svg()" @click="pickFromEvent($event)"></div>
+
+        <!-- Légende : séries de travail par semaine -->
+        <div class="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5">
+          <span class="text-xs text-gray-500">Séries / sem.</span>
+          <template x-for="l in legend" :key="l.key">
+            <span class="inline-flex items-center gap-1.5 text-xs text-gray-400 tabular-nums">
+              <span :class="l.cls" aria-hidden="true"></span>
+              <span x-text="l.label"></span>
+            </span>
+          </template>
+        </div>
+
+        <!-- Détail de la zone touchée -->
+        <template x-if="detail">
+          <div class="mt-4 rounded-2xl bg-kinetic-ink/60 p-4" role="status" aria-live="polite">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="flex items-center gap-2 text-base font-semibold text-white">
+                  <span :class="detail.levelCls" aria-hidden="true"></span>
+                  <span x-text="detail.label"></span>
+                </p>
+                <p class="mt-0.5 text-sm text-gray-400 tabular-nums">
+                  <span x-text="detail.sets"></span> · <span x-text="detail.perWeek"></span> ·
+                  <span x-text="detail.levelLabel"></span>
+                </p>
+              </div>
+              <span class="k-stat text-xl text-white flex-shrink-0" x-text="detail.tonnage"></span>
+            </div>
+            <ul class="mt-3 space-y-1.5" x-show="detail.exercises.length > 0">
+              <template x-for="e in detail.exercises" :key="e.id">
+                <li class="flex items-center justify-between gap-3 text-sm">
+                  <span class="truncate text-gray-300" x-text="e.name"></span>
+                  <span class="flex-shrink-0 text-gray-500 tabular-nums" x-text="e.sets"></span>
+                </li>
+              </template>
+            </ul>
+            <p x-show="detail.exercises.length === 0" class="mt-2 text-sm text-gray-500">
+              Aucune série sur la période.
+            </p>
+          </div>
+        </template>
+
+        <!-- Liste accessible (même données que la silhouette) -->
+        <div x-show="hasData()" class="mt-4">
+          <h3 class="k-caption mb-1.5">Séries effectives par zone</h3>
+          <ul class="space-y-0.5">
+            <template x-for="r in rows()" :key="r.key">
+              <li>
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-3 rounded-xl px-1 py-1.5 text-left active:bg-kinetic-elevated"
+                  @click="select(r.key)"
+                  :aria-pressed="isSelected(r.key) ? 'true' : 'false'"
+                >
+                  <span
+                    class="w-28 flex-shrink-0 truncate text-sm text-white"
+                    x-text="r.label"
+                  ></span>
+                  <span class="k-mm-track" aria-hidden="true">
+                    <span class="block" :class="r.barCls" :style="r.width"></span>
+                  </span>
+                  <span
+                    class="w-10 text-right text-sm font-semibold text-white tabular-nums"
+                    x-text="r.value"
+                  ></span>
+                </button>
+              </li>
+            </template>
+          </ul>
+          <p x-show="idleLabels()" class="mt-3 text-xs text-gray-500">
+            <span class="font-semibold text-gray-400">Pas travaillé :</span>
+            <span x-text="idleLabels()"></span>
+          </p>
+          <p class="mt-2 text-xs text-gray-500">
+            Muscle principal : 1 série ; muscles secondaires : ½. Échauffements exclus.
+          </p>
+        </div>
+      </section>
+    </template>
+
     <template x-if="muscles.length === 0">
       <div class="k-empty">
         <p>Aucune donnée</p>

@@ -8,6 +8,8 @@ export interface TemplateLine {
   sets: number;
   targetReps: number;
   targetRpe: number;
+  /** Superset : identifiant partagé par 2 ou 3 lignes consécutives (cf. superset.domain). */
+  group?: string;
 }
 
 export const TEMPLATE_LINE_DEFAULTS: Readonly<Omit<TemplateLine, 'exerciseId'>> = {
@@ -32,7 +34,7 @@ export function cleanLabel(name: string): string {
     .slice(0, NAME_MAX);
 }
 
-/** Séries 1-10, répétitions 1-50, RPE 5-10 par demi-point. */
+/** Séries 1-10, répétitions 1-50, RPE 5-10 par demi-point ; le superset est conservé. */
 export function clampTemplateLine(line: TemplateLine): TemplateLine {
   const d = TEMPLATE_LINE_DEFAULTS;
   return {
@@ -40,6 +42,7 @@ export function clampTemplateLine(line: TemplateLine): TemplateLine {
     sets: clamp(line.sets, 1, 10, d.sets),
     targetReps: clamp(line.targetReps, 1, 50, d.targetReps),
     targetRpe: clamp(line.targetRpe, 5, 10, d.targetRpe, 0.5),
+    ...(typeof line.group === 'string' && line.group ? { group: line.group } : {}),
   };
 }
 
@@ -84,6 +87,8 @@ export interface CustomExerciseInput {
   muscles: readonly string[];
   equipment: ExerciseEquipment;
   incrementKg: number;
+  /** Mesure : absente = répétitions × charge. */
+  measure?: 'reps' | 'time' | 'distance';
 }
 
 export interface LabeledOption {
@@ -134,11 +139,13 @@ export function normalizeCustomExercise(input: CustomExerciseInput): CustomExerc
   const equipment = EQUIPMENT_OPTIONS.some((e) => e.key === input.equipment)
     ? input.equipment
     : 'other';
+  const measure = input.measure === 'time' || input.measure === 'distance' ? input.measure : null;
   return {
     name: cleanLabel(input.name),
     muscles: [...new Set(input.muscles)].filter((m) => known.has(m)),
     equipment,
     incrementKg: clamp(input.incrementKg, 0.25, 50, 2.5, 0.25),
+    ...(measure ? { measure } : {}),
   };
 }
 

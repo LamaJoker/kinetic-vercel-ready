@@ -1,5 +1,5 @@
 import { defineConfig, type Plugin } from 'vite';
-import { resolve } from 'path';
+import { basename, resolve } from 'path';
 import { readFileSync, writeFileSync } from 'fs';
 
 /**
@@ -42,6 +42,27 @@ export function compactHtml(source: string): string {
   return html.replace(/\n[ \t]+/g, '\n').replace(/\n{2,}/g, '\n');
 }
 
+/** Module qui télécharge un gabarit émis en fichier statique (voir ci-dessous). */
+const PAGE_TEMPLATE_LOADER = resolve(__dirname, 'src/lib/page-template.ts');
+
+/**
+ * Gabarits des pages (`src/pages/*.html?raw`, cf. router.ts) : au build, chacun
+ * est compacté puis émis en fichier statique `static/assets/<page>-<hash>.txt`
+ * au lieu d'une chaîne dans un chunk JS. Le module JS ne contient plus que
+ * l'URL ; le texte est téléchargé à l'affichage (lib/page-template.ts) et mis en
+ * cache par le service worker comme les autres fichiers de /static/.
+ * Extension .txt (text/plain) et non .html : le service worker refuse de mettre
+ * en cache une réponse text/html sous /static/ (repli SPA), et Vercel
+ * (cleanUrls) redirigerait un .html.
+ * Gain : ~70 KiB gzip de HTML sortis du JS (plus à analyser comme du code).
+ */
+export function pageTemplateModule(fileUrlExpression: string): string {
+  return (
+    `import { pageTemplate } from ${JSON.stringify(PAGE_TEMPLATE_LOADER)};\n` +
+    `export default pageTemplate(${fileUrlExpression});\n`
+  );
+}
+
 function compactPageHtml(): Plugin {
   return {
     name: 'compact-page-html',
@@ -52,7 +73,12 @@ function compactPageHtml(): Plugin {
       if (query !== 'raw' || !file || !/[\\/]src[\\/]pages[\\/][^\\/]+\.html$/.test(file)) {
         return null;
       }
-      return `export default ${JSON.stringify(compactHtml(readFileSync(file, 'utf8')))};`;
+      const ref = this.emitFile({
+        type: 'asset',
+        name: basename(file).replace(/\.html$/, '.txt'),
+        source: compactHtml(readFileSync(file, 'utf8')),
+      });
+      return pageTemplateModule(`import.meta.ROLLUP_FILE_URL_${ref}`);
     },
   };
 }
@@ -69,8 +95,56 @@ export const SUPABASE_UNUSED_STUBS: Record<string, string> = {
   '@supabase/functions-js': resolve(__dirname, 'src/lib/supabase-stubs/functions.ts'),
 };
 
+/**
+ * Même principe à l'intérieur de `@supabase/auth-js` : l'API d'administration
+ * (clé service_role, jamais côté client), WebAuthn (MFA, passkeys) et la
+ * connexion Web3 ne servent pas à Kinetic (lien magique + OAuth uniquement) mais
+ * sont instanciées par GoTrueClient. Imports relatifs → plugin resolveId.
+ */
+export const SUPABASE_AUTH_UNUSED_STUBS: Record<string, string> = {
+  './GoTrueAdminApi': resolve(__dirname, 'src/lib/supabase-stubs/auth-admin.ts'),
+  './lib/webauthn': resolve(__dirname, 'src/lib/supabase-stubs/auth-webauthn.ts'),
+  './lib/web3/ethereum': resolve(__dirname, 'src/lib/supabase-stubs/auth-web3.ts'),
+};
+
+function stubUnusedSupabaseAuth(): Plugin {
+  return {
+    name: 'stub-unused-supabase-auth',
+    apply: 'build',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      if (!importer || !/[\\/]@supabase[\\/]auth-js[\\/]/.test(importer)) return null;
+      return SUPABASE_AUTH_UNUSED_STUBS[source.replace(/\.js$/, '')] ?? null;
+    },
+  };
+}
+
+/**
+ * Modules sortis des chunks partagés chargés au démarrage (kinetic-core,
+ * lib-training) : chacun dans son propre chunk, chargé seulement avec les pages
+ * qui l'importent. (Un module simplement non assigné serait aspiré dans le chunk
+ * de son importeur, le barrel index.ts de kinetic-core.) À compléter pour toute donnée ou logique qui ne sert pas au
+ * premier écran (voir docs dans scripts/check-bundle-size.mjs).
+ */
+export const LAZY_CORE_MODULES = [
+  'domain/glossary.domain', // glossaire (page Glossaire, bulles ⓘ)
+  'domain/exercise-cues.domain', // consignes d'exécution (Séances)
+  // programmes 5/3/1, etc. (page Programmes). Ses appels au niveau du module sont
+  // annotés @__PURE__ : sinon Rollup le croit à effets de bord et l'importe partout.
+  'domain/programs-catalog.domain',
+  'domain/training-calendar.domain', // calendrier du mois (Séances › Historique)
+  'domain/muscle-map.domain', // carte des muscles (Progression, aperçu accueil)
+  'domain/session-share-card.domain', // carte « Partager en image » (Séances)
+  'domain/superset.domain', // supersets (Séances, éditeur de modèles)
+  'domain/exercise-measure.domain', // exercices chronométrés / distance (Séances, Records)
+];
+export const LAZY_TRAINING_MODULES = [
+  'training/import', // import Strong / Hevy (Profil)
+  'training/export', // export CSV / JSON (Profil, sauvegarde auto)
+];
+
 export default defineConfig({
-  plugins: [compactPageHtml(), injectSwVersion()],
+  plugins: [compactPageHtml(), stubUnusedSupabaseAuth(), injectSwVersion()],
 
   resolve: {
     alias: {
@@ -103,17 +177,28 @@ export default defineConfig({
             if (id.includes('alpinejs') || id.includes('@alpinejs')) return 'alpine';
             if (id.includes('@supabase/supabase-js')) return 'supabase';
             if (id.includes('idb-keyval')) return 'idb';
-            if (id.includes('@capacitor')) return 'capacitor';
+            // Seulement le cœur Capacitor : les implémentations web des plugins
+            // (`web.js`, importées à la demande par registerPlugin) et les plugins
+            // chargés par import() restent des chunks séparés, hors démarrage.
+            if (/@capacitor[\\/](core|synapse)[\\/]/.test(id)) return 'capacitor';
+            if (id.includes('@capacitor') || id.includes('@capgo')) return undefined;
             return 'vendor';
           }
           // Domain layer (packages/core) — pure logic, peut être caché agressivement
-          if (id.includes('packages/core/')) return 'kinetic-core';
+          // Sauf les données et la logique propres à des écrans rares (LAZY_CORE_MODULES).
+          if (id.includes('packages/core/')) {
+            const lazy = LAZY_CORE_MODULES.find((m) => id.includes(m));
+            return lazy ? `core-${lazy.split('/').pop()!.replace('.domain', '')}` : 'kinetic-core';
+          }
           // Adapters (packages/adapter-web)
           if (id.includes('packages/adapter-web/')) return 'kinetic-adapters';
           // Stores Alpine — partagés entre toutes les pages
           if (id.includes('apps/web/src/stores/')) return 'stores';
           // Libs utilitaires
-          if (id.includes('apps/web/src/lib/training/')) return 'lib-training';
+          if (id.includes('apps/web/src/lib/training/')) {
+            const lazy = LAZY_TRAINING_MODULES.find((m) => id.includes(m));
+            return lazy ? `lib-training-${lazy.split('/').pop()!}` : 'lib-training';
+          }
           if (id.includes('apps/web/src/lib/user/')) return 'lib-user';
           // Pages secondaires (programmes, photos) — déchargent main de ~30 KB
           if (id.includes('apps/web/src/pages/programs.page')) return 'page-programs';

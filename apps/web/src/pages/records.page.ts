@@ -14,13 +14,28 @@ import {
   type AnalyticsSet,
   type StrengthSex,
   type StrengthTier,
-  workSetsOf,
+  loadSetsOf,
+  timedRecords,
+  exerciseMeasure,
+  formatDuration,
+  formatDistance,
 } from '@kinetic/core';
 import { getDeps } from '../deps';
 import type { Exercise, WorkoutSession } from '../lib/training/types';
 import { loadExercises, loadSessions } from '../lib/training/storage';
 
 const RECENT_DAYS = 7;
+
+/** Record d'un exercice chronométré : meilleure durée, ou plus longue distance. */
+interface TimedDisplayRecord {
+  exerciseId: string;
+  exerciseName: string;
+  /** « 2:15 », « 400 m ». */
+  main: string;
+  /** « Plus longue distance · 1:45 · il y a 3 j ». */
+  detail: string;
+  achievedAt: string;
+}
 
 interface DisplayRecord {
   exerciseId: string;
@@ -81,6 +96,7 @@ export function records() {
   return {
     loading: true,
     records: [] as DisplayRecord[],
+    timedRecords: [] as TimedDisplayRecord[],
     sort: 'recent' as 'e1rm' | 'recent' | 'name',
 
     // ─── Strength scores ────────────────────────────────────────
@@ -226,6 +242,7 @@ export function records() {
           deps.storage.get<Array<{ weight: number }>>(STORAGE_KEYS.BODYWEIGHT_ENTRIES),
         ]);
         this.records = this._computeRecords(sessions, exercises);
+        this.timedRecords = this._computeTimedRecords(sessions, exercises);
         if (scoreProfile && typeof scoreProfile === 'object') {
           this.scoreBodyweightKg = Number(scoreProfile.bodyweightKg) || 0;
           this.scoreSex = scoreProfile.sex === 'female' ? 'female' : 'male';
@@ -245,6 +262,31 @@ export function records() {
       }
     },
 
+    _computeTimedRecords(
+      sessions: readonly WorkoutSession[],
+      exercises: readonly Exercise[],
+    ): TimedDisplayRecord[] {
+      const byId = new Map(exercises.map((e) => [e.id, e]));
+      const now = Date.now();
+      return timedRecords(sessions).map((t): TimedDisplayRecord => {
+        const ex = byId.get(t.exerciseId);
+        const byDistance =
+          t.distanceM > 0 &&
+          (exerciseMeasure(ex ?? { id: t.exerciseId }) === 'distance' || !t.durationSec);
+        const kg = t.weightKg > 0 ? ` · ${loc(t.weightKg)} kg` : '';
+        const at = byDistance ? t.distanceAt : t.durationAt;
+        return {
+          exerciseId: t.exerciseId,
+          exerciseName: ex?.name ?? t.exerciseId,
+          main: byDistance ? formatDistance(t.distanceM) : formatDuration(t.durationSec),
+          detail: byDistance
+            ? `Plus longue distance${t.durationSec > 0 ? ` · meilleure durée ${formatDuration(t.durationSec)}` : ''} · ${formatDateLabel(at, now)}`
+            : `Meilleure durée${kg} · ${formatDateLabel(at, now)}`,
+          achievedAt: at,
+        };
+      });
+    },
+
     _computeRecords(
       sessions: readonly WorkoutSession[],
       exercises: readonly Exercise[],
@@ -256,7 +298,8 @@ export function records() {
       for (const s of sessions) {
         for (const entry of s.entries) {
           const muscles = musclesById.get(entry.exerciseId) ?? [];
-          for (const set of workSetsOf(entry.sets)) {
+          // Reps × charge seulement : les séries chronométrées ont leurs propres records.
+          for (const set of loadSetsOf(entry.sets)) {
             sets.push({
               sessionId: s.id,
               exerciseId: entry.exerciseId,

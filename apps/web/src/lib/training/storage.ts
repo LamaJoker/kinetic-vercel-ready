@@ -88,6 +88,10 @@ async function fetchCatalog(): Promise<Exercise[]> {
         muscles: Array.isArray(x['muscles']) ? (x['muscles'] as unknown[]).map(String) : [],
         equipment: (x['equipment'] ?? 'other') as Exercise['equipment'],
         incrementKg: Number.isFinite(Number(x['incrementKg'])) ? Number(x['incrementKg']) : 2.5,
+        // Mesure explicite du catalogue (sinon déduite à l'usage : exerciseMeasure).
+        ...(x['measure'] === 'time' || x['measure'] === 'distance'
+          ? { measure: x['measure'] as 'time' | 'distance' }
+          : {}),
       }))
       .filter((x) => x.id && x.name);
   } catch {

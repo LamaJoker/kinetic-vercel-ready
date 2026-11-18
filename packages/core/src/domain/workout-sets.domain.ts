@@ -24,6 +24,38 @@ export function isWarmupSet(set: KindedSet): boolean {
   return set.kind === 'warmup';
 }
 
+/** Série mesurée en durée et/ou distance (gainage, farmer walk, cardio). */
+export interface TimedFields {
+  /** Durée (s), séries chronométrées. */
+  durationSec?: number | undefined;
+  /** Distance (m), séries de distance. */
+  distanceM?: number | undefined;
+}
+
+/**
+ * Série chronométrée ou de distance : `reps` vaut 0 et la charge est facultative.
+ * Exclue de tout ce qui se calcule en reps × kg (tonnage, e1RM, records de charge).
+ */
+export function isTimedSet(set: TimedFields): boolean {
+  return Number(set.durationSec) > 0 || Number(set.distanceM) > 0;
+}
+
+/** « 0:45 », « 1:30 », « 25:00 », « 1:02:05 ». */
+export function formatDuration(sec: number): string {
+  const total = Math.max(0, Math.round(Number(sec) || 0));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = String(total % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+}
+
+/** « 400 m », « 2,5 km » (virgule à la française). */
+export function formatDistance(m: number): string {
+  const v = Math.max(0, Number(m) || 0);
+  if (v >= 1000) return `${String(Math.round(v / 10) / 100).replace('.', ',')} km`;
+  return `${String(Math.round(v * 10) / 10).replace('.', ',')} m`;
+}
+
 /** Séries de travail seulement (sans les échauffements). */
 export function workSetsOf<T extends KindedSet>(sets: readonly T[]): T[] {
   return sets.filter((s) => !isWarmupSet(s));
@@ -70,15 +102,25 @@ export function lastPerformance<S extends KindedSet>(
   return best;
 }
 
-/** « 42,5×8 » (charge à la française, sans unité) ; « 8 reps » au poids du corps. */
-export function formatSetShort(set: LoadedSet): string {
+/**
+ * « 42,5×8 » (charge à la française, sans unité) ; « 8 reps » au poids du corps.
+ * Série chronométrée : « 1:30 », « 20×1:30 » (lestée), « 400 m en 1:45 », « 40×30 m ».
+ */
+export function formatSetShort(set: LoadedSet & TimedFields): string {
   const kg = Math.round((Number(set.weightKg) || 0) * 100) / 100;
+  const load = String(kg).replace('.', ',');
+  if (isTimedSet(set)) {
+    const dist = Number(set.distanceM) > 0 ? formatDistance(Number(set.distanceM)) : '';
+    const dur = Number(set.durationSec) > 0 ? formatDuration(Number(set.durationSec)) : '';
+    const core = dist && dur ? `${dist} en ${dur}` : dist || dur;
+    return kg > 0 ? `${load}×${core}` : core;
+  }
   if (kg <= 0) return `${set.reps} reps`;
-  return `${String(kg).replace('.', ',')}×${set.reps}`;
+  return `${load}×${set.reps}`;
 }
 
 /** « 40×8 · 42,5×8 · 42,5×7 ». */
-export function formatSetsShort(sets: readonly LoadedSet[]): string {
+export function formatSetsShort(sets: readonly (LoadedSet & TimedFields)[]): string {
   return sets.map(formatSetShort).join(' · ');
 }
 

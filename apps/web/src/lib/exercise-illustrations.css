@@ -1,0 +1,70 @@
+/*
+ * Schémas d'exercices (public/exercises/*.svg, insérés par x-svg) : couleurs
+ * du thème. Les traits (path) prennent `stroke`, les formes pleines `fill`.
+ * Chargé avec la page Séances, pas au démarrage.
+ */
+.k-ill {
+  --k-ill-body: 154 163 189;
+  --k-ill-gear: 105 114 140;
+  --k-ill-plate: 78 86 112;
+}
+[data-mode='light'] .k-ill {
+  --k-ill-body: 128 137 166;
+  --k-ill-gear: 128 136 160;
+  --k-ill-plate: 92 100 128;
+}
+.k-ill svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.k-ill path.b,
+.k-ill path.f {
+  stroke: rgb(var(--k-ill-body));
+}
+.k-ill circle.b {
+  fill: rgb(var(--k-ill-body));
+}
+.k-ill path.g,
+.k-ill path.s,
+.k-ill circle.gr {
+  stroke: rgb(var(--k-ill-gear));
+}
+.k-ill circle.g,
+.k-ill rect.g {
+  fill: rgb(var(--k-ill-gear));
+}
+.k-ill path.p {
+  stroke: rgb(var(--k-ill-plate));
+}
+.k-ill circle.p,
+.k-ill rect.p {
+  fill: rgb(var(--k-ill-plate));
+}
+.k-ill .m {
+  fill: rgb(var(--kinetic-neon));
+}
+.k-ill path.s {
+  opacity: 0.6;
+}
+
+/* Fiche « Comment exécuter » : grand schéma centré. */
+.k-ill-frame {
+  margin: 0 auto;
+  width: 11rem;
+}
+.k-ill-frame .k-ill {
+  aspect-ratio: 1;
+  border-radius: 1rem;
+  background: rgb(var(--k-fill) / 0.1);
+}
+
+/* Vignette à côté de la liste de choix d'exercice. */
+.k-ill-thumb {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  background: rgb(var(--k-fill) / 0.12);
+  padding: 2px;
+}

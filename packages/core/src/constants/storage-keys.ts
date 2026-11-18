@@ -153,6 +153,7 @@ export const STORAGE_KEYS = {
   THEME_MODE: 'kinetic:theme-mode' as const, // 'system' | 'dark' | 'light' — defaut dark
   DISPLAY_DENSITY: 'kinetic:display-density' as const, // 'simple' | 'advanced' — defaut simple
   HAPTICS_ENABLED: 'kinetic:haptics' as const, // localStorage, '0' = vibrations coupées (défaut : actives)
+  WAKE_LOCK_ENABLED: 'kinetic:wake-lock' as const, // localStorage, '0' = écran libre en séance (défaut : gardé allumé)
 
   // ─── Schéma IDB & Diagnostics ─────────────────────────────────
   SCHEMA_VERSION: 'kinetic:schema-version' as const,
@@ -176,6 +177,7 @@ export const STORAGE_KEYS = {
   EVENT_ROUTE_CHANGED: 'kinetic:route-changed' as const,
   EVENT_THEME_CHANGED: 'kinetic:theme-changed' as const,
   EVENT_DENSITY_CHANGED: 'kinetic:density-changed' as const,
+  EVENT_WAKE_LOCK_CHANGED: 'kinetic:wake-lock-changed' as const, // réglage « Garder l'écran allumé en séance »
   EVENT_REFRESH: 'kinetic:refresh' as const, // tirer pour rafraîchir (lib/native-gestures.ts)
   ERRORS_LAST_FLUSH: 'kinetic:errors:last-flush' as const, // localStorage, throttle exfiltration
 } as const;

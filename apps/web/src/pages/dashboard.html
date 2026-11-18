@@ -435,6 +435,44 @@
     <p x-show="!$store.vitalite.allDone" class="mt-3 text-sm text-gray-500">Continuer la routine</p>
   </a>
 
+  <!-- Carte des muscles, aperçu 7 jours (composant chargé à la demande) -->
+  <template x-if="muscleMapReady">
+    <a
+      href="/progression?tab=muscles"
+      class="k-card k-press mb-3 flex items-center gap-4"
+      x-data="muscleMap"
+      data-compact="true"
+      x-effect="sync(_allSessions, mmExercises)"
+      aria-label="Carte des muscles sur 7 jours : voir le détail"
+    >
+      <div class="k-mm-box-sm w-36 flex-shrink-0" x-svg="svg()"></div>
+      <div class="min-w-0 flex-1">
+        <h2 class="k-card-title">Muscles · 7 j</h2>
+        <p class="mt-1 text-sm text-gray-400 tabular-nums" x-text="summary()"></p>
+        <p
+          x-show="topLabels()"
+          class="mt-2 text-sm font-semibold text-white leading-snug"
+          x-text="topLabels()"
+        ></p>
+        <div class="mt-3 flex flex-wrap items-center gap-1" aria-hidden="true">
+          <template x-for="l in legend" :key="l.key">
+            <span :class="l.cls"></span>
+          </template>
+          <span class="ml-1 whitespace-nowrap text-xs text-gray-500">peu → beaucoup</span>
+        </div>
+      </div>
+      <svg class="k-chevron flex-shrink-0" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </a>
+  </template>
+
   <!-- Équilibre musculaire (4 semaines) — avancé -->
   <template x-if="balanceWarning">
     <div class="adv-only k-card mb-3">

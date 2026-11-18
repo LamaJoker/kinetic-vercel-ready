@@ -17,6 +17,7 @@ import {
 import { navigate } from '../router';
 import { loadActiveSession } from '../lib/training/active-session';
 import { hapticLight } from '../lib/haptics';
+import { loadMuscleMap } from '../lib/lazy-component';
 
 const PATTERN_LABELS: Record<'push' | 'pull' | 'legs', string> = {
   push: 'pousser',
@@ -39,6 +40,9 @@ export function dashboard() {
     balance: null as BalanceReport | null,
 
     _allSessions: [] as WorkoutSession[],
+    /** Aperçu « carte des muscles » : exercices (muscles) et composant chargé à la demande. */
+    mmExercises: [] as Exercise[],
+    muscleMapReady: false,
     training: null as TrainingSnapshot | null,
     /** Une séance non terminée est enregistrée : le bouton la reprend au lieu d'en démarrer une. */
     hasActiveSession: false,
@@ -180,9 +184,27 @@ export function dashboard() {
         this._allSessions = await loadSessions(deps.storage);
         const templates = await loadTemplates(deps.storage);
         this.training = buildTrainingSnapshot(this._allSessions, templates);
+        this._loadMuscleMapPreview(deps.storage);
       } catch (err) {
         console.error('[dashboard] init failed:', err);
       }
+    },
+
+    /**
+     * Aperçu de la carte des muscles : seulement s'il y a eu une séance sur
+     * 7 jours, et après le premier affichage (import() en tâche de fond).
+     */
+    _loadMuscleMapPreview(storage: Parameters<typeof loadExercises>[0]): void {
+      const since = Date.now() - 7 * 86_400_000;
+      if (!this._allSessions.some((s) => Date.parse(s.startedAt) >= since)) return;
+      void Promise.all([loadExercises(storage), loadMuscleMap()])
+        .then(([exercises]) => {
+          this.mmExercises = exercises;
+          this.muscleMapReady = true;
+        })
+        .catch((err: unknown) =>
+          console.warn('[dashboard] aperçu des muscles indisponible :', err),
+        );
     },
 
     async _buildBalanceReport(): Promise<BalanceReport | null> {

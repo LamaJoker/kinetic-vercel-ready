@@ -14,6 +14,11 @@ export interface Exercise {
   custom?: boolean;
   /** Masqué des listes de choix (exercice perso déjà utilisé, conservé pour l'historique). */
   hidden?: boolean;
+  /**
+   * Mesure : `time` (gainage, chaise…), `distance` (farmer walk, cardio). Absente :
+   * déduite de l'id ou du nom (exerciseMeasure, @kinetic/core), sinon reps × charge.
+   */
+  measure?: 'reps' | 'time' | 'distance';
 }
 
 export interface TemplateExercise {
@@ -21,6 +26,8 @@ export interface TemplateExercise {
   sets: number;
   targetReps: number;
   targetRpe: number; // 6-10
+  /** Superset : même identifiant sur 2 ou 3 exercices consécutifs. Absent = exercice seul. */
+  group?: string;
 }
 
 export interface WorkoutTemplate {
@@ -47,11 +54,23 @@ export interface SetEntry {
    * du tonnage, des records, de l'e1RM, des statistiques et de la progression.
    */
   kind?: 'work' | 'warmup';
+  /**
+   * Série chronométrée (s) : gainage, chaise, cardio… `reps` vaut alors 0 (aucun
+   * tonnage ni e1RM). Absent = série en répétitions.
+   */
+  durationSec?: number;
+  /** Série de distance (m) : farmer walk, traîneau, cardio. `reps` vaut alors 0. */
+  distanceM?: number;
 }
 
 export interface SessionExerciseEntry {
   exerciseId: ExerciseId;
   sets: readonly SetEntry[];
+  /**
+   * Superset / circuit : même identifiant sur 2 ou 3 exercices consécutifs
+   * (normalizeSupersets, @kinetic/core). Absent = exercice seul.
+   */
+  group?: string;
 }
 
 export interface WorkoutSession {

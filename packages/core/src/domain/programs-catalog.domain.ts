@@ -217,7 +217,7 @@ const STARTING_STRENGTH: ProgramCatalogEntry = {
   description:
     '3 jours/sem, full body, progression linéaire. Idéal débutant : +2.5 kg upper / +5 kg lower à chaque séance tant que possible. Dans Kinetic, les charges suggérées sont fixées à 80 % du 1RM courant (zone 5 reps).',
   citation: 'Mark Rippetoe — Starting Strength (3rd ed, 2011)',
-  weeks: makeStartingStrengthWeeks(),
+  weeks: /* @__PURE__ */ makeStartingStrengthWeeks(),
 };
 
 function makeStartingStrengthWeeks(): ProgramWeekSpec[] {
@@ -276,7 +276,7 @@ const GZCLP: ProgramCatalogEntry = {
   description:
     'Hybride force/hypertrophie. T1 (gros lifts, 5×3 lourd), T2 (3×10 modéré), T3 (3×15 léger). Progression : +5 kg lower / +2.5 kg upper si tous les sets passent ; descente progressive sinon.',
   citation: 'Cody Lefever — GZCLP (/r/weightroom, 2013)',
-  weeks: makeGzclpWeeks(),
+  weeks: /* @__PURE__ */ makeGzclpWeeks(),
 };
 
 function makeGzclpWeeks(): ProgramWeekSpec[] {
@@ -324,7 +324,7 @@ const MADCOW: ProgramCatalogEntry = {
   description:
     'Variante intermédiaire de la méthode Bill Starr : 3 séances/sem, ramp-up à 5×5 lourd lundi, light mercredi, médium vendredi avec PR optionnel. Progression : +2.5 kg/sem.',
   citation: 'Bill Starr — Strongest Shall Survive (1976) / Glenn Pendlay (madcow.com)',
-  weeks: makeMadcowWeeks(),
+  weeks: /* @__PURE__ */ makeMadcowWeeks(),
 };
 
 function makeMadcowWeeks(): ProgramWeekSpec[] {
@@ -394,7 +394,7 @@ const NSUNS: ProgramCatalogEntry = {
   description:
     'Adaptation Reddit du 5/3/1 avec plus de volume : 9 sets sur le main lift. Top set AMRAP. Progression : +2.5 kg upper / +5 kg lower par semaine si AMRAP ≥ reps cible.',
   citation: 'reddit.com/r/nSuns — adapté de Wendler 5/3/1',
-  weeks: makeNsunsWeeks(),
+  weeks: /* @__PURE__ */ makeNsunsWeeks(),
 };
 
 function makeNsunsWeeks(): ProgramWeekSpec[] {

@@ -7,6 +7,7 @@ import Alpine from 'alpinejs';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from './deps';
 import { ric } from './lib/performance';
+import { loadPageComponents } from './page-components';
 import {
   type NavDirection,
   navDirection,
@@ -18,15 +19,17 @@ import {
 } from './lib/nav-motion';
 
 /**
- * Templates HTML chargés à la demande : un chunk par page au lieu de tout
- * embarquer dans le bundle principal (qui dépassait le budget de 350 KiB).
- * `prefetchPages()` les précharge ensuite en tâche de fond pour que le service
- * worker les mette en cache → toutes les pages restent disponibles hors-ligne.
+ * Templates HTML chargés à la demande : au build, chacun devient un fichier
+ * statique (static/assets/<page>-<hash>.txt, hors budget JS) téléchargé au
+ * premier affichage ; le JS de la page (page-components.ts) arrive en parallèle.
+ * `prefetchPages()` précharge ensuite gabarits et composants en tâche de fond pour
+ * que le service worker les mette en cache → toutes les pages restent
+ * disponibles hors-ligne.
  */
 const PAGE_LOADERS = import.meta.glob('./pages/*.html', {
   query: '?raw',
   import: 'default',
-}) as Record<string, () => Promise<string>>;
+}) as Record<string, () => Promise<string | (() => Promise<string>)>>;
 
 type RouteKey =
   | '/'
@@ -109,12 +112,30 @@ const LOAD_ERROR_HTML = `
     </div>
   </div>`;
 
+/** Enregistre un composant de page chargé à la demande (page-components.ts). */
+function registerComponent(name: string, factory: (...args: never[]) => unknown): void {
+  Alpine.data(name, factory as never);
+}
+
+/**
+ * Gabarit d'une page : chaîne en dev ; au build, fonction qui le télécharge
+ * (fichier statique, cf. compactPageHtml dans vite.config.ts).
+ */
+async function readTemplate(template: string | (() => Promise<string>)): Promise<string> {
+  return typeof template === 'function' ? template() : template;
+}
+
 async function resolveHtml(path: string): Promise<string> {
   const file = ROUTES[path as RouteKey];
   const load = file ? PAGE_LOADERS[file] : undefined;
-  if (!load) return NOT_FOUND_HTML;
+  if (!file || !load) return NOT_FOUND_HTML;
   try {
-    return await load();
+    // Gabarit et composants Alpine de la page en parallèle : aucun aller-retour de plus.
+    const [html] = await Promise.all([
+      load().then(readTemplate),
+      loadPageComponents(file, registerComponent),
+    ]);
+    return html;
   } catch (err) {
     console.error('[router] page template load failed:', path, err);
     return LOAD_ERROR_HTML;
@@ -129,7 +150,12 @@ export function prefetchPages(): void {
   prefetched = true;
   ric(
     () => {
-      for (const load of Object.values(PAGE_LOADERS)) void load().catch(() => undefined);
+      for (const [file, load] of Object.entries(PAGE_LOADERS)) {
+        void load()
+          .then(readTemplate)
+          .catch(() => undefined);
+        void loadPageComponents(file, registerComponent).catch(() => undefined);
+      }
     },
     { timeout: 10_000 },
   );

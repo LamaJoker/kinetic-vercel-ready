@@ -137,6 +137,11 @@ test.describe('A11y — Smoke (axe-core)', () => {
     // reprend parfois depuis l'élément précédemment focalisé (#app-outlet) au lieu
     // du début du document. On test directement la capacité du skip-link à être
     // focalisé et à devenir visible, sans dépendre de l'ordre de tabulation.
+    // Pages chargées à la demande : attendre que le routeur ait posé son focus
+    // (#app-outlet, en tâche de fond) pour qu'il ne reprenne pas celui du lien.
+    await page
+      .waitForFunction(() => document.activeElement?.id === 'app-outlet', null, { timeout: 3_000 })
+      .catch(() => undefined);
     const skipLink = page.locator('a[href="#app-outlet"]');
     await skipLink.focus();
     // Après focus, sr-only → focus:not-sr-only le rend visible

@@ -36,6 +36,8 @@ export function suggestNextWeightKg(args: {
 }
 
 export function estimateE1rmKg(weightKg: number, reps: number): number {
+  // 0 rep : série chronométrée ou de distance (gainage, farmer walk), sans e1RM.
+  if (!(reps >= 1)) return 0;
   const w = clampWeightKg(weightKg);
   const r = Math.max(1, Math.min(20, Math.floor(reps)));
   // Epley formula

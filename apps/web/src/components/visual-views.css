@@ -1,0 +1,246 @@
+/* Calendrier du mois et carte des muscles. Chargé avec leurs composants
+   (import dynamique) : rien au démarrage. Toutes les couleurs lisent la
+   palette (styles.css) : sombre et clair. */
+
+:root {
+  /* Corail fixe : « beaucoup » sur la carte et séances Push, quel que soit le
+     thème d'accent choisi. */
+  --k-hot: 255 122 102;
+}
+[data-mode='light'] {
+  --k-hot: 236 94 72;
+}
+
+/* ─── Carte des muscles ─── */
+.k-mm-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-mm-base {
+  fill: rgb(var(--k-fill) / 0.2);
+}
+.k-mm {
+  fill: rgb(var(--k-fill) / 0.32);
+  cursor: pointer;
+  transition:
+    fill 240ms ease,
+    opacity 240ms ease;
+}
+.k-mm-l1 {
+  fill: rgb(var(--k-success) / 0.42);
+}
+.k-mm-l2 {
+  fill: rgb(var(--k-success));
+}
+.k-mm-l3 {
+  fill: rgb(var(--k-warning));
+}
+.k-mm-l4 {
+  fill: rgb(var(--k-hot));
+}
+.k-mm-on {
+  stroke: rgb(var(--tx-rgb));
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+.k-mm-caption {
+  fill: rgb(var(--tx2-rgb));
+}
+[data-mode='light'] .k-mm-base {
+  fill: rgb(var(--k-fill) / 0.16);
+}
+/* Mode clair : seule la piste neutre (palier 0) s'éclaircit ; les paliers
+   colorés gardent leur règle (même spécificité, sinon ils seraient écrasés). */
+[data-mode='light'] .k-mm.k-mm-l0 {
+  fill: rgb(var(--k-fill) / 0.26);
+}
+[data-mode='light'] .k-mm.k-mm-l1 {
+  fill: rgb(var(--k-success) / 0.4);
+}
+
+/* Pastille de légende et barres de la liste (même échelle que la silhouette). */
+.k-mm-key {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 0.25rem;
+  flex-shrink: 0;
+  background: rgb(var(--k-fill) / 0.32);
+}
+.k-mm-bar {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 300ms ease;
+}
+.k-mm-key.k-mm-l1,
+.k-mm-bar.k-mm-l1 {
+  background: rgb(var(--k-success) / 0.42);
+}
+.k-mm-key.k-mm-l2,
+.k-mm-bar.k-mm-l2 {
+  background: rgb(var(--k-success));
+}
+.k-mm-key.k-mm-l3,
+.k-mm-bar.k-mm-l3 {
+  background: rgb(var(--k-warning));
+}
+.k-mm-key.k-mm-l4,
+.k-mm-bar.k-mm-l4 {
+  background: rgb(var(--k-hot));
+}
+.k-mm-track {
+  height: 0.5rem;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: rgb(var(--k-fill) / 0.18);
+}
+.k-mm-box {
+  max-width: 22rem;
+  margin: 0 auto;
+}
+.k-mm-box-sm {
+  max-width: 9.5rem;
+}
+
+/* ─── Calendrier ─── */
+.k-kind-push {
+  --kc: var(--k-hot);
+}
+.k-kind-pull {
+  --kc: var(--k-info);
+}
+.k-kind-legs {
+  --kc: var(--k-success);
+}
+.k-kind-full {
+  --kc: var(--k-warning);
+}
+.k-kind-upper {
+  --kc: var(--k-info);
+}
+.k-kind-other {
+  --kc: var(--k-fill);
+}
+
+.k-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+  touch-action: pan-y;
+}
+.k-cal-dow {
+  text-align: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgb(var(--tx2-rgb));
+  padding-bottom: 0.25rem;
+}
+.k-cal-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  min-height: 2.5rem;
+  border-radius: 0.875rem;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--tx);
+  transition:
+    background-color 180ms ease,
+    transform 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-cal-day:active {
+  transform: scale(0.94);
+}
+.k-cal-out {
+  color: rgb(var(--tx2-rgb) / 0.45);
+}
+.k-cal-future {
+  color: rgb(var(--tx2-rgb) / 0.75);
+}
+.k-cal-on {
+  font-weight: 700;
+  background: rgb(var(--kc) / 0.2);
+}
+/* Haut du corps (push + pull) : moitié corail, moitié violet. */
+.k-cal-on.k-kind-upper {
+  background: linear-gradient(135deg, rgb(var(--k-hot) / 0.22) 50%, rgb(var(--k-info) / 0.22) 50%);
+}
+.k-cal-today {
+  box-shadow: inset 0 0 0 2px rgb(var(--kinetic-neon));
+}
+.k-cal-sel {
+  background: rgb(var(--tx-rgb) / 0.12);
+}
+.k-cal-on.k-cal-sel {
+  background: rgb(var(--kc) / 0.42);
+}
+.k-cal-on.k-kind-upper.k-cal-sel {
+  background: linear-gradient(135deg, rgb(var(--k-hot) / 0.45) 50%, rgb(var(--k-info) / 0.45) 50%);
+}
+.k-cal-dots {
+  position: absolute;
+  bottom: 0.3rem;
+  display: flex;
+  gap: 2px;
+}
+.k-cal-dot {
+  width: 0.3125rem;
+  height: 0.3125rem;
+  border-radius: 9999px;
+  background: rgb(var(--kc));
+}
+.k-cal-dot.k-kind-upper {
+  background: linear-gradient(90deg, rgb(var(--k-hot)) 50%, rgb(var(--k-info)) 50%);
+}
+/* Pastille de type (légende, détail du jour). */
+.k-kind-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: rgb(var(--tx2-rgb));
+}
+.k-kind-chip::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: rgb(var(--kc));
+}
+.k-kind-chip.k-kind-upper::before {
+  background: linear-gradient(90deg, rgb(var(--k-hot)) 50%, rgb(var(--k-info)) 50%);
+}
+/* Bascule de mois : léger glissé dans le sens de la navigation. */
+@keyframes k-cal-in-next {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+@keyframes k-cal-in-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+.k-cal-anim-next {
+  animation: k-cal-in-next 220ms var(--k-ease, ease) both;
+}
+.k-cal-anim-prev {
+  animation: k-cal-in-prev 220ms var(--k-ease, ease) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-cal-anim-next,
+  .k-cal-anim-prev {
+    animation: none;
+  }
+}

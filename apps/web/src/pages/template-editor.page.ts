@@ -17,7 +17,15 @@ import {
   upsertById,
   validateCustomExercise,
   validateTemplateDraft,
+  canLinkWithNext,
+  exerciseMeasure,
+  linkWithNext,
+  normalizeSupersets,
+  supersetLabel,
+  unlinkSuperset,
+  MEASURE_OPTIONS,
   type ExerciseEquipment,
+  type ExerciseMeasure,
   type TemplateLine,
 } from '@kinetic/core';
 import { getDeps } from '../deps';
@@ -50,6 +58,7 @@ function blankForm() {
     muscles: [] as string[],
     equipment: 'other' as ExerciseEquipment,
     incrementKg: 2.5,
+    measure: 'reps' as ExerciseMeasure,
   };
 }
 
@@ -74,6 +83,7 @@ export function templateEditor() {
     muscleOptions: MUSCLE_OPTIONS,
     equipmentOptions: EQUIPMENT_OPTIONS,
     incrementOptions: [0.5, 1, 1.25, 2, 2.5, 5],
+    measureOptions: MEASURE_OPTIONS,
 
     async init(): Promise<void> {
       try {
@@ -95,7 +105,7 @@ export function templateEditor() {
           if (t) {
             this.templateId = t.id;
             this.name = t.name;
-            this.lines = t.exercises.map((e) => clampTemplateLine({ ...e }));
+            this.lines = normalizeSupersets(t.exercises.map((e) => clampTemplateLine({ ...e })));
           }
           this.picking = this.lines.length === 0;
         }
@@ -146,13 +156,38 @@ export function templateEditor() {
       this.error = '';
     },
     removeLine(i: number): void {
-      this.lines = this.lines.filter((_, j) => j !== i);
+      this.lines = normalizeSupersets(this.lines.filter((_, j) => j !== i));
     },
     moveUp(i: number): void {
-      this.lines = moveItem(this.lines, i, -1);
+      this.lines = normalizeSupersets(moveItem(this.lines, i, -1));
     },
     moveDown(i: number): void {
-      this.lines = moveItem(this.lines, i, 1);
+      this.lines = normalizeSupersets(moveItem(this.lines, i, 1));
+    },
+
+    // ─── Supersets (2 ou 3 lignes consécutives) ─────────────────
+    /** « A1 », « A2 »… ; vide hors superset. */
+    lineTag(i: number): string {
+      const line = this.lines[i];
+      return line ? supersetLabel(this.lines, line.exerciseId) : '';
+    },
+    /** La ligne et la suivante sont dans le même superset. */
+    linkedWithNext(i: number): boolean {
+      const a = this.lines[i];
+      const b = this.lines[i + 1];
+      return !!a?.group && a.group === b?.group && !!this.lineTag(i) && !!this.lineTag(i + 1);
+    },
+    canLink(i: number): boolean {
+      return canLinkWithNext(this.lines, i);
+    },
+    linkNext(i: number): void {
+      this.lines = linkWithNext(this.lines, i);
+    },
+    unlinkAt(i: number): void {
+      this.lines = unlinkSuperset(this.lines, i);
+    },
+    lineCardClass(i: number): string {
+      return this.lineTag(i) ? 'k-card ring-1 ring-inset ring-kinetic-purple/40' : 'k-card';
     },
     step(i: number, field: LineField, delta: number): void {
       const line = this.lines[i];
@@ -181,7 +216,7 @@ export function templateEditor() {
           id: previous?.id ?? `tpl_${Date.now().toString(36)}`,
           name: cleanLabel(this.name),
           createdAt: previous?.createdAt ?? new Date().toISOString(),
-          exercises: this.lines.map((l) => clampTemplateLine(l)),
+          exercises: normalizeSupersets(this.lines.map((l) => clampTemplateLine(l))),
         };
         await saveTemplates(deps.storage, upsertById(current, template));
         notify('success', previous ? 'Modèle mis à jour.' : 'Modèle créé.');
@@ -219,11 +254,15 @@ export function templateEditor() {
         .map((m) => MUSCLE_OPTIONS.find((o) => o.key === m)?.label ?? m)
         .join(', ');
       const eq = EQUIPMENT_OPTIONS.find((o) => o.key === ex.equipment)?.label ?? '';
-      return [muscles, eq, ex.hidden ? 'masqué' : ''].filter(Boolean).join(' · ');
+      const m = exerciseMeasure(ex);
+      const measure = m === 'reps' ? '' : (MEASURE_OPTIONS.find((o) => o.key === m)?.label ?? '');
+      return [muscles, eq, measure, ex.hidden ? 'masqué' : ''].filter(Boolean).join(' · ');
     },
     newExercise(): void {
       this.backView = this.view;
-      this.form = { ...blankForm(), name: this.view === 'template' ? cleanLabel(this.query) : '' };
+      const name = this.view === 'template' ? cleanLabel(this.query) : '';
+      // Mesure proposée d'après le nom (« Gainage » → durée), modifiable.
+      this.form = { ...blankForm(), name, measure: exerciseMeasure({ id: '', name }) };
       this.formError = '';
       this.view = 'exercise';
     },
@@ -237,6 +276,7 @@ export function templateEditor() {
         muscles: [...ex.muscles],
         equipment: ex.equipment,
         incrementKg: ex.incrementKg,
+        measure: exerciseMeasure(ex),
       };
       this.formError = '';
       this.view = 'exercise';
@@ -256,6 +296,12 @@ export function templateEditor() {
     },
     isEquipment(key: string): boolean {
       return this.form.equipment === key;
+    },
+    isMeasure(key: string): boolean {
+      return this.form.measure === key;
+    },
+    setMeasure(key: ExerciseMeasure): void {
+      this.form.measure = key;
     },
     isIncrement(kg: number): boolean {
       return this.form.incrementKg === kg;
@@ -288,6 +334,8 @@ export function templateEditor() {
           ),
         custom: true,
       };
+      // Revenir à « Reps × charge » efface la mesure enregistrée auparavant.
+      if (!input.measure) exercise.measure = 'reps';
       await this.writeCustoms(upsertById(this.customs, exercise));
       if (this.backView === 'template') {
         this.addLine(exercise.id);

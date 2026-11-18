@@ -497,6 +497,24 @@
         musculaire).
       </p>
     </div>
+    <label class="flex items-center gap-3 cursor-pointer select-none" x-show="wakeLockAvailable">
+      <span class="flex-1 min-w-0">
+        <span class="block text-sm font-semibold text-white">Garder l'écran allumé en séance</span>
+        <span class="block text-xs text-gray-500"
+          >Pendant une séance en cours, l'écran ne se met pas en veille</span
+        >
+      </span>
+      <input
+        type="checkbox"
+        class="peer sr-only"
+        :checked="wakeLockOn"
+        @change="toggleWakeLock()"
+      />
+      <span
+        aria-hidden="true"
+        class="relative flex-shrink-0 w-[51px] h-[31px] rounded-full bg-kinetic-raised transition-colors duration-200 peer-checked:bg-kinetic-teal peer-focus-visible:ring-2 peer-focus-visible:ring-kinetic-neon after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:w-[27px] after:h-[27px] after:rounded-full after:bg-white after:shadow-md after:transition-transform after:duration-200 peer-checked:after:translate-x-5"
+      ></span>
+    </label>
     <label class="flex items-center gap-3 cursor-pointer select-none" x-show="nativeApp">
       <span class="flex-1 min-w-0">
         <span class="block text-sm font-semibold text-white">Vibrations</span>

@@ -19,6 +19,7 @@ import {
 import type { Exercise, WorkoutSession } from '../lib/training/types';
 import { loadExercises, loadSessions } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
+import { loadMuscleMap } from '../lib/lazy-component';
 
 type Tab = 'force' | 'volume' | 'muscles' | 'records' | 'heatmap';
 
@@ -29,6 +30,8 @@ export function progression() {
     sessions: [] as WorkoutSession[],
     exercises: [] as Exercise[],
     selectedExerciseId: '',
+    /** Carte des muscles chargée (import() au premier affichage de l'onglet). */
+    muscleMapReady: false,
     // M1 FIX: cache pour éviter de recalculer O(sessions×sets) à chaque getter Alpine
     _cachedSets: null as AnalyticsSet[] | null,
     _sessionSavedHandler: null as ((e: Event) => void) | null,
@@ -36,6 +39,17 @@ export function progression() {
     async init(): Promise<void> {
       this.loading = true;
       this._cachedSets = null; // invalider le cache au rechargement
+      // Lien direct vers un onglet (« /progression?tab=muscles » depuis l'accueil).
+      const tab = new URLSearchParams(window.location?.search ?? '').get('tab');
+      if (
+        tab === 'force' ||
+        tab === 'volume' ||
+        tab === 'muscles' ||
+        tab === 'records' ||
+        tab === 'heatmap'
+      ) {
+        this.setTab(tab);
+      }
       try {
         const deps = await getDeps();
         this.exercises = await loadExercises(deps.storage);
@@ -76,6 +90,14 @@ export function progression() {
 
     setTab(t: Tab): void {
       this.activeTab = t;
+      if (t === 'muscles' && !this.muscleMapReady) {
+        loadMuscleMap().then(
+          () => {
+            this.muscleMapReady = true;
+          },
+          (err: unknown) => console.warn('[progression] carte des muscles indisponible :', err),
+        );
+      }
     },
 
     // ─── Projection : sessions → AnalyticsSet[] ──────────────

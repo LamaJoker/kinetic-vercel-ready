@@ -85,25 +85,7 @@ import { registerSvgDirective } from './lib/svg-directive';
 import { plural } from './lib/plural';
 import { num } from './lib/num';
 
-import { dashboard } from './pages/dashboard.page';
-import { seances } from './pages/seances.page';
-import { onboarding } from './pages/onboarding.page';
-import { progression } from './pages/progression.page';
-import { bodyweight } from './pages/bodyweight.page';
-import { mensurations } from './pages/mensurations.page';
-import { nutrition } from './pages/nutrition.page';
-import { program } from './pages/program.page';
-import { profile } from './pages/profile.page';
-import { records } from './pages/records.page';
-import { plates } from './pages/plates.page';
-import { achievements } from './pages/achievements.page';
-import { photosPage } from './pages/photos.page';
-import { programsPage } from './pages/programs.page';
-import { glossairePage } from './pages/glossaire.page';
-import { templateEditor } from './pages/template-editor.page';
-import { helpTip } from './components/help-tip';
 import { activeSessionBanner } from './components/active-session-banner';
-import { authCallback } from './pages/auth-callback.page';
 import { initPwaInstallPrompt, pwaInstallPrompt } from './lib/pwa-install';
 import { initTheme } from './lib/theme';
 import { initDisplayDensity } from './lib/display-mode';
@@ -120,7 +102,6 @@ import { syncWeeklyRecap, syncSessionReminder, syncBackupReminder } from './lib/
 import { localIsoDate } from './lib/widget';
 import { autoCompactOnStartup } from './lib/storage-maintenance';
 import { runMigrationsIfNeeded } from './lib/migrations';
-import { runAutoBackup } from './lib/auto-backup';
 import { initMobile } from './lib/mobile';
 import { initAnalytics } from './lib/analytics';
 import { celebration } from './lib/celebration';
@@ -155,26 +136,10 @@ Alpine.store('goals', goalsStore());
 Alpine.store('achievements', achievementsStore());
 
 // ─── Composants Alpine ───────────────────────────────────────
-Alpine.data('dashboard', dashboard);
-Alpine.data('seances', seances);
-Alpine.data('onboarding', onboarding);
-Alpine.data('progression', progression);
-Alpine.data('bodyweight', bodyweight);
-Alpine.data('nutrition', nutrition);
-Alpine.data('program', program);
-Alpine.data('profile', profile);
-Alpine.data('records', records);
-Alpine.data('plates', plates);
-Alpine.data('achievements', achievements);
-Alpine.data('photosPage', photosPage);
-Alpine.data('programsPage', programsPage);
-Alpine.data('glossairePage', glossairePage);
-Alpine.data('templateEditor', templateEditor);
-Alpine.data('helpTip', helpTip);
+// Seuls ceux du shell (index.html) sont ici. Ceux des pages sont chargés à la
+// demande avec leur gabarit (page-components.ts) : ne pas les importer ici.
 Alpine.data('activeSessionBanner', activeSessionBanner); // bandeau « Séance en cours » (index.html)
 Alpine.data('pwaInstallPrompt', pwaInstallPrompt);
-Alpine.data('authCallback', authCallback);
-Alpine.data('mensurations', mensurations);
 Alpine.data('celebration', celebration); // célébrations (record, niveau), monté dans index.html
 
 // ─── PWA install bus (capture beforeinstallprompt avant qu'Alpine init) ─────
@@ -183,6 +148,11 @@ initPwaInstallPrompt();
 // ─── Error reporter (best effort, throttlé 30 min) ──────────────────────────
 import('./lib/error-reporter')
   .then(({ initErrorReporter }) => initErrorReporter())
+  .catch(() => null);
+
+// ─── Écran allumé pendant une séance en cours (Wake Lock, silencieux si absent) ─
+import('./lib/wake-lock')
+  .then(({ initSessionWakeLock }) => initSessionWakeLock())
   .catch(() => null);
 
 // ─── Shell de la page (body x-data) ─────────────────────────────────────────
@@ -396,8 +366,9 @@ document.addEventListener('visibilitychange', () => {
 // Application native : sauvegarde automatique hebdomadaire dans Documents, au
 // démarrage et au retour au premier plan (sans effet sur le web).
 function autoBackup(): void {
-  void getDeps()
-    .then((deps) => runAutoBackup(deps.storage))
+  // Module chargé à part : inutile au premier écran (et sans effet sur le web).
+  void Promise.all([getDeps(), import('./lib/auto-backup')])
+    .then(([deps, { runAutoBackup }]) => runAutoBackup(deps.storage))
     .catch(() => undefined);
 }
 setTimeout(autoBackup, 4000);

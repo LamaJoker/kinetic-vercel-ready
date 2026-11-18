@@ -16,6 +16,7 @@ import { estimateE1rmKg } from '../lib/training/rpe';
 import { getThemeMode, setThemeMode, type ThemeMode } from '../lib/theme';
 import { getDisplayDensity, setDisplayDensity, type DisplayDensity } from '../lib/display-mode';
 import { hapticsEnabled, setHapticsEnabled, hapticTap } from '../lib/haptics';
+import { wakeLockEnabled, setWakeLockEnabled, wakeLockSupported } from '../lib/wake-lock';
 import {
   detectFormat,
   parseKineticJson,
@@ -186,6 +187,9 @@ export function profile() {
     density: 'simple' as DisplayDensity,
     /** Réglage « Vibrations » (app native seulement, voir lib/haptics.ts). */
     hapticsOn: true,
+    /** Réglage « Garder l'écran allumé en séance » (lib/wake-lock.ts). */
+    wakeLockOn: true,
+    wakeLockAvailable: false,
 
     setTheme(mode: ThemeMode): void {
       this.themeMode = mode;
@@ -198,6 +202,11 @@ export function profile() {
       const editing = draft !== this.displayName;
       await this.init();
       if (editing) this.displayNameInput = draft;
+    },
+
+    toggleWakeLock(): void {
+      this.wakeLockOn = !this.wakeLockOn;
+      setWakeLockEnabled(this.wakeLockOn);
     },
 
     toggleHaptics(): void {
@@ -326,6 +335,8 @@ export function profile() {
         this.themeMode = getThemeMode();
         this.density = getDisplayDensity();
         this.hapticsOn = hapticsEnabled();
+        this.wakeLockOn = wakeLockEnabled();
+        this.wakeLockAvailable = wakeLockSupported();
       } catch (err) {
         console.error('[profile] init failed:', err);
       }
@@ -526,6 +537,7 @@ export function profile() {
           for (const entry of s.entries) {
             for (const set of workSetsOf(entry.sets)) {
               const e1 = estimateE1rmKg(set.weightKg, set.reps);
+              if (!(e1 > 0)) continue; // série chronométrée / distance : pas de « meilleure charge »
               const prev = bestByEx.get(entry.exerciseId);
               if (!prev || e1 > prev.e1rmKg) {
                 bestByEx.set(entry.exerciseId, {

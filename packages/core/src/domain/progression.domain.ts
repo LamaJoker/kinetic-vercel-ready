@@ -72,6 +72,8 @@ function avg(xs: readonly number[]): number {
  *   Source : Epley (1985), validé par Brzycki (1993) pour la plage 1–10 reps.
  */
 export function e1rm(weightKg: number, reps: number): number {
+  // 0 rep : série chronométrée ou de distance (gainage, farmer walk), sans e1RM.
+  if (!(reps >= 1)) return 0;
   const r = Math.max(1, Math.min(20, Math.floor(reps)));
   return weightKg * (1 + r / 30);
 }
