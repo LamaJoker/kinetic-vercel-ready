@@ -78,6 +78,7 @@ alive = run("xcrun", "simctl", "spawn", UDID, "launchctl", "list")
 if BUNDLE not in alive:
     problems.append("l'application ne tourne plus à la fin du parcours (plantage ?)")
 
+print(f"parcours complet en {time.time() - t0:.0f} s", flush=True)
 print("PROBLÈMES:", json.dumps(problems, ensure_ascii=False), flush=True)
 with open(f"{OUT}/problems.json", "w") as fh:
     json.dump(problems, fh, ensure_ascii=False, indent=2)
