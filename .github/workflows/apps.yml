@@ -116,6 +116,11 @@ jobs:
   ios:
     name: Application iPhone (non signée)
     runs-on: macos-15
+    # Une seule tâche Mac à la fois : en parallèle, elles attendaient toutes une
+    # machine et GitHub les annulait au bout de 15 minutes.
+    concurrency:
+      group: macos-runner-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 
