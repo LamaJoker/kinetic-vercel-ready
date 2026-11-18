@@ -81,7 +81,7 @@
       x-transition
       role="status"
       aria-live="polite"
-      class="fixed bottom-20 inset-x-0 mx-auto max-w-sm px-4 z-50"
+      class="fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] inset-x-0 mx-auto max-w-sm px-4 z-50"
     >
       <div class="k-toast rounded-2xl px-4 py-3 flex items-center gap-3 text-sm">
         <span
@@ -107,18 +107,20 @@
     <nav
       x-show="$store.auth.isAuthenticated && !isChromeless()"
       aria-label="Navigation principale"
-      class="k-tabbar fixed bottom-0 inset-x-0 z-40 pt-1.5 pb-[calc(env(safe-area-inset-bottom)+0.375rem)]"
+      class="k-tabbar-dock fixed bottom-0 inset-x-0 z-40"
     >
-      <div class="max-w-md mx-auto flex items-stretch justify-around px-2">
+      <!-- Capsule flottante en verre ; la pastille glisse sous l'onglet actif -->
+      <div class="k-tabbar max-w-md mx-auto flex items-stretch">
+        <span class="k-tab-pill" aria-hidden="true" :style="tabPillStyle()"></span>
         <a
           href="/"
           :aria-current="currentPath === '/' ? 'page' : null"
-          class="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 rounded-xl"
+          class="k-tab flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 rounded-full"
         >
           <svg
             aria-hidden="true"
             focusable="false"
-            class="w-[26px] h-[26px] flex-shrink-0"
+            class="w-6 h-6 flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -135,12 +137,12 @@
         <a
           href="/seances"
           :aria-current="currentPath === '/seances' ? 'page' : null"
-          class="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 rounded-xl"
+          class="k-tab flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 rounded-full"
         >
           <svg
             aria-hidden="true"
             focusable="false"
-            class="w-[26px] h-[26px] flex-shrink-0"
+            class="w-6 h-6 flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -155,12 +157,12 @@
         <a
           href="/bodyweight"
           :aria-current="isBodyPage() ? 'page' : null"
-          class="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 rounded-xl"
+          class="k-tab flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 rounded-full"
         >
           <svg
             aria-hidden="true"
             focusable="false"
-            class="w-[26px] h-[26px] flex-shrink-0"
+            class="w-6 h-6 flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -177,12 +179,12 @@
         <a
           href="/vitalite"
           :aria-current="currentPath === '/vitalite' ? 'page' : null"
-          class="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 rounded-xl"
+          class="k-tab flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 rounded-full"
         >
           <svg
             aria-hidden="true"
             focusable="false"
-            class="w-[26px] h-[26px] flex-shrink-0"
+            class="w-6 h-6 flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -199,12 +201,12 @@
         <a
           href="/profile"
           :aria-current="currentPath === '/profile' ? 'page' : null"
-          class="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 rounded-xl"
+          class="k-tab flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 rounded-full"
         >
           <svg
             aria-hidden="true"
             focusable="false"
-            class="w-[26px] h-[26px] flex-shrink-0"
+            class="w-6 h-6 flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -251,7 +253,7 @@
       x-transition:leave="transition ease-in duration-200"
       x-transition:leave-start="opacity-100 translate-y-0"
       x-transition:leave-end="opacity-0 translate-y-4"
-      class="k-toast fixed bottom-24 left-4 right-4 max-w-md mx-auto z-40 rounded-3xl p-4"
+      class="k-toast fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-4 right-4 max-w-md mx-auto z-40 rounded-3xl p-4"
       style="display: none"
     >
       <div class="flex items-start gap-3">

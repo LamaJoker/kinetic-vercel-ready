@@ -11,6 +11,52 @@ interface BodyweightEntry {
   note: string | null;
 }
 
+/**
+ * Tracé lissé (interpolation cubique monotone, Fritsch–Carlson) : la courbe
+ * passe par chaque pesée sans jamais dépasser les valeurs réelles.
+ */
+export function smoothPath(coords: ReadonlyArray<readonly [number, number]>): string {
+  const n = coords.length;
+  if (n === 0) return '';
+  const f = (v: number) => v.toFixed(1);
+  if (n < 3) return coords.map(([x, y], i) => `${i ? 'L' : 'M'}${f(x)} ${f(y)}`).join(' ');
+  const d: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    const h = coords[i + 1]![0] - coords[i]![0];
+    d.push(h > 0 ? (coords[i + 1]![1] - coords[i]![1]) / h : 0);
+  }
+  const m: number[] = [d[0]!];
+  for (let i = 1; i < n - 1; i++) m.push(d[i - 1]! * d[i]! <= 0 ? 0 : (d[i - 1]! + d[i]!) / 2);
+  m.push(d[n - 2]!);
+  for (let i = 0; i < n - 1; i++) {
+    if (d[i] === 0) {
+      m[i] = 0;
+      m[i + 1] = 0;
+      continue;
+    }
+    const a = m[i]! / d[i]!;
+    const b = m[i + 1]! / d[i]!;
+    const s = a * a + b * b;
+    if (s > 9) {
+      const t = 3 / Math.sqrt(s);
+      m[i] = t * a * d[i]!;
+      m[i + 1] = t * b * d[i]!;
+    }
+  }
+  let path = `M${f(coords[0]![0])} ${f(coords[0]![1])}`;
+  for (let i = 0; i < n - 1; i++) {
+    const [x0, y0] = coords[i]!;
+    const [x1, y1] = coords[i + 1]!;
+    const h = x1 - x0;
+    if (h <= 0) {
+      path += ` L${f(x1)} ${f(y1)}`;
+      continue;
+    }
+    path += ` C${f(x0 + h / 3)} ${f(y0 + (m[i]! * h) / 3)} ${f(x1 - h / 3)} ${f(y1 - (m[i + 1]! * h) / 3)} ${f(x1)} ${f(y1)}`;
+  }
+  return path;
+}
+
 const STORAGE_KEY_ENTRIES = STORAGE_KEYS.BODYWEIGHT_ENTRIES;
 const STORAGE_KEY_GOAL = STORAGE_KEYS.BODYWEIGHT_GOAL;
 
@@ -69,6 +115,20 @@ export function bodyweight() {
       const start = this.entries[0]?.weight ?? this.latest.weight;
       if (Math.abs(this.goalWeight - start) < 0.01) return 100;
       return (Math.abs(this.latest.weight - start) / Math.abs(this.goalWeight - start)) * 100;
+    },
+
+    /** Anneau de l'objectif : `--p` borné à 0…100. */
+    get goalRingStyle(): string {
+      const p = Math.max(0, Math.min(100, Math.round(this.goalProgress || 0)));
+      return `--p: ${p}`;
+    },
+
+    /** Pastille d'évolution : fond teinté de la couleur de la variation. */
+    deltaChipClass(d: number | null | undefined): string {
+      const tone = this.toneClass(d);
+      if (tone === 'text-kinetic-teal') return 'bg-kinetic-teal/15 text-kinetic-teal';
+      if (tone === 'text-kinetic-electric') return 'bg-kinetic-electric/15 text-kinetic-electric';
+      return 'bg-kinetic-elevated text-gray-400';
     },
 
     /**
@@ -221,7 +281,7 @@ export function bodyweight() {
       const isLight =
         typeof document !== 'undefined' &&
         document.documentElement.getAttribute('data-mode') === 'light';
-      const areaTop = isLight ? '0.18' : '0.28';
+      const areaTop = isLight ? '0.2' : '0.3';
       const version = `${isLight ? 'l' : 'd'}:${pts.length}:${pts[0]?.date ?? ''}:${pts.at(-1)?.date ?? ''}:${pts.at(-1)?.weight ?? ''}:${this.goalWeight ?? ''}:${this.period}`;
       if (this._chartSvgVersion === version && this._chartSvgCache) return this._chartSvgCache;
 
@@ -254,9 +314,7 @@ export function bodyweight() {
       const fmtKg = (v: number) => (Number.isInteger(v) ? String(v) : loc(v.toFixed(1)));
 
       const coords = pts.map((e) => [sx(Date.parse(e.date)), sy(e.weight)] as const);
-      const linePath = coords
-        .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`)
-        .join(' ');
+      const linePath = smoothPath(coords);
       const areaPath =
         linePath +
         ` L${coords.at(-1)![0].toFixed(1)} ${plotB} L${coords[0]![0].toFixed(1)} ${plotB} Z`;
@@ -267,7 +325,7 @@ export function bodyweight() {
         .map((v) => {
           const y = sy(v).toFixed(1);
           return (
-            `<line x1="${plotL}" y1="${y}" x2="${plotR}" y2="${y}" class="text-gray-500" stroke="currentColor" stroke-opacity="0.22" stroke-width="1"/>` +
+            `<line x1="${plotL}" y1="${y}" x2="${plotR}" y2="${y}" class="text-gray-500" stroke="currentColor" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="2 5" stroke-linecap="round"/>` +
             `<text x="${W - 2}" y="${(+y + 4).toFixed(1)}" text-anchor="end" class="text-gray-500" fill="currentColor" font-size="11.5">${fmtKg(v)}</text>`
           );
         })
@@ -288,7 +346,7 @@ export function bodyweight() {
               .slice(0, -1)
               .map(
                 ([x, y]) =>
-                  `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" class="text-kinetic-neon/100" fill="currentColor"/>`,
+                  `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.75" class="text-kinetic-neon/100" fill="currentColor" fill-opacity="0.55"/>`,
               )
               .join('')
           : '';
@@ -301,16 +359,23 @@ export function bodyweight() {
         <defs>
           <linearGradient id="bw-area" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" class="text-kinetic-neon/100" stop-color="currentColor" stop-opacity="${areaTop}"/>
+            <stop offset="0.55" class="text-kinetic-neon/100" stop-color="currentColor" stop-opacity="${(+areaTop / 5).toFixed(2)}"/>
             <stop offset="1" class="text-kinetic-neon/100" stop-color="currentColor" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="bw-line" gradientUnits="userSpaceOnUse" x1="${plotL}" y1="0" x2="${plotR}" y2="0">
+            <stop offset="0" class="text-kinetic-neon/100" stop-color="currentColor" stop-opacity="0.55"/>
+            <stop offset="1" class="text-kinetic-neon/100" stop-color="currentColor" stop-opacity="1"/>
           </linearGradient>
         </defs>
         ${grid}
         ${goalLine}
         <path d="${areaPath}" fill="url(#bw-area)"/>
-        <path d="${linePath}" fill="none" class="text-kinetic-neon/100" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${linePath}" fill="none" class="text-kinetic-neon/100" stroke="currentColor" stroke-opacity="${isLight ? '0.12' : '0.22'}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${linePath}" fill="none" stroke="url(#bw-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         ${dots}
-        <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="5.5" class="text-kinetic-surface" fill="currentColor"/>
-        <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="4" class="text-kinetic-neon/100" fill="currentColor"/>
+        <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="8.5" class="text-kinetic-neon/100" fill="currentColor" fill-opacity="0.2"/>
+        <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="6" class="text-kinetic-surface" fill="currentColor"/>
+        <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="4.25" class="text-kinetic-neon/100" fill="currentColor"/>
         <text x="${plotL}" y="${H - 6}" class="text-gray-500" fill="currentColor" font-size="11.5">${startLabel}</text>
         <text x="${plotR}" y="${H - 6}" text-anchor="end" class="text-gray-500" fill="currentColor" font-size="11.5">${endLabel}</text>
       </svg>`;

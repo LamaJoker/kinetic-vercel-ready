@@ -41,8 +41,9 @@ def shot(name):
 docs = os.path.join(run("xcrun", "simctl", "get_app_container", UDID, BUNDLE, "data", check=True).strip(), "Documents")
 os.makedirs(docs, exist_ok=True)
 step_file = os.path.join(docs, "kinetic-autotest-step.json")
+ack_file = os.path.join(docs, "kinetic-autotest-ack.json")
 with open(os.path.join(docs, "kinetic-autotest.json"), "w") as fh:
-    json.dump({"demo": True, "routes": ROUTES, "stepMs": 3000}, fh)
+    json.dump({"demo": True, "routes": ROUTES, "stepMs": 1500}, fh)
 
 t0 = time.time()
 run("xcrun", "simctl", "launch", UDID, BUNDLE, check=True)
@@ -50,7 +51,7 @@ time.sleep(3)
 shot("00-demarrage-3s")
 
 seen = 0
-deadline = time.time() + 240
+deadline = time.time() + 420
 while time.time() < deadline:
     try:
         with open(step_file) as fh:
@@ -66,6 +67,8 @@ while time.time() < deadline:
         time.sleep(0.8)
         name = step["route"].strip("/") or "accueil"
         shot(f"{seen:02d}-{name}")
+        with open(ack_file, "w") as fh:
+            json.dump({"step": seen}, fh)
     time.sleep(0.3)
 else:
     problems.append(f"parcours incomplet : dernière étape {seen}/{len(ROUTES)}")

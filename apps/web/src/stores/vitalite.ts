@@ -624,6 +624,19 @@ export function vitaliteStore() {
       return `+${task.xp} XP · Priorité ${PRIORITY_LABEL[task.priority as keyof typeof PRIORITY_LABEL] ?? ''}`;
     },
 
+    /** Pastille de priorité : rouge (haute), jaune (moyenne), vert (faible). */
+    priorityDot(task: Task): string {
+      if (task.done) return 'bg-gray-700';
+      if (task.priority === 'high') return 'bg-kinetic-coral';
+      if (task.priority === 'med') return 'bg-kinetic-gold';
+      return 'bg-kinetic-teal';
+    },
+
+    /** Style de l'anneau héros (variable CSS --p lue par .k-ring-value). */
+    get ringStyle(): string {
+      return `--p: ${this.progress}`;
+    },
+
     /** Lit Health Connect et valide les tâches pas / sommeil quand l'objectif est atteint. */
     async syncHealth(): Promise<void> {
       const { steps, sleepMinutes } = await readHealthToday();

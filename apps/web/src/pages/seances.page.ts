@@ -183,6 +183,54 @@ function defaultSessionName(): string {
   return `Séance libre (${label})`;
 }
 
+/** Pourcentage borné 0–100 (anneaux de progression). */
+export function ringPct(part: number, total: number): number {
+  if (!Number.isFinite(part) || !Number.isFinite(total) || total <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.round((part / total) * 100)));
+}
+
+/**
+ * Tonnage découpé en valeur + unité : 840 → « 840 » kg, 12 400 → « 12,4 » t.
+ * `tonnesFrom` : seuil (kg) à partir duquel on passe en tonnes.
+ */
+export function volumeParts(kg: number, tonnesFrom = 10000): { value: string; unit: 'kg' | 't' } {
+  const v = Number.isFinite(kg) ? Math.max(0, kg) : 0;
+  if (v >= tonnesFrom) {
+    return { value: (v / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 }), unit: 't' };
+  }
+  return { value: Math.round(v).toLocaleString('fr-FR'), unit: 'kg' };
+}
+
+/** Tonnage (Σ charge × reps) d'une liste d'exercices. */
+export function entriesTonnageKg(
+  entries: ReadonlyArray<{ sets: ReadonlyArray<{ weightKg: number; reps: number }> }>,
+): number {
+  return entries.reduce(
+    (acc, e) => acc + e.sets.reduce((a, s) => a + (s.weightKg || 0) * (s.reps || 0), 0),
+    0,
+  );
+}
+
+/** Bilan des 7 derniers jours : nombre de séances, minutes, tonnage. */
+export function recentStatsOf(
+  sessions: ReadonlyArray<WorkoutSession>,
+  nowMs: number,
+  days = 7,
+): { count: number; minutes: number; volume: { value: string; unit: 'kg' | 't' } } {
+  const from = nowMs - days * 86_400_000;
+  let count = 0;
+  let minutes = 0;
+  let kg = 0;
+  for (const s of sessions) {
+    const t = Date.parse(s.startedAt);
+    if (!Number.isFinite(t) || t < from || t > nowMs) continue;
+    count += 1;
+    minutes += Number(s.durationMin) || 0;
+    kg += entriesTonnageKg(s.entries);
+  }
+  return { count, minutes: Math.round(minutes), volume: volumeParts(kg, 1000) };
+}
+
 export function seances() {
   return {
     loading: false,
@@ -212,6 +260,8 @@ export function seances() {
     tickHandle: null as number | null,
     restEndsAtMs: 0,
     restPresetSec: 90,
+    /** Durée totale du repos en cours (s), pour l'anneau. Suit les +15 s. */
+    restTotalSec: 90,
     fullscreenRest: false,
     _restNotifTimer: null as ReturnType<typeof setTimeout> | null,
 
@@ -359,14 +409,33 @@ export function seances() {
 
     /** Tonnage de la séance en cours : « 840 kg » ou « 12,4 t ». */
     sessionVolumeLabel(): string {
-      const kg = this.currentEntries.reduce(
-        (acc, e) => acc + e.sets.reduce((a, s) => a + s.weightKg * s.reps, 0),
-        0,
-      );
-      if (kg >= 10000) {
-        return `${(kg / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} t`;
-      }
-      return `${Math.round(kg).toLocaleString('fr-FR')} kg`;
+      const v = this.sessionVolumeParts();
+      return `${v.value} ${v.unit}`;
+    },
+
+    /** Tonnage de la séance en cours, valeur et unité séparées (grand chiffre). */
+    sessionVolumeParts(): { value: string; unit: 'kg' | 't' } {
+      return volumeParts(entriesTonnageKg(this.currentEntries));
+    },
+
+    /** Exercices entamés (au moins une série) dans la séance en cours. */
+    sessionStartedCount(): number {
+      return this.currentEntries.filter((e) => e.sets.length > 0).length;
+    },
+
+    /** Anneau de la séance : part des exercices entamés (style CSP « --p: N »). */
+    sessionRingStyle(): string {
+      return `--p: ${ringPct(this.sessionStartedCount(), this.currentEntries.length)}`;
+    },
+
+    /** Bilan des 7 derniers jours pour la carte héros de l'écran. */
+    recentStats(): { count: number; minutes: number; volume: { value: string; unit: 'kg' | 't' } } {
+      return recentStatsOf(this.sessions, this.nowMs);
+    },
+
+    /** Tonnage d'une séance de l'historique, valeur et unité séparées. */
+    sessionTonnage(session: WorkoutSession): { value: string; unit: 'kg' | 't' } {
+      return volumeParts(entriesTonnageKg(session.entries), 1000);
     },
 
     /** Exercices regroupés par groupe musculaire, dans l'ordre CATEGORY_ORDER. */
@@ -774,9 +843,20 @@ export function seances() {
       return { width: `${pct}%` };
     },
 
+    /** Anneau du repos : part restante, se vide jusqu'à zéro (style CSP « --p: N »). */
+    restRingStyle(): string {
+      return `--p: ${ringPct(this.restRemainingSec(), Math.max(1, this.restTotalSec))}`;
+    },
+
+    /** Dernières secondes du repos : l'anneau et le chiffre passent en couleur d'alerte. */
+    restEnding(): boolean {
+      return this.restRemainingSec() <= 5;
+    },
+
     startRest(): void {
       const sec = Math.max(15, Math.min(600, Math.floor(Number(this.restPresetSec)) || 90));
       this.restPresetSec = sec;
+      this.restTotalSec = sec;
       this.restEndsAtMs = this.nowMs + sec * 1000;
       this.fullscreenRest = true;
       hapticMedium();
@@ -828,6 +908,7 @@ export function seances() {
       const remaining = Math.max(0, Math.ceil((this.restEndsAtMs - this.nowMs) / 1000));
       const next = Math.max(5, Math.min(600, remaining + delta));
       this.restEndsAtMs = this.nowMs + next * 1000;
+      if (next > this.restTotalSec) this.restTotalSec = next;
       this._scheduleRestEndCallback(next);
       hapticLight();
     },
@@ -1142,6 +1223,18 @@ export function seances() {
     /** e1RM Epley pour un set donné. */
     setE1rm(weightKg: number, reps: number): number {
       return Math.round(estimateE1rmKg(weightKg, reps) * 10) / 10;
+    },
+
+    /** Jour du mois (« 14 ») pour la pastille de date de l'historique. */
+    dateDay(iso: string): string {
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? '' : String(d.getDate());
+    },
+
+    /** Mois abrégé (« nov. ») pour la pastille de date de l'historique. */
+    dateMonth(iso: string): string {
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('fr-FR', { month: 'short' });
     },
 
     /** Date au format long pour l'entête de détail. */

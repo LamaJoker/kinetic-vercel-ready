@@ -99,6 +99,23 @@ export function records() {
       return Math.round(Math.max(...this.records.map((r) => r.e1rmKg)));
     },
 
+    /** Médaillon d'un record : or pour le meilleur e1RM, accent si récent. */
+    medalClass(r: DisplayRecord): string {
+      if (this.records.length > 0 && Math.round(r.e1rmKg) === this.topE1rm) {
+        return 'bg-gradient-to-br from-kinetic-gold to-amber-500 text-gray-950';
+      }
+      if (r.isRecent)
+        return 'bg-gradient-to-br from-kinetic-neon to-kinetic-electric text-gray-950';
+      return 'bg-kinetic-neon/15 text-kinetic-neon';
+    },
+
+    /** Part du record dans le meilleur e1RM (0–100), pour la jauge de la carte. */
+    recordBarStyle(r: DisplayRecord): string {
+      const top = this.topE1rm;
+      const pct = top > 0 ? Math.max(4, Math.min(100, Math.round((r.e1rmKg / top) * 100))) : 0;
+      return `width: ${pct}%`;
+    },
+
     get recentCount(): number {
       return this.records.filter((r) => r.isRecent).length;
     },

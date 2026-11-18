@@ -3,25 +3,48 @@
   <div class="flex items-end justify-between gap-3 mb-5">
     <div class="min-w-0">
       <p
-        class="text-xs font-semibold uppercase tracking-wide text-gray-500"
+        class="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500"
         x-text="$num.loc(todayLabel)"
       ></p>
-      <h1 class="font-display font-bold text-white truncate" x-text="greeting"></h1>
+      <h1
+        class="font-display font-bold text-[2.125rem] leading-tight tracking-tight text-white truncate"
+        x-text="greeting"
+      ></h1>
     </div>
     <a
       href="/profile"
-      class="flex-shrink-0 mb-0.5 w-9 h-9 rounded-full bg-kinetic-surface flex items-center justify-center text-white font-semibold text-xs select-none active:bg-kinetic-elevated transition-colors"
-      x-text="$store.auth.initials"
-    ></a>
+      class="k-press flex-shrink-0 mb-1 w-10 h-10 rounded-full bg-gradient-to-br from-kinetic-neon to-kinetic-electric p-[2px] select-none"
+    >
+      <span
+        class="w-full h-full rounded-full bg-kinetic-surface flex items-center justify-center text-white font-semibold text-xs"
+        x-text="$store.auth.initials"
+      ></span>
+    </a>
   </div>
 
-  <!-- Séance du jour : l'action principale de l'app -->
+  <!-- Séance du jour : l'action principale de l'app (carte héros) -->
   <!-- Pas d'aria-labelledby : le titre vit dans un <template x-if> et n'existe
        pas pendant le chargement, ce que axe signale (aria-prohibited-attr). -->
-  <section class="rounded-2xl bg-kinetic-surface p-5 mb-3" aria-label="Séance du jour">
+  <section class="k-hero mb-3 pt-6" aria-label="Séance du jour">
+    <!-- Haltère décoratif en filigrane -->
+    <svg
+      class="absolute -right-6 -top-5 w-40 h-40 -rotate-12 text-white opacity-[0.06] pointer-events-none"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      stroke-width="1.6"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" />
+    </svg>
     <template x-if="training && training.next">
       <div>
-        <p class="text-xs font-semibold text-gray-500">
+        <p
+          class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.08em] text-kinetic-neon"
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-kinetic-neon" aria-hidden="true"></span>
           <span x-show="training.totalSessions === 0">Ta première séance</span>
           <span x-show="training.totalSessions > 0 && training.daysSinceLast === 0">
             Déjà entraîné aujourd'hui — prochaine séance
@@ -32,202 +55,314 @@
         </p>
         <h2
           id="today-session-title"
-          class="font-display font-bold text-2xl text-white mt-0.5"
+          class="font-display font-bold text-[2.25rem] leading-[1.1] tracking-tight text-white mt-2 break-words"
           x-text="training.next.name"
         ></h2>
-        <p class="text-sm text-gray-500 mt-0.5" x-text="$num.loc(nextDetail)"></p>
+        <p class="text-[0.9375rem] text-gray-400 mt-1" x-text="$num.loc(nextDetail)"></p>
 
         <button
           type="button"
           @click="startNextSession()"
-          class="mt-5 w-full h-[3.125rem] rounded-xl bg-kinetic-neon text-gray-950 font-semibold text-base active:scale-[0.98] active:brightness-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kinetic-neon"
+          class="k-btn-primary mt-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kinetic-neon"
         >
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path
+              d="M7 4.8v14.4a1 1 0 0 0 1.5.86l12-7.2a1 1 0 0 0 0-1.72l-12-7.2A1 1 0 0 0 7 4.8Z"
+            />
+          </svg>
           Commencer la séance
         </button>
         <a
           href="/seances"
-          class="block text-center text-sm font-medium text-kinetic-neon mt-1 py-2.5"
+          class="block text-center text-sm font-semibold text-kinetic-neon mt-1.5 -mb-2 py-2.5 active:opacity-60"
         >
           Choisir une autre séance
         </a>
-
-        <div class="mt-2 pt-4 border-t border-white/10">
-          <div class="flex items-baseline justify-between mb-3">
-            <p class="text-sm font-semibold text-white">Cette semaine</p>
-            <p class="text-xs text-gray-500 tabular-nums" x-text="$num.loc(weekDetail)"></p>
-          </div>
-          <ol class="grid grid-cols-7 gap-2" aria-label="Jours entraînés cette semaine">
-            <template x-for="day in training.week.days" :key="day.iso">
-              <li
-                class="aspect-square rounded-full flex items-center justify-center text-xs"
-                :class="weekDayClass(day)"
-                :aria-label="day.iso + (day.trained ? ' : entraîné' : '')"
-                x-text="$num.loc(day.label)"
-              ></li>
-            </template>
-          </ol>
-          <p
-            x-show="training.last"
-            class="text-xs text-gray-500 mt-3"
-            x-text="$num.loc('Dernière séance · ' + lastDetail)"
-          ></p>
-        </div>
       </div>
     </template>
 
     <template x-if="!training">
       <div class="animate-pulse" aria-hidden="true">
         <div class="h-3 w-24 bg-white/10 rounded"></div>
-        <div class="h-8 w-40 bg-white/10 rounded mt-3"></div>
-        <div class="h-12 w-full bg-white/10 rounded-xl mt-5"></div>
+        <div class="h-9 w-44 bg-white/10 rounded mt-3"></div>
+        <div class="h-4 w-32 bg-white/10 rounded mt-2"></div>
+        <div class="h-[3.125rem] w-full bg-white/10 rounded-[14px] mt-6"></div>
       </div>
     </template>
   </section>
 
-  <!-- Raccourcis -->
+  <!-- Cette semaine : anneaux façon Apple Fitness + jours -->
+  <template x-if="training">
+    <section class="k-card p-5 mb-3" aria-label="Cette semaine">
+      <h2 class="k-card-title mb-4">Cette semaine</h2>
+      <div class="flex items-center gap-5">
+        <div class="k-ring-box w-[7.75rem] h-[7.75rem]">
+          <svg class="k-ring" viewBox="0 0 36 36" aria-hidden="true">
+            <g class="text-kinetic-neon">
+              <circle class="k-ring-track" cx="18" cy="18" r="15.5" pathLength="100" />
+              <circle
+                class="k-ring-value"
+                cx="18"
+                cy="18"
+                r="15.5"
+                pathLength="100"
+                :style="weekRingStyle"
+              />
+            </g>
+            <g class="text-kinetic-teal">
+              <circle class="k-ring-track" cx="18" cy="18" r="11.5" pathLength="100" />
+              <circle
+                class="k-ring-value"
+                cx="18"
+                cy="18"
+                r="11.5"
+                pathLength="100"
+                :style="recoveryRingStyle"
+              />
+            </g>
+            <g class="text-kinetic-purple">
+              <circle class="k-ring-track" cx="18" cy="18" r="7.5" pathLength="100" />
+              <circle
+                class="k-ring-value"
+                cx="18"
+                cy="18"
+                r="7.5"
+                pathLength="100"
+                :style="xpRingStyle"
+              />
+            </g>
+          </svg>
+        </div>
+        <dl class="flex-1 min-w-0 space-y-2.5">
+          <div>
+            <dt class="text-xs font-semibold text-gray-400">Séances</dt>
+            <dd class="k-stat text-[1.625rem] text-kinetic-neon">
+              <span x-text="weekCount"></span><span class="k-unit" x-text="weekTargetLabel"></span>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-xs font-semibold text-gray-400">Récup du jour</dt>
+            <dd class="k-stat text-[1.625rem] text-kinetic-teal">
+              <span x-text="$store.vitalite.doneCount"></span
+              ><span class="k-unit" x-text="'/' + $store.vitalite.totalCount"></span>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-xs font-semibold text-gray-400">XP du niveau</dt>
+            <dd class="k-stat text-[1.625rem] text-kinetic-purple">
+              <span x-text="$store.xp.progressPercent"></span><span class="k-unit">%</span>
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="mt-5 pt-4 border-t border-white/10">
+        <ol class="grid grid-cols-7 gap-2" aria-label="Jours entraînés cette semaine">
+          <template x-for="day in training.week.days" :key="day.iso">
+            <li
+              class="aspect-square rounded-full flex items-center justify-center text-xs transition-colors"
+              :class="weekDayClass(day)"
+              :aria-label="day.iso + (day.trained ? ' : entraîné' : '')"
+              x-text="$num.loc(day.label)"
+            ></li>
+          </template>
+        </ol>
+        <p
+          x-show="training.last"
+          class="text-xs text-gray-500 mt-3.5"
+          x-text="$num.loc('Dernière séance · ' + lastDetail)"
+        ></p>
+      </div>
+    </section>
+  </template>
+
+  <!-- Série : deux tuiles -->
   <div class="grid grid-cols-2 gap-3 mb-3">
-    <a
-      href="/progression"
-      class="flex items-center gap-3 min-h-[3.75rem] px-3.5 py-3 bg-kinetic-surface rounded-2xl active:bg-kinetic-elevated transition-colors"
-    >
-      <svg
-        class="w-6 h-6 flex-shrink-0 text-kinetic-purple"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M3 17l6-6 4 4 8-8M14 7h7v7" />
-      </svg>
-      <span class="min-w-0">
+    <div class="k-card">
+      <div class="flex items-center gap-2">
         <span
-          class="block text-sm font-semibold text-white leading-tight line-clamp-2"
-          x-text="'Progression'"
-        ></span>
-      </span>
-    </a>
-    <a
-      href="/records"
-      class="flex items-center gap-3 min-h-[3.75rem] px-3.5 py-3 bg-kinetic-surface rounded-2xl active:bg-kinetic-elevated transition-colors"
-    >
-      <svg
-        class="w-6 h-6 flex-shrink-0 text-kinetic-purple"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path
-          d="M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4.5v1.5A3.5 3.5 0 0 0 8 11M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11M12 14v4M8.5 20h7"
-        />
-      </svg>
-      <span class="min-w-0">
-        <span
-          class="block text-sm font-semibold text-white leading-tight line-clamp-2"
-          x-text="'Records'"
-        ></span>
-      </span>
-    </a>
-    <a
-      href="/nutrition"
-      class="flex items-center gap-3 min-h-[3.75rem] px-3.5 py-3 bg-kinetic-surface rounded-2xl active:bg-kinetic-elevated transition-colors"
-    >
-      <svg
-        class="w-6 h-6 flex-shrink-0 text-kinetic-purple"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path
-          d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10ZM2 21c0-3 1.85-5.36 5.08-6"
-        />
-      </svg>
-      <span class="min-w-0">
-        <span class="block text-sm font-semibold text-white leading-tight line-clamp-2"
-          >Nutrition</span
+          class="w-7 h-7 rounded-full bg-kinetic-electric/15 text-kinetic-electric flex items-center justify-center flex-shrink-0"
+          aria-hidden="true"
         >
-      </span>
-    </a>
-    <a
-      href="/bodyweight"
-      class="flex items-center gap-3 min-h-[3.75rem] px-3.5 py-3 bg-kinetic-surface rounded-2xl active:bg-kinetic-elevated transition-colors"
-    >
-      <svg
-        class="w-6 h-6 flex-shrink-0 text-kinetic-purple"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12.6 2.2a.75.75 0 0 0-1.2.4c-.5 2.5-1.9 4-3.3 5.5C6.5 9.8 5 11.4 5 14.2A7 7 0 0 0 12 21a7 7 0 0 0 7-6.8c0-2.4-1-4.6-2.6-6.1a.75.75 0 0 0-1.25.45c-.15 1-.6 1.8-1.3 2.3.3-3-.6-6.2-2.25-8.65Z"
+            />
+          </svg>
+        </span>
+        <p class="text-xs font-semibold text-gray-400">Série en cours</p>
+      </div>
+      <p class="k-stat mt-3"><span x-text="streak"></span><span class="k-unit">jours</span></p>
+    </div>
+    <div class="k-card">
+      <div class="flex items-center gap-2">
+        <span
+          class="w-7 h-7 rounded-full bg-kinetic-gold/15 text-kinetic-gold flex items-center justify-center flex-shrink-0"
+          aria-hidden="true"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4.5v1.5A3.5 3.5 0 0 0 8 11M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11M12 14v4M8.5 20h7"
+            />
+          </svg>
+        </span>
+        <p class="text-xs font-semibold text-gray-400">Meilleure série</p>
+      </div>
+      <p class="k-stat mt-3">
+        <span x-text="$num.loc(bestStreak + '')"></span><span class="k-unit">jours</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- Raccourcis : tuiles avec icône dans une pastille colorée -->
+  <div class="grid grid-cols-3 gap-3 mb-3">
+    <a href="/progression" class="k-card k-press flex flex-col gap-3 p-3 min-h-[6.75rem]">
+      <span
+        class="w-10 h-10 rounded-[12px] bg-kinetic-purple/15 text-kinetic-purple flex items-center justify-center"
         aria-hidden="true"
       >
-        <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
-        <path d="M8.3 10a5.2 5.2 0 0 1 7.4 0" />
-        <path d="m12 8.8 1.4 2.9" />
-      </svg>
-      <span class="min-w-0">
-        <span
-          class="block text-sm font-semibold text-white leading-tight line-clamp-2"
-          x-text="'Poids'"
-        ></span>
+        <svg
+          class="w-[22px] h-[22px]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M3 17l6-6 4 4 8-8M14 7h7v7" />
+        </svg>
       </span>
+      <span
+        class="mt-auto block text-[0.8125rem] font-semibold text-white leading-tight line-clamp-2 break-words"
+        x-text="'Progression'"
+      ></span>
     </a>
-    <a
-      href="/plates"
-      class="flex items-center gap-3 min-h-[3.75rem] px-3.5 py-3 bg-kinetic-surface rounded-2xl active:bg-kinetic-elevated transition-colors"
-    >
-      <svg
-        class="w-6 h-6 flex-shrink-0 text-kinetic-purple"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+    <a href="/records" class="k-card k-press flex flex-col gap-3 p-3 min-h-[6.75rem]">
+      <span
+        class="w-10 h-10 rounded-[12px] bg-kinetic-gold/15 text-kinetic-gold flex items-center justify-center"
         aria-hidden="true"
       >
-        <circle cx="12" cy="12" r="8.5" />
-        <circle cx="12" cy="12" r="2.5" />
-        <path d="M12 3.5v2M12 18.5v2" />
-      </svg>
-      <span class="min-w-0">
-        <span
-          class="block text-sm font-semibold text-white leading-tight line-clamp-2"
-          x-text="'Chargement de barre'"
-        ></span>
+        <svg
+          class="w-[22px] h-[22px]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4.5v1.5A3.5 3.5 0 0 0 8 11M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11M12 14v4M8.5 20h7"
+          />
+        </svg>
       </span>
+      <span
+        class="mt-auto block text-[0.8125rem] font-semibold text-white leading-tight line-clamp-2 break-words"
+        x-text="'Records'"
+      ></span>
     </a>
-    <a
-      href="/achievements"
-      class="flex items-center gap-3 min-h-[3.75rem] px-3.5 py-3 bg-kinetic-surface rounded-2xl active:bg-kinetic-elevated transition-colors"
-    >
-      <svg
-        class="w-6 h-6 flex-shrink-0 text-kinetic-purple"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+    <a href="/nutrition" class="k-card k-press flex flex-col gap-3 p-3 min-h-[6.75rem]">
+      <span
+        class="w-10 h-10 rounded-[12px] bg-kinetic-teal/15 text-kinetic-teal flex items-center justify-center"
         aria-hidden="true"
       >
-        <circle cx="12" cy="9" r="5.5" />
-        <path d="m8.5 13.5-1.5 7 5-2.5 5 2.5-1.5-7" />
-      </svg>
-      <span class="min-w-0">
+        <svg
+          class="w-[22px] h-[22px]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10ZM2 21c0-3 1.85-5.36 5.08-6"
+          />
+        </svg>
+      </span>
+      <span
+        class="mt-auto block text-[0.8125rem] font-semibold text-white leading-tight line-clamp-2 break-words"
+        >Nutrition</span
+      >
+    </a>
+    <a href="/bodyweight" class="k-card k-press flex flex-col gap-3 p-3 min-h-[6.75rem]">
+      <span
+        class="w-10 h-10 rounded-[12px] bg-kinetic-coral/15 text-kinetic-coral flex items-center justify-center"
+        aria-hidden="true"
+      >
+        <svg
+          class="w-[22px] h-[22px]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+          <path d="M8.3 10a5.2 5.2 0 0 1 7.4 0" />
+          <path d="m12 8.8 1.4 2.9" />
+        </svg>
+      </span>
+      <span
+        class="mt-auto block text-[0.8125rem] font-semibold text-white leading-tight line-clamp-2 break-words"
+        x-text="'Poids'"
+      ></span>
+    </a>
+    <a href="/plates" class="k-card k-press flex flex-col gap-3 p-3 min-h-[6.75rem]">
+      <span
+        class="w-10 h-10 rounded-[12px] bg-white/10 text-white flex items-center justify-center"
+        aria-hidden="true"
+      >
+        <svg
+          class="w-[22px] h-[22px]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="12" r="8.5" />
+          <circle cx="12" cy="12" r="2.5" />
+          <path d="M12 3.5v2M12 18.5v2" />
+        </svg>
+      </span>
+      <span
+        class="mt-auto block text-[0.8125rem] font-semibold text-white leading-tight line-clamp-2 break-words"
+        x-text="'Chargement de barre'"
+      ></span>
+    </a>
+    <a href="/achievements" class="k-card k-press flex flex-col gap-3 p-3 min-h-[6.75rem]">
+      <span
+        class="w-10 h-10 rounded-[12px] bg-kinetic-neon/15 text-kinetic-neon flex items-center justify-center"
+        aria-hidden="true"
+      >
+        <svg
+          class="w-[22px] h-[22px]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="9" r="5.5" />
+          <path d="m8.5 13.5-1.5 7 5-2.5 5 2.5-1.5-7" />
+        </svg>
+      </span>
+      <span class="mt-auto min-w-0">
         <span
-          class="block text-sm font-semibold text-white leading-tight line-clamp-2"
+          class="block text-[0.8125rem] font-semibold text-white leading-tight line-clamp-2 break-words"
           x-text="'Succès'"
         ></span>
         <span class="block text-xs text-gray-500 truncate tabular-nums">
@@ -239,32 +374,23 @@
     </a>
   </div>
 
-  <!-- Série : deux tuiles -->
-  <div class="grid grid-cols-2 gap-3 mb-3">
-    <div class="bg-kinetic-surface rounded-2xl p-4">
-      <p class="text-xs font-semibold text-gray-500">Série en cours</p>
-      <p class="mt-2 text-3xl font-display font-bold text-white leading-none">
-        <span x-text="streak"></span>
-        <span class="text-sm font-sans font-medium text-gray-500">jours</span>
-      </p>
-    </div>
-    <div class="bg-kinetic-surface rounded-2xl p-4">
-      <p class="text-xs font-semibold text-gray-500">Meilleure série</p>
-      <p class="mt-2 text-3xl font-display font-bold text-white leading-none">
-        <span x-text="$num.loc(bestStreak + '')"></span>
-        <span class="text-sm font-sans font-medium text-gray-500">jours</span>
-      </p>
-    </div>
-  </div>
-
   <!-- Routine récupération -->
-  <a
-    href="/vitalite"
-    class="block bg-kinetic-surface rounded-2xl p-4 mb-3 active:bg-kinetic-elevated transition-colors"
-  >
+  <a href="/vitalite" class="k-card k-press block mb-3">
     <div class="flex items-center justify-between gap-3 mb-3">
-      <h2 class="k-card-title">Récupération</h2>
-      <span class="flex items-center gap-2 text-sm text-gray-500 tabular-nums">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span
+          class="w-8 h-8 rounded-[10px] bg-kinetic-teal/15 text-kinetic-teal flex items-center justify-center flex-shrink-0"
+          aria-hidden="true"
+        >
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 20.6c-.2 0-.4-.07-.56-.2C6.2 16.1 3 13.3 3 9.4 3 6.9 4.9 5 7.3 5c1.9 0 3.2 1 4.7 2.7C13.5 6 14.8 5 16.7 5 19.1 5 21 6.9 21 9.4c0 3.9-3.2 6.7-8.44 11a.9.9 0 0 1-.56.2Z"
+            />
+          </svg>
+        </span>
+        <h2 class="k-card-title">Récupération</h2>
+      </div>
+      <span class="flex items-center gap-2 text-sm font-semibold text-gray-400 tabular-nums">
         <span
           x-text="$num.loc($store.vitalite.doneCount + '/' + $store.vitalite.totalCount)"
         ></span>
@@ -279,7 +405,7 @@
         </svg>
       </span>
     </div>
-    <div class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
+    <div class="h-2 bg-kinetic-teal/15 rounded-full overflow-hidden">
       <div
         class="h-full bg-kinetic-teal rounded-full transition-all duration-500"
         :style="'width: ' + $store.vitalite.progress + '%'"
@@ -297,7 +423,7 @@
 
   <!-- Équilibre musculaire (4 semaines) — avancé -->
   <template x-if="balanceWarning">
-    <div class="adv-only bg-kinetic-surface rounded-2xl p-4 mb-3">
+    <div class="adv-only k-card mb-3">
       <p class="text-xs text-kinetic-electric font-semibold mb-1">Équilibre musculaire</p>
       <p class="text-sm text-gray-300 leading-snug" x-text="balanceWarning"></p>
       <p class="text-xs text-gray-500 mt-1.5 tabular-nums">
@@ -309,11 +435,7 @@
   </template>
 
   <!-- Objectifs semaine -->
-  <div
-    x-show="!$store.goals.loading"
-    x-data="{ editing: false }"
-    class="bg-kinetic-surface rounded-2xl p-4 mb-3"
-  >
+  <div x-show="!$store.goals.loading" x-data="{ editing: false }" class="k-card mb-3">
     <div class="flex items-center justify-between mb-3">
       <h2 class="k-card-title">Objectifs semaine</h2>
       <div class="flex items-center gap-2">
@@ -420,7 +542,7 @@
           x-text="$num.loc($store.goals.doneSessions + ' / ' + $store.goals.targetSessions)"
         ></span>
       </div>
-      <div class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
+      <div class="h-2 bg-white/10 rounded-full overflow-hidden">
         <div
           class="h-full rounded-full transition-all duration-700"
           :class="$store.goals.sessionsOk
@@ -440,7 +562,7 @@
           x-text="$num.loc($store.goals.doneTonnageKg + ' / ' + $store.goals.targetTonnageKg + ' kg')"
         ></span>
       </div>
-      <div class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
+      <div class="h-2 bg-white/10 rounded-full overflow-hidden">
         <div
           class="h-full rounded-full transition-all duration-700"
           :class="$store.goals.tonnageOk
@@ -452,19 +574,26 @@
     </div>
   </div>
 
-  <!-- Niveau -->
-  <div class="bg-kinetic-surface rounded-2xl p-4">
-    <div class="flex items-baseline justify-between mb-3">
-      <h2 class="k-card-title">
-        Niveau <span x-text="$store.xp.currentLevel"></span>
-        <span class="font-normal text-gray-500" x-text="'· ' + $store.xp.title"></span>
-      </h2>
-      <span
-        class="text-sm tabular-nums font-semibold text-white"
-        x-text="$store.xp.xp + ' XP'"
-      ></span>
+  <!-- Niveau : médaille d'accent + barre d'XP -->
+  <div class="k-card p-5">
+    <div class="flex items-center gap-4 mb-4">
+      <div
+        class="w-14 h-14 rounded-full bg-gradient-to-br from-kinetic-neon to-kinetic-electric flex items-center justify-center flex-shrink-0"
+        aria-hidden="true"
+      >
+        <span class="k-stat text-2xl text-gray-950" x-text="$store.xp.currentLevel"></span>
+      </div>
+      <div class="min-w-0 flex-1">
+        <h2 class="k-card-title truncate">
+          Niveau <span x-text="$store.xp.currentLevel"></span>
+          <span class="font-normal text-gray-500" x-text="'· ' + $store.xp.title"></span>
+        </h2>
+        <p class="k-stat text-[1.375rem] mt-1">
+          <span x-text="$store.xp.xp"></span><span class="k-unit">XP</span>
+        </p>
+      </div>
     </div>
-    <div class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
+    <div class="h-2 bg-white/10 rounded-full overflow-hidden">
       <div
         class="h-full bg-kinetic-neon rounded-full transition-all duration-700 ease-out"
         :style="'width: ' + $store.xp.progressPercent + '%'"

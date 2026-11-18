@@ -29,17 +29,29 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════
-   Kinetic — langage visuel inspiré d'iOS
+   Kinetic — direction « Apple Fitness / Apple TV »
    ───────────────────────────────────────────────────────────────────────
    Principes :
-   1. Le fond est noir pur, les cartes sont des aplats gris sans bordure :
-      c'est le contraste des surfaces qui sépare, pas des traits.
-   2. La hiérarchie vient de la typographie (grand titre 34, titres 22/20,
-      corps 17, notes 13), pas de la couleur.
-   3. Une seule couleur d'accent, réservée à ce qui est actionnable ou
-      à la donnée clé. Le reste est blanc ou gris.
-   4. Aucun halo, dégradé décoratif ni texte lumineux.
+   1. Profondeur : fond noir profond éclairé en haut par une lueur ambiante
+      douce de la couleur d'accent (body::before, fixe, opacité ~0,16).
+   2. Matière : les cartes sont du « verre sombre » — léger dégradé vertical
+      (plus clair en haut), liseré intérieur clair très fin, rayon 22 px,
+      ombre douce. Pas de backdrop-filter sur les cartes (coût GPU) : il est
+      réservé à la barre d'onglets et aux feuilles modales.
+   3. Une carte « héros » par écran (.k-hero), teintée par l'accent, porte
+      l'action principale ; le bouton principal (.k-btn-primary) est un
+      dégradé d'accent avec reflet et ombre colorée discrète.
+   4. Les données clés s'affichent en grands chiffres tabulaires (.k-stat +
+      .k-unit) et en anneaux de progression (.k-ring).
+   5. Mouvement : entrée de page en fondu + montée + léger zoom, cascade des
+      blocs, ressort à la pression. Seuls transform et opacity sont animés ;
+      tout est coupé sous prefers-reduced-motion.
+   6. Jamais de couleur d'accent codée en dur : toujours --kinetic-neon /
+      --kinetic-electric (thèmes débloqués par niveau). En mode clair
+      (data-mode="light"), lueurs et ombres sont plus discrètes.
    Les couleurs sont au format "R G B" pour l'opacité Tailwind (<alpha-value>).
+   Catalogue des classes partagées (k-*) : voir « Composants de la direction »
+   plus bas.
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* ─── Couleurs d'accent (thèmes débloqués par niveau) ─── */
@@ -80,7 +92,18 @@
   --separator: rgba(84, 84, 88, 0.65);
   --border: rgba(84, 84, 88, 0.4);
   --border-hi: rgba(84, 84, 88, 0.8);
-  --material: rgba(22, 22, 24, 0.78); /* barre d'onglets translucide */
+  --material: rgba(30, 30, 34, 0.64); /* barre d'onglets et feuilles (verre) */
+  /* Matière des cartes et lumière (cf. principes 1 à 3) */
+  --k-sheen: rgba(255, 255, 255, 0.05); /* dégradé vertical : haut de carte plus clair */
+  --k-edge: rgba(255, 255, 255, 0.05); /* liseré 1 px autour de la carte */
+  --k-edge-top: rgba(255, 255, 255, 0.07); /* filet clair intérieur, en haut */
+  --k-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 14px 32px -18px rgba(0, 0, 0, 0.9);
+  --k-glow: 0.24; /* lueur ambiante d'accent en haut de page */
+  --k-glow-2: 0.1; /* contre-lueur (--kinetic-electric), coin haut droit */
+  --k-hero-a: 0.26; /* teinte d'accent de la carte héros */
+  --k-btn-glow: 0.45; /* ombre colorée du bouton principal */
+  --k-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --k-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   color-scheme: dark;
 }
 
@@ -99,7 +122,15 @@
   --separator: rgba(60, 60, 67, 0.22);
   --border: rgba(60, 60, 67, 0.14);
   --border-hi: rgba(60, 60, 67, 0.3);
-  --material: rgba(249, 249, 249, 0.82);
+  --material: rgba(250, 250, 252, 0.72);
+  --k-sheen: rgba(255, 255, 255, 0);
+  --k-edge: rgba(0, 0, 0, 0.05);
+  --k-edge-top: rgba(255, 255, 255, 0.9);
+  --k-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 24px -16px rgba(0, 0, 0, 0.22);
+  --k-glow: 0.1;
+  --k-glow-2: 0.04;
+  --k-hero-a: 0.16;
+  --k-btn-glow: 0.3;
   color-scheme: light;
 }
 
@@ -120,6 +151,28 @@ body {
   transition:
     background-color 200ms ease,
     color 200ms ease;
+}
+
+/* Lueur ambiante : sous tout le contenu (z-index -1, le fond du <body> est
+   propagé au canevas). Fixe, donc aucun coût au défilement. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 75vh;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      130% 65% at 50% -16%,
+      rgb(var(--kinetic-neon) / var(--k-glow)) 0%,
+      rgb(var(--kinetic-neon) / 0) 72%
+    ),
+    radial-gradient(
+      70% 42% at 105% -6%,
+      rgb(var(--kinetic-electric) / var(--k-glow-2)) 0%,
+      rgb(var(--kinetic-electric) / 0) 70%
+    );
 }
 
 * {
@@ -241,10 +294,14 @@ h5,
   height: 2.25rem;
   border-radius: 9999px;
   background: rgb(var(--surface));
+  background-image: linear-gradient(180deg, var(--k-sheen), transparent);
+  box-shadow:
+    inset 0 1px 0 var(--k-edge-top),
+    0 0 0 1px var(--k-edge);
   color: var(--tx);
   transition:
     background-color 150ms ease,
-    transform 150ms ease;
+    transform 260ms var(--k-spring);
 }
 .k-back::after {
   content: '';
@@ -259,33 +316,102 @@ h5,
   margin-right: 2px;
 }
 
-/* ─── Barre d'onglets : matériau translucide ─── */
+/* ─── Barre d'onglets : capsule flottante en verre ───
+   <nav class="k-tabbar-dock"> <div class="k-tabbar"> <span class="k-tab-pill">
+   <a class="k-tab" aria-current="page"> … La pastille glisse sous l'onglet
+   actif (style calculé par navShell.tabPillStyle() dans main.ts). */
+.k-tabbar-dock {
+  padding: 0 1rem max(0.625rem, calc(env(safe-area-inset-bottom) - 0.375rem));
+  pointer-events: none;
+}
 .k-tabbar {
+  position: relative;
+  height: 4rem;
+  padding: 0.375rem;
+  border-radius: 9999px;
+  pointer-events: auto;
   background: var(--material);
-  -webkit-backdrop-filter: saturate(180%) blur(24px);
-  backdrop-filter: saturate(180%) blur(24px);
-  border-top: 0.5px solid var(--separator);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 0 0 0.5px rgba(255, 255, 255, 0.1),
+    0 16px 36px -10px rgba(0, 0, 0, 0.7);
 }
-.k-tabbar a {
+[data-mode='light'] .k-tabbar {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    0 12px 30px -12px rgba(0, 0, 0, 0.22);
+}
+.k-tab-pill {
+  position: absolute;
+  top: 0.375rem;
+  bottom: 0.375rem;
+  left: 0.375rem;
+  width: calc((100% - 0.75rem) / 5);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition:
+    transform 460ms cubic-bezier(0.3, 1.25, 0.5, 1),
+    opacity 220ms ease;
+  will-change: transform;
+}
+[data-mode='light'] .k-tab-pill {
+  background: rgba(118, 118, 128, 0.14);
+  box-shadow: none;
+}
+.k-tab {
+  position: relative;
+  z-index: 1;
   color: var(--tx2);
-  transition: color 150ms ease;
+  transition:
+    color 200ms ease,
+    transform 260ms var(--k-spring);
 }
-.k-tabbar a[aria-current='page'] {
+.k-tab:active {
+  transform: scale(0.92);
+}
+.k-tab[aria-current='page'] {
   color: rgb(var(--kinetic-neon));
 }
 /* Clair : le jaune ne se lit pas sur fond blanc, l'onglet actif passe en noir */
-[data-mode='light'] .k-tabbar a[aria-current='page'] {
+[data-mode='light'] .k-tab[aria-current='page'] {
   color: var(--tx);
 }
-.k-tabbar a[aria-current='page'] svg {
+.k-tab[aria-current='page'] svg {
   stroke-width: 2.2;
 }
+.k-tab[aria-current='page'] span {
+  font-weight: 600;
+}
 
-/* ─── Cartes ───
-   Aplat sans bordure. À l'intérieur d'une carte, « ink » (champs, pistes de
-   progression) devient un gris de remplissage au lieu du noir de la page. */
-.bg-kinetic-surface {
+/* ─── Cartes : verre sombre ───
+   Toute surface bg-kinetic-surface reçoit le dégradé vertical ; les cartes
+   (arrondi 2xl/3xl, .k-card, .k-list, .k-empty) reçoivent en plus le liseré
+   et l'ombre douce. Un élément qui porte un anneau Tailwind (ring-*) garde son
+   anneau (état sélectionné) à la place du liseré. Les menus flottants
+   (.absolute) ont leur propre ombre (fin de fichier).
+   À l'intérieur d'une carte, « ink » (champs, pistes de progression) devient
+   un gris de remplissage au lieu du noir de la page. */
+.bg-kinetic-surface,
+.k-card,
+.k-list,
+.k-empty {
   --ink: var(--well);
+  background-image: linear-gradient(180deg, var(--k-sheen) 0%, rgba(255, 255, 255, 0) 70%);
+}
+:is(.rounded-2xl, .rounded-3xl, .rounded-k, .rounded-\[22px\]).bg-kinetic-surface:not(
+    [class*='ring-']
+  ):not(.absolute),
+.k-card:not([class*='ring-']),
+.k-list,
+.k-empty {
+  box-shadow:
+    inset 0 1px 0 var(--k-edge-top),
+    0 0 0 1px var(--k-edge),
+    var(--k-shadow);
 }
 .bg-kinetic-surface .bg-kinetic-elevated,
 .bg-kinetic-elevated {
@@ -341,7 +467,8 @@ h5,
   border-color: transparent;
 }
 
-/* Plus de halos ni d'ombres colorées */
+/* Ombres et halos ad hoc hérités des anciens gabarits (shadow-[…]) : neutralisés.
+   Les lueurs passent uniquement par les composants k-* ci-dessous. */
 [class*='shadow-['],
 [class*='shadow-glow'] {
   box-shadow: none !important;
@@ -623,6 +750,271 @@ button.k-row:active {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Composants de la direction « Apple Fitness » — catalogue k-*
+   ───────────────────────────────────────────────────────────────────────
+   k-card          carte verre sombre (dégradé, liseré, ombre douce)
+   k-hero          carte héros teintée par l'accent (action principale d'un écran)
+   k-btn-primary   bouton principal : dégradé d'accent, reflet, ombre colorée
+   k-ring …        anneau de progression SVG (voir l'exemple plus bas)
+   k-stat / k-unit grand chiffre tabulaire / unité plus petite et grise
+   k-chip(-active) pastille de filtre / pastille sélectionnée
+   k-list / k-row  liste groupée à séparateurs (défini plus haut)
+   k-enter         entrée animée d'un élément (fondu + montée + zoom)
+   k-stagger       entrée en cascade des enfants directs (35 ms, 8 au plus)
+   k-press         retour de pression à ressort (scale 0,97)
+   Dans @layer components : une classe utilitaire Tailwind (h-*, p-*, text-*)
+   posée sur le même élément l'emporte toujours.
+   ═══════════════════════════════════════════════════════════════════════ */
+@layer components {
+  /* Carte héros : <section class="k-hero"> … <button class="k-btn-primary"> */
+  .k-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: 22px;
+    padding: 1.25rem;
+    background-color: rgb(var(--surface));
+    background-image:
+      radial-gradient(
+        120% 85% at 0% 0%,
+        rgb(var(--kinetic-neon) / var(--k-hero-a)) 0%,
+        rgb(var(--kinetic-neon) / 0) 62%
+      ),
+      radial-gradient(
+        80% 70% at 100% 0%,
+        rgb(var(--kinetic-electric) / calc(var(--k-hero-a) * 0.45)) 0%,
+        rgb(var(--kinetic-electric) / 0) 65%
+      ),
+      linear-gradient(180deg, var(--k-sheen), rgba(255, 255, 255, 0) 70%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 0 0 1px rgb(var(--kinetic-neon) / 0.14),
+      var(--k-shadow);
+    --ink: var(--well);
+  }
+  /* Reflet diagonal, sous le contenu */
+  .k-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(115deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 32%);
+  }
+  [data-mode='light'] .k-hero {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 0 0 1px rgb(var(--kinetic-neon) / 0.22),
+      var(--k-shadow);
+  }
+  [data-mode='light'] .k-hero::before {
+    display: none;
+  }
+
+  /* Bouton principal : <button class="k-btn-primary">Commencer</button>
+     Pleine largeur, 50 px. Une seule action principale par écran. */
+  .k-btn-primary {
+    @apply inline-flex h-[3.125rem] w-full items-center justify-center gap-2 rounded-[14px] px-5 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-40;
+    color: #0a0a0c;
+    background-color: rgb(var(--kinetic-neon));
+  }
+
+  /* Anneau de progression (Apple Fitness). Exemple :
+     <div class="k-ring-box w-24 h-24 text-kinetic-neon">
+       <svg class="k-ring" viewBox="0 0 36 36" aria-hidden="true">
+         <circle class="k-ring-track" cx="18" cy="18" r="15.5" pathLength="100" />
+         <circle class="k-ring-value" cx="18" cy="18" r="15.5" pathLength="100"
+                 :style="ringStyle" />   ← getter du composant : renvoie '--p: 72'
+       </svg>
+       <span class="k-stat text-2xl">72<span class="k-unit">%</span></span>
+     </div>
+     La couleur vient de currentColor (text-*), la piste est à 15 % d'opacité.
+     Épaisseur : style="--k-ring-w: 4" (unités du viewBox, défaut 3.4).
+     Plusieurs anneaux concentriques : autant de paires piste/valeur avec des r
+     décroissants (15.5, 11.5, 7.5) et une classe text-* par paire (<g>). */
+  .k-ring-box {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .k-ring-box > .k-ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .k-ring-box > :not(.k-ring) {
+    position: relative;
+    text-align: center;
+  }
+  .k-ring {
+    display: block;
+    overflow: visible;
+    transform: rotate(-90deg);
+  }
+  .k-ring-track,
+  .k-ring-value {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: var(--k-ring-w, 3.4);
+  }
+  .k-ring-track {
+    stroke-opacity: 0.15;
+  }
+  .k-ring-value {
+    stroke-linecap: round;
+    stroke-dasharray: 100 100;
+    stroke-dashoffset: calc(100 - var(--p, 0));
+    /* À 0 %, le bout arrondi dessinerait un point isolé : on masque l'arc. */
+    stroke-opacity: clamp(0, calc(var(--p, 0) * 1000), 1);
+    transition: stroke-dashoffset 900ms var(--k-ease);
+    animation: k-ring-fill 1100ms var(--k-ease) backwards;
+  }
+
+  /* Grand chiffre, unité imbriquée :
+     <p class="k-stat">82,5<span class="k-unit">kg</span></p>
+     Taille par défaut 34 px ; une classe text-* posée à côté la remplace. */
+  .k-stat {
+    font-family: theme('fontFamily.display');
+    font-size: 2.125rem;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums;
+    color: var(--tx);
+  }
+  /* Unité : moitié du chiffre dans un .k-stat, 15 px ailleurs */
+  .k-unit {
+    margin-left: 0.2em;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--tx2);
+  }
+  .k-stat .k-unit {
+    margin-left: 0.3em;
+    font-size: 0.5em;
+  }
+
+  /* Pastilles de filtre : <button class="k-chip" :aria-pressed="…">
+     ou class="k-chip k-chip-active" pour l'état sélectionné. */
+  .k-chip {
+    @apply inline-flex h-9 flex-shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-sm font-medium;
+    background-color: rgb(var(--chip));
+    background-image: linear-gradient(180deg, var(--k-sheen), rgba(255, 255, 255, 0));
+    color: var(--tx);
+    box-shadow:
+      inset 0 1px 0 var(--k-edge-top),
+      0 0 0 1px var(--k-edge);
+  }
+  .k-chip-active,
+  .k-chip[aria-pressed='true'],
+  .k-chip[aria-selected='true'] {
+    @apply inline-flex h-9 flex-shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-sm;
+    font-weight: 600;
+    color: #0a0a0c;
+    background-color: rgb(var(--kinetic-neon));
+  }
+}
+
+/* ─── Bouton principal : rendu (hors calque, s'applique aussi aux anciens
+   gabarits : .k-btn, .k-pill-accent et boutons bg-kinetic-neon arrondis) ─── */
+.k-btn-primary,
+.k-btn,
+.k-pill-accent,
+.k-chip-active,
+.k-chip[aria-pressed='true'],
+.k-chip[aria-selected='true'],
+button.bg-kinetic-neon:is(.rounded-xl, .rounded-full, .rounded-2xl),
+a.bg-kinetic-neon:is(.rounded-xl, .rounded-full, .rounded-2xl) {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(
+      115deg,
+      rgb(var(--kinetic-electric) / 0) 35%,
+      rgb(var(--kinetic-electric) / 0.32) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+    0 10px 24px -10px rgb(var(--kinetic-neon) / var(--k-btn-glow));
+  transition:
+    transform 320ms var(--k-spring),
+    opacity 160ms ease,
+    filter 160ms ease;
+}
+.k-chip-active,
+.k-chip[aria-pressed='true'],
+.k-chip[aria-selected='true'],
+.k-pill-accent {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 6px 16px -8px rgb(var(--kinetic-neon) / var(--k-btn-glow));
+}
+.k-btn-primary:active:not(:disabled),
+.k-btn:active:not(:disabled),
+.k-pill-accent:active:not(:disabled),
+button.bg-kinetic-neon:is(.rounded-xl, .rounded-full, .rounded-2xl):active:not(:disabled),
+a.bg-kinetic-neon:is(.rounded-xl, .rounded-full, .rounded-2xl):active {
+  transform: scale(0.97);
+  filter: brightness(0.94);
+  transition-duration: 120ms;
+  transition-timing-function: ease-out;
+}
+.k-btn-primary:disabled,
+.k-btn:disabled,
+.k-pill-accent:disabled {
+  box-shadow: none;
+}
+/* Boutons secondaires et pastilles : même liseré de verre que les cartes */
+.k-btn-2,
+.k-pill,
+.k-icon-btn {
+  background-image: linear-gradient(180deg, var(--k-sheen), rgba(255, 255, 255, 0));
+  box-shadow:
+    inset 0 1px 0 var(--k-edge-top),
+    0 0 0 1px var(--k-edge);
+}
+.k-btn-2,
+.k-pill,
+.k-chip {
+  transition:
+    transform 300ms var(--k-spring),
+    background-color 160ms ease;
+}
+.k-btn-2:active:not(:disabled),
+.k-pill:active:not(:disabled),
+.k-chip:active {
+  transform: scale(0.96);
+  transition-duration: 120ms;
+}
+
+/* Barres de progression remplies d'accent : même dégradé que le bouton */
+.h-full.rounded-full.bg-kinetic-neon,
+.h-full.rounded-r-full.bg-kinetic-neon {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(90deg, rgb(var(--kinetic-electric) / 0), rgb(var(--kinetic-electric) / 0.3));
+}
+
+/* Retour de pression générique : <a class="k-card k-press"> */
+.k-press {
+  transition: transform 300ms var(--k-spring);
+}
+.k-press:active {
+  transform: scale(0.97);
+  transition-duration: 120ms;
+  transition-timing-function: ease-out;
+}
+
+@keyframes k-ring-fill {
+  from {
+    stroke-dashoffset: 100;
+  }
+}
+
 /* ─── Feuille modale (bottom sheet) ───
    <div class="k-backdrop" x-show="open" @click.self="open=false">
      <div class="k-sheet" role="dialog" aria-modal="true"> … </div>
@@ -648,9 +1040,15 @@ button.k-row:active {
   overflow-y: auto;
   overscroll-behavior: contain;
   border-radius: 28px;
-  background: rgb(var(--surface));
+  background: rgb(var(--surface) / 0.88);
+  background-image: linear-gradient(180deg, var(--k-sheen), rgba(255, 255, 255, 0) 40%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
   padding: 1.75rem 1.25rem 1.25rem;
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 0 1px 0 var(--k-edge-top),
+    0 0 0 1px var(--k-edge),
+    0 -8px 40px rgba(0, 0, 0, 0.35);
   animation: k-sheet-in 380ms cubic-bezier(0.32, 0.72, 0, 1) both;
   --ink: var(--well);
 }
@@ -692,64 +1090,87 @@ button.k-row:active {
 }
 
 /* ─── Mouvement ───
-   Entrée de page : les blocs montent et apparaissent en cascade.
-   `backwards` (et non `both`) : aucune transformation ne reste après
-   l'animation, sinon les éléments `fixed` des pages perdraient leur repère. */
-@keyframes k-page-in {
+   Entrée de page (router.ts pose #app-outlet.k-route-in à chaque navigation) :
+   chaque bloc de premier niveau de la page entre en fondu + montée de 8 px +
+   zoom 0,99 → 1, en cascade (35 ms par bloc, 8 blocs au plus).
+   On anime les blocs et non la page entière, et avec `backwards` (et non
+   `both`) : aucune transformation ne reste après l'animation, sinon les
+   éléments `fixed` des pages perdraient leur repère. */
+@keyframes k-rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px) scale(0.99);
   }
   to {
     opacity: 1;
     transform: none;
   }
 }
-#app-outlet.k-enter > * > * {
-  animation: k-page-in 420ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+#app-outlet.k-route-in > * > *,
+.k-enter,
+.k-stagger > * {
+  animation: k-rise 320ms var(--k-ease) backwards;
 }
-#app-outlet.k-enter > * > :nth-child(2) {
-  animation-delay: 30ms;
+#app-outlet.k-route-in > * > :nth-child(2),
+.k-stagger > :nth-child(2) {
+  animation-delay: 35ms;
 }
-#app-outlet.k-enter > * > :nth-child(3) {
-  animation-delay: 60ms;
+#app-outlet.k-route-in > * > :nth-child(3),
+.k-stagger > :nth-child(3) {
+  animation-delay: 70ms;
 }
-#app-outlet.k-enter > * > :nth-child(4) {
-  animation-delay: 90ms;
+#app-outlet.k-route-in > * > :nth-child(4),
+.k-stagger > :nth-child(4) {
+  animation-delay: 105ms;
 }
-#app-outlet.k-enter > * > :nth-child(5) {
-  animation-delay: 120ms;
+#app-outlet.k-route-in > * > :nth-child(5),
+.k-stagger > :nth-child(5) {
+  animation-delay: 140ms;
 }
-#app-outlet.k-enter > * > :nth-child(6) {
-  animation-delay: 150ms;
+#app-outlet.k-route-in > * > :nth-child(6),
+.k-stagger > :nth-child(6) {
+  animation-delay: 175ms;
 }
-#app-outlet.k-enter > * > :nth-child(n + 7) {
-  animation-delay: 180ms;
+#app-outlet.k-route-in > * > :nth-child(7),
+.k-stagger > :nth-child(7) {
+  animation-delay: 210ms;
+}
+#app-outlet.k-route-in > * > :nth-child(n + 8),
+.k-stagger > :nth-child(n + 8) {
+  animation-delay: 245ms;
 }
 /* Les calques fixes (modales, minuteur) n'entrent pas en cascade ; un fond de
    feuille modale garde son propre fondu */
-#app-outlet.k-enter > * > .fixed,
-#app-outlet.k-enter > * > [class*='fixed '],
-#app-outlet.k-enter > * > template {
+#app-outlet.k-route-in > * > .fixed,
+#app-outlet.k-route-in > * > [class*='fixed '],
+#app-outlet.k-route-in > * > template,
+.k-stagger > .fixed,
+.k-stagger > template {
   animation: none;
 }
-#app-outlet.k-enter > * > .k-backdrop {
+#app-outlet.k-route-in > * > .k-backdrop {
   animation: k-fade-in 200ms ease both;
 }
 
-/* Retour tactile : les cartes cliquables s'enfoncent légèrement */
+/* Retour tactile : les cartes cliquables s'enfoncent avec un léger ressort */
 a.bg-kinetic-surface,
 button.bg-kinetic-surface,
+a.k-card,
+button.k-card,
 a.k-row,
 button.k-row,
 label.k-row {
   transition:
-    transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 300ms var(--k-spring),
     background-color 160ms ease;
 }
 a.bg-kinetic-surface:active,
-button.bg-kinetic-surface:active {
-  transform: scale(0.98);
+button.bg-kinetic-surface:active,
+a.k-card:active,
+button.k-card:active {
+  transform: scale(0.97);
+  transition-duration: 120ms, 160ms;
+  transition-timing-function: ease-out, ease;
 }
 
 /* Coche validée : petit rebond */
@@ -842,7 +1263,27 @@ html[data-density='advanced'] .adv-badge {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  /* Pas de zoom à la pression ni de montée : l'état final s'affiche directement */
+  .k-press:active,
+  .k-btn-primary:active,
+  .k-btn:active,
+  .k-btn-2:active,
+  .k-pill:active,
+  .k-pill-accent:active,
+  .k-chip:active,
+  .k-tab:active,
+  .k-back:active,
+  a.bg-kinetic-surface:active,
+  button.bg-kinetic-surface:active,
+  a.k-card:active,
+  button.k-card:active,
+  button.bg-kinetic-neon:active,
+  a.bg-kinetic-neon:active {
+    transform: none !important;
   }
 }
 
@@ -897,6 +1338,10 @@ html[data-density='advanced'] .adv-badge {
 [data-mode='light'] .bg-kinetic-purple.text-white,
 [data-mode='light'] .bg-kinetic-teal.text-white {
   color: #fff !important;
+}
+/* Pastille de priorité « moyenne » (Récupération) : le jaune pur disparaît sur blanc. */
+[data-mode='light'] .k-prio-dot.bg-kinetic-gold {
+  background-color: #d99a00;
 }
 [data-mode='light'] .text-kinetic-neon,
 [data-mode='light'] .text-kinetic-gold,

@@ -56,6 +56,52 @@ const METRICS: readonly MetricDef[] = [
 
 const STORAGE_KEY = STORAGE_KEYS.MEASUREMENTS_ENTRIES;
 
+/**
+ * Tracé lissé (interpolation cubique monotone) : passe par chaque mesure
+ * sans dépasser les valeurs réelles.
+ */
+export function smoothLine(pts: ReadonlyArray<readonly [number, number]>): string {
+  const n = pts.length;
+  if (n === 0) return '';
+  const f = (v: number) => v.toFixed(1);
+  if (n < 3) return pts.map(([x, y], i) => `${i ? 'L' : 'M'} ${f(x)} ${f(y)}`).join(' ');
+  const d: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    const h = pts[i + 1]![0] - pts[i]![0];
+    d.push(h > 0 ? (pts[i + 1]![1] - pts[i]![1]) / h : 0);
+  }
+  const m: number[] = [d[0]!];
+  for (let i = 1; i < n - 1; i++) m.push(d[i - 1]! * d[i]! <= 0 ? 0 : (d[i - 1]! + d[i]!) / 2);
+  m.push(d[n - 2]!);
+  for (let i = 0; i < n - 1; i++) {
+    if (d[i] === 0) {
+      m[i] = 0;
+      m[i + 1] = 0;
+      continue;
+    }
+    const a = m[i]! / d[i]!;
+    const b = m[i + 1]! / d[i]!;
+    const s = a * a + b * b;
+    if (s > 9) {
+      const t = 3 / Math.sqrt(s);
+      m[i] = t * a * d[i]!;
+      m[i + 1] = t * b * d[i]!;
+    }
+  }
+  let path = `M ${f(pts[0]![0])} ${f(pts[0]![1])}`;
+  for (let i = 0; i < n - 1; i++) {
+    const [x0, y0] = pts[i]!;
+    const [x1, y1] = pts[i + 1]!;
+    const h = x1 - x0;
+    if (h <= 0) {
+      path += ` L ${f(x1)} ${f(y1)}`;
+      continue;
+    }
+    path += ` C ${f(x0 + h / 3)} ${f(y0 + (m[i]! * h) / 3)} ${f(x1 - h / 3)} ${f(y1 - (m[i + 1]! * h) / 3)} ${f(x1)} ${f(y1)}`;
+  }
+  return path;
+}
+
 /** Année affichée seulement hors de l'année en cours (« 11 nov. » / « 16 sept. 2025 »). */
 function yearOption(iso: string): { year?: 'numeric' } {
   return new Date(iso).getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {};
@@ -219,6 +265,19 @@ export function mensurations() {
       const pts = this.filteredEntries.filter((e) => val(e, key) !== undefined);
       if (pts.length < 2) return null;
       return val(pts.at(-1)!, key)! - val(pts[0]!, key)!;
+    },
+
+    /** Flèche d'évolution (→ tournée vers le haut ou le bas), '' si stable. */
+    deltaArrowClass(key: MetricKey): string {
+      const d = this.metricDelta(key);
+      if (d === null || Math.abs(d) < 0.05) return '';
+      return d > 0 ? '-rotate-45' : 'rotate-45';
+    },
+
+    /** Pastille de couleur d'une mesure (tuiles « Toutes les mesures »). */
+    metricDot(key: MetricKey): string {
+      const def = (this.metrics as MetricDef[]).find((m) => m.key === key);
+      return `background-color: ${def ? def.color : '#8E8E93'}`;
     },
 
     hasData(key: MetricKey): boolean {
@@ -640,9 +699,7 @@ export function mensurations() {
       // Une seule teinte neutre (bleu système) pour la série : le jaune reste réservé à l'action principale.
       const color = '#0A84FF';
 
-      const linePath = pts
-        .map((p, i) => `${i === 0 ? 'M' : 'L'} ${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`)
-        .join(' ');
+      const linePath = smoothLine(pts.map((p) => [sx(p.x), sy(p.y)] as const));
 
       const lastP = pts.at(-1)!;
       const areaPath =
@@ -660,8 +717,8 @@ export function mensurations() {
           const v = maxY - ratio * dy;
           return (
             `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}"` +
-            ` stroke="currentColor" stroke-opacity="0.18" stroke-width="1"` +
-            ` stroke-dasharray="${ratio === 1 ? '0' : '2 4'}"/>` +
+            ` stroke="currentColor" stroke-opacity="${ratio === 1 ? '0.22' : '0.16'}" stroke-width="1"` +
+            ` stroke-linecap="round" stroke-dasharray="${ratio === 1 ? '0' : '2 5'}"/>` +
             `<text x="${W}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" fill="currentColor"` +
             ` font-size="12">${fmtCm(v)}</text>`
           );
@@ -691,15 +748,23 @@ export function mensurations() {
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe ${metricDef.label}" class="block overflow-visible">
         <defs>
           <linearGradient id="mens-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="${color}" stop-opacity="0.28"/>
+            <stop offset="0" stop-color="${color}" stop-opacity="0.34"/>
+            <stop offset="0.6" stop-color="${color}" stop-opacity="0.07"/>
             <stop offset="1" stop-color="${color}" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="mens-line" gradientUnits="userSpaceOnUse" x1="${padL}" y1="0" x2="${W - padR}" y2="0">
+            <stop offset="0" stop-color="#64D2FF"/>
+            <stop offset="1" stop-color="${color}"/>
           </linearGradient>
         </defs>
         ${gridLines}
         <path d="${areaPath}" fill="url(#mens-area)"/>
-        <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2.5"
+        <path d="${linePath}" fill="none" stroke="${color}" stroke-opacity="0.22" stroke-width="7"
+              stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${linePath}" fill="none" stroke="url(#mens-line)" stroke-width="2.75"
               stroke-linecap="round" stroke-linejoin="round"/>
         ${dots}
+        <circle cx="${lastCx}" cy="${lastCy}" r="9" fill="${color}" fill-opacity="0.22"/>
         <circle cx="${lastCx}" cy="${lastCy}" r="5.5" fill="${color}"
                 class="stroke-kinetic-surface" stroke-width="2.5"/>
         <text x="${padL}" y="${H - 2}" fill="currentColor" font-size="12">${fmt(d0)}</text>

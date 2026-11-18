@@ -45,21 +45,17 @@
     </div>
   </template>
 
-  <!-- Bilan de la semaine -->
-  <section
-    x-show="totalSessions > 0"
-    class="bg-kinetic-surface rounded-2xl p-4 mb-6"
-    aria-labelledby="prog-week-title"
-  >
+  <!-- Bilan de la semaine : carte héros -->
+  <section x-show="totalSessions > 0" class="k-hero mb-6" aria-labelledby="prog-week-title">
     <div class="flex items-center justify-between gap-3">
       <h2 id="prog-week-title" class="k-card-title">Ta semaine</h2>
       <span
-        class="inline-flex items-center gap-1 text-xs font-semibold tabular-nums"
-        :class="weeklyReview.trend === 'up' ? 'text-kinetic-teal' : 'text-gray-500'"
+        class="inline-flex min-w-0 items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold tabular-nums"
+        :class="weeklyReview.trend === 'up' ? 'text-kinetic-teal' : 'text-gray-400'"
       >
         <svg
           x-show="weeklyReview.trend === 'up'"
-          class="w-3.5 h-3.5"
+          class="w-3.5 h-3.5 flex-shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -72,7 +68,7 @@
         </svg>
         <svg
           x-show="weeklyReview.trend === 'down'"
-          class="w-3.5 h-3.5"
+          class="w-3.5 h-3.5 flex-shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -83,106 +79,104 @@
         >
           <path d="M7 7l10 10M17 9v8H9" />
         </svg>
-        <span x-text="$num.loc(weeklyTrendLabel())"></span>
+        <span class="truncate" x-text="$num.loc(weeklyTrendLabel())"></span>
       </span>
     </div>
 
-    <p class="mt-3 flex items-baseline gap-1.5">
-      <span class="k-metric" x-text="$num.loc(formatNumber(weeklyReview.tonnageKg))"></span>
-      <span class="text-sm text-gray-500 font-medium">kg soulevés</span>
+    <p class="mt-4 flex items-baseline">
+      <span
+        class="k-stat text-[2.75rem]"
+        x-text="$num.loc(formatNumber(weeklyReview.tonnageKg))"
+      ></span>
+      <span class="k-unit">kg soulevés</span>
     </p>
 
-    <dl class="grid grid-cols-4 mt-5 pt-4 border-t border-white/10">
+    <dl class="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-white/10">
       <div>
-        <dt class="text-xs text-gray-500">Séances</dt>
-        <dd
-          class="text-xl font-semibold text-white tabular-nums mt-0.5"
-          x-text="weeklyReview.sessions"
-        ></dd>
+        <dt class="text-xs text-gray-400">Séances</dt>
+        <dd class="k-stat text-[1.625rem] mt-1" x-text="weeklyReview.sessions"></dd>
       </div>
       <div>
-        <dt class="text-xs text-gray-500">Jours</dt>
-        <dd
-          class="text-xl font-semibold text-white tabular-nums mt-0.5"
-          x-text="weeklyReview.trainingDays"
-        ></dd>
+        <dt class="text-xs text-gray-400">Jours</dt>
+        <dd class="k-stat text-[1.625rem] mt-1" x-text="weeklyReview.trainingDays"></dd>
       </div>
       <div>
-        <dt class="text-xs text-gray-500">Séries</dt>
-        <dd
-          class="text-xl font-semibold text-white tabular-nums mt-0.5"
-          x-text="$num.loc(weeklyReview.totalSets)"
-        ></dd>
+        <dt class="text-xs text-gray-400">Séries</dt>
+        <dd class="k-stat text-[1.625rem] mt-1" x-text="$num.loc(weeklyReview.totalSets)"></dd>
       </div>
       <div>
-        <dt class="text-xs text-gray-500">Records</dt>
-        <dd
-          class="text-xl font-semibold text-white tabular-nums mt-0.5"
-          x-text="weeklyReview.prCount"
-        ></dd>
+        <dt class="text-xs text-gray-400">Records</dt>
+        <dd class="k-stat text-[1.625rem] mt-1" x-text="weeklyReview.prCount"></dd>
       </div>
     </dl>
   </section>
 
-  <!-- Stats globales -->
+  <!-- Stats globales : anneau de régularité + grands chiffres -->
   <section x-show="totalSessions > 0" class="mb-6" aria-labelledby="prog-all-title">
     <h2 id="prog-all-title" class="k-section mb-2.5">Depuis le début</h2>
-    <dl class="bg-kinetic-surface rounded-2xl p-4 grid grid-cols-[1fr_1.3fr_1fr] gap-x-3 gap-y-5">
-      <div>
-        <dt class="text-xs text-gray-500">Séances</dt>
-        <dd
-          class="text-xl font-semibold text-white tabular-nums mt-0.5"
-          x-text="$num.loc(totalSessions)"
-        ></dd>
-      </div>
-      <div>
-        <dt class="text-xs text-gray-500">Tonnage</dt>
-        <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
-          <span x-text="$num.loc(formatTonnage(totalTonnage))"></span
-          ><span
-            class="text-xs text-gray-500 font-medium ml-1"
-            x-text="$num.loc(totalTonnage >= 100000 ? 't' : 'kg')"
-          ></span>
-        </dd>
-      </div>
-      <div>
-        <dt class="text-xs text-gray-500">Régularité</dt>
-        <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
-          <span x-text="consistency"></span
-          ><span class="text-xs text-gray-500 font-medium ml-1">%</span>
-        </dd>
-      </div>
-      <div>
-        <dt class="text-xs text-gray-500">Meilleure série</dt>
-        <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
-          <span x-text="longestStreak"></span
-          ><span class="text-xs text-gray-500 font-medium ml-1">j</span>
-        </dd>
-      </div>
-      <div>
-        <dt class="text-xs text-gray-500">Séances/sem.</dt>
-        <dd
-          class="text-xl font-semibold text-white tabular-nums mt-0.5"
-          x-text="$num.loc(avgSessionsPerWeek)"
-        ></dd>
-      </div>
-      <div>
-        <dt class="text-xs text-gray-500">Durée moy.</dt>
-        <dd class="text-xl font-semibold text-white tabular-nums mt-0.5">
-          <span x-text="$num.loc(avgDurationMin)"></span
-          ><span class="text-xs text-gray-500 font-medium ml-1">min</span>
-        </dd>
-      </div>
-    </dl>
+    <div class="k-card">
+      <dl class="flex items-center gap-5">
+        <div class="flex flex-col-reverse items-center gap-2 flex-shrink-0">
+          <dt class="text-xs text-gray-500">Régularité</dt>
+          <dd class="k-ring-box w-[6.5rem] h-[6.5rem] text-kinetic-neon">
+            <svg class="k-ring" viewBox="0 0 36 36" aria-hidden="true" style="--k-ring-w: 3.6">
+              <circle class="k-ring-track" cx="18" cy="18" r="15.5" pathLength="100" />
+              <circle
+                class="k-ring-value"
+                cx="18"
+                cy="18"
+                r="15.5"
+                pathLength="100"
+                :style="consistencyRingStyle"
+              />
+            </svg>
+            <span class="k-stat text-[1.625rem]"
+              ><span x-text="consistency"></span><span class="k-unit">%</span></span
+            >
+          </dd>
+        </div>
+        <div class="flex-1 min-w-0 space-y-4">
+          <div>
+            <dt class="text-xs text-gray-500">Tonnage</dt>
+            <dd class="k-stat text-[2.125rem] mt-1 truncate">
+              <span x-text="$num.loc(formatTonnage(totalTonnage))"></span
+              ><span class="k-unit" x-text="$num.loc(totalTonnage >= 100000 ? 't' : 'kg')"></span>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-500">Séances</dt>
+            <dd class="k-stat text-[1.625rem] mt-1" x-text="$num.loc(totalSessions)"></dd>
+          </div>
+        </div>
+      </dl>
+      <dl class="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-white/10">
+        <div>
+          <dt class="text-xs text-gray-500">Meilleure série</dt>
+          <dd class="k-stat text-[1.375rem] mt-1">
+            <span x-text="longestStreak"></span><span class="k-unit">j</span>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs text-gray-500">Séances/sem.</dt>
+          <dd class="k-stat text-[1.375rem] mt-1" x-text="$num.loc(avgSessionsPerWeek)"></dd>
+        </div>
+        <div>
+          <dt class="text-xs text-gray-500">Durée moy.</dt>
+          <dd class="k-stat text-[1.375rem] mt-1">
+            <span x-text="$num.loc(avgDurationMin)"></span><span class="k-unit">min</span>
+          </dd>
+        </div>
+      </dl>
+    </div>
   </section>
 
-  <!-- Onglets -->
-  <div x-show="totalSessions > 0" class="k-seg mb-3">
+  <!-- Onglets : pastilles -->
+  <div x-show="totalSessions > 0" class="k-scroll-x mb-3">
     <button
       type="button"
       @click="setTab('force')"
       :aria-pressed="activeTab === 'force' ? 'true' : 'false'"
-      class="k-seg-item"
+      class="k-chip"
     >
       Force
     </button>
@@ -190,7 +184,7 @@
       type="button"
       @click="setTab('volume')"
       :aria-pressed="activeTab === 'volume' ? 'true' : 'false'"
-      class="k-seg-item"
+      class="k-chip"
     >
       Volume
     </button>
@@ -198,7 +192,7 @@
       type="button"
       @click="setTab('muscles')"
       :aria-pressed="activeTab === 'muscles' ? 'true' : 'false'"
-      class="k-seg-item"
+      class="k-chip"
     >
       Muscles
     </button>
@@ -206,7 +200,7 @@
       type="button"
       @click="setTab('records')"
       :aria-pressed="activeTab === 'records' ? 'true' : 'false'"
-      class="k-seg-item"
+      class="k-chip"
     >
       Records
     </button>
@@ -214,7 +208,7 @@
       type="button"
       @click="setTab('heatmap')"
       :aria-pressed="activeTab === 'heatmap' ? 'true' : 'false'"
-      class="k-seg-item"
+      class="k-chip"
     >
       Activité
     </button>
@@ -222,7 +216,7 @@
 
   <!-- ─── Onglet FORCE ──────────────────────────────────────── -->
   <div x-show="totalSessions > 0 && activeTab === 'force'" x-transition.opacity.duration.200ms>
-    <div class="bg-kinetic-surface rounded-2xl p-4">
+    <div class="k-card">
       <label for="f-progression-1" class="k-label">Exercice</label>
       <select id="f-progression-1" x-model="selectedExerciseId" class="k-field">
         <template x-for="ex in exerciseStats" :key="ex.exerciseId">
@@ -230,34 +224,34 @@
         </template>
       </select>
 
-      <div class="mt-5 flex items-start justify-between gap-3">
-        <div class="min-w-0">
-          <h2 class="k-card-title">Courbe e1RM</h2>
-          <p class="text-xs text-gray-500 mt-0.5">Charge max estimée (1 rép.)</p>
-        </div>
-        <div x-show="forceHasData()" class="text-right flex-shrink-0">
-          <p class="text-2xl font-bold text-white tabular-nums leading-none">
-            <span x-text="formatNumber(forceLatest(), 1)"></span
-            ><span class="text-sm text-gray-500 font-medium ml-0.5">kg</span>
-          </p>
-          <p
-            class="text-xs font-semibold tabular-nums mt-1"
-            :class="forceTrend() === 'up' ? 'text-kinetic-teal' : forceTrend() === 'down' ? 'text-kinetic-electric' : 'text-gray-500'"
-            x-text="$num.loc(forceDeltaLabel())"
-          ></p>
-        </div>
+      <div class="mt-5 min-w-0">
+        <h2 class="k-card-title">Courbe e1RM</h2>
+        <p class="text-xs text-gray-500 mt-0.5">Charge max estimée (1 rép.)</p>
       </div>
 
       <template x-if="forceHasData()">
         <div>
+          <div class="mt-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+            <p class="k-stat text-[2.75rem]">
+              <span x-text="formatNumber(forceLatest(), 1)"></span><span class="k-unit">kg</span>
+            </p>
+            <p
+              class="mb-1 inline-flex items-center rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold tabular-nums"
+              :class="forceTrend() === 'up' ? 'text-kinetic-teal' : forceTrend() === 'down' ? 'text-kinetic-electric' : 'text-gray-500'"
+              x-text="$num.loc(forceDeltaLabel())"
+            ></p>
+          </div>
           <div x-svg="forceSvg()" class="w-full mt-4 text-gray-500"></div>
           <div class="flex items-center gap-4 mt-3 text-xs text-gray-500">
             <span class="inline-flex items-center gap-1.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-kinetic-purple" aria-hidden="true"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-kinetic-neon" aria-hidden="true"></span>
               e1RM
             </span>
             <span class="inline-flex items-center gap-1.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-kinetic-gold" aria-hidden="true"></span>
+              <span
+                class="w-2.5 h-2.5 rounded-full border-2 border-kinetic-neon bg-kinetic-surface"
+                aria-hidden="true"
+              ></span>
               Record :
               <span
                 class="text-white font-semibold tabular-nums"
@@ -277,10 +271,10 @@
 
   <!-- ─── Onglet VOLUME ─────────────────────────────────────── -->
   <div x-show="totalSessions > 0 && activeTab === 'volume'" x-transition.opacity.duration.200ms>
-    <div class="bg-kinetic-surface rounded-2xl p-4">
-      <div class="flex items-baseline justify-between gap-3">
+    <div class="k-card">
+      <div class="min-w-0">
         <h2 class="k-card-title">Tonnage hebdomadaire</h2>
-        <span class="text-xs text-gray-500">12 dernières semaines</span>
+        <span class="block text-xs text-gray-500 mt-0.5">12 dernières semaines</span>
       </div>
 
       <template x-if="weeklyBuckets.length === 0">
@@ -288,34 +282,37 @@
       </template>
 
       <template x-if="weeklyBuckets.length > 0">
-        <div class="mt-3">
+        <div class="mt-4">
           <p
             class="text-xs text-gray-500"
             x-text="'Semaine ' + formatWeek(weeklyBuckets.at(-1).isoWeek)"
           ></p>
-          <p class="flex items-baseline gap-1.5 mt-0.5">
-            <span
-              class="text-2xl font-bold text-white tabular-nums leading-tight"
-              x-text="$num.loc(formatNumber(weeklyBuckets.at(-1).tonnageKg))"
-            ></span>
-            <span class="text-sm text-gray-500 font-medium">kg</span>
+          <div class="flex items-baseline gap-3 mt-1">
+            <p class="k-stat text-[2.5rem]">
+              <span x-text="$num.loc(formatNumber(weeklyBuckets.at(-1).tonnageKg))"></span
+              ><span class="k-unit">kg</span>
+            </p>
             <span class="text-sm text-gray-500 ml-auto tabular-nums">
-              <span x-text="$num.loc(weeklyBuckets.at(-1).totalSets)"></span> séries
+              <span
+                class="font-semibold text-white"
+                x-text="$num.loc(weeklyBuckets.at(-1).totalSets)"
+              ></span>
+              séries
             </span>
-          </p>
+          </div>
         </div>
       </template>
 
       <div
         x-show="weeklyBuckets.length > 0"
-        class="flex items-end justify-between gap-1.5 h-40 mt-5 border-b border-white/10"
+        class="relative flex items-end justify-between gap-1.5 h-44 mt-5 border-b border-white/10"
       >
         <template x-for="(b, i) in weeklyBuckets" :key="b.isoWeek">
           <div class="flex-1 h-full flex items-end">
             <div
-              class="w-full rounded-t-[4px] bg-kinetic-purple transition-all duration-500"
-              :class="i === weeklyBuckets.length - 1 ? '' : 'opacity-40'"
-              :style="'height: ' + barHeightPct(b.tonnageKg) + '%; min-height: 2px'"
+              class="w-full rounded-t-[6px] rounded-b-[2px] transition-opacity duration-300"
+              :class="barClass(i)"
+              :style="'height: ' + barHeightPct(b.tonnageKg) + '%; min-height: 3px'"
               :title="formatWeek(b.isoWeek) + ' — ' + formatNumber(b.tonnageKg) + ' kg'"
             ></div>
           </div>
@@ -346,21 +343,22 @@
 
     <div x-show="muscles.length > 0">
       <h2 class="k-caption mb-1.5">Répartition des séries par groupe musculaire</h2>
-      <div class="k-list">
-        <template x-for="m in muscles" :key="m.muscle">
-          <div class="k-row">
+      <div class="k-list k-stagger">
+        <template x-for="(m, i) in muscles" :key="m.muscle">
+          <div class="k-row py-3">
             <span
               class="w-28 flex-shrink-0 text-base text-white truncate"
+              :class="i === 0 ? 'font-semibold' : ''"
               x-text="$num.loc(muscleLabel(m.muscle))"
             ></span>
-            <div class="flex-1 h-1.5 bg-kinetic-ink rounded-full overflow-hidden">
+            <div class="flex-1 h-2 bg-kinetic-ink rounded-full overflow-hidden">
               <div
-                class="h-full bg-kinetic-teal rounded-full"
+                class="h-full bg-kinetic-neon rounded-full"
                 :style="'width: ' + $num.round(m.share * 100) + '%'"
               ></div>
             </div>
             <span
-              class="w-11 text-right text-sm text-gray-500 tabular-nums"
+              class="w-12 text-right text-base font-semibold text-white tabular-nums"
               x-text="$num.round(m.share * 100) + '%'"
             ></span>
           </div>
@@ -371,7 +369,7 @@
 
   <!-- ─── Onglet HEATMAP ──────────────────────────────────────── -->
   <div x-show="totalSessions > 0 && activeTab === 'heatmap'" x-transition.opacity.duration.200ms>
-    <div class="bg-kinetic-surface rounded-2xl p-4">
+    <div class="k-card">
       <div class="flex items-baseline justify-between gap-3 mb-4">
         <h2 class="k-card-title">Activité</h2>
         <span class="text-xs text-gray-500">20 dernières semaines</span>
@@ -393,7 +391,7 @@
             <div class="flex-1 flex flex-col gap-[3px]">
               <template x-for="(cell, di) in week" :key="di">
                 <div
-                  class="aspect-square rounded-[3px] cursor-default transition-transform hover:scale-125"
+                  class="aspect-square rounded-[4px] cursor-default transition-transform hover:scale-125"
                   :class="heatmapColor(cell.count)"
                   :title="cell.label + (cell.count > 0 ? ' : ' + $plural(cell.count, 'séance') : '')"
                 ></div>
@@ -420,33 +418,24 @@
       </div>
 
       <!-- Résumé période -->
-      <dl class="grid grid-cols-3 mt-4 pt-4 border-t border-white/10">
+      <dl class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/10">
         <div>
           <dt class="text-xs text-gray-500">20 semaines</dt>
-          <dd
-            class="text-base font-semibold text-white tabular-nums mt-0.5"
-            x-text="$plural(sessionsInLastWeeks(20), 'séance')"
-          ></dd>
+          <dd class="k-stat text-lg mt-1" x-text="$plural(sessionsInLastWeeks(20), 'séance')"></dd>
         </div>
         <div>
           <dt class="text-xs text-gray-500">Total</dt>
-          <dd
-            class="text-base font-semibold text-white tabular-nums mt-0.5"
-            x-text="$num.loc(totalSessions + ' séances')"
-          ></dd>
+          <dd class="k-stat text-lg mt-1" x-text="$num.loc(totalSessions + ' séances')"></dd>
         </div>
         <div>
           <dt class="text-xs text-gray-500">Régularité</dt>
-          <dd
-            class="text-base font-semibold text-white tabular-nums mt-0.5"
-            x-text="consistency + '%'"
-          ></dd>
+          <dd class="k-stat text-lg mt-1" x-text="consistency + '%'"></dd>
         </div>
       </dl>
     </div>
   </div>
 
-  <!-- ─── Onglet RECORDS ────────────────────────────────────── -->
+  <!-- ─── Onglet RECORDS : trophées ──────────────────────────── -->
   <div x-show="totalSessions > 0 && activeTab === 'records'" x-transition.opacity.duration.200ms>
     <template x-if="records.length === 0">
       <div class="k-empty">
@@ -460,13 +449,12 @@
         <h2 class="text-xs text-gray-500">Records personnels</h2>
         <span class="text-xs text-gray-500 tabular-nums" x-text="records.length + ' PR'"></span>
       </div>
-      <ul class="k-list">
+      <ul class="k-list k-stagger">
         <template x-for="(pr, i) in records" :key="pr.exerciseId + '-' + pr.achievedAt">
-          <li class="k-row k-row-icon">
-            <span class="k-glyph" :class="i === 0 ? 'bg-kinetic-gold' : 'bg-kinetic-elevated'">
+          <li class="k-row k-row-icon py-3">
+            <span class="k-glyph h-10 w-10 rounded-full" :class="prGlyphClass(i)">
               <svg
-                class="w-[18px] h-[18px]"
-                :class="i === 0 ? 'text-gray-950' : 'text-gray-400'"
+                class="w-5 h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -481,18 +469,21 @@
               </svg>
             </span>
             <div class="flex-1 min-w-0">
-              <p class="text-base text-white truncate" x-text="exerciseName(pr.exerciseId)"></p>
               <p
-                class="text-xs text-gray-500 tabular-nums"
+                class="text-base font-semibold text-white truncate"
+                x-text="exerciseName(pr.exerciseId)"
+              ></p>
+              <p
+                class="text-xs text-gray-500 tabular-nums mt-0.5"
                 x-text="$num.loc(pr.weightKg + ' kg × ' + pr.reps + ' · ' + formatDate(pr.achievedAt))"
               ></p>
             </div>
             <div class="text-right flex-shrink-0">
-              <p class="text-base font-semibold text-white tabular-nums">
+              <p class="k-stat text-[1.375rem]">
                 <span x-text="$num.loc(formatNumber(pr.e1rmKg, 1))"></span
-                ><span class="text-xs text-gray-500 font-medium ml-0.5">kg</span>
+                ><span class="k-unit">kg</span>
               </p>
-              <p class="text-[11px] text-gray-500">e1RM</p>
+              <p class="text-[11px] text-gray-500 mt-0.5">e1RM</p>
             </div>
           </li>
         </template>

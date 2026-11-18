@@ -185,6 +185,11 @@ export function program() {
       return Math.round((this.completedTrainingDays / this.totalTrainingDays) * 100);
     },
 
+    /** Anneau de la semaine (style CSP « --p: N »). */
+    get weekRingStyle(): string {
+      return `--p: ${this.weekProgressPct}`;
+    },
+
     getExercisesForFocus(focus: string): TodoExercise[] {
       const focusLower = focus.toLowerCase();
       for (const [key, exs] of Object.entries(FALLBACK_EXERCISES)) {

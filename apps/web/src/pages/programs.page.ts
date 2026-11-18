@@ -118,6 +118,11 @@ export function programsPage() {
       return [...lifts];
     },
 
+    /** Libellé de la semaine affichée (l'optional chaining n'est pas accepté par Alpine CSP). */
+    get currentWeekLabel(): string {
+      return this.selectedProgram?.weeks[this.currentWeekIndex]?.label ?? '';
+    },
+
     get resolvedSessions(): ResolvedSession[] {
       if (!this.selectedProgram) return [];
       const week = this.selectedProgram.weeks[this.currentWeekIndex];

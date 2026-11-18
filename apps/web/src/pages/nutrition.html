@@ -23,58 +23,77 @@
     <a href="/onboarding" class="k-btn">Configurer mon profil</a>
   </div>
 
-  <!-- ── Résumé du jour : anneau des calories + barres de macros ─────────── -->
-  <div x-show="$store.nutrition.plan" class="bg-kinetic-surface rounded-2xl p-4 mb-8">
+  <!-- ── Résumé du jour : anneaux concentriques (calories + macros) ──────── -->
+  <section x-show="$store.nutrition.plan" class="k-hero k-enter mb-8">
     <div class="flex items-center gap-5">
-      <!-- Anneau kcal -->
-      <div class="relative w-28 h-28 flex-shrink-0">
-        <svg viewBox="0 0 80 80" class="w-full h-full -rotate-90" aria-hidden="true">
-          <circle
-            cx="40"
-            cy="40"
-            r="30"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="7"
-            class="text-kinetic-ink"
-          />
-          <circle
-            cx="40"
-            cy="40"
-            r="30"
-            fill="none"
-            stroke-width="7"
-            :stroke-dasharray="$store.nutrition.kcalDash"
-            stroke-linecap="round"
-            style="
-              stroke: rgb(var(--kinetic-neon));
-              transition: stroke-dasharray 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-            "
-          />
+      <!-- Anneaux : calories (accent) puis protéines, glucides, lipides -->
+      <div class="k-ring-box w-[8.25rem] h-[8.25rem]">
+        <svg class="k-ring" viewBox="0 0 36 36" aria-hidden="true">
+          <g class="text-kinetic-neon" style="--k-ring-w: 3.3">
+            <circle class="k-ring-track" cx="18" cy="18" r="15.9" pathLength="100" />
+            <circle
+              class="k-ring-value"
+              cx="18"
+              cy="18"
+              r="15.9"
+              pathLength="100"
+              :style="kcalRingStyle"
+            />
+          </g>
+          <g :style="macroRingColor('proteinG')" style="--k-ring-w: 2.7">
+            <circle class="k-ring-track" cx="18" cy="18" r="12.2" pathLength="100" />
+            <circle
+              class="k-ring-value"
+              cx="18"
+              cy="18"
+              r="12.2"
+              pathLength="100"
+              :style="macroRingStyle('proteinG')"
+            />
+          </g>
+          <g :style="macroRingColor('carbsG')" style="--k-ring-w: 2.7">
+            <circle class="k-ring-track" cx="18" cy="18" r="9.1" pathLength="100" />
+            <circle
+              class="k-ring-value"
+              cx="18"
+              cy="18"
+              r="9.1"
+              pathLength="100"
+              :style="macroRingStyle('carbsG')"
+            />
+          </g>
+          <g :style="macroRingColor('fatG')" style="--k-ring-w: 2.7">
+            <circle class="k-ring-track" cx="18" cy="18" r="6" pathLength="100" />
+            <circle
+              class="k-ring-value"
+              cx="18"
+              cy="18"
+              r="6"
+              pathLength="100"
+              :style="macroRingStyle('fatG')"
+            />
+          </g>
         </svg>
-        <div class="absolute inset-0 flex flex-col items-center justify-center">
-          <span
-            class="font-display font-bold text-xl leading-none text-white tabular-nums"
-            x-text="$store.nutrition.consumed.kcal"
-          ></span>
-          <span class="text-[11px] text-gray-500 mt-1">consommé</span>
-        </div>
       </div>
 
       <div class="flex-1 min-w-0">
-        <p class="text-xs text-gray-500">Restant</p>
-        <p class="mt-1 flex items-baseline gap-1">
-          <span
-            class="k-metric text-kinetic-neon"
-            x-text="$store.nutrition.remaining ? $store.nutrition.remaining.kcal : 0"
-          ></span>
-          <span class="text-sm text-gray-500">kcal</span>
+        <p class="text-sm font-medium text-gray-400">Restant</p>
+        <p class="k-stat text-[2.75rem] text-kinetic-neon mt-1">
+          <span x-text="$store.nutrition.remaining ? $store.nutrition.remaining.kcal : 0"></span
+          ><span class="k-unit">kcal</span>
         </p>
-        <dl class="mt-3 space-y-1 text-xs">
-          <div class="flex justify-between gap-2">
-            <dt class="text-gray-500">Objectif</dt>
+        <dl class="mt-3 space-y-1.5 text-sm">
+          <div class="flex items-baseline justify-between gap-2">
+            <dt class="text-gray-400">consommé</dt>
             <dd
-              class="text-white tabular-nums"
+              class="font-semibold text-white tabular-nums"
+              x-text="$store.nutrition.consumed.kcal"
+            ></dd>
+          </div>
+          <div class="flex items-baseline justify-between gap-2">
+            <dt class="text-gray-400">Objectif</dt>
+            <dd
+              class="font-semibold text-white tabular-nums"
               x-text="($store.nutrition.plan ? $store.nutrition.plan.macros.kcal : 0) + ' kcal'"
             ></dd>
           </div>
@@ -82,32 +101,42 @@
       </div>
     </div>
 
-    <!-- Barres macros -->
-    <div class="mt-5 space-y-3.5">
-      <template x-for="bar in $store.nutrition.macroBars" :key="bar.key">
+    <!-- Barres macros (légende des anneaux intérieurs) -->
+    <div class="mt-6 space-y-4">
+      <template x-for="bar in macroViews" :key="bar.key">
         <div>
-          <div class="flex items-baseline justify-between gap-2 mb-1.5">
-            <span class="text-sm font-medium text-white" x-text="bar.label"></span>
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="inline-flex items-center gap-2 text-sm font-semibold text-white">
+              <span
+                class="w-2.5 h-2.5 rounded-full"
+                :style="bar.dotStyle"
+                aria-hidden="true"
+              ></span>
+              <span x-text="bar.label"></span>
+            </span>
             <span
-              class="text-xs tabular-nums"
+              class="text-sm tabular-nums"
               :class="bar.over ? 'text-kinetic-electric font-semibold' : 'text-gray-400'"
               x-text="bar.detail"
             ></span>
           </div>
           <div
-            class="h-2 bg-kinetic-ink rounded-full overflow-hidden"
+            class="h-2 bg-kinetic-ink/60 rounded-full overflow-hidden"
             role="progressbar"
             :aria-label="bar.label"
             aria-valuemin="0"
             aria-valuemax="100"
             :aria-valuenow="bar.pct"
           >
-            <div class="h-full rounded-full" :style="bar.style"></div>
+            <div
+              class="h-full rounded-full transition-[width] duration-700 ease-out"
+              :style="bar.barStyle"
+            ></div>
           </div>
         </div>
       </template>
     </div>
-  </div>
+  </section>
 
   <!-- ── Journal du jour : une liste groupée par repas ───────────────────── -->
   <div x-show="$store.nutrition.plan" class="mb-8">
@@ -142,7 +171,7 @@
       </div>
     </template>
 
-    <div class="space-y-5">
+    <div class="space-y-5 k-stagger">
       <template x-for="meal in $store.nutrition.todayLog" :key="meal.id">
         <div>
           <p class="k-caption mb-1.5" x-text="meal.mealName"></p>
@@ -192,56 +221,56 @@
   <!-- ── Objectifs scientifiques ─────────────────────────────────────────── -->
   <div x-show="$store.nutrition.plan" class="mb-8">
     <h2 class="k-section mb-2.5">Objectifs scientifiques</h2>
-    <div class="bg-kinetic-surface rounded-2xl p-4 grid grid-cols-2 gap-x-4 gap-y-5">
+    <div class="k-card grid grid-cols-2 gap-x-4 gap-y-5">
       <div>
-        <p class="text-xs text-gray-500">Métabolisme de base</p>
+        <p class="text-xs font-medium text-gray-400">Métabolisme de base</p>
         <p class="mt-1 flex items-baseline gap-1">
           <span
-            class="font-display text-xl font-semibold text-white tabular-nums"
+            class="k-stat text-[1.625rem]"
             x-text="$store.nutrition.plan ? $store.nutrition.plan.bmrKcal : 0"
           ></span>
-          <span class="text-xs text-gray-500">kcal</span>
+          <span class="k-unit">kcal</span>
         </p>
       </div>
       <div>
-        <p class="text-xs text-gray-500">Dépense totale (TDEE)</p>
+        <p class="text-xs font-medium text-gray-400">Dépense totale (TDEE)</p>
         <p class="mt-1 flex items-baseline gap-1">
           <span
-            class="font-display text-xl font-semibold text-white tabular-nums"
+            class="k-stat text-[1.625rem]"
             x-text="$store.nutrition.plan ? $store.nutrition.plan.tdeeKcal : 0"
           ></span>
-          <span class="text-xs text-gray-500">kcal</span>
+          <span class="k-unit">kcal</span>
         </p>
       </div>
       <div>
-        <p class="text-xs text-gray-500">Eau par jour</p>
+        <p class="text-xs font-medium text-gray-400">Eau par jour</p>
         <p class="mt-1 flex items-baseline gap-1">
           <span
-            class="font-display text-xl font-semibold text-white tabular-nums"
+            class="k-stat text-[1.625rem]"
             x-text="$num.loc((($store.nutrition.plan ? $store.nutrition.plan.macros.waterMl : 0) / 1000).toFixed(1))"
           ></span>
-          <span class="text-xs text-gray-500">L</span>
+          <span class="k-unit">L</span>
         </p>
       </div>
       <div>
-        <p class="text-xs text-gray-500">Fibres</p>
+        <p class="text-xs font-medium text-gray-400">Fibres</p>
         <p class="mt-1 flex items-baseline gap-1">
           <span
-            class="font-display text-xl font-semibold text-white tabular-nums"
+            class="k-stat text-[1.625rem]"
             x-text="$store.nutrition.plan ? $store.nutrition.plan.macros.fiberG : 0"
           ></span>
-          <span class="text-xs text-gray-500">g</span>
+          <span class="k-unit">g</span>
         </p>
       </div>
       <template x-if="$store.nutrition.plan && $store.nutrition.plan.weeklyFatLossG">
         <div class="col-span-2">
-          <p class="text-xs text-gray-500">Perte de masse grasse théorique</p>
+          <p class="text-xs font-medium text-gray-400">Perte de masse grasse théorique</p>
           <p class="mt-1 flex items-baseline gap-1">
             <span
-              class="font-display text-xl font-semibold text-white tabular-nums"
+              class="k-stat text-[1.625rem]"
               x-text="$num.loc('~' + ($store.nutrition.plan ? ($store.nutrition.plan.weeklyFatLossG / 1000).toFixed(2) : '0,00'))"
             ></span>
-            <span class="text-xs text-gray-500">kg / semaine</span>
+            <span class="k-unit">kg / semaine</span>
           </p>
         </div>
       </template>
@@ -285,10 +314,7 @@
             </div>
             <div class="mt-1 flex flex-wrap gap-x-3.5 gap-y-1 text-xs text-gray-400 tabular-nums">
               <span class="inline-flex items-center gap-1.5">
-                <span
-                  class="w-1.5 h-1.5 rounded-full bg-kinetic-electric"
-                  aria-hidden="true"
-                ></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-kinetic-coral" aria-hidden="true"></span>
                 <span x-text="'P ' + meal.proteinG + ' g'"></span>
               </span>
               <span class="inline-flex items-center gap-1.5">
@@ -603,7 +629,7 @@
             x-text="$num.loc((newMeal.protein*newMeal.grams/100).toFixed(0))"
           ></p>
           <p class="text-[11px] text-gray-500 inline-flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-kinetic-electric" aria-hidden="true"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-kinetic-coral" aria-hidden="true"></span>
             Prot. (g)
           </p>
         </div>

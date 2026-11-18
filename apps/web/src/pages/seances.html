@@ -5,51 +5,65 @@
   <section
     x-show="fullscreenRest && restRemainingSec() > 0"
     :class="fullscreenRest ? '' : 'pointer-events-none'"
-    class="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-[60] mx-auto max-w-md k-toast rounded-[22px] overflow-hidden"
+    class="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-[60] mx-auto max-w-md k-toast rounded-[28px] overflow-hidden"
     role="timer"
     aria-live="off"
     aria-label="Minuteur de repos"
     @keydown.escape.window="fullscreenRest = false"
   >
-    <!-- Progression du repos, en liseré sur le bord haut -->
-    <div class="h-1 bg-white/10" aria-hidden="true">
+    <div class="flex items-center gap-3 p-3 pr-3.5">
+      <!-- Anneau du repos : se vide jusqu'à zéro, rouge sur les 5 dernières secondes -->
       <div
-        class="h-full rounded-r-full bg-kinetic-neon transition-[width] duration-1000 ease-linear"
-        :style="restProgressStyle()"
-      ></div>
-    </div>
-    <div class="flex items-center gap-2 pl-5 pr-3 py-3">
-      <div class="min-w-0 mr-auto">
-        <p class="text-xs font-medium text-gray-500">Repos</p>
+        class="k-ring-box h-[5.5rem] w-[5.5rem] transition-colors"
+        :class="restEnding() ? 'text-kinetic-electric' : 'text-kinetic-neon'"
+      >
+        <svg class="k-ring" viewBox="0 0 36 36" aria-hidden="true" style="--k-ring-w: 3.2">
+          <circle class="k-ring-track" cx="18" cy="18" r="15.5" pathLength="100" />
+          <circle
+            class="k-ring-value [transition:stroke-dashoffset_1s_linear]"
+            cx="18"
+            cy="18"
+            r="15.5"
+            pathLength="100"
+            :style="restRingStyle()"
+          />
+        </svg>
         <p
-          class="font-display text-4xl leading-none font-semibold tabular-nums select-none transition-colors"
-          :class="restRemainingSec() <= 5 ? 'text-kinetic-electric' : 'text-white'"
+          class="k-stat select-none text-[1.375rem] transition-colors"
+          :class="restEnding() ? 'text-kinetic-electric' : 'text-white'"
           x-text="$num.loc(restLabel())"
         ></p>
       </div>
-      <button
-        type="button"
-        @click="addRestSec(-15)"
-        aria-label="Retirer 15 secondes"
-        class="h-11 w-11 flex-shrink-0 rounded-full bg-white/10 text-sm font-semibold tabular-nums text-white transition active:scale-90"
-      >
-        −15
-      </button>
-      <button
-        type="button"
-        @click="addRestSec(15)"
-        aria-label="Ajouter 15 secondes"
-        class="h-11 w-11 flex-shrink-0 rounded-full bg-white/10 text-sm font-semibold tabular-nums text-white transition active:scale-90"
-      >
-        +15
-      </button>
-      <button
-        type="button"
-        @click="skipRest()"
-        class="h-11 flex-shrink-0 rounded-full bg-white/10 px-5 text-base font-semibold text-white transition active:scale-95"
-      >
-        Passer
-      </button>
+      <div class="min-w-0 flex-1">
+        <p class="mb-1.5 pl-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
+          Repos
+        </p>
+        <div class="flex items-center gap-1.5">
+          <button
+            type="button"
+            @click="addRestSec(-15)"
+            aria-label="Retirer 15 secondes"
+            class="k-press h-12 w-12 flex-shrink-0 rounded-full bg-white/10 text-sm font-semibold tabular-nums text-white"
+          >
+            −15
+          </button>
+          <button
+            type="button"
+            @click="addRestSec(15)"
+            aria-label="Ajouter 15 secondes"
+            class="k-press h-12 w-12 flex-shrink-0 rounded-full bg-white/10 text-sm font-semibold tabular-nums text-white"
+          >
+            +15
+          </button>
+          <button
+            type="button"
+            @click="skipRest()"
+            class="k-press h-12 min-w-0 flex-1 rounded-full bg-white/10 px-3 text-base font-bold text-white"
+          >
+            Passer
+          </button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -95,13 +109,13 @@
 
       <div class="mt-5 flex items-baseline justify-center gap-2 tabular-nums">
         <span
-          class="k-metric text-4xl"
+          class="k-stat text-5xl"
           x-text="$num.loc(prCelebration ? prCelebration.weightKg : 0)"
         ></span>
         <span class="text-lg text-gray-500">kg</span>
         <span class="mx-1 text-2xl text-gray-500" aria-hidden="true">×</span>
         <span
-          class="k-metric text-4xl"
+          class="k-stat text-5xl"
           x-text="$num.loc(prCelebration ? prCelebration.reps : 0)"
         ></span>
         <span class="text-lg text-gray-500">reps</span>
@@ -127,237 +141,26 @@
     <span class="ml-auto text-xs text-gray-500" x-text="$today"></span>
   </div>
 
-  <!-- Démarrer : une liste groupée, une rangée par façon de commencer -->
-  <div class="k-list mb-6">
-    <template x-if="hasFinishedSession && !currentSession">
-      <button type="button" @click="quickRestartLast()" class="k-row">
-        <span class="flex-1 min-w-0">
-          <span class="block text-base text-white">Reprendre la dernière séance</span>
-          <span class="block text-xs text-gray-500">Mêmes exercices que la dernière fois</span>
-        </span>
-        <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
-          <path
-            d="m1 1 6 6-6 6"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
-    </template>
-    <button type="button" @click="startFreeSession()" class="k-row">
-      <span class="flex-1 min-w-0">
-        <span class="block text-base text-white">Séance libre</span>
-        <span class="block text-xs text-gray-500">Commencer à vide</span>
-      </span>
-      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
-        <path
-          d="m1 1 6 6-6 6"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
-    <button
-      type="button"
-      @click="showTemplates = !showTemplates; showAutoGen = false"
-      class="k-row"
-    >
-      <span class="flex-1 min-w-0">
-        <span class="block text-base text-white">Modèles</span>
-        <span
-          class="block text-xs text-gray-500"
-          x-text="$num.loc($plural(templates.length, 'modèle'))"
-        ></span>
-      </span>
-      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
-        <path
-          d="m1 1 6 6-6 6"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
-    <button type="button" @click="showAutoGen = !showAutoGen; showTemplates = false" class="k-row">
-      <span class="flex-1 min-w-0">
-        <span class="block text-base text-white">Générer une séance</span>
-        <span class="block text-xs text-gray-500">Push, Pull, Jambes…</span>
-      </span>
-      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
-        <path
-          d="m1 1 6 6-6 6"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
-  </div>
-
-  <!-- Auto-générateur -->
-  <div x-show="showAutoGen" x-transition class="bg-kinetic-surface rounded-2xl p-4 mb-6 -mt-3">
-    <div class="flex items-center justify-between mb-3">
-      <div>
-        <h2 class="font-semibold text-white">Génération automatique</h2>
-        <p class="text-xs text-gray-500 mt-0.5">
-          5 exercices selon ton objectif courant · compound first
-        </p>
-      </div>
-      <button class="text-sm font-medium text-kinetic-neon py-1" @click="showAutoGen = false">
-        Fermer
-      </button>
-    </div>
-    <div class="grid grid-cols-3 gap-2">
-      <button
-        @click="startAutoWorkout('push')"
-        class="bg-kinetic-elevated rounded-xl py-3 px-2 text-center active:bg-kinetic-raised transition-colors"
-      >
-        <p class="text-sm text-white font-medium">Push</p>
-      </button>
-      <button
-        @click="startAutoWorkout('pull')"
-        class="bg-kinetic-elevated rounded-xl py-3 px-2 text-center active:bg-kinetic-raised transition-colors"
-      >
-        <p class="text-sm text-white font-medium">Pull</p>
-      </button>
-      <button
-        @click="startAutoWorkout('legs')"
-        class="bg-kinetic-elevated rounded-xl py-3 px-2 text-center active:bg-kinetic-raised transition-colors"
-      >
-        <p class="text-sm text-white font-medium">Jambes</p>
-      </button>
-      <button
-        @click="startAutoWorkout('upper')"
-        class="bg-kinetic-elevated rounded-xl py-3 px-2 text-center active:bg-kinetic-raised transition-colors"
-      >
-        <p class="text-sm text-white font-medium">Upper</p>
-      </button>
-      <button
-        @click="startAutoWorkout('lower')"
-        class="bg-kinetic-elevated rounded-xl py-3 px-2 text-center active:bg-kinetic-raised transition-colors"
-      >
-        <p class="text-sm text-white font-medium">Lower</p>
-      </button>
-      <button
-        @click="startAutoWorkout('full')"
-        class="bg-kinetic-elevated rounded-xl py-3 px-2 text-center active:bg-kinetic-raised transition-colors"
-      >
-        <p class="text-sm text-white font-medium">Full body</p>
-      </button>
-    </div>
-  </div>
-
-  <!-- Templates -->
-  <div x-show="showTemplates" x-transition class="bg-kinetic-surface rounded-2xl p-4 mb-6 -mt-3">
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="font-semibold text-white">Modèles</h2>
-      <button class="text-sm font-medium text-kinetic-neon py-1" @click="showTemplates = false">
-        Fermer
-      </button>
-    </div>
-    <template x-if="templates.length === 0">
-      <p class="text-sm text-gray-500">
-        Aucun modèle. Crée une séance puis "Enregistrer comme modèle".
-      </p>
-    </template>
-    <div class="space-y-2" x-show="templates.length > 0">
-      <template x-for="t in templates" :key="t.id">
-        <div class="flex items-center gap-2">
-          <button
-            @click="startFromTemplate(t.id)"
-            class="flex-1 bg-kinetic-elevated rounded-xl px-3.5 py-3 text-left active:bg-kinetic-raised transition-colors"
-          >
-            <div class="flex items-center justify-between">
-              <p class="text-white font-medium" x-text="t.name"></p>
-              <span class="text-xs text-gray-500" x-text="t.exercises.length + ' ex'"></span>
-            </div>
-          </button>
-          <button
-            type="button"
-            @click.stop="shareTemplate(t.id)"
-            class="k-icon-btn"
-            aria-label="Partager ce modèle"
-            title="Partager"
-          >
-            <svg
-              class="h-[18px] w-[18px]"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 15V3m0 0L8 7m4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            @click="deleteTemplate(t.id)"
-            class="k-icon-btn"
-            aria-label="Supprimer ce modèle"
-            title="Supprimer"
-          >
-            <svg
-              class="h-3.5 w-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.6"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <path d="M6 6l12 12M18 6 6 18" />
-            </svg>
-          </button>
-        </div>
-      </template>
-    </div>
-  </div>
-
-  <!-- ── Objectif d'entraînement : contrôle segmenté ─────────────────────── -->
-  <div class="mb-6">
-    <h2 class="k-section mb-2.5">Objectif</h2>
-    <div class="k-seg" role="group" aria-label="Objectif d'entraînement">
-      <template x-for="(preset, key) in coachGoals" :key="key">
-        <button
-          type="button"
-          @click="setCoachGoal(key)"
-          class="k-seg-item"
-          :aria-pressed="coachGoal === key ? 'true' : 'false'"
-          x-text="preset.short"
-        ></button>
-      </template>
-    </div>
-    <p class="k-caption mt-2 text-white" x-text="$num.loc(coachGoals[coachGoal].rpeZone)"></p>
-    <p
-      class="k-caption mt-0.5 text-gray-500 text-balance"
-      x-text="coachGoals[coachGoal].science"
-    ></p>
-  </div>
-
   <!-- ── Séance en cours ─────────────────────────────────────────────────── -->
-  <section x-show="currentSession" class="mb-8">
+  <section x-show="currentSession" class="mb-8 k-enter">
     <h2 class="k-section mb-2.5">Séance en cours</h2>
 
     <div x-show="currentSession" class="space-y-3">
       <!-- Tableau de bord : chrono, totaux, repos, fin de séance -->
-      <div class="bg-kinetic-surface rounded-2xl p-4">
+      <div class="k-hero">
         <div class="flex items-start gap-3">
           <div class="min-w-0 flex-1">
-            <p
-              class="text-sm text-gray-500 truncate"
-              x-text="currentSession ? currentSession.name : ''"
-            ></p>
-            <p class="k-metric mt-1 text-[2.75rem]" x-text="$num.loc(elapsedLabel())"></p>
-            <p class="mt-1.5 text-xs text-gray-500 tabular-nums">
+            <p class="flex items-center gap-2 text-sm font-semibold text-white">
+              <span class="relative flex h-2.5 w-2.5 flex-shrink-0" aria-hidden="true">
+                <span
+                  class="absolute inset-0 rounded-full bg-kinetic-electric opacity-60 motion-safe:animate-ping"
+                ></span>
+                <span class="relative h-2.5 w-2.5 rounded-full bg-kinetic-electric"></span>
+              </span>
+              <span class="truncate" x-text="currentSession ? currentSession.name : ''"></span>
+            </p>
+            <p class="k-stat mt-2 text-[3.5rem]" x-text="$num.loc(elapsedLabel())"></p>
+            <p class="mt-2 text-xs text-gray-400 tabular-nums">
               <span>Durée</span>
               <span
                 x-show="estimateCurrentCalories() !== null"
@@ -369,7 +172,7 @@
             type="button"
             @click="saveCurrentSession()"
             :disabled="!currentSession || currentEntries.length === 0"
-            class="k-pill h-11 px-5 font-semibold"
+            class="k-pill h-12 px-5 font-semibold"
           >
             <svg
               class="h-4 w-4"
@@ -387,33 +190,47 @@
           </button>
         </div>
 
-        <dl class="mt-4 grid grid-cols-3 gap-2">
-          <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
-            <dt class="text-xs text-gray-500">Exercices</dt>
-            <dd
-              class="mt-0.5 text-lg font-semibold tabular-nums text-white"
-              x-text="currentEntries.length"
-            ></dd>
+        <div class="mt-5 flex items-center gap-4">
+          <!-- Anneau : exercices entamés sur le total (décoratif, repris dans la liste) -->
+          <div class="k-ring-box h-[4.5rem] w-[4.5rem] text-kinetic-neon" aria-hidden="true">
+            <svg class="k-ring" viewBox="0 0 36 36" style="--k-ring-w: 4">
+              <circle class="k-ring-track" cx="18" cy="18" r="15" pathLength="100" />
+              <circle
+                class="k-ring-value"
+                cx="18"
+                cy="18"
+                r="15"
+                pathLength="100"
+                :style="sessionRingStyle()"
+              />
+            </svg>
+            <p class="k-stat text-xl">
+              <span x-text="sessionStartedCount()"></span
+              ><span class="k-unit" x-text="'/' + currentEntries.length"></span>
+            </p>
           </div>
-          <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
-            <dt class="text-xs text-gray-500">Séries</dt>
-            <dd
-              class="mt-0.5 text-lg font-semibold tabular-nums text-white"
-              x-text="sessionSetCount()"
-            ></dd>
-          </div>
-          <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
-            <dt class="text-xs text-gray-500">Volume</dt>
-            <dd
-              class="mt-0.5 text-lg font-semibold tabular-nums text-white truncate"
-              x-text="$num.loc(sessionVolumeLabel())"
-            ></dd>
-          </div>
-        </dl>
+          <dl class="grid min-w-0 flex-1 grid-cols-2 gap-3">
+            <div class="sr-only">
+              <dt>Exercices</dt>
+              <dd x-text="currentEntries.length"></dd>
+            </div>
+            <div class="min-w-0">
+              <dt class="text-xs text-gray-400">Séries</dt>
+              <dd class="k-stat mt-1 text-[1.75rem]" x-text="sessionSetCount()"></dd>
+            </div>
+            <div class="min-w-0">
+              <dt class="text-xs text-gray-400">Volume</dt>
+              <dd class="k-stat mt-1 truncate text-[1.75rem]">
+                <span x-text="sessionVolumeParts().value"></span
+                ><span class="k-unit" x-text="sessionVolumeParts().unit"></span>
+              </dd>
+            </div>
+          </dl>
+        </div>
 
         <!-- Repos : durée par défaut + lancement manuel -->
         <div
-          class="mt-4 -mx-4 -mb-4 border-t border-white/10 px-4 py-2.5"
+          class="mt-5 -mx-5 -mb-5 border-t border-white/10 bg-black/[0.06] px-5 py-2.5"
           @click.outside="showRestPresets = false"
         >
           <div class="flex items-center gap-2">
@@ -457,7 +274,7 @@
               type="button"
               @click="restRemainingSec() > 0 ? stopRest() : startRest()"
               :aria-label="restRemainingSec() > 0 ? 'Arrêter le repos' : 'Lancer le repos'"
-              class="k-pill h-11 min-w-[6rem] tabular-nums"
+              class="k-pill h-12 min-w-[6.5rem] tabular-nums"
               :class="restRemainingSec() > 0 ? 'k-on' : ''"
             >
               <svg
@@ -501,7 +318,10 @@
 
       <!-- Exercices de la séance : un seul est ouvert à la saisie à la fois -->
       <template x-for="entry in currentEntries" :key="entry.exerciseId">
-        <article class="bg-kinetic-surface rounded-2xl p-4">
+        <article
+          class="transition-shadow duration-300"
+          :class="isActiveEntry(entry.exerciseId) ? 'k-hero' : 'k-card'"
+        >
           <!-- En-tête : nom (touche pour saisir) + actions -->
           <div class="flex items-center gap-2">
             <h3 class="flex-1 min-w-0">
@@ -800,13 +620,16 @@
               <span class="text-right">RPE</span>
               <span class="text-right">e1RM</span>
             </div>
-            <ol class="rounded-xl bg-kinetic-elevated">
+            <ol class="overflow-hidden rounded-2xl bg-kinetic-elevated">
               <template x-for="s in entry.sets" :key="s.setIndex">
                 <li class="k-item animate-slide-up">
                   <div
                     class="grid grid-cols-[1.75rem_1fr_2.75rem_3.25rem] items-center gap-2 px-3 min-h-11 py-2"
                   >
-                    <span class="text-sm text-gray-500 tabular-nums" x-text="s.setIndex + 1"></span>
+                    <span
+                      class="flex h-6 w-6 items-center justify-center rounded-full bg-kinetic-neon/15 text-xs font-bold tabular-nums text-kinetic-neon"
+                      x-text="s.setIndex + 1"
+                    ></span>
                     <span class="flex min-w-0 items-baseline gap-1 tabular-nums text-white">
                       <span class="text-lg font-semibold" x-text="$num.loc(s.weightKg)"></span>
                       <span class="text-sm text-gray-500">kg</span>
@@ -957,9 +780,9 @@
                 </div>
               </template>
 
-              <div class="mb-2 flex items-baseline justify-between gap-2 px-1">
+              <div class="mb-2.5 flex items-baseline justify-between gap-2 px-1">
                 <p
-                  class="text-sm font-semibold text-white"
+                  class="font-display text-xl font-bold text-white"
                   x-text="'Série ' + (entry.sets.length + 1)"
                 ></p>
                 <p
@@ -972,8 +795,12 @@
 
               <!-- Charge × reps : gros chiffres, stepper iOS dessous -->
               <div class="grid grid-cols-2 gap-2">
-                <div class="rounded-xl bg-kinetic-elevated p-1.5">
-                  <label for="f-seances-kg" class="block pt-1 text-center text-xs text-gray-500"
+                <div
+                  class="rounded-2xl bg-kinetic-elevated p-2 ring-1 ring-inset ring-white/[0.06]"
+                >
+                  <label
+                    for="f-seances-kg"
+                    class="block pt-1 text-center text-xs font-medium text-gray-400"
                     >Charge (kg)</label
                   >
                   <input
@@ -983,10 +810,10 @@
                     step="0.5"
                     inputmode="decimal"
                     x-model.number="draft.weightKg"
-                    class="block h-14 w-full min-w-0 rounded-lg bg-transparent text-center font-display text-4xl font-semibold tabular-nums text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    class="block h-[4.5rem] w-full min-w-0 rounded-lg bg-transparent text-center font-display text-[3.25rem] font-bold leading-none tabular-nums text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                   <div
-                    class="flex h-11 overflow-hidden rounded-lg bg-kinetic-raised divide-x divide-white/10"
+                    class="flex h-12 overflow-hidden rounded-xl bg-kinetic-raised divide-x divide-white/10"
                   >
                     <button
                       type="button"
@@ -1026,8 +853,12 @@
                     </button>
                   </div>
                 </div>
-                <div class="rounded-xl bg-kinetic-elevated p-1.5">
-                  <label for="f-seances-reps" class="block pt-1 text-center text-xs text-gray-500"
+                <div
+                  class="rounded-2xl bg-kinetic-elevated p-2 ring-1 ring-inset ring-white/[0.06]"
+                >
+                  <label
+                    for="f-seances-reps"
+                    class="block pt-1 text-center text-xs font-medium text-gray-400"
                     >Reps</label
                   >
                   <input
@@ -1036,10 +867,10 @@
                     min="1"
                     inputmode="numeric"
                     x-model.number="draft.reps"
-                    class="block h-14 w-full min-w-0 rounded-lg bg-transparent text-center font-display text-4xl font-semibold tabular-nums text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    class="block h-[4.5rem] w-full min-w-0 rounded-lg bg-transparent text-center font-display text-[3.25rem] font-bold leading-none tabular-nums text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                   <div
-                    class="flex h-11 overflow-hidden rounded-lg bg-kinetic-raised divide-x divide-white/10"
+                    class="flex h-12 overflow-hidden rounded-xl bg-kinetic-raised divide-x divide-white/10"
                   >
                     <button
                       type="button"
@@ -1083,7 +914,7 @@
 
               <!-- RPE : secondaire, sur une rangée -->
               <div
-                class="mt-2 flex items-center gap-2 rounded-xl bg-kinetic-elevated py-1.5 pl-3.5 pr-1.5"
+                class="mt-2 flex items-center gap-2 rounded-2xl bg-kinetic-elevated py-2 pl-4 pr-2 ring-1 ring-inset ring-white/[0.06]"
               >
                 <label for="f-seances-rpe" class="text-base text-white">RPE</label>
                 <span x-data="helpTip" data-term="rpe" class="relative inline-flex">
@@ -1128,10 +959,10 @@
                   step="0.5"
                   inputmode="decimal"
                   x-model.number="draft.rpe"
-                  class="ml-auto h-11 w-16 min-w-0 rounded-lg bg-transparent text-center text-xl font-semibold tabular-nums text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  class="ml-auto h-12 w-16 min-w-0 rounded-lg bg-transparent text-center font-display text-2xl font-bold tabular-nums text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />
                 <div
-                  class="flex h-11 w-[6.5rem] flex-shrink-0 overflow-hidden rounded-lg bg-kinetic-raised divide-x divide-white/10"
+                  class="flex h-12 w-[7rem] flex-shrink-0 overflow-hidden rounded-xl bg-kinetic-raised divide-x divide-white/10"
                 >
                   <button
                     type="button"
@@ -1222,14 +1053,20 @@
               <!-- Libellé texte « + Série » (pas d'icône SVG + aria-label) : les
                    tests E2E le cherchent par nom accessible, et la variante
                    icône + aria-label n'était pas retrouvée sous WebKit. -->
-              <button type="button" @click="addSet(entry.exerciseId)" class="k-btn">+ Série</button>
+              <button
+                type="button"
+                @click="addSet(entry.exerciseId)"
+                class="k-btn-primary h-14 text-lg font-bold"
+              >
+                + Série
+              </button>
             </div>
           </template>
         </article>
       </template>
 
       <!-- Ajouter un exercice -->
-      <div class="bg-kinetic-surface rounded-2xl p-4">
+      <div class="k-card">
         <label for="f-seances-add" class="k-card-title mb-3 block">Ajouter un exercice</label>
         <div class="flex gap-2">
           <select id="f-seances-add" x-model="selectedExerciseId" class="k-field flex-1">
@@ -1265,7 +1102,7 @@
       </div>
 
       <!-- Enregistrer comme modèle -->
-      <div class="bg-kinetic-surface rounded-2xl p-4">
+      <div class="k-card">
         <label for="f-seances-template" class="k-card-title mb-3 block"
           >Enregistrer comme modèle</label
         >
@@ -1289,6 +1126,324 @@
     </div>
   </section>
 
+  <!-- Bilan des 7 derniers jours : carte héros quand aucune séance n'est en cours -->
+  <section x-show="!currentSession" class="k-hero k-enter mb-4" aria-labelledby="seances-bilan">
+    <div class="flex items-center justify-between gap-3">
+      <h2 id="seances-bilan" class="text-sm font-semibold text-white">7 derniers jours</h2>
+      <svg
+        class="h-5 w-5 text-kinetic-neon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" />
+      </svg>
+    </div>
+    <dl class="mt-4 grid grid-cols-3 gap-3">
+      <div class="min-w-0">
+        <dt class="text-xs text-gray-400">Séances</dt>
+        <dd class="k-stat mt-1.5 text-[2rem]" x-text="recentStats().count"></dd>
+      </div>
+      <div class="min-w-0">
+        <dt class="text-xs text-gray-400">Durée</dt>
+        <dd class="k-stat mt-1.5 truncate text-[2rem]">
+          <span x-text="recentStats().minutes"></span><span class="k-unit">min</span>
+        </dd>
+      </div>
+      <div class="min-w-0">
+        <dt class="text-xs text-gray-400">Tonnage</dt>
+        <dd class="k-stat mt-1.5 truncate text-[2rem]">
+          <span x-text="recentStats().volume.value"></span
+          ><span class="k-unit" x-text="recentStats().volume.unit"></span>
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- Démarrer : une liste groupée, une rangée par façon de commencer -->
+  <div class="k-list mb-6">
+    <template x-if="hasFinishedSession && !currentSession">
+      <button type="button" @click="quickRestartLast()" class="k-row">
+        <span
+          class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-kinetic-neon/15 text-kinetic-neon"
+          aria-hidden="true"
+        >
+          <svg
+            class="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M4 12a8 8 0 1 0 2.6-5.9M4 4v4h4" />
+          </svg>
+        </span>
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Reprendre la dernière séance</span>
+          <span class="block text-xs text-gray-500">Mêmes exercices que la dernière fois</span>
+        </span>
+        <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+          <path
+            d="m1 1 6 6-6 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </template>
+    <button type="button" @click="startFreeSession()" class="k-row">
+      <span
+        class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-kinetic-neon/15 text-kinetic-neon"
+        aria-hidden="true"
+      >
+        <svg
+          class="h-5 w-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </span>
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Séance libre</span>
+        <span class="block text-xs text-gray-500">Commencer à vide</span>
+      </span>
+      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+    <button
+      type="button"
+      @click="showTemplates = !showTemplates; showAutoGen = false"
+      class="k-row"
+    >
+      <span
+        class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-kinetic-teal/15 text-kinetic-teal"
+        aria-hidden="true"
+      >
+        <svg
+          class="h-5 w-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M4 7h16M4 12h16M4 17h10" />
+        </svg>
+      </span>
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Modèles</span>
+        <span
+          class="block text-xs text-gray-500"
+          x-text="$num.loc($plural(templates.length, 'modèle'))"
+        ></span>
+      </span>
+      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+    <button type="button" @click="showAutoGen = !showAutoGen; showTemplates = false" class="k-row">
+      <span
+        class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-kinetic-purple/15 text-kinetic-purple"
+        aria-hidden="true"
+      >
+        <svg
+          class="h-5 w-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M12 3l1.9 4.6 4.6 1.9-4.6 1.9L12 16l-1.9-4.6-4.6-1.9 4.6-1.9Z" />
+        </svg>
+      </span>
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Générer une séance</span>
+        <span class="block text-xs text-gray-500">Push, Pull, Jambes…</span>
+      </span>
+      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+  </div>
+
+  <!-- Auto-générateur -->
+  <div x-show="showAutoGen" x-transition class="k-card mb-6 -mt-3">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <h2 class="font-semibold text-white">Génération automatique</h2>
+        <p class="text-xs text-gray-500 mt-0.5">
+          5 exercices selon ton objectif courant · compound first
+        </p>
+      </div>
+      <button class="text-sm font-medium text-kinetic-neon py-1" @click="showAutoGen = false">
+        Fermer
+      </button>
+    </div>
+    <div class="grid grid-cols-3 gap-2">
+      <button
+        @click="startAutoWorkout('push')"
+        class="k-press h-14 rounded-2xl bg-kinetic-elevated px-2 text-center ring-1 ring-inset ring-white/[0.06] active:bg-kinetic-raised"
+      >
+        <p class="text-base font-semibold text-white">Push</p>
+      </button>
+      <button
+        @click="startAutoWorkout('pull')"
+        class="k-press h-14 rounded-2xl bg-kinetic-elevated px-2 text-center ring-1 ring-inset ring-white/[0.06] active:bg-kinetic-raised"
+      >
+        <p class="text-base font-semibold text-white">Pull</p>
+      </button>
+      <button
+        @click="startAutoWorkout('legs')"
+        class="k-press h-14 rounded-2xl bg-kinetic-elevated px-2 text-center ring-1 ring-inset ring-white/[0.06] active:bg-kinetic-raised"
+      >
+        <p class="text-base font-semibold text-white">Jambes</p>
+      </button>
+      <button
+        @click="startAutoWorkout('upper')"
+        class="k-press h-14 rounded-2xl bg-kinetic-elevated px-2 text-center ring-1 ring-inset ring-white/[0.06] active:bg-kinetic-raised"
+      >
+        <p class="text-base font-semibold text-white">Upper</p>
+      </button>
+      <button
+        @click="startAutoWorkout('lower')"
+        class="k-press h-14 rounded-2xl bg-kinetic-elevated px-2 text-center ring-1 ring-inset ring-white/[0.06] active:bg-kinetic-raised"
+      >
+        <p class="text-base font-semibold text-white">Lower</p>
+      </button>
+      <button
+        @click="startAutoWorkout('full')"
+        class="k-press h-14 rounded-2xl bg-kinetic-elevated px-2 text-center ring-1 ring-inset ring-white/[0.06] active:bg-kinetic-raised"
+      >
+        <p class="text-base font-semibold text-white">Full body</p>
+      </button>
+    </div>
+  </div>
+
+  <!-- Templates -->
+  <div x-show="showTemplates" x-transition class="k-card mb-6 -mt-3">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold text-white">Modèles</h2>
+      <button class="text-sm font-medium text-kinetic-neon py-1" @click="showTemplates = false">
+        Fermer
+      </button>
+    </div>
+    <template x-if="templates.length === 0">
+      <p class="text-sm text-gray-500">
+        Aucun modèle. Crée une séance puis "Enregistrer comme modèle".
+      </p>
+    </template>
+    <div class="space-y-2" x-show="templates.length > 0">
+      <template x-for="t in templates" :key="t.id">
+        <div class="flex items-center gap-2">
+          <button
+            @click="startFromTemplate(t.id)"
+            class="k-press flex-1 rounded-2xl bg-kinetic-elevated px-4 py-3.5 text-left ring-1 ring-inset ring-white/[0.06] active:bg-kinetic-raised"
+          >
+            <div class="flex items-center justify-between">
+              <p class="text-white font-medium" x-text="t.name"></p>
+              <span class="text-xs text-gray-500" x-text="t.exercises.length + ' ex'"></span>
+            </div>
+          </button>
+          <button
+            type="button"
+            @click.stop="shareTemplate(t.id)"
+            class="k-icon-btn"
+            aria-label="Partager ce modèle"
+            title="Partager"
+          >
+            <svg
+              class="h-[18px] w-[18px]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 15V3m0 0L8 7m4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            @click="deleteTemplate(t.id)"
+            class="k-icon-btn"
+            aria-label="Supprimer ce modèle"
+            title="Supprimer"
+          >
+            <svg
+              class="h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- ── Objectif d'entraînement : contrôle segmenté ─────────────────────── -->
+  <div class="mb-6">
+    <h2 class="k-section mb-2.5">Objectif</h2>
+    <div class="k-seg" role="group" aria-label="Objectif d'entraînement">
+      <template x-for="(preset, key) in coachGoals" :key="key">
+        <button
+          type="button"
+          @click="setCoachGoal(key)"
+          class="k-seg-item"
+          :aria-pressed="coachGoal === key ? 'true' : 'false'"
+          x-text="preset.short"
+        ></button>
+      </template>
+    </div>
+    <p class="k-caption mt-2 text-white" x-text="$num.loc(coachGoals[coachGoal].rpeZone)"></p>
+    <p
+      class="k-caption mt-0.5 text-gray-500 text-balance"
+      x-text="coachGoals[coachGoal].science"
+    ></p>
+  </div>
+
   <!-- Historique -->
   <div class="mb-6">
     <div class="flex items-baseline justify-between mb-2.5">
@@ -1300,12 +1455,10 @@
     </div>
 
     <template x-if="sessions.length === 0">
-      <p class="bg-kinetic-surface rounded-2xl p-4 text-sm text-gray-500">
-        Aucune séance enregistrée.
-      </p>
+      <p class="k-card text-sm text-gray-500">Aucune séance enregistrée.</p>
     </template>
 
-    <div class="k-list" x-show="sessions.length > 0">
+    <div class="k-list k-stagger" x-show="sessions.length > 0">
       <template x-for="s in visibleSessions()" :key="s.id">
         <div class="k-item">
           <!-- Ligne résumé (cliquable pour étendre) -->
@@ -1314,9 +1467,22 @@
             class="w-full text-left px-4 py-3 active:bg-kinetic-elevated transition-colors"
           >
             <div class="flex items-center gap-3">
+              <!-- Pastille de date -->
+              <span
+                class="flex h-12 w-12 flex-shrink-0 flex-col items-center justify-center rounded-[14px] bg-kinetic-neon/[0.12] leading-none"
+              >
+                <span
+                  class="font-display text-lg font-bold tabular-nums text-white"
+                  x-text="dateDay(s.startedAt)"
+                ></span>
+                <span
+                  class="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                  x-text="dateMonth(s.startedAt)"
+                ></span>
+              </span>
               <div class="min-w-0 flex-1">
-                <p class="text-base text-white truncate" x-text="s.name"></p>
-                <p class="mt-0.5 text-xs text-gray-500">
+                <p class="text-base font-semibold text-white truncate" x-text="s.name"></p>
+                <p class="mt-0.5 truncate text-xs text-gray-500">
                   <span x-text="$plural(s.entries.length, 'exercice')"></span>
                   <span x-show="s.durationMin" class="mx-1">·</span>
                   <span x-show="s.durationMin" x-text="$num.loc(s.durationMin + ' min')"></span>
@@ -1324,10 +1490,11 @@
                   <span x-show="s.caloriesKcal" x-text="'~' + s.caloriesKcal + ' kcal'"></span>
                 </p>
               </div>
-              <span
-                class="flex-shrink-0 text-sm text-gray-500"
-                x-text="formatDate(s.startedAt)"
-              ></span>
+              <!-- Tonnage en grand chiffre -->
+              <span class="k-stat flex-shrink-0 text-xl text-kinetic-neon">
+                <span x-text="sessionTonnage(s).value"></span
+                ><span class="k-unit" x-text="sessionTonnage(s).unit"></span>
+              </span>
               <svg
                 class="k-chevron flex-shrink-0 transition-transform"
                 :class="expandedSessionId === s.id ? '-rotate-90' : 'rotate-90'"
@@ -1366,7 +1533,7 @@
             <!-- Liste exercices + sets -->
             <div class="space-y-2 mb-3">
               <template x-for="entry in s.entries" :key="entry.exerciseId">
-                <div class="bg-kinetic-elevated rounded-xl p-3">
+                <div class="rounded-2xl bg-kinetic-elevated p-3.5">
                   <p
                     class="text-sm font-semibold text-white mb-1.5"
                     x-text="exerciseNameOf(entry.exerciseId)"
@@ -1458,7 +1625,7 @@
   <!-- ── Progression & records ──────────────────────────────────────────── -->
   <section>
     <h2 class="k-section mb-2.5">Progression &amp; records</h2>
-    <div class="bg-kinetic-surface rounded-2xl p-4">
+    <div class="k-card">
       <select x-model="progressExerciseId" aria-label="Exercice" class="k-field">
         <option value="">Choisir un exercice…</option>
         <template x-for="group in exercisesByGroup" :key="group.category">
@@ -1518,10 +1685,10 @@
             ></p>
             <p class="mt-1 flex items-baseline gap-1">
               <span
-                class="k-metric text-kinetic-electric"
+                class="k-stat text-[2.5rem] text-kinetic-electric"
                 x-text="$num.loc(progressMax().toFixed(1))"
               ></span>
-              <span class="text-base text-gray-500">kg</span>
+              <span class="k-unit">kg</span>
             </p>
           </div>
           <div class="text-right">

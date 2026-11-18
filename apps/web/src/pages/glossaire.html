@@ -34,7 +34,7 @@
       aria-label="Rechercher un terme"
       placeholder="Rechercher (RPE, e1RM, deload…)"
       autocomplete="off"
-      class="k-field bg-kinetic-surface pl-10"
+      class="k-field bg-kinetic-surface h-12 rounded-2xl pl-10"
     />
   </div>
   <p
@@ -52,14 +52,14 @@
   </template>
 
   <!-- Termes -->
-  <div class="k-list" x-show="results.length > 0">
+  <div class="k-list k-enter" x-show="results.length > 0">
     <template x-for="term in results" :key="term.id">
       <details class="k-item group">
         <summary
           class="flex items-center gap-3 min-h-[3.25rem] px-4 py-2.5 cursor-pointer list-none select-none transition-colors active:bg-kinetic-elevated [&::-webkit-details-marker]:hidden"
         >
           <span class="flex-1 min-w-0">
-            <span class="block text-base font-semibold text-white" x-text="term.term"></span>
+            <span class="block text-[1.0625rem] font-semibold text-white" x-text="term.term"></span>
             <span class="block text-xs text-gray-500 truncate" x-text="term.short"></span>
           </span>
           <svg
@@ -81,7 +81,7 @@
           <p class="text-base text-gray-300 leading-relaxed" x-text="term.long"></p>
           <template x-if="term.formula">
             <p
-              class="mt-3 rounded-xl bg-kinetic-elevated px-3.5 py-2.5 text-sm font-medium tabular-nums text-white"
+              class="mt-3 rounded-2xl border border-kinetic-neon/20 bg-kinetic-neon/10 px-3.5 py-3 text-sm font-semibold tabular-nums text-white"
               x-text="term.formula"
             ></p>
           </template>
@@ -91,7 +91,10 @@
               <span x-text="term.example"></span>
             </p>
           </template>
-          <span class="k-badge mt-3 capitalize" x-text="term.category"></span>
+          <span
+            class="k-badge mt-3 capitalize bg-kinetic-neon/15 text-kinetic-neon"
+            x-text="term.category"
+          ></span>
         </div>
       </details>
     </template>

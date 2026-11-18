@@ -2,6 +2,21 @@
 export default {
   darkMode: 'class',
   content: ['./index.html', './src/**/*.{html,ts,js}'],
+  // Composants de la direction (styles.css, @layer components) : toujours émis,
+  // même avant qu'une page ne les utilise ou quand une classe est composée en TS.
+  safelist: [
+    'k-hero',
+    'k-btn-primary',
+    'k-ring-box',
+    'k-ring',
+    'k-ring-track',
+    'k-ring-value',
+    'k-stat',
+    'k-unit',
+    'k-chip',
+    'k-chip-active',
+    'k-card',
+  ],
   theme: {
     extend: {
       colors: {

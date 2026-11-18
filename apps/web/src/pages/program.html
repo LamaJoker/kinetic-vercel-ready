@@ -14,10 +14,10 @@
   </div>
 
   <!-- Programme actif — semaine -->
-  <div x-show="activeProgram" class="bg-kinetic-surface rounded-2xl p-4 mb-8">
+  <div x-show="activeProgram" class="k-hero k-enter mb-8">
     <div class="flex items-center justify-between gap-3">
       <h2
-        class="font-display text-lg font-semibold text-white truncate"
+        class="font-display text-xl font-bold text-white truncate"
         x-text="activeProgram ? activeProgram.name : ''"
       ></h2>
       <span
@@ -32,7 +32,7 @@
         <div class="flex flex-col items-center gap-1.5">
           <span class="text-xs font-medium text-gray-500" x-text="day.short"></span>
           <div
-            class="w-full max-w-[2.5rem] aspect-square rounded-full flex items-center justify-center text-sm font-semibold transition-colors"
+            class="w-full max-w-[2.5rem] aspect-square rounded-full flex items-center justify-center text-sm font-bold transition-colors"
             :class="{
                  'k-on': day.isToday && !day.rest && !day.done,
                  'bg-kinetic-elevated text-white': !day.isToday && !day.rest && !day.done,
@@ -45,39 +45,48 @@
       </template>
     </div>
 
-    <!-- Progression hebdomadaire -->
-    <div class="mt-5 pt-4 border-t border-white/10">
-      <div class="flex items-baseline justify-between mb-2.5">
-        <h2 class="k-card-title">Semaine en cours</h2>
-        <span
-          class="font-display text-lg font-bold text-kinetic-neon tabular-nums"
-          x-text="weekProgressPct + '%'"
-        ></span>
-      </div>
+    <!-- Progression hebdomadaire : anneau façon Fitness -->
+    <div class="mt-5 flex items-center gap-4 border-t border-white/10 pt-4">
       <div
-        class="h-1.5 bg-kinetic-ink rounded-full overflow-hidden"
+        class="k-ring-box h-[4.5rem] w-[4.5rem] text-kinetic-neon"
         role="progressbar"
         aria-label="Séances réalisées cette semaine"
         aria-valuemin="0"
         aria-valuemax="100"
         :aria-valuenow="weekProgressPct"
       >
-        <div
-          class="h-full bg-kinetic-neon rounded-full transition-all duration-500"
-          :style="'width: ' + weekProgressPct + '%'"
-        ></div>
+        <svg class="k-ring" viewBox="0 0 36 36" aria-hidden="true" style="--k-ring-w: 4">
+          <circle class="k-ring-track" cx="18" cy="18" r="15" pathLength="100" />
+          <circle
+            class="k-ring-value"
+            cx="18"
+            cy="18"
+            r="15"
+            pathLength="100"
+            :style="weekRingStyle"
+          />
+        </svg>
+        <span class="k-stat text-lg" aria-hidden="true"
+          ><span x-text="weekProgressPct"></span><span class="k-unit">%</span></span
+        >
       </div>
-      <p
-        class="text-xs text-gray-500 mt-2 tabular-nums"
-        x-text="$num.loc(completedTrainingDays + ' / ' + totalTrainingDays + ' séances cette semaine')"
-      ></p>
+      <div class="min-w-0 flex-1">
+        <h2 class="k-card-title">Semaine en cours</h2>
+        <p
+          class="mt-1 text-base font-semibold text-white tabular-nums"
+          x-text="$num.loc(completedTrainingDays + ' / ' + totalTrainingDays + ' séances cette semaine')"
+        ></p>
+      </div>
     </div>
   </div>
 
   <!-- Focus du jour -->
   <div x-show="todayFocus" :class="todayExercises.length > 0 ? 'mb-2.5' : 'mb-8'">
     <h2 class="k-section">Aujourd'hui</h2>
-    <p class="text-base text-gray-400 mt-0.5" x-text="todayFocus ? todayFocus.focus : ''"></p>
+    <p
+      class="font-display text-2xl font-bold text-white mt-0.5"
+      x-text="todayFocus ? todayFocus.focus : ''"
+    ></p>
     <div class="flex flex-wrap gap-1.5 mt-2">
       <template x-for="muscle in (todayFocus ? todayFocus.muscleGroups : [])">
         <span class="k-badge" x-text="muscle"></span>
@@ -87,7 +96,7 @@
 
   <!-- Todo list muscu — exercices du jour -->
   <div x-show="todayExercises.length > 0" class="mb-8">
-    <div class="k-list">
+    <div class="k-list k-stagger">
       <template x-for="ex in todayExercises" :key="ex.id">
         <div class="k-row !pl-2 !pr-3">
           <button
@@ -98,7 +107,7 @@
             :aria-label="ex.done ? 'Marquer ' + ex.name + ' comme à faire' : 'Marquer ' + ex.name + ' comme fait'"
           >
             <span
-              class="w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-300"
+              class="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-300"
               :class="ex.done ? 'bg-kinetic-neon text-gray-950' : 'ring-2 ring-inset ring-gray-500'"
             >
               <svg
@@ -118,7 +127,7 @@
           </button>
           <div class="flex-1 min-w-0">
             <p
-              class="text-base truncate transition-colors"
+              class="text-base font-semibold truncate transition-colors"
               :class="ex.done ? 'line-through text-gray-500' : 'text-white'"
               x-text="ex.name"
             ></p>
@@ -140,7 +149,7 @@
     </div>
 
     <!-- Bouton séance rapide -->
-    <button type="button" @click="startTodaySession()" class="k-btn mt-4">
+    <button type="button" @click="startTodaySession()" class="k-btn-primary mt-4 h-14 text-lg">
       Démarrer la séance du jour
       <svg
         class="w-4 h-4"
@@ -158,7 +167,7 @@
   </div>
 
   <!-- Génération auto de templates -->
-  <div x-show="activeProgram" class="bg-kinetic-surface rounded-2xl p-4 mb-8">
+  <div x-show="activeProgram" class="k-card mb-8">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <h2 class="k-card-title">Templates auto</h2>
@@ -200,17 +209,17 @@
       Choisis un découpage : ta semaine et tes séances du jour s'organisent autour.
     </p>
 
-    <div class="k-list">
+    <div class="k-list k-stagger">
       <template x-for="split in availableSplits">
         <button
           type="button"
           @click="selectSplit(split.type)"
-          class="k-row !py-3"
+          class="k-row !py-3.5"
           :aria-pressed="(activeProgram ? activeProgram.splitType : null) === split.type ? 'true' : 'false'"
         >
           <span class="flex-1 min-w-0">
             <span
-              class="block text-base text-white font-medium truncate"
+              class="block text-base text-white font-semibold truncate"
               x-text="split.name"
             ></span>
             <span
@@ -219,10 +228,9 @@
             ></span>
           </span>
           <span class="flex-shrink-0 text-right">
-            <span
-              class="block text-sm text-gray-400 tabular-nums"
-              x-text="split.daysPerWeek + ' j/sem'"
-            ></span>
+            <span class="k-stat block text-2xl text-kinetic-neon"
+              ><span x-text="split.daysPerWeek"></span><span class="k-unit"> j/sem</span></span
+            >
           </span>
           <span x-show="activeProgram" class="w-5 flex-shrink-0 flex justify-center">
             <svg

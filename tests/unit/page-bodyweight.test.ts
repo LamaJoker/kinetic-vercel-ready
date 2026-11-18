@@ -12,7 +12,7 @@ vi.mock('../../apps/web/src/deps.js', () => ({
   }),
 }));
 
-import { bodyweight } from '../../apps/web/src/pages/bodyweight.page.js';
+import { bodyweight, smoothPath } from '../../apps/web/src/pages/bodyweight.page.js';
 
 function makeStore(
   entries: Array<{
@@ -179,5 +179,64 @@ describe('bodyweight goalProgress', () => {
     store.goalWeight = 80; // target: lose 10kg from 90
     // progress = (90-85)/(90-80) * 100 = 50%
     expect(store.goalProgress).toBeCloseTo(50, 0);
+  });
+});
+
+describe('bodyweight goalRingStyle', () => {
+  it('clamps --p between 0 and 100', () => {
+    const store = makeStore([
+      { date: daysAgo(20), weight: 90 },
+      { date: daysAgo(5), weight: 85 },
+    ]);
+    store.goalWeight = 80;
+    expect(store.goalRingStyle).toBe('--p: 50');
+    store.goalWeight = 88;
+    expect(store.goalRingStyle).toBe('--p: 100');
+    store.goalWeight = null;
+    expect(store.goalRingStyle).toBe('--p: 0');
+  });
+});
+
+describe('bodyweight deltaChipClass', () => {
+  it('tints the chip with the tone of the variation', () => {
+    const store = makeStore([{ date: daysAgo(5), weight: 85 }]);
+    expect(store.deltaChipClass(-1)).toContain('text-kinetic-teal');
+    expect(store.deltaChipClass(1)).toContain('text-kinetic-electric');
+    expect(store.deltaChipClass(0)).toContain('text-gray-400');
+    expect(store.deltaChipClass(null)).toContain('text-gray-400');
+  });
+});
+
+describe('smoothPath', () => {
+  it('draws straight segments under 3 points', () => {
+    expect(smoothPath([])).toBe('');
+    expect(
+      smoothPath([
+        [0, 10],
+        [10, 20],
+      ]),
+    ).toBe('M0.0 10.0 L10.0 20.0');
+  });
+
+  it('passes through every point with cubic segments', () => {
+    const pts = [
+      [0, 50],
+      [10, 40],
+      [20, 45],
+      [30, 30],
+    ] as const;
+    const d = smoothPath(pts);
+    expect(d.startsWith('M0.0 50.0')).toBe(true);
+    expect(d.match(/C/g)).toHaveLength(3);
+    for (const [x, y] of pts.slice(1)) expect(d).toContain(`${x.toFixed(1)} ${y.toFixed(1)}`);
+  });
+
+  it('keeps a flat segment flat (no overshoot)', () => {
+    const d = smoothPath([
+      [0, 10],
+      [10, 10],
+      [20, 10],
+    ]);
+    expect(d).toBe('M0.0 10.0 C3.3 10.0 6.7 10.0 10.0 10.0 C13.3 10.0 16.7 10.0 20.0 10.0');
   });
 });

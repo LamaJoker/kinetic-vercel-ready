@@ -224,7 +224,10 @@ export function progression() {
     forceSvg(): string {
       const pts = this.forcePoints();
       if (pts.length < 2) return '';
-      const LINE = '#0A84FF';
+      // Couleurs du thème : l'accent suit --kinetic-neon (thèmes débloqués,
+      // mode clair) via la classe text-kinetic-neon + currentColor, car x-svg
+      // retire les attributs style ; le record reste or.
+      const LINE = 'currentColor';
       const BEST = '#FFD60A';
       const W = 320,
         H = 172,
@@ -290,10 +293,10 @@ export function progression() {
       const [lx, ly] = xy[lastIdx]!;
       const best =
         bestIdx !== lastIdx
-          ? `<circle cx="${f(bx)}" cy="${f(by)}" r="4" fill="${BEST}"><title>Record ${pts[bestIdx]!.label} : ${loc(rawMax.toFixed(1))} kg</title></circle>`
+          ? `<circle cx="${f(bx)}" cy="${f(by)}" r="4.5" fill="${BEST}" stroke="#000" stroke-opacity="0.35" stroke-width="1.5"><title>Record ${pts[bestIdx]!.label} : ${loc(rawMax.toFixed(1))} kg</title></circle>`
           : '';
       const lastFill = bestIdx === lastIdx ? BEST : LINE;
-      const last = `<circle cx="${f(lx)}" cy="${f(ly)}" r="8" fill="${lastFill}" fill-opacity="0.22"/><circle cx="${f(lx)}" cy="${f(ly)}" r="4.5" fill="${lastFill}"><title>${pts[lastIdx]!.label} : ${pts[lastIdx]!.y.toFixed(1)} kg</title></circle>`;
+      const last = `<line x1="${f(lx)}" x2="${f(lx)}" y1="${f(ly)}" y2="${base}" stroke="${lastFill}" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/><circle cx="${f(lx)}" cy="${f(ly)}" r="9" fill="${lastFill}" fill-opacity="0.2"/><circle cx="${f(lx)}" cy="${f(ly)}" r="4.5" fill="${lastFill}" stroke="#fff" stroke-opacity="0.85" stroke-width="1.5"><title>${pts[lastIdx]!.label} : ${pts[lastIdx]!.y.toFixed(1)} kg</title></circle>`;
 
       // Dates de début et de fin sous l'axe
       const xLabels =
@@ -302,15 +305,18 @@ export function progression() {
 
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe e1RM">
         <defs>
-          <linearGradient id="k-force-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="${LINE}" stop-opacity="0.32"/>
-            <stop offset="1" stop-color="${LINE}" stop-opacity="0"/>
+          <linearGradient id="k-force-fill" class="text-kinetic-neon" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="currentColor" stop-opacity="0.36"/>
+            <stop offset="0.7" stop-color="currentColor" stop-opacity="0.06"/>
+            <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
           </linearGradient>
         </defs>
         ${grid}
-        <path d="${area}" fill="url(#k-force-fill)"/>
-        <path d="${line}" fill="none" stroke="${LINE}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-        ${dots}${best}${last}${xLabels}
+        <g class="text-kinetic-neon">
+          <path d="${area}" fill="url(#k-force-fill)"/>
+          <path d="${line}" fill="none" stroke="${LINE}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          ${dots}${best}${last}
+        </g>${xLabels}
       </svg>`;
     },
 
@@ -345,6 +351,28 @@ export function progression() {
       if (pts.length < 2) return 'flat';
       const d = pts.at(-1)!.y - pts[0]!.y;
       return d > 0.05 ? 'up' : d < -0.05 ? 'down' : 'flat';
+    },
+
+    // ─── Présentation (anneaux, barres, trophées) ────────────
+
+    /** Style de l'anneau de régularité : `--p` borné à 0–100 (build CSP). */
+    get consistencyRingStyle(): string {
+      const p = Math.max(0, Math.min(100, Math.round(Number(this.consistency) || 0)));
+      return `--p: ${p}`;
+    },
+
+    /** Barre de tonnage : la semaine en cours en accent plein, les autres atténuées. */
+    barClass(i: number): string {
+      return i === this.weeklyBuckets.length - 1
+        ? 'bg-gradient-to-t from-kinetic-neon/80 to-kinetic-neon'
+        : 'bg-kinetic-neon/30';
+    },
+
+    /** Médaillon de record : or pour le premier, accent atténué ensuite. */
+    prGlyphClass(i: number): string {
+      return i === 0
+        ? 'bg-gradient-to-br from-kinetic-gold to-amber-500 text-gray-950'
+        : 'bg-kinetic-neon/15 text-kinetic-neon';
     },
 
     // ─── Onglet VOLUME : tonnage hebdo ───────────────────────

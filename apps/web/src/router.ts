@@ -193,11 +193,11 @@ async function render(path: string): Promise<void> {
   });
 
   host.innerHTML = html;
-  // Entrée de page en cascade (styles.css → #app-outlet.k-enter). On retire puis
+  // Entrée de page en cascade (styles.css → #app-outlet.k-route-in). On retire puis
   // remet la classe en forçant un reflow pour rejouer l'animation à chaque page.
-  host.classList.remove('k-enter');
+  host.classList.remove('k-route-in');
   void host.offsetWidth;
-  host.classList.add('k-enter');
+  host.classList.add('k-route-in');
 
   // FIX #3 : Restaurer le hash après injection du HTML pour que Supabase Auth JS
   // puisse le lire lors de l'init du composant auth-callback

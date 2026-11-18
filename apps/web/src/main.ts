@@ -187,6 +187,24 @@ Alpine.data('navShell', () => ({
   isBodyPage(this: { currentPath: string }) {
     return this.currentPath === '/bodyweight' || this.currentPath === '/mensurations';
   },
+  /** Rang de l'onglet actif (0 à 4), ou -1 hors des cinq pages racines. */
+  tabIndex(this: { currentPath: string }) {
+    const p = this.currentPath;
+    if (p === '/') return 0;
+    if (p === '/seances') return 1;
+    if (p === '/bodyweight' || p === '/mensurations') return 2;
+    if (p === '/vitalite') return 3;
+    if (p === '/profile') return 4;
+    return -1;
+  },
+  /** Pastille active de la barre d'onglets : glisse sous l'onglet courant
+   *  (styles.css → .k-tab-pill ; seule la transformation est animée). */
+  tabPillStyle(this: { currentPath: string; tabIndex: () => number }) {
+    const i = this.tabIndex();
+    return i < 0
+      ? 'opacity: 0; transform: translateX(200%) scale(0.6)'
+      : `opacity: 1; transform: translateX(${i * 100}%)`;
+  },
   /** Écrans plein cadre (onboarding, connexion) : pas de barre de navigation. */
   isChromeless(this: { currentPath: string }) {
     return (

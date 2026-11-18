@@ -9,17 +9,25 @@
   </div>
 
   <!-- Titre -->
-  <header class="text-center mt-2 mb-9">
-    <div
-      class="mx-auto mb-5 flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[1.25rem] bg-kinetic-surface text-kinetic-neon"
-    >
-      <svg class="h-10 w-10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" />
-        <circle cx="12" cy="12" r="3" fill="rgb(var(--surface))" />
-      </svg>
+  <header class="text-center mt-4 mb-10">
+    <div class="relative mx-auto mb-6 h-[5.5rem] w-[5.5rem]">
+      <div
+        class="absolute -inset-6 rounded-full bg-kinetic-neon/30 blur-2xl"
+        aria-hidden="true"
+      ></div>
+      <div
+        class="k-hero relative flex h-full w-full items-center justify-center !rounded-[1.6rem] !p-0 text-kinetic-neon"
+      >
+        <svg class="h-12 w-12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="3" fill="rgb(var(--surface))" />
+        </svg>
+      </div>
     </div>
-    <h1 class="font-display text-3xl font-bold tracking-tight text-white">Bienvenue</h1>
-    <p class="mx-auto mt-2 max-w-xs text-base leading-snug text-gray-500">
+    <h1 class="font-display text-[2.375rem] leading-none font-bold tracking-tight text-white">
+      Bienvenue
+    </h1>
+    <p class="mx-auto mt-3 max-w-xs text-base leading-snug text-gray-400">
       Quelques infos pour calibrer tes séances et ta nutrition.
     </p>
   </header>
@@ -27,164 +35,165 @@
   <!-- Objectif -->
   <section class="mb-8">
     <h2 id="onb-goal-title" class="k-section mb-2.5">Ton objectif</h2>
-    <div class="k-list" role="radiogroup" aria-labelledby="onb-goal-title">
+    <div class="grid grid-cols-2 gap-3" role="radiogroup" aria-labelledby="onb-goal-title">
       <button
         type="button"
         role="radio"
         @click="goal = 'lose_fat'"
         :aria-checked="goal === 'lose_fat' ? 'true' : 'false'"
-        class="k-row k-row-icon transition-colors"
+        class="k-card k-press flex min-h-[7.5rem] flex-col items-start text-left"
+        :class="goalCardClass('lose_fat')"
       >
-        <span class="k-glyph bg-kinetic-electric" aria-hidden="true">
+        <span class="flex w-full items-start justify-between">
+          <span class="k-glyph !h-9 !w-9 !rounded-[10px] bg-kinetic-electric" aria-hidden="true">
+            <svg
+              class="h-[1.125rem] w-[1.125rem]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M12 3c.5 3 3.5 4.5 3.5 8.5a3.5 3.5 0 0 1-7 0c0-1.3.5-2.3 1.2-3C9.5 10 8 11.6 8 14a4 4 0 0 0 8 0"
+              />
+              <path d="M12 21a6 6 0 0 0 6-6c0-4-3-6-6-12-3 6-6 8-6 12a6 6 0 0 0 6 6z" />
+            </svg>
+          </span>
           <svg
-            class="h-[1.125rem] w-[1.125rem]"
+            x-show="goal === 'lose_fat'"
+            class="k-pop h-5 w-5 text-kinetic-neon"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2.2"
+            stroke-width="2.4"
             stroke-linecap="round"
             stroke-linejoin="round"
+            aria-hidden="true"
           >
-            <path
-              d="M12 3c.5 3 3.5 4.5 3.5 8.5a3.5 3.5 0 0 1-7 0c0-1.3.5-2.3 1.2-3C9.5 10 8 11.6 8 14a4 4 0 0 0 8 0"
-            />
-            <path d="M12 21a6 6 0 0 0 6-6c0-4-3-6-6-12-3 6-6 8-6 12a6 6 0 0 0 6 6z" />
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>
         </span>
-        <span class="flex-1 min-w-0">
-          <span class="block text-base text-white">Perte de gras</span>
-          <span class="block text-xs text-gray-500">Déficit contrôlé</span>
-        </span>
-        <svg
-          x-show="goal === 'lose_fat'"
-          class="k-pop h-5 w-5 flex-shrink-0 text-white"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M5 12.5l4.5 4.5L19 7.5" />
-        </svg>
+        <span class="mt-auto block pt-3 text-base font-semibold text-white">Perte de gras</span>
+        <span class="block text-xs text-gray-400">Déficit contrôlé</span>
       </button>
-
       <button
         type="button"
         role="radio"
         @click="goal = 'gain_muscle'"
         :aria-checked="goal === 'gain_muscle' ? 'true' : 'false'"
-        class="k-row k-row-icon transition-colors"
+        class="k-card k-press flex min-h-[7.5rem] flex-col items-start text-left"
+        :class="goalCardClass('gain_muscle')"
       >
-        <span class="k-glyph bg-kinetic-purple" aria-hidden="true">
+        <span class="flex w-full items-start justify-between">
+          <span class="k-glyph !h-9 !w-9 !rounded-[10px] bg-kinetic-purple" aria-hidden="true">
+            <svg
+              class="h-[1.125rem] w-[1.125rem]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" />
+            </svg>
+          </span>
           <svg
-            class="h-[1.125rem] w-[1.125rem]"
+            x-show="goal === 'gain_muscle'"
+            class="k-pop h-5 w-5 text-kinetic-neon"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2.2"
+            stroke-width="2.4"
             stroke-linecap="round"
             stroke-linejoin="round"
+            aria-hidden="true"
           >
-            <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" />
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>
         </span>
-        <span class="flex-1 min-w-0">
-          <span class="block text-base text-white">Prise de masse</span>
-          <span class="block text-xs text-gray-500">Surplus modéré</span>
-        </span>
-        <svg
-          x-show="goal === 'gain_muscle'"
-          class="k-pop h-5 w-5 flex-shrink-0 text-white"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M5 12.5l4.5 4.5L19 7.5" />
-        </svg>
+        <span class="mt-auto block pt-3 text-base font-semibold text-white">Prise de masse</span>
+        <span class="block text-xs text-gray-400">Surplus modéré</span>
       </button>
-
       <button
         type="button"
         role="radio"
         @click="goal = 'recomp'"
         :aria-checked="goal === 'recomp' ? 'true' : 'false'"
-        class="k-row k-row-icon transition-colors"
+        class="k-card k-press flex min-h-[7.5rem] flex-col items-start text-left"
+        :class="goalCardClass('recomp')"
       >
-        <span class="k-glyph bg-kinetic-teal" aria-hidden="true">
+        <span class="flex w-full items-start justify-between">
+          <span class="k-glyph !h-9 !w-9 !rounded-[10px] bg-kinetic-teal" aria-hidden="true">
+            <svg
+              class="h-[1.125rem] w-[1.125rem]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 9h13l-3.5-3.5M20 15H7l3.5 3.5" />
+            </svg>
+          </span>
           <svg
-            class="h-[1.125rem] w-[1.125rem]"
+            x-show="goal === 'recomp'"
+            class="k-pop h-5 w-5 text-kinetic-neon"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2.2"
+            stroke-width="2.4"
             stroke-linecap="round"
             stroke-linejoin="round"
+            aria-hidden="true"
           >
-            <path d="M4 9h13l-3.5-3.5M20 15H7l3.5 3.5" />
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>
         </span>
-        <span class="flex-1 min-w-0">
-          <span class="block text-base text-white">Recomposition</span>
-          <span class="block text-xs text-gray-500">Déficit léger</span>
-        </span>
-        <svg
-          x-show="goal === 'recomp'"
-          class="k-pop h-5 w-5 flex-shrink-0 text-white"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M5 12.5l4.5 4.5L19 7.5" />
-        </svg>
+        <span class="mt-auto block pt-3 text-base font-semibold text-white">Recomposition</span>
+        <span class="block text-xs text-gray-400">Déficit léger</span>
       </button>
-
       <button
         type="button"
         role="radio"
         @click="goal = 'performance'"
         :aria-checked="goal === 'performance' ? 'true' : 'false'"
-        class="k-row k-row-icon transition-colors"
+        class="k-card k-press flex min-h-[7.5rem] flex-col items-start text-left"
+        :class="goalCardClass('performance')"
       >
-        <span class="k-glyph bg-orange-500" aria-hidden="true">
+        <span class="flex w-full items-start justify-between">
+          <span class="k-glyph !h-9 !w-9 !rounded-[10px] bg-orange-500" aria-hidden="true">
+            <svg
+              class="h-[1.125rem] w-[1.125rem]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M13 3L5 13.5h6L10 21l8-10.5h-6L13 3z" />
+            </svg>
+          </span>
           <svg
-            class="h-[1.125rem] w-[1.125rem]"
+            x-show="goal === 'performance'"
+            class="k-pop h-5 w-5 text-kinetic-neon"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2.2"
+            stroke-width="2.4"
             stroke-linecap="round"
             stroke-linejoin="round"
+            aria-hidden="true"
           >
-            <path d="M13 3L5 13.5h6L10 21l8-10.5h-6L13 3z" />
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>
         </span>
-        <span class="flex-1 min-w-0">
-          <span class="block text-base text-white">Performance</span>
-          <span class="block text-xs text-gray-500">Maintien de l'énergie</span>
-        </span>
-        <svg
-          x-show="goal === 'performance'"
-          class="k-pop h-5 w-5 flex-shrink-0 text-white"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M5 12.5l4.5 4.5L19 7.5" />
-        </svg>
+        <span class="mt-auto block pt-3 text-base font-semibold text-white">Performance</span>
+        <span class="block text-xs text-gray-400">Maintien de l'énergie</span>
       </button>
     </div>
   </section>
@@ -287,24 +296,24 @@
   <!-- Estimation calorique -->
   <section class="mb-8">
     <h2 class="k-section mb-2.5">Ton estimation</h2>
-    <div class="k-card">
+    <div class="k-hero">
       <div class="flex items-end justify-between gap-4">
         <div class="min-w-0">
-          <p class="text-sm text-gray-500">Calories cible / jour</p>
-          <p
-            class="mt-1.5 font-display text-[2.5rem] font-bold leading-none tracking-tight tabular-nums text-kinetic-neon"
-            x-text="targetCalories ? targetCalories + ' kcal' : '--'"
-          ></p>
+          <p class="text-sm text-gray-400">Calories cible / jour</p>
+          <p class="k-stat mt-2 text-[2.75rem] text-kinetic-neon">
+            <span x-text="targetCalories ? targetCalories : '--'"></span
+            ><span class="k-unit" x-show="targetCalories">kcal</span>
+          </p>
         </div>
         <div class="text-right flex-shrink-0">
-          <p class="text-sm text-gray-500">Dépense (TDEE)</p>
-          <p
-            class="mt-1.5 font-display text-lg font-semibold leading-none tabular-nums text-white"
-            x-text="tdee ? tdee + ' kcal' : '--'"
-          ></p>
+          <p class="text-sm text-gray-400">Dépense (TDEE)</p>
+          <p class="k-stat mt-2 text-xl">
+            <span x-text="tdee ? tdee : '--'"></span
+            ><span class="k-unit text-xs" x-show="tdee">kcal</span>
+          </p>
         </div>
       </div>
-      <p class="mt-4 text-xs leading-relaxed text-gray-500">
+      <p class="mt-4 text-xs leading-relaxed text-gray-400">
         Estimation personnalisée, ajustable à tout moment depuis ton profil.
       </p>
     </div>
@@ -368,7 +377,7 @@
   </section>
 
   <!-- Valider -->
-  <button type="button" @click="save()" :disabled="saving" class="k-btn">
+  <button type="button" @click="save()" :disabled="saving" class="k-btn-primary">
     <span x-show="!saving">Créer mon profil</span>
     <span x-show="saving" class="inline-flex items-center gap-2">
       <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">

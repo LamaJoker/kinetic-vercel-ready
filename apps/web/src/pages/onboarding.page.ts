@@ -16,8 +16,17 @@ function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
+/** Carte d'objectif : liseré d'accent quand elle est sélectionnée. */
+export function goalCardClass(selected: boolean): string {
+  return selected ? 'ring-2 ring-kinetic-neon' : '';
+}
+
 export function onboarding() {
   return {
+    goalCardClass(goal: UserGoal): string {
+      return goalCardClass(this.goal === goal);
+    },
+
     saving: false,
 
     // Form state

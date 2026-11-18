@@ -18,26 +18,48 @@
   </div>
 
   <!-- Mesure active : valeur, évolution, période, courbe -->
-  <section class="k-card mb-8" aria-labelledby="mens-active-title">
+  <section class="k-hero k-enter mb-8" aria-labelledby="mens-active-title">
     <div class="flex items-center gap-2">
+      <span
+        class="w-2.5 h-2.5 rounded-full flex-shrink-0"
+        :style="metricDot(activeMetric)"
+        aria-hidden="true"
+      ></span>
       <h2 id="mens-active-title" class="k-card-title" x-text="$num.loc(activeMetricDef.label)"></h2>
     </div>
 
-    <p class="mt-3 flex items-baseline gap-1.5">
-      <span class="k-metric" x-text="$num.loc(formatCm(currentValue(activeMetric)))"></span>
-      <span
-        x-show="currentValue(activeMetric) !== null"
-        class="text-base font-semibold text-gray-500"
-        >cm</span
-      >
+    <p class="k-stat text-[3.5rem] tracking-tight mt-3">
+      <span x-text="$num.loc(formatCm(currentValue(activeMetric)))"></span
+      ><span x-show="currentValue(activeMetric) !== null" class="k-unit">cm</span>
     </p>
     <p
-      class="text-xs text-gray-500 mt-1.5 tabular-nums"
+      class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1"
       x-show="metricDelta(activeMetric) !== null"
-      x-text="$num.loc(formatDelta(activeMetric) + ' cm ' + periodLabel)"
-    ></p>
+    >
+      <span
+        class="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-kinetic-elevated/70 text-sm font-semibold text-white tabular-nums"
+      >
+        <svg
+          class="w-3.5 h-3.5 text-kinetic-purple transition-transform duration-300"
+          :class="deltaArrowClass(activeMetric)"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M5 12h14M13 6l6 6-6 6"
+            stroke="currentColor"
+            stroke-width="2.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span x-text="$num.loc(formatDelta(activeMetric) + ' cm')"></span>
+      </span>
+      <span class="text-sm text-gray-400" x-text="periodLabel"></span>
+    </p>
     <p
-      class="text-xs text-gray-500 mt-1.5"
+      class="text-sm text-gray-400 mt-2"
       x-show="metricDelta(activeMetric) === null"
       x-text="$num.loc(currentValue(activeMetric) !== null ? 'Dernière valeur relevée' : 'Pas encore mesuré')"
     ></p>
@@ -86,27 +108,27 @@
     <!-- Repères de la période -->
     <template x-if="chartPoints().length >= 2">
       <dl class="grid grid-cols-3 gap-2 mt-4">
-        <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
-          <dt class="text-xs text-gray-500">Départ</dt>
+        <div class="rounded-2xl bg-kinetic-elevated/60 px-3 py-2.5">
+          <dt class="text-xs font-medium text-gray-400">Départ</dt>
           <dd
-            class="text-base font-semibold text-white tabular-nums mt-0.5"
+            class="text-base font-bold text-white tabular-nums mt-0.5"
             x-text="chartStats.start"
           ></dd>
         </div>
-        <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
+        <div class="rounded-2xl bg-kinetic-elevated/60 px-3 py-2.5">
           <dt
-            class="text-xs text-gray-500"
+            class="text-xs font-medium text-gray-400"
             x-text="$num.loc(metricDelta(activeMetric) >= 0 ? 'Plus haut' : 'Plus bas')"
           ></dt>
           <dd
-            class="text-base font-semibold text-white tabular-nums mt-0.5"
+            class="text-base font-bold text-white tabular-nums mt-0.5"
             x-text="$num.loc(metricDelta(activeMetric) >= 0 ? chartStats.max : chartStats.min)"
           ></dd>
         </div>
-        <div class="rounded-xl bg-kinetic-elevated px-3 py-2.5">
-          <dt class="text-xs text-gray-500">Mesures</dt>
+        <div class="rounded-2xl bg-kinetic-elevated/60 px-3 py-2.5">
+          <dt class="text-xs font-medium text-gray-400">Mesures</dt>
           <dd
-            class="text-base font-semibold text-white tabular-nums mt-0.5"
+            class="text-base font-bold text-white tabular-nums mt-0.5"
             x-text="chartPoints().length"
           ></dd>
         </div>
@@ -116,16 +138,21 @@
 
   <!-- Toutes les mesures : choix de la courbe -->
   <h2 class="k-section mb-2.5">Toutes les mesures</h2>
-  <div class="grid grid-cols-3 gap-2 mb-8">
+  <div class="grid grid-cols-3 gap-2 mb-8 k-stagger">
     <template x-for="m in metrics" :key="m.key">
       <button
         type="button"
         @click="activeMetric = m.key"
         :aria-pressed="activeMetric === m.key"
-        class="rounded-2xl bg-kinetic-surface px-3 py-2.5 min-h-[4.75rem] text-left transition active:scale-[0.97]"
-        :style="activeMetric === m.key ? 'box-shadow: inset 0 0 0 2px var(--tx)' : ''"
+        class="k-press rounded-2xl bg-kinetic-surface px-3 py-2.5 min-h-[4.75rem] text-left"
+        :class="activeMetric === m.key ? 'ring-2 ring-kinetic-neon' : ''"
       >
         <span class="flex items-center gap-1.5 text-xs">
+          <span
+            class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+            :style="metricDot(m.key)"
+            aria-hidden="true"
+          ></span>
           <span
             class="truncate"
             :class="activeMetric === m.key ? 'text-white font-semibold' : 'text-gray-400'"
@@ -133,7 +160,7 @@
           ></span>
         </span>
         <span
-          class="block mt-1 text-lg font-semibold leading-tight tabular-nums"
+          class="block mt-1 text-lg font-bold leading-tight tabular-nums"
           :class="currentValue(m.key) === null ? 'text-gray-500' : 'text-white'"
           x-text="$num.loc(formatCm(currentValue(m.key)))"
         ></span>
@@ -354,7 +381,7 @@
       type="button"
       @click="addEntry()"
       :disabled="!hasFormData"
-      class="k-btn disabled:bg-kinetic-raised disabled:text-gray-500 disabled:opacity-100"
+      class="k-btn disabled:bg-none disabled:bg-kinetic-raised disabled:text-gray-500 disabled:opacity-100"
     >
       Enregistrer les mensurations
     </button>

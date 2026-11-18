@@ -28,6 +28,70 @@ interface LocalFood {
   category: string;
 }
 
+/** Barre de macro telle que la renvoie le store (`$store.nutrition.macroBars`). */
+interface MacroBarLike {
+  key: 'proteinG' | 'carbsG' | 'fatG';
+  label: string;
+  pct: number;
+  over: boolean;
+  detail: string;
+  consumed: number;
+}
+
+/**
+ * Couleurs système distinctes des trois macros (mêmes pastilles que la
+ * « Répartition recommandée ») : rouge, bleu, orange. Fixes : elles ne suivent
+ * pas le thème d'accent, qui colore déjà l'anneau des calories.
+ */
+export const MACRO_COLORS: Record<MacroBarLike['key'], { from: string; to: string }> = {
+  proteinG: { from: '#FF453A', to: '#FF6961' },
+  carbsG: { from: '#0A84FF', to: '#64D2FF' },
+  fatG: { from: '#FF9F0A', to: '#FFB340' },
+};
+
+export interface MacroView {
+  key: MacroBarLike['key'];
+  label: string;
+  detail: string;
+  over: boolean;
+  pct: number;
+  /** Style de la barre : largeur en % (lue par les tests e2e) + dégradé. */
+  barStyle: string;
+  /** Pastille de légende. */
+  dotStyle: string;
+}
+
+/** 0 → 100, borné, arrondi. */
+export function clampPct(value: number, target: number): number {
+  if (!(target > 0) || !Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, Math.round((value / target) * 100)));
+}
+
+/** Variable CSS d'un anneau `.k-ring-value` (`--p: 0…100`). */
+export function ringVar(pct: number): string {
+  const p = Number.isFinite(pct) ? Math.max(0, Math.min(100, Math.round(pct))) : 0;
+  return `--p: ${p}`;
+}
+
+/** Barres de macros prêtes à afficher : couleur, largeur, pastille. */
+export function macroViews(bars: readonly MacroBarLike[]): MacroView[] {
+  return bars.map((b) => {
+    const c = MACRO_COLORS[b.key];
+    const pct = Math.max(0, Math.min(100, Math.round(b.pct || 0)));
+    // Un minimum visible dès la première bouchée, sinon 0 %.
+    const width = b.consumed > 0 && pct < 2 ? 2 : pct;
+    return {
+      key: b.key,
+      label: b.label,
+      detail: b.detail,
+      over: b.over,
+      pct,
+      barStyle: `width: ${width}%; background-image: linear-gradient(90deg, ${c.from}, ${c.to}); box-shadow: 0 0 12px -2px ${c.from}80`,
+      dotStyle: `background-color: ${c.from}`,
+    };
+  });
+}
+
 let _foodDb: LocalFood[] | null = null;
 
 async function loadFoodDb(): Promise<LocalFood[]> {
@@ -57,6 +121,30 @@ export function nutrition() {
     barcode: '',
     cameraScan: cameraScanSupported(),
     scanning: false,
+
+    /** Barres de macros colorées (protéines, glucides, lipides). */
+    get macroViews(): MacroView[] {
+      const store = Alpine.store('nutrition') as { macroBars?: MacroBarLike[] } | undefined;
+      return macroViews(store?.macroBars ?? []);
+    },
+
+    /** Anneau des calories (extérieur). */
+    get kcalRingStyle(): string {
+      const store = Alpine.store('nutrition') as
+        | { plan: NutritionPlan | null; consumed?: { kcal: number } }
+        | undefined;
+      return ringVar(clampPct(store?.consumed?.kcal ?? 0, store?.plan?.macros?.kcal ?? 0));
+    },
+
+    /** Anneaux intérieurs des macros, dans l'ordre protéines, glucides, lipides. */
+    macroRingStyle(key: MacroBarLike['key']): string {
+      const v = this.macroViews.find((m) => m.key === key);
+      return ringVar(v ? v.pct : 0);
+    },
+
+    macroRingColor(key: MacroBarLike['key']): string {
+      return `color: ${MACRO_COLORS[key].from}`;
+    },
 
     get mealTimings(): MealTiming[] {
       const store = Alpine.store('nutrition') as NutritionStoreShape | undefined;

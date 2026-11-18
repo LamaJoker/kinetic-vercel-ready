@@ -23,6 +23,12 @@ const PATTERN_LABELS: Record<'push' | 'pull' | 'legs', string> = {
   legs: 'jambes',
 };
 
+/** Pourcentage arrondi et borné à [0, 100] (anneaux de progression). */
+export function ringPercent(value: number, total: number): number {
+  if (!Number.isFinite(value) || !Number.isFinite(total) || total <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.round((value / total) * 100)));
+}
+
 export function dashboard() {
   return {
     greeting: '',
@@ -58,10 +64,47 @@ export function dashboard() {
       return target ? `${w.count} / ${target}` : `${w.count}`;
     },
 
+    /** Séances faites cette semaine (centre de l'anneau). */
+    get weekCount(): number {
+      return this.training?.week.count ?? 0;
+    },
+
+    /** Objectif hebdomadaire de séances (3 par défaut). */
+    get weekTarget(): number {
+      const goals = Alpine.store('goals') as { targetSessions?: number } | undefined;
+      const t = Number(goals?.targetSessions);
+      return Number.isFinite(t) && t > 0 ? t : 3;
+    },
+
+    /** « /3 » sous le compteur de l'anneau. */
+    get weekTargetLabel(): string {
+      return `/${this.weekTarget}`;
+    },
+
+    /** Part de l'objectif hebdomadaire atteinte, 0 à 100. */
+    get weekPercent(): number {
+      return ringPercent(this.weekCount, this.weekTarget);
+    },
+
+    /** Anneaux façon Apple Fitness : variable CSS --p lue par .k-ring-value. */
+    get weekRingStyle(): string {
+      return `--p: ${this.weekPercent}`;
+    },
+
+    get recoveryRingStyle(): string {
+      const v = Alpine.store('vitalite') as { progress?: number } | undefined;
+      return `--p: ${ringPercent(v?.progress ?? 0, 100)}`;
+    },
+
+    get xpRingStyle(): string {
+      const x = Alpine.store('xp') as { progressPercent?: number } | undefined;
+      return `--p: ${ringPercent(x?.progressPercent ?? 0, 100)}`;
+    },
+
     weekDayClass(day: { trained: boolean; isToday: boolean; isFuture: boolean }): string {
-      if (day.trained) return 'bg-kinetic-neon text-gray-950 font-semibold';
-      if (day.isToday) return 'ring-2 ring-inset ring-kinetic-neon text-white font-semibold';
-      return 'bg-kinetic-ink text-gray-500';
+      if (day.trained) return 'bg-kinetic-neon text-gray-950 font-bold';
+      if (day.isToday) return 'ring-2 ring-inset ring-kinetic-neon text-white font-bold';
+      return 'bg-white/5 text-gray-500';
     },
 
     /** Démarre la séance proposée (même mécanisme que « Programme du jour »). */

@@ -906,3 +906,23 @@ describe('vitaliteStore._hasXpBonus / _rewardsHistoryDays', () => {
     expect(store._rewardsHistoryDays()).toBe(7);
   });
 });
+
+describe('vitaliteStore — présentation', () => {
+  const task = (priority: 'high' | 'med' | 'low', done = false) =>
+    ({ id: 't', title: 'T', icon: '', xp: 10, priority, done }) as any;
+
+  it('priorityDot colore selon la priorité, gris une fois la tâche faite', () => {
+    const store = vitaliteStore();
+    expect(store.priorityDot(task('high'))).toBe('bg-kinetic-coral');
+    expect(store.priorityDot(task('med'))).toBe('bg-kinetic-gold');
+    expect(store.priorityDot(task('low'))).toBe('bg-kinetic-teal');
+    expect(store.priorityDot(task('high', true))).toBe('bg-gray-700');
+  });
+
+  it('ringStyle reflète la progression du jour', () => {
+    const store = vitaliteStore();
+    expect(store.ringStyle).toBe('--p: 0');
+    store.tasks = [task('high', true), task('low')];
+    expect(store.ringStyle).toBe('--p: 50');
+  });
+});

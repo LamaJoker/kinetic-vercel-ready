@@ -95,8 +95,31 @@ interface StatsShape {
   tasksCompleted?: number;
 }
 
+/** Style de l'anneau d'avatar : progression dans le niveau, bornée 0–100. */
+export function levelRingStyle(percent: number | null | undefined): string {
+  const p = typeof percent === 'number' && Number.isFinite(percent) ? percent : 0;
+  return `--p: ${Math.round(Math.max(0, Math.min(100, p)))}`;
+}
+
+/** Pastille de niveau d'une récompense : teintée par l'accent si débloquée. */
+export function rewardBadgeClass(unlocked: boolean): string {
+  return unlocked
+    ? 'bg-kinetic-neon/15 text-kinetic-neon ring-1 ring-kinetic-neon/30'
+    : 'bg-kinetic-elevated text-gray-500';
+}
+
 export function profile() {
   return {
+    get levelRingStyle(): string {
+      const xp = Alpine.store('xp') as { progressPercent?: number } | undefined;
+      return levelRingStyle(xp?.progressPercent);
+    },
+
+    rewardBadgeClass(level: number): string {
+      const rewards = Alpine.store('rewards') as { isUnlocked(level: number): boolean } | undefined;
+      return rewardBadgeClass(!!rewards?.isUnlocked(level));
+    },
+
     displayName: '',
     displayNameInput: '',
     streak: 0,

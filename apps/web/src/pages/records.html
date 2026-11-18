@@ -35,38 +35,56 @@
     </div>
   </template>
 
-  <!-- Chiffres clés -->
+  <!-- Chiffres clés : carte héros -->
   <template x-if="!loading && records.length > 0">
-    <div class="bg-kinetic-surface rounded-2xl py-4 mb-8 grid grid-cols-3 divide-x divide-white/10">
-      <div class="px-3 text-center">
-        <p
-          class="font-display font-bold text-2xl text-white tabular-nums"
-          x-text="records.length"
-        ></p>
-        <p class="text-xs text-gray-500 mt-0.5">Records</p>
+    <section class="k-hero mb-8">
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-gray-400">Meilleur e1RM</p>
+          <p class="k-stat text-[3.25rem] mt-1">
+            <span x-text="$num.loc(topE1rm)"></span><span class="k-unit">kg</span>
+          </p>
+        </div>
+        <span
+          class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-kinetic-gold to-amber-500 text-gray-950"
+          aria-hidden="true"
+        >
+          <svg
+            class="h-7 w-7"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4.5v1.5A3.5 3.5 0 0 0 8 11M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11M12 14v4M8.5 20h7"
+            />
+          </svg>
+        </span>
       </div>
-      <div class="px-3 text-center">
-        <p class="font-display font-bold text-2xl text-white tabular-nums" x-text="recentCount"></p>
-        <p class="text-xs text-gray-500 mt-0.5">Sur 7 jours</p>
+      <div class="grid grid-cols-2 gap-3 mt-5 pt-4 border-t border-white/10">
+        <div>
+          <p class="k-stat text-[1.75rem]" x-text="records.length"></p>
+          <p class="text-xs text-gray-400 mt-1">Records</p>
+        </div>
+        <div>
+          <p class="k-stat text-[1.75rem]" x-text="recentCount"></p>
+          <p class="text-xs text-gray-400 mt-1">Sur 7 jours</p>
+        </div>
       </div>
-      <div class="px-3 text-center">
-        <p class="font-display font-bold text-2xl text-kinetic-neon tabular-nums">
-          <span x-text="$num.loc(topE1rm)"></span
-          ><span class="text-base font-semibold text-gray-500"> kg</span>
-        </p>
-        <p class="text-xs text-gray-500 mt-0.5">Meilleur e1RM</p>
-      </div>
-    </div>
+    </section>
   </template>
 
-  <!-- Liste des records -->
+  <!-- Liste des records : cartes trophées -->
   <section class="mb-8" x-show="!loading && records.length > 0">
     <h2 class="k-section mb-2.5">Tous les records · e1RM</h2>
-    <div class="k-seg mb-3" role="group" aria-label="Trier les records">
+    <div class="k-scroll-x mb-3" role="group" aria-label="Trier les records">
       <button
         type="button"
         @click="sort = 'recent'"
-        class="k-seg-item"
+        class="k-chip"
         :class="sort === 'recent' ? 'on' : ''"
         :aria-pressed="sort === 'recent' ? 'true' : 'false'"
       >
@@ -75,7 +93,7 @@
       <button
         type="button"
         @click="sort = 'e1rm'"
-        class="k-seg-item"
+        class="k-chip"
         :class="sort === 'e1rm' ? 'on' : ''"
         :aria-pressed="sort === 'e1rm' ? 'true' : 'false'"
       >
@@ -84,7 +102,7 @@
       <button
         type="button"
         @click="sort = 'name'"
-        class="k-seg-item"
+        class="k-chip"
         :class="sort === 'name' ? 'on' : ''"
         :aria-pressed="sort === 'name' ? 'true' : 'false'"
       >
@@ -92,21 +110,47 @@
       </button>
     </div>
 
-    <div class="k-list">
+    <div class="space-y-2.5 k-stagger">
       <template x-for="r in sortedRecords" :key="r.exerciseId">
-        <div class="k-row py-3">
-          <div class="flex-1 min-w-0">
-            <p class="text-base text-white truncate" x-text="r.exerciseName"></p>
-            <p class="text-xs text-gray-500 mt-0.5 truncate tabular-nums">
-              <span x-text="$num.loc(r.weightLabel + ' × ' + r.reps)"></span>
-              <span class="mx-1" aria-hidden="true">·</span>
-              <span x-text="$num.loc(r.dateLabel)"></span>
+        <div class="k-card py-3.5">
+          <div class="flex items-center gap-3.5">
+            <span
+              class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full"
+              :class="medalClass(r)"
+              aria-hidden="true"
+            >
+              <svg
+                class="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4.5v1.5A3.5 3.5 0 0 0 8 11M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11M12 14v4M8.5 20h7"
+                />
+              </svg>
+            </span>
+            <div class="flex-1 min-w-0">
+              <p class="text-base font-semibold text-white truncate" x-text="r.exerciseName"></p>
+              <p class="text-xs text-gray-500 mt-0.5 truncate tabular-nums">
+                <span x-text="$num.loc(r.weightLabel + ' × ' + r.reps)"></span>
+                <span class="mx-1" aria-hidden="true">·</span>
+                <span x-text="$num.loc(r.dateLabel)"></span>
+              </p>
+            </div>
+            <p class="k-stat flex-shrink-0 text-[1.625rem]">
+              <span x-text="$num.loc(r.e1rmKg)"></span><span class="k-unit">kg</span>
             </p>
           </div>
-          <p class="flex-shrink-0 font-display text-xl font-semibold text-white tabular-nums">
-            <span x-text="$num.loc(r.e1rmKg)"></span
-            ><span class="text-sm font-medium text-gray-500"> kg</span>
-          </p>
+          <div class="mt-3 h-1 rounded-full bg-white/[0.06] overflow-hidden" aria-hidden="true">
+            <div
+              class="h-full rounded-full bg-kinetic-neon transition-[width] duration-500"
+              :style="recordBarStyle(r)"
+            ></div>
+          </div>
         </div>
       </template>
     </div>
@@ -211,7 +255,7 @@
 
       <!-- État incomplet -->
       <template x-if="!scoresReady">
-        <p class="bg-kinetic-surface rounded-2xl p-4 text-sm text-gray-500 leading-relaxed">
+        <p class="k-card text-sm text-gray-500 leading-relaxed">
           Indique ton poids corporel (bouton Modifier) et établis au moins un record au squat, au
           bench ou au deadlift pour calculer ton score.
         </p>
@@ -221,42 +265,35 @@
       <template x-if="scoresReady">
         <div class="space-y-3">
           <!-- Total + niveau, détail SBD -->
-          <div class="bg-kinetic-surface rounded-2xl p-4">
+          <div class="k-card">
             <div class="flex items-end justify-between gap-3">
-              <div>
+              <div class="min-w-0">
                 <p class="text-sm text-gray-500">Total SBD</p>
-                <p class="k-metric mt-1.5">
-                  <span x-text="$num.loc(sbdTotalKg)"></span
-                  ><span class="text-lg font-semibold text-gray-500"> kg</span>
+                <p class="k-stat text-[2.5rem] mt-1">
+                  <span x-text="$num.loc(sbdTotalKg)"></span><span class="k-unit">kg</span>
                 </p>
               </div>
-              <div class="text-right">
+              <div class="text-right flex-shrink-0">
                 <p class="text-sm text-gray-500">Niveau</p>
                 <p
-                  class="text-lg font-semibold text-white mt-1"
+                  class="mt-1.5 inline-flex rounded-full bg-kinetic-neon/15 px-3 py-1 text-sm font-semibold text-kinetic-neon"
                   x-text="$num.loc(strengthTierLabel)"
                 ></p>
               </div>
             </div>
             <div class="grid grid-cols-3 gap-2 mt-4">
-              <div class="bg-kinetic-ink rounded-xl px-2 py-2.5 text-center">
+              <div class="bg-kinetic-ink rounded-2xl px-2 py-3 text-center">
                 <p class="text-xs text-gray-500">Squat</p>
-                <p
-                  class="text-base font-semibold text-white tabular-nums mt-0.5"
-                  x-text="$num.loc(sbdBreakdown.squat + ' kg')"
-                ></p>
+                <p class="k-stat text-lg mt-0.5" x-text="$num.loc(sbdBreakdown.squat + ' kg')"></p>
               </div>
-              <div class="bg-kinetic-ink rounded-xl px-2 py-2.5 text-center">
+              <div class="bg-kinetic-ink rounded-2xl px-2 py-3 text-center">
                 <p class="text-xs text-gray-500">Bench</p>
-                <p
-                  class="text-base font-semibold text-white tabular-nums mt-0.5"
-                  x-text="$num.loc(sbdBreakdown.bench + ' kg')"
-                ></p>
+                <p class="k-stat text-lg mt-0.5" x-text="$num.loc(sbdBreakdown.bench + ' kg')"></p>
               </div>
-              <div class="bg-kinetic-ink rounded-xl px-2 py-2.5 text-center">
+              <div class="bg-kinetic-ink rounded-2xl px-2 py-3 text-center">
                 <p class="text-xs text-gray-500">Deadlift</p>
                 <p
-                  class="text-base font-semibold text-white tabular-nums mt-0.5"
+                  class="k-stat text-lg mt-0.5"
                   x-text="$num.loc(sbdBreakdown.deadlift + ' kg')"
                 ></p>
               </div>
@@ -267,24 +304,15 @@
           <div class="k-list">
             <div class="k-row">
               <span class="flex-1 text-base text-white">Wilks</span>
-              <span
-                class="text-base font-semibold text-white tabular-nums"
-                x-text="$num.loc(wilksScore.toFixed(1))"
-              ></span>
+              <span class="k-stat text-xl" x-text="$num.loc(wilksScore.toFixed(1))"></span>
             </div>
             <div class="k-row">
               <span class="flex-1 text-base text-white">IPF GL</span>
-              <span
-                class="text-base font-semibold text-white tabular-nums"
-                x-text="$num.loc(ipfGlScore.toFixed(1))"
-              ></span>
+              <span class="k-stat text-xl" x-text="$num.loc(ipfGlScore.toFixed(1))"></span>
             </div>
             <div class="k-row">
               <span class="flex-1 text-base text-white">DOTS</span>
-              <span
-                class="text-base font-semibold text-white tabular-nums"
-                x-text="$num.loc(dotsScoreValue.toFixed(1))"
-              ></span>
+              <span class="k-stat text-xl" x-text="$num.loc(dotsScoreValue.toFixed(1))"></span>
             </div>
           </div>
           <p class="k-caption">

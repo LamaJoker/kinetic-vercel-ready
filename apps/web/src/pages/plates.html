@@ -17,13 +17,13 @@
   </div>
 
   <!-- Entrées : charge cible + barre -->
-  <div class="bg-kinetic-surface rounded-2xl p-4 mb-8">
+  <div class="k-hero k-enter mb-8">
     <label for="f-plates-1" class="k-label">Charge totale</label>
     <div class="flex items-center gap-3">
       <button
         type="button"
         @click="stepTarget(-2.5)"
-        class="k-icon-btn w-11 h-11 text-white"
+        class="k-icon-btn k-press w-12 h-12 text-white"
         aria-label="Retirer 2,5 kg"
       >
         <svg
@@ -39,7 +39,7 @@
         </svg>
       </button>
       <div
-        class="flex-1 min-w-0 h-16 flex items-center gap-1.5 rounded-xl bg-kinetic-ink px-3 transition-shadow focus-within:ring-2 focus-within:ring-kinetic-neon"
+        class="flex-1 min-w-0 h-20 flex items-center gap-1.5 rounded-2xl bg-kinetic-ink/70 px-3 transition-shadow focus-within:ring-2 focus-within:ring-kinetic-neon"
       >
         <input
           id="f-plates-1"
@@ -48,7 +48,7 @@
           x-model.number="targetKg"
           min="0"
           step="0.5"
-          class="flex-1 basis-0 min-w-0 h-full bg-transparent text-right font-display text-3xl font-bold tabular-nums text-white outline-none"
+          class="flex-1 basis-0 min-w-0 h-full bg-transparent text-right font-display text-[2.75rem] font-bold tabular-nums text-white outline-none"
         />
         <span class="flex-1 basis-0 pt-1.5 text-lg font-semibold text-gray-500" aria-hidden="true">
           kg
@@ -57,7 +57,7 @@
       <button
         type="button"
         @click="stepTarget(2.5)"
-        class="k-icon-btn w-11 h-11 text-white"
+        class="k-icon-btn k-press w-12 h-12 text-white"
         aria-label="Ajouter 2,5 kg"
       >
         <svg
@@ -94,13 +94,13 @@
     <div class="flex items-baseline justify-between gap-3 mb-2.5">
       <h2 class="k-section">Par côté</h2>
       <span
-        class="text-base font-semibold tabular-nums text-kinetic-neon"
+        class="font-display text-lg font-bold tabular-nums text-kinetic-neon"
         x-text="$num.loc(resultLabel)"
         aria-live="polite"
       ></span>
     </div>
 
-    <div class="bg-kinetic-surface rounded-2xl p-4">
+    <div class="k-card">
       <template x-if="result.underBar">
         <div class="flex items-start gap-3 py-2">
           <svg
@@ -132,7 +132,7 @@
 
       <!-- Barre chargée (SVG généré, couleurs de compétition) -->
       <template x-if="!result.underBar && result.perSide.length > 0">
-        <div class="bg-kinetic-ink rounded-xl px-2 py-3" x-svg="barbellSvg"></div>
+        <div class="bg-kinetic-ink rounded-2xl px-2 py-4" x-svg="barbellSvg"></div>
       </template>
 
       <!-- Liste textuelle -->
@@ -141,12 +141,12 @@
           <template x-for="p in result.perSide" :key="p.plateKg">
             <div class="flex items-center gap-3 min-h-[2.75rem] py-2">
               <span
-                class="w-4 h-4 flex-shrink-0 rounded-full ring-1 ring-black/20"
+                class="w-5 h-5 flex-shrink-0 rounded-full ring-1 ring-black/20"
                 :style="plateSwatch(p.plateKg)"
                 aria-hidden="true"
               ></span>
               <span
-                class="flex-1 text-base font-semibold tabular-nums text-white"
+                class="flex-1 font-display text-lg font-bold tabular-nums text-white"
                 x-text="$num.loc(p.plateKg + ' kg')"
               ></span>
               <span

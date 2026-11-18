@@ -38,4 +38,28 @@ describe('page progression', () => {
     expect(page.consistency).toBeGreaterThan(50);
     expect(page.selectedExerciseId).not.toBe('');
   });
+
+  it('présentation : anneau de régularité, barres et médaillons', async () => {
+    const page = progression() as unknown as {
+      init(): Promise<void>;
+      consistency: number;
+      consistencyRingStyle: string;
+      weeklyBuckets: unknown[];
+      barClass(i: number): string;
+      prGlyphClass(i: number): string;
+      forceSvg(): string;
+    };
+    expect(page.consistencyRingStyle).toBe('--p: 0');
+    await page.init();
+    expect(page.consistencyRingStyle).toBe(`--p: ${Math.min(100, Math.round(page.consistency))}`);
+    const last = page.weeklyBuckets.length - 1;
+    expect(page.barClass(last)).toContain('to-kinetic-neon');
+    expect(page.barClass(0)).toBe('bg-kinetic-neon/30');
+    expect(page.prGlyphClass(0)).toContain('kinetic-gold');
+    expect(page.prGlyphClass(1)).toContain('text-kinetic-neon');
+    // x-svg retire les attributs style : la courbe suit l'accent par currentColor
+    const svg = page.forceSvg();
+    expect(svg).toContain('class="text-kinetic-neon"');
+    expect(svg).not.toMatch(/style="(fill|stroke|stop)/);
+  });
 });
