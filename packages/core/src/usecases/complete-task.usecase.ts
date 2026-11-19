@@ -110,11 +110,11 @@ export async function completeTask_usecase(
   };
   await commitTaskMutationPlan(storage, mutation);
 
+  // Le passage de niveau est présenté par la carte de célébration de l'app :
+  // la notification ne le répète pas.
   notifier.notify({
     kind: 'success',
-    message: leveledUp
-      ? `🎉 Niveau ${newLevel} atteint ! +${task.xp} XP`
-      : `+${task.xp} XP — ${task.title} ✓`,
+    message: `+${task.xp} XP — ${task.title} ✓`,
   });
 
   return { ok: true, xpAwarded: task.xp, leveledUp, newLevel };

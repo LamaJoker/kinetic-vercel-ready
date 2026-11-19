@@ -1921,7 +1921,12 @@ export function seances() {
       hapticLight();
     },
 
-    /** « Ajouter l'échauffement » : avant la première série, et pas au poids du corps. */
+    /** Libellé de la bascule : dit clairement ce que sera la prochaine série saisie. */
+    get draftWarmupLabel(): string {
+      return this.draftWarmup ? 'Saisie : échauffement ✓' : 'Saisir un échauffement';
+    },
+
+    /** « Générer la montée » : avant la première série, et pas au poids du corps. */
     canAddWarmup(entry: SessionExerciseEntry): boolean {
       if (entry.sets.length > 0 || this.isTimed(entry.exerciseId)) return false;
       return this.exercises.find((e) => e.id === entry.exerciseId)?.equipment !== 'bodyweight';

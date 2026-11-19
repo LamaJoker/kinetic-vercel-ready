@@ -82,6 +82,8 @@ describe('awardXp', () => {
       expect(result.leveledUp).toBe(true);
       expect(result.newLevel).toBe(2);
     }
-    expect(deps.notifier.last?.message).toContain('Niveau 2');
+    // Le niveau est annoncé par la carte de célébration, pas par la notification.
+    expect(deps.notifier.last?.message).toBe('+50 XP');
+    expect(deps.notifier.last?.message).not.toContain('Niveau');
   });
 });

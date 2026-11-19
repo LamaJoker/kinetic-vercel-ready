@@ -57,10 +57,12 @@ export async function awardXp(deps: AwardXpDeps, input: AwardXpInput): Promise<A
     await storage.set(KEY_AWARDED_IDS, [...awardedIds, input.idempotencyKey]);
   }
 
+  // Le passage de niveau est présenté par la carte de célébration de l'app :
+  // la notification ne le répète pas.
   if (!input.silent) {
     notifier.notify({
       kind: leveledUp ? 'success' : 'info',
-      message: leveledUp ? `🎉 Niveau ${newLevel} ! +${input.amount} XP` : `+${input.amount} XP`,
+      message: `+${input.amount} XP`,
     });
   }
 

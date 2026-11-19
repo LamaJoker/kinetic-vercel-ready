@@ -257,13 +257,14 @@ describe('completeTask_usecase', () => {
       }
     });
 
-    it('la notification mentionne le nouveau niveau', async () => {
+    it('la notification ne répète pas le niveau (carte de célébration)', async () => {
       await deps.storage.set('kinetic:xp', { xp: 180 });
 
       const task = createTask({ id: 't', title: 'Big task', xp: 50, createdAt: '2026-04-20' });
       await completeTask_usecase(deps, { task, idempotencyKey: 't:2026-04-20' });
 
-      expect(deps.notifier.last?.message).toContain('Niveau 2');
+      expect(deps.notifier.last?.message).toBe('+50 XP — Big task ✓');
+      expect(deps.notifier.last?.message).not.toContain('Niveau');
     });
   });
 

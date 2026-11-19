@@ -204,11 +204,21 @@ describe('séance : gestionnaires à une seule expression (build CSP)', () => {
 });
 
 describe('séance : échauffement au poids du corps', () => {
-  it("pas de bouton « Ajouter l'échauffement » pour un exercice au poids du corps", () => {
+  it('pas de bouton « Générer la montée » pour un exercice au poids du corps', () => {
     const page = pageWith([]);
     const entry = page.currentEntries[0]!;
     expect(page.canAddWarmup(entry)).toBe(true);
     page.exercises = [{ ...BENCH, equipment: 'bodyweight' }];
     expect(page.canAddWarmup(entry)).toBe(false);
+  });
+});
+
+describe('bascule « Saisir un échauffement »', () => {
+  it('dit clairement ce que sera la prochaine série', () => {
+    const page = seances() as unknown as { draftWarmup: boolean; draftWarmupLabel: string };
+    page.draftWarmup = false;
+    expect(page.draftWarmupLabel).toBe('Saisir un échauffement');
+    page.draftWarmup = true;
+    expect(page.draftWarmupLabel).toBe('Saisie : échauffement ✓');
   });
 });

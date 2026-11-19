@@ -1007,7 +1007,7 @@
                       @click="addWarmups(entry.exerciseId)"
                       class="k-pill bg-kinetic-raised"
                     >
-                      Ajouter l'échauffement
+                      Générer la montée
                     </button>
                     <button
                       type="button"
@@ -1015,7 +1015,7 @@
                       :aria-pressed="draftWarmup ? 'true' : 'false'"
                       :class="draftWarmup ? 'k-pill-accent' : 'k-pill bg-kinetic-raised'"
                     >
-                      É · Échauffement
+                      <span x-text="draftWarmupLabel"></span>
                     </button>
                   </div>
 
