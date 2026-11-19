@@ -19,6 +19,7 @@ import { getDeps } from '../deps';
 import { loadSessions, loadExercises } from '../lib/training/storage';
 import type { Exercise, WorkoutSession } from '../lib/training/types';
 import { estimateE1rmKg } from '../lib/training/rpe';
+import type { AchievementMetrics } from '../lib/achievement-progress';
 
 interface StreakShape {
   count?: number;
@@ -29,6 +30,8 @@ export function achievementsStore() {
   return {
     catalog: buildAchievementCatalog() as Achievement[],
     unlockedIds: [] as string[],
+    /** Mesures du dernier calcul (progression vers le prochain palier). */
+    metrics: null as AchievementMetrics | null,
     loading: true,
     _sessionSavedHandler: null as ((event: Event) => void) | null,
     _depsReadyHandler: null as (() => void) | null,
@@ -137,13 +140,15 @@ export function achievementsStore() {
         // est suffisante pour le pacing des badges "5/10/25 PR".
         const totalPRs = exerciseBestE1rm.size;
 
-        const currentUnlocked = computeUnlocked({
+        const metrics: AchievementMetrics = {
           totalCompletedSessions: completedSessions.length,
           bestStreak: streak?.best ?? 0,
           totalPRs,
           totalTonnageKg,
           bestE1rmByLift,
-        });
+        };
+        this.metrics = metrics;
+        const currentUnlocked = computeUnlocked(metrics);
 
         const newOnes = newlyUnlocked(this.unlockedIds, currentUnlocked);
         if (currentUnlocked.length !== this.unlockedIds.length || newOnes.length > 0) {

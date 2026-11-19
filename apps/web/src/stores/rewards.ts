@@ -2,7 +2,8 @@
  * Store Alpine `rewards` — système de récompenses par niveau.
  *
  * Responsabilités :
- *  - Afficher la modale de déverrouillage lors d'un level-up
+ *  - (La récompense d'un niveau gagné est présentée par la carte de
+ *    célébration, lib/celebration.ts : une seule expérience, pas de modale.)
  *  - Gérer les jetons de Gel de Streak (1 par semaine à partir du niveau 6)
  *  - Exposer des getters dérivés du niveau courant :
  *      historyDays, hasXpBonus, hasAdvancedCoach, hasLegendBadge
@@ -12,7 +13,7 @@
  */
 
 import { STORAGE_KEYS, REWARDS, processActivity } from '@kinetic/core';
-import type { Reward, StreakState } from '@kinetic/core';
+import type { StreakState } from '@kinetic/core';
 import { getDeps } from '../deps';
 
 // ─── Clés storage ────────────────────────────────────────────────────────────
@@ -62,11 +63,6 @@ function notify(kind: 'success' | 'error' | 'info', message: string): void {
 // ─── Store ───────────────────────────────────────────────────────────────────
 export function rewardsStore() {
   return {
-    // ── Modal level-up ──
-    showRewardModal: false,
-    pendingReward: null as Reward | null,
-    pendingLevel: 0,
-
     // ── Gel de streak ──
     freezeTokens: 0,
     freezeLoading: false,
@@ -83,25 +79,8 @@ export function rewardsStore() {
     // Référence statique pour les templates
     allRewards: REWARDS,
 
-    // M3 FIX: handler stocké pour removeEventListener dans destroy()
-    _levelupHandler: null as ((e: Event) => void) | null,
-    _xpUpdatedHandler: null as (() => void) | null,
-
     // ─────────────────────────────────────────────────────────────────────────
     init(): void {
-      // M3 FIX: stocker les handlers pour cleanup
-      this._levelupHandler = (e: Event) => {
-        const detail = (e as CustomEvent<{ level: number; title: string }>).detail;
-        if (!detail) return;
-        const reward = REWARDS.find((r) => r.level === detail.level);
-        if (reward && reward.kind !== 'base') {
-          this.pendingReward = reward;
-          this.pendingLevel = detail.level;
-          this.showRewardModal = true;
-        }
-      };
-      window.addEventListener(STORAGE_KEYS.EVENT_LEVELUP, this._levelupHandler);
-
       // Charger / renouveler les jetons de gel
       void this._initFreezeTokens();
 
@@ -110,10 +89,7 @@ export function rewardsStore() {
     },
 
     destroy(): void {
-      if (this._levelupHandler) {
-        window.removeEventListener(STORAGE_KEYS.EVENT_LEVELUP, this._levelupHandler);
-        this._levelupHandler = null;
-      }
+      /* rien à libérer : plus d'écouteur global (voir en-tête) */
     },
 
     // ─── Jetons de gel ───────────────────────────────────────────────────────
@@ -214,12 +190,6 @@ export function rewardsStore() {
       if (typeof document !== 'undefined') {
         document.documentElement.dataset['theme'] = themeId;
       }
-    },
-
-    // ─── Modale ──────────────────────────────────────────────────────────────
-    dismissModal(): void {
-      this.showRewardModal = false;
-      this.pendingReward = null;
     },
 
     // ─── Getters dérivés du niveau ────────────────────────────────────────────

@@ -88,6 +88,8 @@ import { celebrate, recordCelebration } from '../lib/celebration';
 import { loadTrainingCalendar } from '../lib/lazy-component';
 import { sessionShareSheet } from '../lib/session-share-sheet';
 import { exerciseIllustrations } from '../lib/exercise-illustrations';
+import type { ContextMenuRequest } from '../lib/context-menu';
+import { sessionFromPast, withDuplicatedTemplate } from '../lib/training/duplicate';
 import {
   type ActiveSessionSnapshot,
   type ActiveSessionWriter,
@@ -1127,6 +1129,70 @@ export function seances() {
     async deleteTemplate(templateId: string): Promise<void> {
       const deps = await getDeps();
       this.templates = this.templates.filter((t) => t.id !== templateId);
+      await saveTemplates(deps.storage, this.templates);
+    },
+
+    // ─── Menus contextuels (appui long, lib/context-menu.ts) ────────────────
+
+    /** Séance de l'historique : Dupliquer / Partager en image / Supprimer. */
+    sessionMenu(menu: ContextMenuRequest, id: string): void {
+      menu.show([
+        { label: 'Dupliquer', icon: 'copy', run: () => this.duplicateSession(id) },
+        { label: 'Partager en image', icon: 'share', run: () => this.openShareCard(id) },
+        {
+          label: 'Supprimer',
+          icon: 'trash',
+          danger: true,
+          confirm: 'Supprimer la séance',
+          run: () => this.deleteSession(id),
+        },
+      ]);
+    },
+
+    /** Modèle : Modifier / Dupliquer / Supprimer. */
+    templateMenu(menu: ContextMenuRequest, id: string): void {
+      menu.show([
+        { label: 'Modifier', icon: 'edit', run: () => this.editTemplate(id) },
+        { label: 'Dupliquer', icon: 'copy', run: () => this.duplicateTemplate(id) },
+        {
+          label: 'Supprimer',
+          icon: 'trash',
+          danger: true,
+          confirm: 'Supprimer le modèle',
+          run: () => this.deleteTemplate(id),
+        },
+      ]);
+    },
+
+    /** Relance une séance passée (mêmes exercices, séries vides). */
+    duplicateSession(id: string): void {
+      const past = this.sessions.find((s) => s.id === id);
+      if (!past) return;
+      if (this.currentSession) {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'info', message: "Termine d'abord la séance en cours." },
+          }),
+        );
+        return;
+      }
+      this.currentSession = sessionFromPast(past, newId(), nowIso());
+      this.showTemplates = false;
+      this.showAutoGen = false;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.dispatchEvent(
+        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+          detail: {
+            kind: 'success',
+            message: `Séance dupliquée : ${plural(past.entries.length, 'exercice chargé', 'exercices chargés')}.`,
+          },
+        }),
+      );
+    },
+
+    async duplicateTemplate(id: string): Promise<void> {
+      const deps = await getDeps();
+      this.templates = withDuplicatedTemplate(this.templates, id, newId(), nowIso());
       await saveTemplates(deps.storage, this.templates);
     },
 
@@ -2232,17 +2298,35 @@ export function seances() {
       this.setEditor = null;
       hapticMedium();
       if (!set || ed.isNew) return;
-      this.undoSet = {
-        scope: ed.scope,
-        sessionId: session.id,
-        exerciseId: ed.exerciseId,
-        set: { ...set },
-      };
+      this._offerUndoSet(ed.scope, session.id, ed.exerciseId, set);
+    },
+
+    /** « Série supprimée · Annuler » pendant 6 s. */
+    _offerUndoSet(
+      scope: 'current' | 'history',
+      sessionId: string,
+      exerciseId: string,
+      set: SetEntry,
+    ): void {
+      this.undoSet = { scope, sessionId, exerciseId, set: { ...set } };
       if (this._undoTimer) clearTimeout(this._undoTimer);
       this._undoTimer = setTimeout(() => {
         this.undoSet = null;
         this._undoTimer = null;
       }, 6000);
+    },
+
+    /** Série validée glissée vers la gauche (séance en cours) : supprimée, « Annuler » proposé. */
+    swipeDeleteSet(exerciseId: string, setIndex: number): void {
+      const session = this.currentSession;
+      const set = session?.entries
+        .find((e) => e.exerciseId === exerciseId)
+        ?.sets.find((x) => x.setIndex === setIndex);
+      if (!session || !set) return;
+      if (this.setEditor) this.setEditor = null;
+      this._setScopeSession('current', removeSessionSet(session, exerciseId, setIndex));
+      hapticMedium();
+      this._offerUndoSet('current', session.id, exerciseId, set);
     },
 
     /** « Série supprimée · Annuler » : la série revient à sa place. */

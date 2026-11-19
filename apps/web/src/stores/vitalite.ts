@@ -1,6 +1,5 @@
 ﻿import {
   STORAGE_KEYS,
-  REWARDS,
   awardXp,
   completeTask_usecase,
   createTask,
@@ -14,7 +13,7 @@ import { syncWidget } from '../lib/widget';
 import { syncRoutineReminder } from '../lib/reminders';
 import { readHealthToday, SLEEP_GOAL_MIN, STEPS_GOAL } from '../lib/health';
 import { hapticSuccess } from '../lib/haptics';
-import { celebrate, routineCelebration } from '../lib/celebration';
+import { announceLevelUp, celebrate, highestLevelUp, routineCelebration } from '../lib/celebration';
 
 const PRIORITY_LABEL = { high: 'haute', med: 'moyenne', low: 'faible' } as const;
 const STEPS_TASK = 'evening-walk';
@@ -309,10 +308,13 @@ export function vitaliteStore() {
           this._intervalLastDone = updated;
         }
 
+        // Le bonus +20 % peut, à lui seul, faire passer un niveau : il est
+        // célébré comme les autres (une seule carte, le plus haut niveau).
+        let bonusResult: Awaited<ReturnType<typeof awardXp>> | null = null;
         if (this._hasXpBonus()) {
           const bonusXp = Math.round(task.xp * 0.2);
           try {
-            await awardXp(
+            bonusResult = await awardXp(
               { storage: deps.storage, notifier: deps.notifier },
               {
                 amount: bonusXp,
@@ -333,14 +335,7 @@ export function vitaliteStore() {
           dailyLogSync: deps.dailyLogSync,
         }).catch((err) => console.warn('[vitalite] sync failed:', err));
 
-        if (result.leveledUp && result.newLevel !== undefined) {
-          const reward = REWARDS.find((entry) => entry.level === result.newLevel);
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_LEVELUP, {
-              detail: { level: result.newLevel, title: reward?.title ?? '' },
-            }),
-          );
-        }
+        announceLevelUp(highestLevelUp([result, bonusResult]));
       } catch (err) {
         console.error('[vitalite] complete failed:', err);
         notify('error', 'Impossible de valider la tâche. Réessaie.');
@@ -488,6 +483,26 @@ export function vitaliteStore() {
 
     isCustom(id: string): boolean {
       return this.customSpecs.some((entry) => entry.id === id);
+    },
+
+    /**
+     * Glisser une tâche vers la gauche : « Supprimer » (tâche personnalisée),
+     * « Masquer » (tâche par défaut non faite, réversible) ou '' (geste désactivé).
+     * Mêmes règles que les boutons du mode édition.
+     */
+    swipeLeftLabel(task: { id: string; done: boolean }): string {
+      if (this.isLocked(task.id)) return '';
+      if (this.isCustom(task.id)) return 'Supprimer';
+      return task.done ? '' : 'Masquer';
+    },
+
+    /** Action du glisser à gauche (voir swipeLeftLabel). */
+    async swipeRemove(id: string): Promise<void> {
+      const task = this.tasks.find((entry) => entry.id === id);
+      if (!task) return;
+      const label = this.swipeLeftLabel(task);
+      if (label === 'Supprimer') await this.deleteCustomTask(id);
+      else if (label === 'Masquer') await this.hideTask(id);
     },
 
     /**

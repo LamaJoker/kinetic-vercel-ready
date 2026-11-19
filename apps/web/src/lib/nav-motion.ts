@@ -107,3 +107,53 @@ export function prefersReducedMotion(): boolean {
     return false;
   }
 }
+
+// ─── Écran précédent pendant le geste « retour » ───────────────────────────
+// Le routeur note le chemin de chaque entrée d'historique (index kIdx) et, quand
+// le geste est disponible (iOS), garde une copie figée du DOM de chaque page
+// quittée. native-gestures.ts l'affiche derrière la page pendant le glissement.
+
+const pathsByIdx = new Map<number, string>();
+const snapshots = new Map<string, HTMLElement>();
+const MAX_SNAPSHOTS = 6;
+let snapshotsOn = false;
+
+/** Mémorise le chemin d'une entrée d'historique. */
+export function rememberPath(idx: number, path: string): void {
+  pathsByIdx.set(idx, normalize(path));
+}
+
+/** Chemin connu d'une entrée d'historique (undefined si inconnu). */
+export function pathAt(idx: number): string | undefined {
+  return pathsByIdx.get(idx);
+}
+
+/** Active la copie des pages quittées (seulement là où le geste existe). */
+export function enableSnapshots(on = true): void {
+  snapshotsOn = on;
+  if (!on) snapshots.clear();
+}
+
+export function snapshotsEnabled(): boolean {
+  return snapshotsOn;
+}
+
+/** Range la copie d'une page quittée (les plus anciennes sont oubliées). */
+export function storeSnapshot(path: string, el: HTMLElement): void {
+  if (!snapshotsOn) return;
+  const key = normalize(path);
+  snapshots.delete(key);
+  snapshots.set(key, el);
+  while (snapshots.size > MAX_SNAPSHOTS) {
+    const oldest = snapshots.keys().next().value;
+    if (oldest === undefined) break;
+    snapshots.delete(oldest);
+  }
+}
+
+export function getSnapshot(path: string): HTMLElement | undefined {
+  return snapshots.get(normalize(path));
+}
+
+/** Émis (window) par le routeur juste avant de remplacer la page affichée. */
+export const PAGE_SWAP_EVENT = 'k-page-swap';

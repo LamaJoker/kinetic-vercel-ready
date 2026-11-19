@@ -615,6 +615,10 @@ select {
   background-position: right 0.75rem center;
   padding-right: 2.25rem !important;
 }
+/* Le gabarit dessine déjà son chevron (SVG voisin) : pas de second chevron. */
+select:has(+ svg) {
+  background-image: none;
+}
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;

@@ -15,6 +15,7 @@ import {
 } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { loadSessions } from '../lib/training/storage';
+import { announceLevelUp, highestLevelUp } from '../lib/celebration';
 
 const KEY_GOALS = STORAGE_KEYS.GOALS_WEEKLY;
 type SessionList = Awaited<ReturnType<typeof loadSessions>>;
@@ -163,7 +164,7 @@ export function goalsStore() {
     },
 
     async _awardBonus(deps: Awaited<ReturnType<typeof getDeps>>): Promise<void> {
-      await awardXp(
+      const result = await awardXp(
         { storage: deps.storage, notifier: deps.notifier },
         {
           amount: WEEKLY_GOAL_BONUS_XP,
@@ -183,6 +184,8 @@ export function goalsStore() {
         }),
       );
       window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_XP_UPDATED));
+      // Le bonus de la semaine peut faire gagner un niveau : on le célèbre.
+      announceLevelUp(highestLevelUp([result]));
     },
 
     /**

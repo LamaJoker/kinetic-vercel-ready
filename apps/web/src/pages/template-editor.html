@@ -27,7 +27,7 @@
       </svg>
     </button>
     <div class="flex-1">
-      <h1 class="font-display font-bold text-white" x-text="title"></h1>
+      <h1 data-large-title class="font-display font-bold text-white" x-text="title"></h1>
     </div>
   </div>
 
@@ -227,6 +227,8 @@
           <button
             type="button"
             class="flex w-full items-center justify-between gap-2 rounded-xl px-2 py-3 text-left active:bg-kinetic-raised"
+            data-k-menu
+            @k-menu="pickerMenu($event.detail, ex.id)"
             @click="addLine(ex.id)"
           >
             <span class="text-white" x-text="ex.name"></span>

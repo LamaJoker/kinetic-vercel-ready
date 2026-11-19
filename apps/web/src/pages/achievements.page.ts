@@ -4,6 +4,12 @@
  * session). Cette page ne fait que filtrer/afficher.
  */
 import type { Achievement } from '@kinetic/core';
+import {
+  achievementProgress,
+  isNextTier,
+  type AchievementMetrics,
+  type AchievementProgress,
+} from '../lib/achievement-progress';
 
 type CategoryFilter = 'all' | 'milestone' | 'strength' | 'streak' | 'volume' | 'pr';
 
@@ -11,6 +17,7 @@ interface AchievementsStore {
   catalog: Achievement[];
   isUnlocked: (id: string) => boolean;
   progressPercent?: number;
+  metrics?: AchievementMetrics | null;
 }
 
 interface AchievementsAlpine {
@@ -20,7 +27,10 @@ interface AchievementsAlpine {
   readonly filteredCatalog: Achievement[];
   readonly ringStyle: string;
   medalClass: (id: string) => string;
-  medalWellClass: (id: string) => string;
+  showProgress: (id: string) => boolean;
+  progressLabel: (id: string) => string;
+  progressStyle: (id: string) => string;
+  _progress: (id: string) => AchievementProgress | null;
   tierDotClass: (id: string, i: number, tier: number) => string;
   init: () => void;
 }
@@ -57,18 +67,33 @@ export function achievements(): AchievementsAlpine {
       return `--p: ${Math.max(0, Math.min(100, p))}`;
     },
 
-    /** Disque de la médaille : or en relief si débloquée, gris mat sinon. */
+    /**
+     * Médaillon (styles/finitions.css § 6) : la couleur vient de la catégorie
+     * (data-cat) et le métal du rang (data-tier) ; verrouillé = silhouette grise.
+     */
     medalClass(id: string): string {
-      return this.$store.achievements.isUnlocked(id)
-        ? 'bg-[radial-gradient(circle_at_32%_28%,#FFF6C2_0%,#FFD60A_38%,#E0A800_70%,#9A6B00_100%)]'
-        : 'bg-kinetic-elevated';
+      return this.$store.achievements.isUnlocked(id) ? 'k-medal is-unlocked' : 'k-medal is-locked';
     },
 
-    /** Creux central de la médaille : sombre et chaud sous l'emoji si débloquée. */
-    medalWellClass(id: string): string {
-      return this.$store.achievements.isUnlocked(id)
-        ? 'bg-[radial-gradient(circle_at_50%_35%,#4a3a0c_0%,#1f1704_100%)] ring-white/40'
-        : 'ring-white/10';
+    _progress(id: string): AchievementProgress | null {
+      return achievementProgress(id, this.$store.achievements.metrics);
+    },
+
+    /** Barre de progression : seulement sur le prochain palier de chaque série. */
+    showProgress(id: string): boolean {
+      const store = this.$store.achievements;
+      if (!store.metrics) return false;
+      const ids = store.catalog.map((a) => a.id);
+      return isNextTier(id, ids, (x) => store.isUnlocked(x)) && this._progress(id) !== null;
+    },
+
+    progressLabel(id: string): string {
+      return this._progress(id)?.label ?? '';
+    },
+
+    progressStyle(id: string): string {
+      const r = this._progress(id)?.ratio ?? 0;
+      return `transform: scaleX(${Math.max(0.02, Math.min(1, r)).toFixed(3)})`;
     },
 
     /** Point de difficulté : plein (or ou gris) jusqu'au niveau, estompé au-delà. */

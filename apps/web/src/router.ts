@@ -16,6 +16,10 @@ import {
   readHistoryIdx,
   takeForcedDirection,
   prefersReducedMotion,
+  rememberPath,
+  snapshotsEnabled,
+  storeSnapshot,
+  PAGE_SWAP_EVENT,
 } from './lib/nav-motion';
 
 /**
@@ -235,6 +239,7 @@ async function render(path: string, direction: NavDirection = 'none'): Promise<v
   if (seq !== renderSeq) return; // une navigation plus récente a pris la main
 
   const useViewTransition = direction !== 'none' && renderedPath !== null && canViewTransition();
+  const leavingPath = renderedPath;
   renderedPath = normalizedPath;
 
   const swap = (): void => {
@@ -252,6 +257,13 @@ async function render(path: string, direction: NavDirection = 'none'): Promise<v
       }
     });
 
+    // Geste « retour » (iOS) : copie figée de la page quittée, montrée derrière
+    // la page pendant le glissement (native-gestures.ts). Puis les calques
+    // temporaires des gestes / feuilles sont retirés avant le nouveau rendu.
+    if (leavingPath && snapshotsEnabled() && leavingPath !== normalizedPath) {
+      storeSnapshot(leavingPath, host.cloneNode(true) as HTMLElement);
+    }
+    window.dispatchEvent(new CustomEvent(PAGE_SWAP_EVENT));
     host.innerHTML = html;
     // Reste éventuel du geste « retour » (native-gestures.ts) : la page sortante
     // était décalée sous le doigt ; la nouvelle doit repartir sans transformation.
@@ -361,8 +373,11 @@ export function navigate(path: string, replace = false): void {
   let kind: 'push' | 'replace' = 'replace';
   if (replace) {
     window.history.replaceState({ kIdx: idx }, '', target);
+    rememberPath(idx, target);
   } else if (target !== window.location.pathname) {
     window.history.pushState({ kIdx: idx + 1 }, '', target);
+    rememberPath(idx, from);
+    rememberPath(idx + 1, target);
     setHistoryIdx(idx + 1);
     kind = 'push';
   }
@@ -391,6 +406,7 @@ export function initRouter(): void {
   // hash OAuth), sinon le retour vers elle serait un simple fondu au lieu d'un « back ».
   const initialIdx = readHistoryIdx(window.history.state);
   setHistoryIdx(initialIdx ?? 0);
+  rememberPath(initialIdx ?? 0, window.location.pathname || '/');
   if (initialIdx === null) {
     try {
       const prev: unknown = window.history.state;
@@ -404,7 +420,10 @@ export function initRouter(): void {
     const to = window.location.pathname || '/';
     const fromIdx = currentHistoryIdx();
     const toIdx = readHistoryIdx(e.state);
-    if (toIdx !== null) setHistoryIdx(toIdx);
+    if (toIdx !== null) {
+      setHistoryIdx(toIdx);
+      rememberPath(toIdx, to);
+    }
     const dir =
       takeForcedDirection() ??
       navDirection(
@@ -421,6 +440,9 @@ export function initRouter(): void {
   void import('./lib/native-gestures')
     .then(({ initNativeGestures }) => initNativeGestures())
     .catch(() => undefined);
+  // Composants système (grand titre réductible, feuilles à glisser, menu par
+  // appui long), chargés à part eux aussi.
+  void import('./lib/native-ui').then(({ initNativeUi }) => initNativeUi()).catch(() => undefined);
 
   if (typeof window.addEventListener === 'function') {
     window.addEventListener('load', () => prefetchPages(), { once: true });

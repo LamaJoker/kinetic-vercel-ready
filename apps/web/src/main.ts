@@ -82,6 +82,9 @@ import { nutritionStore } from './stores/nutrition';
 import { goalsStore } from './stores/goals';
 import { achievementsStore } from './stores/achievements';
 import { registerSvgDirective } from './lib/svg-directive';
+import { registerCountDirective } from './lib/count-up';
+import { registerLazyDirectives } from './lib/lazy-directives';
+import { registerChipScrollDirective } from './lib/chip-scroll';
 import { plural } from './lib/plural';
 import { num } from './lib/num';
 
@@ -109,10 +112,17 @@ import './styles.css';
 import './styles/native-feel.css';
 import './styles/finitions.css';
 import './styles/celebrations.css';
+import './styles/gestes.css';
 
 // ─── Stores ──────────────────────────────────────────────────
 // Directive x-svg : remplace x-html, interdit par le build CSP d'Alpine.
 registerSvgDirective(Alpine as never);
+// x-count : chiffres qui défilent (à côté d'un x-text) ; x-scrub, x-swipe, x-hold :
+// courbes au doigt, lignes à glisser, appui maintenu (code chargé à la demande).
+registerCountDirective(Alpine as never);
+registerLazyDirectives(Alpine as never);
+// x-chip-scroll : rangée de pastilles défilante (onglets à 5-6 choix).
+registerChipScrollDirective(Alpine as never);
 // $plural(n, 'séance') → « 3 séances » (fin des « séance(s) »)
 (Alpine as unknown as { magic(name: string, cb: () => unknown): void }).magic(
   'plural',

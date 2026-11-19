@@ -77,6 +77,25 @@ export function fitWithEllipsis(
   return `${t.trimEnd()}…`;
 }
 
+/**
+ * Taille du titre : la plus grande (de `maxSize` à `minSize`, pas de 4 px)
+ * qui le garde sur UNE ligne ; s'il ne tient pas même au minimum, retour à
+ * `maxSize` sur deux lignes au plus (coupées entre les mots, « … » au bout).
+ * `measureAt(size)` mesure un texte dans la police du titre à cette taille.
+ */
+export function fitTitle(
+  text: string,
+  maxWidth: number,
+  maxSize: number,
+  minSize: number,
+  measureAt: (size: number) => MeasureText,
+): { size: number; lines: string[] } {
+  for (let size = maxSize; size >= minSize; size -= 4) {
+    if (measureAt(size)(text.trim()) <= maxWidth) return { size, lines: [text.trim()] };
+  }
+  return { size: maxSize, lines: wrapText(text, maxWidth, 2, measureAt(maxSize)) };
+}
+
 /** Nombre de rangées de hauteur `rowH` qui tiennent dans `available` (≤ max). */
 export function rowsThatFit(available: number, rowH: number, max: number): number {
   if (!(available > 0) || !(rowH > 0)) return 0;
@@ -240,12 +259,16 @@ export function drawShareCard(
   ctx.fillText(summary.dateLabel, PAD, y + 30);
   y += 64;
 
-  // Titre (2 lignes au plus).
-  ctx.font = font(800, story ? 88 : 78);
+  // Titre : une ligne en réduisant un peu la taille, sinon deux lignes au plus.
+  const titleMax = story ? 88 : 78;
+  const title = fitTitle(summary.title, inner, titleMax, story ? 64 : 58, (size) => {
+    ctx.font = font(800, size);
+    return (t) => ctx.measureText(t).width;
+  });
+  ctx.font = font(800, title.size);
   ctx.fillStyle = INK;
-  const titleLines = wrapText(summary.title, inner, 2, (t) => ctx.measureText(t).width);
-  const titleLH = story ? 98 : 88;
-  for (const line of titleLines) {
+  const titleLH = Math.round(title.size * 1.12);
+  for (const line of title.lines) {
     y += titleLH;
     ctx.fillText(line, PAD, y - 14);
   }

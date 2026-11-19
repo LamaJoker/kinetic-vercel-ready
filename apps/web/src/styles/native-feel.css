@@ -61,13 +61,20 @@ html[data-k-nav='back']::view-transition-new(root) {
   animation-name: k-nav-return;
 }
 
+/* swipe : à la fin du geste, l'écran précédent est déjà en place (copie figée
+   montrée derrière la page, cf. plus bas) : la vraie page apparaît dessous et la
+   copie s'efface en fondu bref, sans nouveau glissement. */
 html[data-k-nav='swipe']::view-transition-old(root) {
-  animation: none;
-  opacity: 0;
+  z-index: 1;
+  animation: k-nav-fade-out 180ms ease-out both;
 }
 html[data-k-nav='swipe']::view-transition-new(root) {
-  animation-name: k-nav-return;
-  animation-duration: 260ms;
+  animation: none;
+}
+@keyframes k-nav-fade-out {
+  to {
+    opacity: 0;
+  }
 }
 
 html[data-k-nav='tab']::view-transition-old(root),
@@ -114,11 +121,63 @@ html[data-k-nav='tab']::view-transition-new(root) {
 }
 
 /* ─── Retour par glissement depuis le bord (lib/native-gestures.ts) ───
-   Pendant le geste, #app-outlet suit le doigt (transform en ligne) ; ombre sur
-   son bord gauche. Le routeur retire la classe et la transformation au rendu. */
-#app-outlet.k-swiping-back {
-  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.32);
+   Pendant le geste, les calques de la page suivent le doigt (lib/page-layers.ts :
+   les éléments fixed glissent avec la page sans changer de repère). Derrière :
+   - .k-swipe-ghost   : copie figée de l'écran précédent, en parallaxe (−30 %)
+                        et assombrie (.k-swipe-ghost-dim) ;
+   - .k-swipe-backing : fond opaque de la page courante, qui glisse avec elle et
+                        porte l'ombre de son bord gauche.
+   Tous deux en z-index négatif : sous le contenu de la page (le fond du <body>
+   est propagé au canevas), comme la lueur ambiante body::before. */
+.k-swipe-ghost,
+.k-swipe-backing {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      130% 65% at 50% -16%,
+      rgb(var(--kinetic-neon) / var(--k-glow)) 0%,
+      rgb(var(--kinetic-neon) / 0) 72%
+    ),
+    radial-gradient(
+      90% 50% at 110% -8%,
+      rgb(var(--k-glow-2-rgb) / var(--k-glow-2)) 0%,
+      rgb(var(--k-glow-2-rgb) / 0) 70%
+    ),
+    rgb(var(--ink));
+  background-size:
+    100% 75vh,
+    100% 75vh,
+    auto;
+  background-repeat: no-repeat;
   will-change: transform;
+}
+/* La page décalée ne doit pas déborder à droite : sinon le navigateur élargit
+   la zone d'affichage pendant le geste (barre d'onglets chassée vers le bas,
+   défilement horizontal). `clip` ne crée pas de conteneur de défilement :
+   les éléments sticky de la page continuent de fonctionner. */
+#app-outlet.k-swiping-back {
+  overflow-x: clip;
+}
+.k-swipe-ghost {
+  z-index: -3;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top);
+}
+.k-swipe-ghost-page {
+  will-change: transform;
+}
+.k-swipe-ghost-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.22);
+}
+.k-swipe-backing {
+  z-index: -2;
+  box-shadow:
+    -1px 0 0 rgba(0, 0, 0, 0.12),
+    -14px 0 36px rgba(0, 0, 0, 0.34);
 }
 
 /* ─── Tirer pour rafraîchir (lib/native-gestures.ts) ───
@@ -207,4 +266,254 @@ html[data-k-nav='tab']::view-transition-new(root) {
    défini avec la palette dans styles.css). */
 html[data-k-nav] .k-tabbar {
   background: var(--k-tabbar-solid);
+}
+
+/* ─── Grand titre réductible (lib/large-title.ts) ───
+   Barre du haut partagée, en verre, sous la barre d'état. --k-tb (0 → 1) suit
+   le défilement : fond et filet en fondu, titre compact qui monte en fondu,
+   chevron retour. Seules opacity et transform varient. */
+.k-topbar {
+  --k-tb: 0;
+  position: fixed;
+  top: 0;
+  inset-inline: 0;
+  z-index: 45;
+  height: calc(env(safe-area-inset-top) + 2.75rem);
+  padding-top: env(safe-area-inset-top);
+  pointer-events: none;
+}
+.k-topbar[hidden] {
+  display: none;
+}
+.k-topbar-bg {
+  position: absolute;
+  inset: 0;
+  opacity: var(--k-tb);
+  /* Matériau doublé (~0,9 d'opacité) : le contenu qui passe dessous reste
+     deviné sans gêner la lecture du titre compact. */
+  background: linear-gradient(var(--material), var(--material)), var(--material);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  box-shadow: 0 0.5px 0 var(--separator);
+}
+.k-topbar-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.75rem;
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+.k-topbar-title {
+  max-width: 62%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--tx);
+  opacity: var(--k-tb);
+  transform: translate3d(0, calc((1 - var(--k-tb)) * 8px), 0);
+}
+.k-topbar-back {
+  position: absolute;
+  left: 0.5rem;
+  top: 0;
+  display: none;
+  align-items: center;
+  gap: 0.25rem;
+  height: 2.75rem;
+  padding: 0 0.5rem;
+  font-size: 1.0625rem;
+  color: rgb(var(--kinetic-neon));
+  opacity: var(--k-tb);
+  transform: translate3d(calc((1 - var(--k-tb)) * 6px), 0, 0);
+}
+.k-topbar.has-back .k-topbar-back {
+  display: inline-flex;
+}
+.k-topbar.is-shown .k-topbar-back {
+  pointer-events: auto;
+}
+.k-topbar-back:active {
+  opacity: 0.5;
+}
+
+/* ─── Feuilles (lib/sheets.ts) ───
+   L'écran derrière recule (calques réduits à 0,94 autour d'un point commun) ;
+   .k-recede-frame dessine les coins arrondis : un rectangle transparent arrondi
+   dont l'ombre pleine noircit tout autour. Sous le fond assombri (z-index 70). */
+.k-recede-frame {
+  position: fixed;
+  z-index: 65;
+  border-radius: 14px;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 0 100vmax #000;
+}
+.k-sheet:focus {
+  outline: none;
+}
+/* Poignée : un peu plus visible, la feuille se ferme en la tirant vers le bas */
+.k-sheet::before {
+  width: 2.5rem;
+  opacity: 0.9;
+}
+
+/* ─── Menu contextuel par appui long (lib/context-menu.ts) ─── */
+[data-k-menu] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.k-cm-pressing {
+  scale: 0.97;
+  transition: scale 300ms var(--k-ios-ease);
+}
+.k-cm {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+}
+.k-cm-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+[data-mode='light'] .k-cm-backdrop {
+  background: rgba(20, 20, 40, 0.18);
+}
+.k-cm-preview {
+  --k-cm-shift: 0px;
+  position: absolute;
+  pointer-events: none;
+  border-radius: 18px;
+  transform: translate3d(0, 0, 0);
+  transition: transform 360ms cubic-bezier(0.34, 1.36, 0.64, 1);
+}
+.k-cm-preview > * {
+  width: 100%;
+  height: 100%;
+  margin: 0 !important;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgb(var(--surface));
+  box-shadow:
+    0 0 0 1px var(--k-edge),
+    0 18px 50px rgba(0, 0, 0, 0.45);
+}
+.k-cm-menu {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--material);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  box-shadow:
+    0 0 0 0.5px var(--separator),
+    0 18px 44px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    transform 340ms cubic-bezier(0.34, 1.3, 0.64, 1),
+    opacity 180ms ease;
+}
+.k-cm-item {
+  display: flex;
+  width: 100%;
+  min-height: 2.875rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 1rem;
+  font-size: 1rem;
+  text-align: left;
+  color: var(--tx);
+}
+.k-cm-item + .k-cm-item {
+  box-shadow: inset 0 0.5px 0 var(--separator);
+}
+.k-cm-item:active,
+.k-cm-item:focus-visible {
+  background: rgb(var(--tx-rgb, 128 128 128) / 0.12);
+  outline: none;
+}
+.k-cm-item svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+.k-cm-item.is-danger {
+  color: rgb(var(--k-danger-ink));
+}
+.k-cm.is-open .k-cm-backdrop {
+  opacity: 1;
+}
+.k-cm.is-open .k-cm-preview {
+  transform: translate3d(0, var(--k-cm-shift), 0) scale(1.03);
+}
+.k-cm.is-open .k-cm-menu {
+  opacity: 1;
+  transform: none;
+}
+.k-cm.is-closing .k-cm-backdrop,
+.k-cm.is-closing .k-cm-preview,
+.k-cm.is-closing .k-cm-menu {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+/* ─── Notifications (index.html) ───
+   En bas, au-dessus de la barre d'onglets (et du bandeau « Séance en cours »
+   s'il est affiché) : elles ne masquent plus le titre ni la date en haut. */
+.k-toast-stack {
+  position: fixed;
+  inset-inline: 0;
+  bottom: calc(max(0.625rem, env(safe-area-inset-bottom) - 0.375rem) + 4.75rem);
+  z-index: 80;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  pointer-events: none;
+  transition: transform 300ms var(--k-ios-ease);
+}
+body:has(.k-session-banner:not([style*='display: none'])) .k-toast-stack {
+  transform: translate3d(0, -3.5rem, 0);
+}
+body:has(.k-tabbar-dock[style*='display: none']) .k-toast-stack {
+  bottom: calc(env(safe-area-inset-bottom) + 1rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-topbar-title,
+  .k-topbar-back {
+    transform: none;
+  }
+  .k-topbar-bg,
+  .k-topbar-title,
+  .k-topbar-back {
+    transition: opacity 150ms ease;
+  }
+  .k-cm-preview,
+  .k-cm-menu,
+  .k-cm.is-open .k-cm-preview,
+  .k-cm.is-open .k-cm-menu {
+    transform: none;
+    transition: opacity 120ms ease;
+  }
+  .k-cm-pressing {
+    scale: none;
+  }
+  .k-toast-stack {
+    transition: none;
+  }
 }

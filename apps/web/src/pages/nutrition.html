@@ -11,7 +11,9 @@
         />
       </svg>
     </a>
-    <h1 class="text-3xl font-display font-bold tracking-tight text-white">Nutrition</h1>
+    <h1 data-large-title class="text-3xl font-display font-bold tracking-tight text-white">
+      Nutrition
+    </h1>
   </div>
 
   <!-- Aucun plan -->
@@ -79,7 +81,10 @@
       <div class="flex-1 min-w-0">
         <p class="text-sm font-medium text-gray-400">Restant</p>
         <p class="k-stat text-[2.75rem] text-kinetic-neon mt-1">
-          <span x-text="$store.nutrition.remaining ? $store.nutrition.remaining.kcal : 0"></span
+          <span
+            x-text="$store.nutrition.remaining ? $store.nutrition.remaining.kcal : 0"
+            x-count
+          ></span
           ><span class="k-unit">kcal</span>
         </p>
         <dl class="mt-3 space-y-1.5 text-sm">
@@ -228,6 +233,7 @@
           <span
             class="k-stat text-[1.625rem]"
             x-text="$store.nutrition.plan ? $store.nutrition.plan.bmrKcal : 0"
+            x-count
           ></span>
           <span class="k-unit">kcal</span>
         </p>
@@ -238,6 +244,7 @@
           <span
             class="k-stat text-[1.625rem]"
             x-text="$store.nutrition.plan ? $store.nutrition.plan.tdeeKcal : 0"
+            x-count
           ></span>
           <span class="k-unit">kcal</span>
         </p>
@@ -586,18 +593,6 @@
             <option value="Collation">Collation</option>
             <option value="Dîner">Dîner</option>
           </select>
-          <svg
-            class="w-3 h-3 text-gray-500 flex-shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            stroke-width="2.6"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M7 9l5-5 5 5M7 15l5 5 5-5" />
-          </svg>
         </label>
         <label for="f-nutrition-5" class="k-row cursor-text">
           <span class="flex-1 text-base text-white">Quantité</span>

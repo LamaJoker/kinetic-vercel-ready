@@ -1,7 +1,7 @@
 <div x-data="bodyweight" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
   <!-- En-tête -->
   <div class="k-nav">
-    <h1 class="font-display font-bold text-white">Poids corporel</h1>
+    <h1 data-large-title class="font-display font-bold text-white">Poids corporel</h1>
     <!-- Tendance sur 7 jours -->
     <div
       x-show="entries.length >= 2 && trend7 !== null"
@@ -50,7 +50,7 @@
       <div class="min-w-0">
         <p class="text-sm font-medium text-gray-400">Poids actuel</p>
         <p class="k-stat text-[3.75rem] tracking-tight mt-2">
-          <span x-text="$num.loc((latest ? latest.weight : 0).toFixed(1))"></span
+          <span x-text="$num.loc((latest ? latest.weight : 0).toFixed(1))" x-count></span
           ><span class="k-unit">kg</span>
         </p>
         <p
@@ -161,6 +161,7 @@
       <p
         class="k-stat text-[1.5rem] mt-1"
         x-text="$num.loc(minWeight !== null ? minWeight.toFixed(1) : '—')"
+        x-count
       ></p>
     </div>
     <div class="k-card py-3 px-3 text-center">
@@ -168,6 +169,7 @@
       <p
         class="k-stat text-[1.5rem] mt-1"
         x-text="$num.loc(avgWeight !== null ? avgWeight.toFixed(1) : '—')"
+        x-count
       ></p>
     </div>
     <div class="k-card py-3 px-3 text-center">
@@ -175,6 +177,7 @@
       <p
         class="k-stat text-[1.5rem] mt-1"
         x-text="$num.loc(maxWeight !== null ? maxWeight.toFixed(1) : '—')"
+        x-count
       ></p>
     </div>
   </div>
@@ -185,7 +188,9 @@
       <h2 class="k-card-title">Courbe de poids</h2>
       <span class="text-xs text-gray-400">kg</span>
     </div>
-    <div x-svg="chartSvg()" class="w-full"></div>
+    <div class="k-scrub" x-scrub="chartScrub()">
+      <div x-svg="chartSvg()" class="w-full"></div>
+    </div>
   </div>
 
   <!-- Nouvelle pesée -->

@@ -7,6 +7,7 @@
         x-text="$num.loc(todayLabel)"
       ></p>
       <h1
+        data-large-title
         class="font-display font-bold text-[2.125rem] leading-tight tracking-tight text-white truncate"
         x-text="greeting"
       ></h1>
@@ -151,20 +152,21 @@
           <div>
             <dt class="text-xs font-semibold text-gray-400">Séances</dt>
             <dd class="k-stat text-[1.625rem] text-kinetic-neon">
-              <span x-text="weekCount"></span><span class="k-unit" x-text="weekTargetLabel"></span>
+              <span x-text="weekCount" x-count></span
+              ><span class="k-unit" x-text="weekTargetLabel"></span>
             </dd>
           </div>
           <div>
             <dt class="text-xs font-semibold text-gray-400">Récup du jour</dt>
             <dd class="k-stat text-[1.625rem] text-kinetic-teal">
-              <span x-text="$store.vitalite.doneCount"></span
+              <span x-text="$store.vitalite.doneCount" x-count></span
               ><span class="k-unit" x-text="'/' + $store.vitalite.totalCount"></span>
             </dd>
           </div>
           <div>
             <dt class="text-xs font-semibold text-gray-400">XP du niveau</dt>
             <dd class="k-stat text-[1.625rem] text-kinetic-purple">
-              <span x-text="$store.xp.progressPercent"></span><span class="k-unit">%</span>
+              <span x-text="$store.xp.progressPercent" x-count></span><span class="k-unit">%</span>
             </dd>
           </div>
         </dl>
@@ -206,7 +208,9 @@
         </span>
         <p class="text-xs font-semibold text-gray-400">Série en cours</p>
       </div>
-      <p class="k-stat mt-3"><span x-text="streak"></span><span class="k-unit">jours</span></p>
+      <p class="k-stat mt-3">
+        <span x-text="streak" x-count></span><span class="k-unit">jours</span>
+      </p>
     </div>
     <div class="k-card">
       <div class="flex items-center gap-2">
@@ -231,23 +235,19 @@
         <p class="text-xs font-semibold text-gray-400">Meilleure série</p>
       </div>
       <p class="k-stat mt-3">
-        <span x-text="$num.loc(bestStreak + '')"></span><span class="k-unit">jours</span>
+        <span x-text="$num.loc(bestStreak + '')" x-count></span><span class="k-unit">jours</span>
       </p>
     </div>
   </div>
 
-  <!-- Raccourcis : tuiles avec icône dans une pastille colorée -->
+  <!-- Raccourcis : grandes icônes dans des pastilles dégradées (finitions.css § 5) -->
   <div class="grid grid-cols-3 gap-3 mb-3">
-    <a href="/progression" class="k-card k-press flex flex-col gap-3 p-3 min-h-[6.75rem]">
-      <span
-        class="w-10 h-10 rounded-[12px] bg-kinetic-purple/15 text-kinetic-purple flex items-center justify-center"
-        aria-hidden="true"
-      >
+    <a href="/progression" class="k-card k-tile k-press">
+      <span class="k-tile-ico" data-tone="info" aria-hidden="true">
         <svg
-          class="w-[22px] h-[22px]"
+          viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          viewBox="0 0 24 24"
           stroke-width="2.2"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -255,21 +255,14 @@
           <path d="M3 17l6-6 4 4 8-8M14 7h7v7" />
         </svg>
       </span>
-      <span
-        class="mt-auto block text-[0.8125rem] font-semibold text-white leading-tight line-clamp-2 break-words"
-        x-text="'Progression'"
-      ></span>
+      <span class="k-tile-label">Progression</span>
     </a>
-    <a href="/records" class="k-card k-press flex flex-col gap-3 p-3 min-h-[6.75rem]">
-      <span
-        class="w-10 h-10 rounded-[12px] bg-kinetic-gold/15 text-kinetic-gold flex items-center justify-center"
-        aria-hidden="true"
-      >
+    <a href="/records" class="k-card k-tile k-press">
+      <span class="k-tile-ico" data-tone="gold" aria-hidden="true">
         <svg
-          class="w-[22px] h-[22px]"
+          viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          viewBox="0 0 24 24"
           stroke-width="2.2"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -279,21 +272,14 @@
           />
         </svg>
       </span>
-      <span
-        class="mt-auto block text-[0.8125rem] font-semibold text-white leading-tight line-clamp-2 break-words"
-        x-text="'Records'"
-      ></span>
+      <span class="k-tile-label">Records</span>
     </a>
-    <a href="/nutrition" class="k-card k-press flex flex-col gap-3 p-3 min-h-[6.75rem]">
-      <span
-        class="w-10 h-10 rounded-[12px] bg-kinetic-teal/15 text-kinetic-teal flex items-center justify-center"
-        aria-hidden="true"
-      >
+    <a href="/nutrition" class="k-card k-tile k-press">
+      <span class="k-tile-ico" data-tone="teal" aria-hidden="true">
         <svg
-          class="w-[22px] h-[22px]"
+          viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          viewBox="0 0 24 24"
           stroke-width="2.2"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -303,21 +289,14 @@
           />
         </svg>
       </span>
-      <span
-        class="mt-auto block text-[0.8125rem] font-semibold text-white leading-tight line-clamp-2 break-words"
-        >Nutrition</span
-      >
+      <span class="k-tile-label">Nutrition</span>
     </a>
-    <a href="/bodyweight" class="k-card k-press flex flex-col gap-3 p-3 min-h-[6.75rem]">
-      <span
-        class="w-10 h-10 rounded-[12px] bg-kinetic-coral/15 text-kinetic-coral flex items-center justify-center"
-        aria-hidden="true"
-      >
+    <a href="/bodyweight" class="k-card k-tile k-press">
+      <span class="k-tile-ico" data-tone="coral" aria-hidden="true">
         <svg
-          class="w-[22px] h-[22px]"
+          viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          viewBox="0 0 24 24"
           stroke-width="2.2"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -327,21 +306,14 @@
           <path d="m12 8.8 1.4 2.9" />
         </svg>
       </span>
-      <span
-        class="mt-auto block text-[0.8125rem] font-semibold text-white leading-tight line-clamp-2 break-words"
-        x-text="'Poids'"
-      ></span>
+      <span class="k-tile-label">Poids</span>
     </a>
-    <a href="/plates" class="k-card k-press flex flex-col gap-3 p-3 min-h-[6.75rem]">
-      <span
-        class="w-10 h-10 rounded-[12px] bg-white/10 text-white flex items-center justify-center"
-        aria-hidden="true"
-      >
+    <a href="/plates" class="k-card k-tile k-press" aria-label="Chargement de barre">
+      <span class="k-tile-ico" data-tone="electric" aria-hidden="true">
         <svg
-          class="w-[22px] h-[22px]"
+          viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          viewBox="0 0 24 24"
           stroke-width="2.2"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -351,21 +323,14 @@
           <path d="M12 3.5v2M12 18.5v2" />
         </svg>
       </span>
-      <span
-        class="mt-auto block text-[0.8125rem] font-semibold text-white leading-tight line-clamp-2 break-words"
-        x-text="'Chargement de barre'"
-      ></span>
+      <span class="k-tile-label">Chargement</span>
     </a>
-    <a href="/achievements" class="k-card k-press flex flex-col gap-3 p-3 min-h-[6.75rem]">
-      <span
-        class="w-10 h-10 rounded-[12px] bg-kinetic-neon/15 text-kinetic-neon flex items-center justify-center"
-        aria-hidden="true"
-      >
+    <a href="/achievements" class="k-card k-tile k-press">
+      <span class="k-tile-ico" data-tone="neon" aria-hidden="true">
         <svg
-          class="w-[22px] h-[22px]"
+          viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          viewBox="0 0 24 24"
           stroke-width="2.2"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -373,18 +338,13 @@
           <circle cx="12" cy="9" r="5.5" />
           <path d="m8.5 13.5-1.5 7 5-2.5 5 2.5-1.5-7" />
         </svg>
-      </span>
-      <span class="mt-auto min-w-0">
         <span
-          class="block text-[0.8125rem] font-semibold text-white leading-tight line-clamp-2 break-words"
-          x-text="'Succès'"
+          class="k-tile-badge"
+          x-show="$store.achievements.unlockedCount"
+          x-text="$store.achievements.unlockedCount"
         ></span>
-        <span class="block text-xs text-gray-500 truncate tabular-nums">
-          <span x-text="$store.achievements ? $store.achievements.unlockedCount : 0"></span>/<span
-            x-text="$num.loc($store.achievements ? $store.achievements.totalCount : 0)"
-          ></span>
-        </span>
       </span>
+      <span class="k-tile-label">Succès</span>
     </a>
   </div>
 
@@ -641,7 +601,7 @@
           <span class="font-normal text-gray-500" x-text="'· ' + $store.xp.title"></span>
         </h2>
         <p class="k-stat text-[1.375rem] mt-1">
-          <span x-text="$store.xp.xp"></span><span class="k-unit">XP</span>
+          <span x-text="$store.xp.xp" x-count></span><span class="k-unit">XP</span>
         </p>
       </div>
     </div>
@@ -659,40 +619,5 @@
     <p class="text-xs text-kinetic-neon font-medium mt-2.5" x-show="$store.xp.isMaxLevel">
       Niveau maximum atteint
     </p>
-  </div>
-</div>
-
-<!-- Rewards modal (level-up detail) -->
-<div
-  x-show="$store.rewards.showRewardModal"
-  @click.self="$store.rewards.dismissModal()"
-  @keydown.escape.window="$store.rewards.showRewardModal && $store.rewards.dismissModal()"
-  class="k-backdrop fixed"
-  style="display: none"
->
-  <!-- `contents` : la feuille garde sa propre animation d'entrée -->
-  <div class="contents">
-    <div class="k-sheet text-center" role="dialog" aria-modal="true" aria-labelledby="reward-title">
-      <div
-        class="k-pop mx-auto w-20 h-20 rounded-full bg-kinetic-ink flex items-center justify-center text-5xl leading-none"
-        aria-hidden="true"
-        x-text="$store.rewards.pendingReward ? $store.rewards.pendingReward.emoji : ''"
-      ></div>
-      <p class="mt-4 text-sm font-semibold text-kinetic-neon">
-        Niveau <span x-text="$store.rewards.pendingLevel"></span> débloqué !
-      </p>
-      <h3
-        id="reward-title"
-        class="mt-1 font-display font-bold text-xl text-white"
-        x-text="$store.rewards.pendingReward ? $store.rewards.pendingReward.title : ''"
-      ></h3>
-      <p
-        class="mt-1.5 text-sm text-gray-400 leading-snug"
-        x-text="$num.loc($store.rewards.pendingReward ? $store.rewards.pendingReward.description : '')"
-      ></p>
-      <button type="button" @click="$store.rewards.dismissModal()" class="k-btn mt-6">
-        Super, merci !
-      </button>
-    </div>
   </div>
 </div>

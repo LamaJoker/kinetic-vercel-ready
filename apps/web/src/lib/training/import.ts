@@ -13,6 +13,10 @@
  *     n'est pas écrasée — on ignore le doublon (l'utilisateur peut réinitialiser
  *     puis ré-importer s'il veut tout remplacer).
  *   - Exercices : auto-création si inconnu, slug stable (kebab-case).
+ *   - Séries chronométrées / de distance (gainage, cardio, farmer walk) :
+ *     colonnes Seconds / Distance (Strong) et duration_seconds / distance_km
+ *     (Hevy) → `durationSec` / `distanceM` avec `reps` à 0 ; l'exercice créé
+ *     reçoit la mesure correspondante (`time` ou `distance`).
  *
  * Conçu pour être testable sans I/O : `parse*` retournent un ImportBundle
  * immuable, `mergeIntoStorage` applique le bundle au StoragePort fourni.
@@ -170,11 +174,21 @@ export function parseStrongCsv(content: string): { bundle: ImportBundle; skipped
     workoutName: header.indexOf('workout name'),
     exerciseName: header.indexOf('exercise name'),
     setOrder: header.indexOf('set order'),
-    weight: header.indexOf('weight'),
+    weight: findColumn(header, 'weight'),
     reps: header.indexOf('reps'),
     rpe: header.indexOf('rpe'),
     duration: header.indexOf('workout duration'),
+    seconds: findColumn(header, 'seconds'),
+    distance: findColumn(header, 'distance'),
   };
+  // Unités d'après l'en-tête (« Weight (lbs) », « Distance (mi) ») ; Strong
+  // exporte sinon dans les unités métriques : kg et km.
+  const weightFactor = unitFactor(header[idx.weight] ?? '', { lbs: LB_TO_KG, lb: LB_TO_KG }, 1);
+  const distanceFactor = unitFactor(
+    header[idx.distance] ?? '',
+    { mi: MI_TO_M, km: 1000, m: 1 },
+    1000,
+  );
 
   // sessionKey = `${date} ${workoutName}` → regroupe sets en sessions
   const sessionMap = new Map<string, MutableSession>();
@@ -185,13 +199,19 @@ export function parseStrongCsv(content: string): { bundle: ImportBundle; skipped
     const date = pick(r, idx.date);
     const workoutName = pick(r, idx.workoutName) || 'Strong session';
     const exerciseName = pick(r, idx.exerciseName);
-    const reps = Number(pick(r, idx.reps));
-    const weight = Number(pick(r, idx.weight));
+    const weight = Number(pick(r, idx.weight)) * weightFactor;
     const rpeRaw = Number(pick(r, idx.rpe));
     const setOrderRaw = pick(r, idx.setOrder);
     const setOrder = Math.max(0, Number(setOrderRaw) - 1);
+    const measured = measuredSet(
+      pick(r, idx.reps),
+      pick(r, idx.seconds),
+      pick(r, idx.distance),
+      distanceFactor,
+    );
 
-    if (!date || !exerciseName || !Number.isFinite(reps) || reps <= 0) {
+    // Lignes « Rest Timer » des exports Strong récents : pas une série.
+    if (!date || !exerciseName || !measured || /rest/i.test(setOrderRaw)) {
       skipped++;
       continue;
     }
@@ -209,8 +229,8 @@ export function parseStrongCsv(content: string): { bundle: ImportBundle; skipped
     }
     entry.sets.push({
       setIndex: Number.isFinite(setOrder) ? setOrder : entry.sets.length,
-      reps,
-      weightKg: Number.isFinite(weight) ? weight : 0,
+      ...measured,
+      weightKg: Number.isFinite(weight) ? roundKg(weight) : 0,
       rpe: clamp(Number.isFinite(rpeRaw) && rpeRaw > 0 ? rpeRaw : 7, 6, 10),
       performedAt,
       // Strong note les échauffements « W » dans « Set Order ».
@@ -235,9 +255,13 @@ export function parseHevyCsv(content: string): { bundle: ImportBundle; skipped: 
     exerciseTitle: header.indexOf('exercise_title'),
     setIndex: header.indexOf('set_index'),
     weight: header.indexOf('weight_kg'),
+    weightLbs: header.indexOf('weight_lbs'),
     reps: header.indexOf('reps'),
     rpe: header.indexOf('rpe'),
     setType: header.indexOf('set_type'),
+    seconds: header.indexOf('duration_seconds'),
+    distanceKm: header.indexOf('distance_km'),
+    distanceMi: header.indexOf('distance_miles'),
   };
 
   const sessionMap = new Map<string, MutableSession>();
@@ -248,12 +272,16 @@ export function parseHevyCsv(content: string): { bundle: ImportBundle; skipped: 
     const title = pick(r, idx.title) || 'Hevy session';
     const start = pick(r, idx.startTime);
     const exerciseName = pick(r, idx.exerciseTitle);
-    const reps = Number(pick(r, idx.reps));
-    const weight = Number(pick(r, idx.weight));
+    const weight =
+      idx.weight >= 0 ? Number(pick(r, idx.weight)) : Number(pick(r, idx.weightLbs)) * LB_TO_KG;
     const rpeRaw = Number(pick(r, idx.rpe));
     const setIdx = Number(pick(r, idx.setIndex));
+    const measured =
+      idx.distanceKm >= 0 || idx.distanceMi < 0
+        ? measuredSet(pick(r, idx.reps), pick(r, idx.seconds), pick(r, idx.distanceKm), 1000)
+        : measuredSet(pick(r, idx.reps), pick(r, idx.seconds), pick(r, idx.distanceMi), MI_TO_M);
 
-    if (!start || !exerciseName || !Number.isFinite(reps) || reps <= 0) {
+    if (!start || !exerciseName || !measured) {
       skipped++;
       continue;
     }
@@ -271,8 +299,8 @@ export function parseHevyCsv(content: string): { bundle: ImportBundle; skipped: 
     }
     entry.sets.push({
       setIndex: Number.isFinite(setIdx) ? setIdx : entry.sets.length,
-      reps,
-      weightKg: Number.isFinite(weight) ? weight : 0,
+      ...measured,
+      weightKg: Number.isFinite(weight) ? roundKg(weight) : 0,
       rpe: clamp(Number.isFinite(rpeRaw) && rpeRaw > 0 ? rpeRaw : 7, 6, 10),
       performedAt,
       ...(pick(r, idx.setType).toLowerCase() === 'warmup' ? { kind: 'warmup' as const } : {}),
@@ -398,12 +426,15 @@ function finalizeMutableSessions(
     });
     for (const [id, name] of s.exerciseNames) {
       if (!exercisesById.has(id)) {
+        const sets = s.entries.find((e) => e.exerciseId === id)?.sets ?? [];
+        const measure = importedMeasure(sets);
         exercisesById.set(id, {
           id,
           name,
           muscles: [],
           equipment: 'other',
           incrementKg: 2.5,
+          ...(measure ? { measure } : {}),
         });
       }
     }
@@ -417,6 +448,59 @@ function finalizeMutableSessions(
     },
     skipped,
   };
+}
+
+const LB_TO_KG = 0.45359237;
+const MI_TO_M = 1609.344;
+
+/** Colonne « name » ou « name (unité) » (en-têtes Strong récents). */
+function findColumn(header: readonly string[], name: string): number {
+  const exact = header.indexOf(name);
+  if (exact >= 0) return exact;
+  return header.findIndex((h) => h.startsWith(`${name} (`));
+}
+
+/** Facteur d'unité lu entre parenthèses dans l'en-tête, sinon `fallback`. */
+function unitFactor(header: string, units: Record<string, number>, fallback: number): number {
+  const unit = /\(([a-z]+)\)\s*$/.exec(header)?.[1];
+  return unit && unit in units ? units[unit]! : fallback;
+}
+
+function roundKg(kg: number): number {
+  return Math.round(kg * 100) / 100;
+}
+
+/**
+ * Série importée : en répétitions si `reps` > 0, sinon chronométrée
+ * (`seconds`) et/ou de distance (`distance` × `distanceFactor` → mètres).
+ * null si la ligne ne décrit aucune série exploitable.
+ */
+export function measuredSet(
+  repsRaw: string,
+  secondsRaw: string,
+  distanceRaw: string,
+  distanceFactor: number,
+): { reps: number; durationSec?: number; distanceM?: number } | null {
+  const reps = Number(repsRaw);
+  if (repsRaw !== '' && Number.isFinite(reps) && reps > 0) return { reps };
+  const seconds = Number(secondsRaw);
+  const distance = Number(distanceRaw) * distanceFactor;
+  const hasTime = secondsRaw !== '' && Number.isFinite(seconds) && seconds > 0;
+  const hasDistance = distanceRaw !== '' && Number.isFinite(distance) && distance > 0;
+  if (!hasTime && !hasDistance) return null;
+  return {
+    reps: 0,
+    ...(hasTime ? { durationSec: Math.round(seconds) } : {}),
+    ...(hasDistance ? { distanceM: Math.round(distance) } : {}),
+  };
+}
+
+/** Mesure d'un exercice importé : distance ou temps si toutes ses séries le sont. */
+export function importedMeasure(sets: readonly SetEntry[]): 'time' | 'distance' | undefined {
+  if (sets.length === 0 || sets.some((x) => x.reps > 0)) return undefined;
+  if (sets.some((x) => (x.distanceM ?? 0) > 0)) return 'distance';
+  if (sets.some((x) => (x.durationSec ?? 0) > 0)) return 'time';
+  return undefined;
 }
 
 function emptyBundle(): ImportBundle {

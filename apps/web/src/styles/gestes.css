@@ -1,0 +1,209 @@
+/* ─── Gestes de saisie et courbes vivantes ─────────────────────────────────
+   - .k-scrub   : courbe à parcourir du doigt (lib/chart-scrub.ts, x-scrub)
+   - .k-swipe   : ligne à glisser (lib/swipe-row.ts, x-swipe:left / :right)
+   - [x-hold]   : bouton à appui maintenu (lib/hold-repeat.ts)
+   - .k-gym-stepper : gros − / + de part et d'autre d'une valeur (séance)
+   Seules transform et opacity sont animées ; mouvement réduit respecté. */
+
+/* ── Courbe à parcourir ── */
+.k-scrub {
+  position: relative;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  --k-scrub-rgb: var(--kinetic-neon);
+}
+.k-scrub-purple {
+  --k-scrub-rgb: var(--k-info);
+}
+.k-scrub-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s var(--k-ease);
+  z-index: 2;
+}
+.k-scrub.is-scrubbing .k-scrub-layer {
+  opacity: 1;
+}
+.k-scrub-line {
+  position: absolute;
+  left: -0.5px;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  transform-origin: 0 0;
+  background: rgb(var(--tx-rgb) / 0.45);
+}
+.k-scrub-dot {
+  position: absolute;
+  left: -7px;
+  top: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: rgb(var(--k-scrub-rgb));
+  box-shadow:
+    0 0 0 2.5px rgb(var(--surface)),
+    0 0 0 9px rgb(var(--k-scrub-rgb) / 0.22);
+}
+.k-scrub-bubble {
+  position: absolute;
+  left: 0;
+  top: -6px;
+  translate: 0 -100%;
+  padding: 5px 10px 6px;
+  border-radius: 12px;
+  background: var(--material);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow:
+    0 0 0 0.5px var(--separator),
+    0 8px 22px rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
+  text-align: center;
+}
+.k-scrub-date {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--tx2);
+}
+.k-scrub-value {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--tx);
+}
+
+/* ── Ligne à glisser ── */
+.k-swipe {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+  --k-swipe-p: 0;
+}
+.k-swipe::before,
+.k-swipe::after {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: rgb(var(--k-on-accent));
+  opacity: 0;
+  pointer-events: none;
+}
+.k-swipe::before {
+  content: attr(data-swipe-right-label);
+  justify-content: flex-start;
+  background: rgb(var(--k-success));
+}
+.k-swipe::after {
+  content: attr(data-swipe-left-label);
+  justify-content: flex-end;
+  background: rgb(var(--kinetic-neon));
+}
+/* Dans une liste arrondie (.k-list), la ligne glissée et ses fonds suivent
+   l'arrondi : sans cela, le fond coloré (et la ligne en cours de transformation,
+   composée à part dans WebKit) dépasse aux coins. */
+.k-list:has(> .k-swipe) {
+  isolation: isolate;
+}
+.k-list > .k-swipe:first-of-type {
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+.k-list > .k-swipe:last-of-type {
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+/* Fond visible pendant le geste, qui s'intensifie jusqu'au seuil. */
+.k-swipe[data-swipe-dir='right']::before,
+.k-swipe[data-swipe-dir='left']::after {
+  opacity: calc(0.35 + var(--k-swipe-p) * 0.65);
+}
+.k-swipe-content {
+  position: relative;
+  z-index: 1;
+  background: rgb(var(--surface));
+}
+/* Filet de séparation iOS (décalé à gauche) entre deux lignes glissables. */
+.k-swipe-sep + .k-swipe-sep > .k-swipe-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 3.75rem;
+  height: 0.5px;
+  background: var(--separator);
+  z-index: 1;
+}
+/* Liste en blocs (.k-item) : le filet passe sur le contenu opaque. */
+.k-item.k-swipe + .k-item.k-swipe > .k-swipe-content {
+  box-shadow: inset 0 0.5px 0 var(--separator);
+}
+/* Ligne posée sur un fond « elevated » (séries de la séance). */
+.k-swipe-on-elevated .k-swipe-content {
+  background: rgb(var(--elevated));
+}
+.k-swipe.is-swiping .k-swipe-content {
+  will-change: transform;
+}
+.k-swipe-content.is-settling {
+  transition: transform 0.42s var(--k-spring);
+}
+.k-swipe[data-swipe-dir='left'] .k-swipe-content.is-settling {
+  transition-timing-function: var(--k-ease);
+  transition-duration: 0.22s;
+}
+
+/* ── Appui maintenu / gros − + ── */
+[x-hold] {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-gym-stepper {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr) 3.5rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+.k-step-btn {
+  display: flex;
+  height: 3.5rem;
+  width: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgb(var(--raised));
+  color: var(--tx);
+  transition:
+    transform 0.16s var(--k-ease),
+    opacity 0.16s var(--k-ease);
+}
+.k-step-btn:active,
+.k-step-btn.is-holding {
+  transform: scale(0.9);
+  opacity: 0.75;
+}
+.k-step-btn-sm {
+  height: 2.75rem;
+  width: 2.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-scrub-layer,
+  .k-swipe-content.is-settling,
+  .k-step-btn {
+    transition: none;
+  }
+}

@@ -11,6 +11,16 @@ const RUNTIME_CACHE = `${VERSION}-runtime`;
 // charger ses chunks après un déploiement (sinon : 404 → index.html → erreur MIME).
 const ASSETS_CACHE  = 'kinetic-assets-v1';
 const ASSETS_MAX_ENTRIES = 250;
+// Schémas d'exercices (/exercises/*.svg) : cache PERSISTANT entre versions
+// (pas vidé à l'activation) pour que « Comment exécuter » marche hors ligne
+// même juste après une mise à jour. Tous précachés à l'installation (~30
+// petits SVG), rafraîchis ensuite en arrière-plan (stale-while-revalidate).
+const EXERCISES_CACHE = 'kinetic-exercises-v1';
+// __SW_EXERCISES__ : noms séparés par des virgules, injectés au build (vite.config.ts).
+const EXERCISE_LIST = '__SW_EXERCISES__';
+const EXERCISE_URLS = EXERCISE_LIST.startsWith('__')
+  ? []
+  : EXERCISE_LIST.split(',').filter(Boolean).map((n) => `/exercises/${n}.svg`);
 
 // Shell minimal à précacher.
 // Les assets hashés (/static/*) sont cachés runtime au fur et à mesure.
@@ -37,6 +47,18 @@ self.addEventListener('install', (event) => {
           }
         }),
       );
+      // Schémas : nouvelle copie à chaque version (non bloquant si l'un manque).
+      const exercises = await caches.open(EXERCISES_CACHE);
+      await Promise.all(
+        EXERCISE_URLS.map(async (url) => {
+          try {
+            const resp = await fetch(url, { cache: 'reload' });
+            if (isSvgResponse(resp)) await exercises.put(url, resp);
+          } catch {
+            /* hors ligne pendant l'installation : mis en cache au premier usage */
+          }
+        }),
+      );
       await self.skipWaiting();
     })(),
   );
@@ -49,7 +71,13 @@ self.addEventListener('activate', (event) => {
       const keys = await caches.keys();
       await Promise.all(
         keys
-          .filter((k) => k !== STATIC_CACHE && k !== RUNTIME_CACHE && k !== ASSETS_CACHE)
+          .filter(
+            (k) =>
+              k !== STATIC_CACHE &&
+              k !== RUNTIME_CACHE &&
+              k !== ASSETS_CACHE &&
+              k !== EXERCISES_CACHE,
+          )
           .map((k) => caches.delete(k)),
       );
       await trimCache(ASSETS_CACHE, ASSETS_MAX_ENTRIES);
@@ -80,6 +108,12 @@ self.addEventListener('fetch', (event) => {
   // Assets hashés immutables → cache first (long TTL)
   if (url.pathname.startsWith('/static/')) {
     event.respondWith(cacheFirst(req, ASSETS_CACHE));
+    return;
+  }
+
+  // Schémas d'exercices → cache persistant, stale-while-revalidate
+  if (url.pathname.startsWith('/exercises/') && url.pathname.endsWith('.svg')) {
+    event.respondWith(exerciseSvg(req));
     return;
   }
 
@@ -126,6 +160,26 @@ async function cacheFirst(req, cacheName) {
   } catch {
     return new Response('Offline', { status: 503 });
   }
+}
+
+function isSvgResponse(resp) {
+  // Jamais la page de repli HTML (réécriture SPA) à la place d'un schéma.
+  const type = (resp && resp.headers.get('content-type')) || '';
+  return !!resp && resp.ok && !type.includes('text/html');
+}
+
+async function exerciseSvg(req) {
+  const cache = await caches.open(EXERCISES_CACHE);
+  // ignoreSearch : « ?v=… » éventuel ne doit pas rater la copie hors ligne.
+  const cached = await cache.match(req, { ignoreSearch: true });
+  const network = fetch(req)
+    .then((resp) => {
+      if (isSvgResponse(resp)) cache.put(req, resp.clone()).catch(() => {});
+      return resp;
+    })
+    .catch(() => null);
+  if (cached) return cached;
+  return (await network) || new Response('Offline', { status: 503 });
 }
 
 async function trimCache(cacheName, maxEntries) {

@@ -28,6 +28,7 @@ import {
   type ExerciseMeasure,
   type TemplateLine,
 } from '@kinetic/core';
+import type { ContextMenuAction, ContextMenuRequest } from '../lib/context-menu';
 import { getDeps } from '../deps';
 import { navigate } from '../router';
 import { loadActiveSession } from '../lib/training/active-session';
@@ -154,6 +155,26 @@ export function templateEditor() {
       this.lines = addTemplateLine(this.lines, id);
       this.query = '';
       this.error = '';
+    },
+    /** Appui long sur un exercice du choix (lib/context-menu.ts). */
+    pickerMenu(menu: ContextMenuRequest, id: string): void {
+      const actions: ContextMenuAction[] = [
+        { label: 'Ajouter au modèle', icon: 'plus', run: () => this.addLine(id) },
+      ];
+      if (this.lines.length > 0) {
+        actions.push({
+          label: 'Ajouter en superset',
+          icon: 'link',
+          run: () => this.addLineLinked(id),
+        });
+      }
+      menu.show(actions);
+    },
+    /** Ajoute l'exercice et le lie en superset avec le précédent (si possible). */
+    addLineLinked(id: string): void {
+      this.addLine(id);
+      const i = this.lines.length - 2;
+      if (canLinkWithNext(this.lines, i)) this.lines = linkWithNext(this.lines, i);
     },
     removeLine(i: number): void {
       this.lines = normalizeSupersets(this.lines.filter((_, j) => j !== i));

@@ -104,11 +104,46 @@ export function sessionDurationMin(session: ShareSessionInput): number {
   return Math.round((end - start) / 60000);
 }
 
-/** « 52 min », « 1 h 05 ». */
-export function shareDurationParts(min: number): { value: string; unit: string } {
+/**
+ * « 52 min », « 1 h 05 » ; moins d'une minute → « < 1 min » (jamais « 0 min ») ;
+ * durée inconnue (pas de fin enregistrée, `known` faux) → « — ».
+ */
+export function shareDurationParts(min: number, known = true): { value: string; unit: string } {
+  if (!known) return { value: '—', unit: '' };
   const m = Math.max(0, Math.round(Number(min) || 0));
+  if (m < 1) return { value: '<\u00a01', unit: 'min' };
   if (m < 60) return { value: String(m), unit: 'min' };
   return { value: `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`, unit: '' };
+}
+
+/** Vrai si la séance a une durée mesurable (champ enregistré ou début → fin). */
+export function sessionDurationKnown(session: ShareSessionInput): boolean {
+  const stored = Number(session.durationMin);
+  if (Number.isFinite(stored) && stored > 0) return true;
+  const start = Date.parse(session.startedAt);
+  const end = session.endedAt ? Date.parse(session.endedAt) : NaN;
+  return Number.isFinite(start) && Number.isFinite(end) && end > start;
+}
+
+const DATE_HINT =
+  /\b(lun|mar|mer|jeu|ven|sam|dim)\.?\b|\b(janv?|f[ée]vr?|mars|avr|mai|juin|juil|ao[uû]t|sept?|oct|nov|d[ée]c)\.?\b|\d{1,2}[/.-]\d{1,2}/i;
+
+/**
+ * Titre de la carte : la date est déjà affichée au-dessus, on retire donc une
+ * date entre parenthèses en fin de nom (« Séance libre (mer. 18 nov.) » →
+ * « Séance libre ») ; espaces normalisés ; « Séance » si vide.
+ */
+export function shareCardTitle(name: string): string {
+  let t = String(name ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const m = /\s*[([]([^()[\]]*)[)\]]\s*$/.exec(t);
+  if (m && m.index > 0 && DATE_HINT.test(m[1] ?? '')) t = t.slice(0, m.index).trim();
+  // « Séance libre — 18/11 », « Push · mer. 18 nov. » : même idée avec un séparateur.
+  const sep = /\s+[-–—·|]\s+([^-–—·|]+)$/.exec(t);
+  if (sep && sep.index > 0 && DATE_HINT.test(sep[1] ?? '') && /\d/.test(sep[1] ?? ''))
+    t = t.slice(0, sep.index).trim();
+  return t || 'Séance';
 }
 
 /** « Mardi 17 novembre 2026 » (heure locale). */
@@ -247,9 +282,9 @@ export function buildShareCardSummary(
   }));
 
   return {
-    title: session.name.trim() || 'Séance',
+    title: shareCardTitle(session.name),
     dateLabel: shareDateLabel(session.startedAt),
-    duration: shareDurationParts(sessionDurationMin(session)),
+    duration: shareDurationParts(sessionDurationMin(session), sessionDurationKnown(session)),
     tonnage: shareTonnageParts(tonnage),
     setCount,
     exerciseCount: rows.length,

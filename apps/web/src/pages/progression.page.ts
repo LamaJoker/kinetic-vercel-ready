@@ -20,8 +20,38 @@ import type { Exercise, WorkoutSession } from '../lib/training/types';
 import { loadExercises, loadSessions } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
 import { loadMuscleMap } from '../lib/lazy-component';
+import type { ScrubData } from '../lib/chart-scrub';
 
 type Tab = 'force' | 'volume' | 'muscles' | 'records' | 'heatmap';
+
+/** Géométrie de la courbe e1RM (viewBox 320 × 172), partagée par le tracé et le parcours au doigt. */
+export function forceChartGeometry(pts: ReadonlyArray<{ x: number; y: number }>) {
+  const W = 320,
+    H = 172,
+    padL = 4,
+    padR = 38,
+    padT = 10,
+    padB = 22;
+  const minX = pts[0]?.x ?? 0,
+    maxX = pts.at(-1)?.x ?? 0;
+  const ys = pts.map((p) => p.y);
+  const rawMin = Math.min(...ys),
+    rawMax = Math.max(...ys);
+  // Graduations « rondes » : pas de 1, 2, 2,5 ou 5 × 10^n, 3 intervalles.
+  const span = Math.max(1, rawMax - rawMin);
+  const rough = span / 3;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= rough) ?? 10 * mag;
+  const minY = Math.floor(rawMin / step) * step;
+  const maxY = Math.max(minY + step, Math.ceil(rawMax / step) * step);
+  const dx = Math.max(1, maxX - minX),
+    dy = maxY - minY;
+  const plotW = W - padL - padR,
+    plotH = H - padT - padB;
+  const sx = (x: number) => padL + ((x - minX) / dx) * plotW;
+  const sy = (y: number) => padT + plotH - ((y - minY) / dy) * plotH;
+  return { W, H, padL, padR, padT, padB, plotH, rawMax, step, minY, maxY, sx, sy, ys };
+}
 
 export function progression() {
   return {
@@ -242,6 +272,25 @@ export function progression() {
       return points.sort((a, b) => a.x - b.x);
     },
 
+    /** Parcours au doigt de la courbe e1RM (directive x-scrub) : un point par séance. */
+    forceScrub(): ScrubData | null {
+      const pts = this.forcePoints();
+      if (pts.length < 2) return null;
+      const g = forceChartGeometry(pts);
+      return {
+        w: g.W,
+        h: g.H,
+        top: g.padT - 4,
+        bottom: g.padT + g.plotH,
+        points: pts.map((p) => ({
+          x: g.sx(p.x),
+          y: g.sy(p.y),
+          label: p.label,
+          value: `${this.formatNumber(p.y, 1)} kg`,
+        })),
+      };
+    },
+
     /**
      * Courbe e1RM (style Santé iOS) : trait lissé bleu, aire en fondu, grille
      * horizontale discrète, repère sur la dernière valeur et sur le record.
@@ -256,30 +305,8 @@ export function progression() {
       // la classe text-kinetic-gold posée sur ses propres tracés).
       const LINE = 'currentColor';
       const BEST_CLASS = 'text-kinetic-gold';
-      const W = 320,
-        H = 172,
-        padL = 4,
-        padR = 38,
-        padT = 10,
-        padB = 22;
-      const minX = pts[0]!.x,
-        maxX = pts.at(-1)!.x;
-      const ys = pts.map((p) => p.y);
-      const rawMin = Math.min(...ys),
-        rawMax = Math.max(...ys);
-      // Graduations « rondes » : pas de 1, 2, 2,5 ou 5 × 10^n, 3 intervalles.
-      const span = Math.max(1, rawMax - rawMin);
-      const rough = span / 3;
-      const mag = Math.pow(10, Math.floor(Math.log10(rough)));
-      const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= rough) ?? 10 * mag;
-      const minY = Math.floor(rawMin / step) * step;
-      const maxY = Math.max(minY + step, Math.ceil(rawMax / step) * step);
-      const dx = Math.max(1, maxX - minX),
-        dy = maxY - minY;
-      const plotW = W - padL - padR,
-        plotH = H - padT - padB;
-      const sx = (x: number) => padL + ((x - minX) / dx) * plotW;
-      const sy = (y: number) => padT + plotH - ((y - minY) / dy) * plotH;
+      const { W, H, padL, padR, padT, plotH, rawMax, step, minY, maxY, sx, sy, ys } =
+        forceChartGeometry(pts);
       const f = (n: number) => n.toFixed(1);
 
       // Grille + graduations à droite

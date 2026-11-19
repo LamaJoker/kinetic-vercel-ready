@@ -41,8 +41,13 @@ import {
   forceNextDirection,
   takeForcedDirection,
   prefersReducedMotion,
+  pathAt,
+  getSnapshot,
+  enableSnapshots,
+  PAGE_SWAP_EVENT,
 } from './nav-motion';
 import { hapticTap } from './haptics';
+import { LayerMover, pageLayers, inertClone } from './page-layers';
 
 export const EDGE_ZONE_PX = 20;
 export const AXIS_SLOP_PX = 10;
@@ -183,14 +188,64 @@ function track(tr: Tracker, x: number): void {
 
 // ─── 1. Retour par le bord gauche ──────────────────────────────────────────
 
+/** Parallaxe de l'écran précédent : −30 % de la largeur au repos, 0 à la fin. */
+export const GHOST_PARALLAX = 0.3;
+
+/** Position de l'écran précédent (px) pour une progression 0 → 1 du geste. */
+export function ghostOffset(progress: number, width: number): number {
+  const p = Math.min(1, Math.max(0, progress));
+  return -GHOST_PARALLAX * width * (1 - p);
+}
+
+type SwipeLayers = {
+  ghost: HTMLElement;
+  page: HTMLElement;
+  dim: HTMLElement;
+  backing: HTMLElement;
+};
+
+/** Écran précédent (copie figée) + fond opaque de la page courante, sous le contenu. */
+function mountSwipeLayers(): SwipeLayers {
+  const ghost = document.createElement('div');
+  ghost.className = 'k-swipe-ghost';
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.setAttribute('inert', '');
+  const prev = pathAt(currentHistoryIdx() - 1);
+  const snap = prev ? getSnapshot(prev) : undefined;
+  const page = snap ? inertClone(snap) : document.createElement('div');
+  page.classList.add('k-swipe-ghost-page');
+  const dim = document.createElement('div');
+  dim.className = 'k-swipe-ghost-dim';
+  ghost.append(page, dim);
+  const backing = document.createElement('div');
+  backing.className = 'k-swipe-backing';
+  backing.setAttribute('aria-hidden', 'true');
+  document.body.append(ghost, backing);
+  return { ghost, page, dim, backing };
+}
+
+function unmountSwipeLayers(): void {
+  document.querySelectorAll('.k-swipe-ghost, .k-swipe-backing').forEach((n) => n.remove());
+}
+
 function initEdgeSwipeBack(): void {
   let startX = 0;
   let startY = 0;
   let axis: 'x' | 'y' | null = null;
   let dx = 0;
   let host: HTMLElement | null = null;
+  let mover: LayerMover | null = null;
+  let layers: SwipeLayers | null = null;
   const tr: Tracker = { x: 0, t: 0, v: 0 };
   const reduced = (): boolean => prefersReducedMotion();
+  const EASE = '260ms cubic-bezier(0.32, 0.72, 0, 1)';
+
+  // Rendu de la page précédente : le routeur la remplace, on retire nos calques
+  // dans le même temps (sinon la copie figée transparaîtrait sous la nouvelle page).
+  window.addEventListener(PAGE_SWAP_EVENT, () => {
+    unmountSwipeLayers();
+    mover = null;
+  });
 
   const detach = (): void => {
     document.removeEventListener('touchmove', onMove);
@@ -198,27 +253,35 @@ function initEdgeSwipeBack(): void {
     document.removeEventListener('touchcancel', onEnd);
   };
 
-  const settle = (el: HTMLElement, to: number, done: () => void): void => {
+  const paint = (x: number, transition?: string): void => {
+    const width = window.innerWidth || 375;
+    mover?.set({ x }, transition);
+    if (!layers) return;
+    const t = transition ? `transform ${transition}, opacity ${transition}` : 'none';
+    layers.backing.style.transition = t;
+    layers.page.style.transition = t;
+    layers.dim.style.transition = t;
+    layers.backing.style.transform = `translate3d(${x}px, 0, 0)`;
+    layers.page.style.transform = `translate3d(${ghostOffset(x / width, width)}px, 0, 0)`;
+    layers.dim.style.opacity = String(Math.max(0, 1 - x / width));
+  };
+
+  const settle = (to: number, done: () => void): void => {
     if (reduced()) {
       done();
       return;
     }
-    el.style.transition = 'transform 260ms cubic-bezier(0.32, 0.72, 0, 1)';
-    el.style.transform = `translate3d(${to}px, 0, 0)`;
-    let finished = false;
-    const finish = (): void => {
-      if (finished) return;
-      finished = true;
-      el.removeEventListener('transitionend', finish);
-      done();
-    };
-    el.addEventListener('transitionend', finish);
-    setTimeout(finish, 320);
+    paint(to, EASE);
+    // Fin de l'animation : minuterie (les transitionend de plusieurs calques
+    // arriveraient en ordre dispersé).
+    setTimeout(done, 280);
   };
 
   const reset = (el: HTMLElement): void => {
-    el.style.removeProperty('transform');
-    el.style.removeProperty('transition');
+    mover?.restore();
+    mover = null;
+    layers = null;
+    unmountSwipeLayers();
     el.classList.remove('k-swiping-back');
   };
 
@@ -256,11 +319,19 @@ function initEdgeSwipeBack(): void {
         return;
       }
       host.classList.add('k-swiping-back');
+      if (!reduced()) {
+        // Calques de la page (les éléments fixed glissent avec elle sans sauter)
+        // et écran précédent derrière.
+        const { flow, fixed } = pageLayers(host);
+        mover = new LayerMover([...flow, ...fixed]);
+        layers = mountSwipeLayers();
+        paint(0);
+      }
     }
     if (e.cancelable) e.preventDefault();
     dx = Math.max(0, mx);
     track(tr, t.clientX);
-    if (!reduced()) host.style.transform = `translate3d(${dx}px, 0, 0)`;
+    if (!reduced()) paint(dx);
   }
 
   function onEnd(): void {
@@ -271,7 +342,7 @@ function initEdgeSwipeBack(): void {
     const width = window.innerWidth || 375;
     if (shouldCommitBack(dx, tr.v, width)) {
       const from = window.location.pathname;
-      settle(el, width, () => {
+      settle(width, () => {
         forceNextDirection('swipe');
         window.history.back();
         // Filet : si rien n'a changé (pas d'historique), la page revient.
@@ -283,7 +354,7 @@ function initEdgeSwipeBack(): void {
         }, 600);
       });
     } else {
-      settle(el, 0, () => reset(el));
+      settle(0, () => reset(el));
     }
   }
 
@@ -316,6 +387,9 @@ function initPullToRefresh(edgeSwipe: boolean): void {
   let tapped = false;
   let refreshing = false;
   let host: HTMLElement | null = null;
+  let mover: LayerMover | null = null;
+  let settling = false;
+  const SETTLE = '300ms cubic-bezier(0.32, 0.72, 0, 1)';
 
   const ind = (): HTMLElement => (indicator ??= createIndicator());
   const arc = (): SVGCircleElement | null => ind().querySelector('.k-ptr-arc');
@@ -325,8 +399,10 @@ function initPullToRefresh(edgeSwipe: boolean): void {
     i.style.transform = `translate3d(-50%, ${y}px, 0) rotate(${Math.round(progress * 270)}deg)`;
     i.style.opacity = String(Math.min(1, progress * 1.2));
     arc()?.setAttribute('stroke-dashoffset', String(Math.round(100 - Math.min(1, progress) * 80)));
+    // La page descend avec le doigt ; ses éléments fixed restent en place (page-layers.ts).
     if (host && !prefersReducedMotion()) {
-      host.style.transform = y > 0 ? `translate3d(0, ${y}px, 0)` : '';
+      mover ??= new LayerMover(pageLayers(host).flow);
+      mover.set({ y: Math.max(0, y) }, settling ? SETTLE : undefined);
     }
   };
 
@@ -342,14 +418,18 @@ function initPullToRefresh(edgeSwipe: boolean): void {
     i.classList.add('is-settling');
     i.classList.remove('is-refreshing', 'is-armed');
     el?.classList.add('k-ptr-settling');
+    host = el;
+    settling = true;
     paint(0, 0);
-    if (el) el.style.transform = '';
+    const done = mover;
+    mover = null;
     setTimeout(() => {
       i.classList.remove('is-settling');
       el?.classList.remove('k-ptr-settling');
-      el?.style.removeProperty('transform');
+      done?.restore();
     }, 320);
     host = null;
+    settling = false;
   };
 
   function onStart(e: TouchEvent): void {
@@ -386,6 +466,7 @@ function initPullToRefresh(edgeSwipe: boolean): void {
       }
       ind().classList.remove('is-settling');
       host?.classList.remove('k-ptr-settling');
+      settling = false;
     }
     // Remonter au-dessus du point de départ rend la main au défilement.
     if (my <= 0) {
@@ -421,6 +502,7 @@ function initPullToRefresh(edgeSwipe: boolean): void {
     const el = host;
     i.classList.add('is-settling', 'is-refreshing');
     el?.classList.add('k-ptr-settling');
+    settling = true;
     paint(PTR_HOLD_PX, 1);
     el?.setAttribute('aria-busy', 'true');
     const started = Date.now();
@@ -473,6 +555,10 @@ export function initNativeGestures(): void {
   if (!touch) return;
   const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
   const edge = edgeSwipeSupported({ native, platform, standalone });
-  if (edge) initEdgeSwipeBack();
+  if (edge) {
+    // Copie figée des pages quittées : montrée derrière la page pendant le geste.
+    enableSnapshots();
+    initEdgeSwipeBack();
+  }
   initPullToRefresh(edge);
 }

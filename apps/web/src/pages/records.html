@@ -12,7 +12,7 @@
       </svg>
     </a>
     <div class="flex-1 min-w-0">
-      <h1 class="font-display font-bold text-white">Records</h1>
+      <h1 data-large-title class="font-display font-bold text-white">Records</h1>
     </div>
   </div>
 
@@ -42,7 +42,7 @@
         <div class="min-w-0">
           <p class="text-sm font-medium text-gray-400">Meilleur e1RM</p>
           <p class="k-stat text-[3.25rem] mt-1">
-            <span x-text="$num.loc(topE1rm)"></span><span class="k-unit">kg</span>
+            <span x-text="$num.loc(topE1rm)" x-count></span><span class="k-unit">kg</span>
           </p>
         </div>
         <span
@@ -66,7 +66,7 @@
       </div>
       <div class="grid grid-cols-2 gap-3 mt-5 pt-4 border-t border-white/10">
         <div>
-          <p class="k-stat text-[1.75rem]" x-text="records.length"></p>
+          <p class="k-stat text-[1.75rem]" x-text="records.length" x-count></p>
           <p class="text-xs text-gray-400 mt-1">Records</p>
         </div>
         <div>
@@ -286,7 +286,7 @@
               <div class="min-w-0">
                 <p class="text-sm text-gray-500">Total SBD</p>
                 <p class="k-stat text-[2.5rem] mt-1">
-                  <span x-text="$num.loc(sbdTotalKg)"></span><span class="k-unit">kg</span>
+                  <span x-text="$num.loc(sbdTotalKg)" x-count></span><span class="k-unit">kg</span>
                 </p>
               </div>
               <div class="text-right flex-shrink-0">

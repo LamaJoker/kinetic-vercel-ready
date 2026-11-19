@@ -33,9 +33,10 @@
       Aller au contenu principal
     </a>
 
-    <!-- Toasts : capsules en haut d'écran (annoncées aux lecteurs d'écran) -->
+    <!-- Toasts : capsules en verre en bas, au-dessus de la barre d'onglets
+         (styles/native-feel.css → .k-toast-stack ; annoncées aux lecteurs d'écran) -->
     <div
-      class="fixed top-[calc(env(safe-area-inset-top)+0.75rem)] inset-x-0 z-[80] flex flex-col items-center gap-2 px-4 pointer-events-none"
+      class="k-toast-stack"
       role="region"
       aria-label="Notifications"
       aria-live="polite"
@@ -44,7 +45,7 @@
       <template x-for="toast in $store.notifications.toasts" :key="toast.id">
         <div
           class="k-toast pointer-events-auto flex items-center gap-3 max-w-sm w-fit min-h-[2.75rem] pl-4 pr-2 py-2 rounded-full text-sm font-medium transition-all duration-300 ease-out"
-          :class="toast.visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-3 scale-95'"
+          :class="toast.visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-95'"
           :role="toast.kind === 'error' ? 'alert' : 'status'"
         >
           <span
@@ -110,7 +111,7 @@
       x-show="visible()"
       x-effect="syncOutletPadding()"
       x-transition.opacity
-      class="fixed inset-x-0 z-40 px-4 pointer-events-none"
+      class="k-session-banner fixed inset-x-0 z-40 px-4 pointer-events-none"
       style="
         display: none;
         bottom: calc(max(0.625rem, env(safe-area-inset-bottom) - 0.375rem) + 4.5rem);
@@ -323,7 +324,7 @@
       <button
         type="button"
         x-show="visible"
-        :class="cardClass"
+        :class="cardKindClass"
         @click="dismiss()"
         @keydown.escape.window="dismiss()"
         class="k-cel-card"
@@ -358,7 +359,15 @@
           <b x-show="isLevel" x-text="badge"></b>
         </span>
         <span class="k-cel-title" x-text="title"></span>
-        <span class="k-cel-sub" x-show="subtitle" x-text="subtitle"></span>
+        <span class="k-cel-sub" x-show="showSubtitle" x-text="subtitle"></span>
+        <span class="k-cel-reward" x-show="hasReward">
+          <span class="k-cel-reward-ico" aria-hidden="true" x-text="rewardEmoji"></span>
+          <span class="k-cel-reward-body">
+            <span class="k-cel-reward-kicker">Récompense débloquée</span>
+            <span class="k-cel-reward-title" x-text="rewardTitle"></span>
+            <span class="k-cel-reward-text" x-text="rewardText"></span>
+          </span>
+        </span>
       </button>
     </div>
   </body>

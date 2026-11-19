@@ -17,6 +17,7 @@ import {
   celebrationsMuted,
   celebration,
   CELEBRATION_MS,
+  CELEBRATION_REWARD_MS,
   CELEBRATION_EXIT_MS,
   MAX_QUEUE,
   PARTICLE_COUNT,
@@ -205,8 +206,12 @@ describe('composant celebration', () => {
     expect(c.badge).toBe('6');
     expect(c.title).toBe('Niveau 6 atteint');
     expect(hapticCelebrate).toHaveBeenCalledTimes(2);
+    // Niveau 6 = récompense « Gel de série » intégrée : la carte reste plus longtemps.
+    expect(c.hasReward).toBe(true);
+    vi.advanceTimersByTime(CELEBRATION_MS);
+    expect(c.visible).toBe(true);
 
-    vi.advanceTimersByTime(CELEBRATION_MS + CELEBRATION_EXIT_MS);
+    vi.advanceTimersByTime(CELEBRATION_REWARD_MS - CELEBRATION_MS + CELEBRATION_EXIT_MS);
     expect(c.visible).toBe(false);
     expect(hapticCelebrate).toHaveBeenCalledTimes(2);
   });

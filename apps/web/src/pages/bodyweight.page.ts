@@ -3,6 +3,7 @@ import { localIsoDate } from '../lib/widget';
 import { loc } from '../lib/num';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
+import type { ScrubData } from '../lib/chart-scrub';
 
 interface BodyweightEntry {
   date: string;
@@ -55,6 +56,41 @@ export function smoothPath(coords: ReadonlyArray<readonly [number, number]>): st
     path += ` C${f(x0 + h / 3)} ${f(y0 + (m[i]! * h) / 3)} ${f(x1 - h / 3)} ${f(y1 - (m[i + 1]! * h) / 3)} ${f(x1)} ${f(y1)}`;
   }
   return path;
+}
+
+/** Géométrie de la courbe de poids (viewBox 320 × 168), partagée par le tracé et le parcours au doigt. */
+export function bodyweightChartGeometry(
+  pts: ReadonlyArray<{ date: string; weight: number }>,
+  goalWeight: number | null,
+) {
+  // Zone de tracé à gauche, graduations à droite (style Santé iOS).
+  const W = 320,
+    H = 168,
+    plotL = 2,
+    plotR = 284,
+    plotT = 10,
+    plotB = 140;
+  const weights = pts.map((e) => e.weight);
+  let lo = Math.min(...weights);
+  let hi = Math.max(...weights);
+  const goal = goalWeight && goalWeight > 0 ? goalWeight : null;
+  // L'objectif n'étend l'échelle que s'il est proche de la courbe.
+  const showGoal = goal !== null && goal >= lo - 3 && goal <= hi + 3;
+  if (showGoal && goal !== null) {
+    lo = Math.min(lo, goal);
+    hi = Math.max(hi, goal);
+  }
+  lo = Math.floor(lo - 0.5);
+  hi = Math.ceil(hi + 0.5);
+  if (hi - lo < 2) hi = lo + 2;
+
+  const minX = Date.parse(pts[0]?.date ?? '');
+  const maxX = Date.parse(pts.at(-1)?.date ?? '');
+  const dx = Math.max(1, maxX - minX);
+  const sx = (d: number) => plotL + ((d - minX) / dx) * (plotR - plotL);
+  const sy = (y: number) => plotB - ((y - lo) / (hi - lo)) * (plotB - plotT);
+  const coords = pts.map((e) => [sx(Date.parse(e.date)), sy(e.weight)] as const);
+  return { W, H, plotL, plotR, plotT, plotB, lo, hi, goal, showGoal, sx, sy, coords };
 }
 
 const STORAGE_KEY_ENTRIES = STORAGE_KEYS.BODYWEIGHT_ENTRIES;
@@ -272,6 +308,25 @@ export function bodyweight() {
       return loc(v.toFixed(1));
     },
 
+    /** Parcours au doigt de la courbe (directive x-scrub) : un point par pesée. */
+    chartScrub(): ScrubData | null {
+      const pts = this.filteredEntries;
+      if (pts.length < 2) return null;
+      const g = bodyweightChartGeometry(pts, this.goalWeight);
+      return {
+        w: g.W,
+        h: g.H,
+        top: g.plotT - 4,
+        bottom: g.plotB,
+        points: pts.map((e, i) => ({
+          x: g.coords[i]![0],
+          y: g.coords[i]![1],
+          label: this.formatDate(e.date),
+          value: `${loc(e.weight.toFixed(1))} kg`,
+        })),
+      };
+    },
+
     chartSvg(): string {
       const pts = this.filteredEntries;
       if (pts.length < 2) return '';
@@ -285,35 +340,10 @@ export function bodyweight() {
       const version = `${isLight ? 'l' : 'd'}:${pts.length}:${pts[0]?.date ?? ''}:${pts.at(-1)?.date ?? ''}:${pts.at(-1)?.weight ?? ''}:${this.goalWeight ?? ''}:${this.period}`;
       if (this._chartSvgVersion === version && this._chartSvgCache) return this._chartSvgCache;
 
-      // Géométrie : zone de tracé à gauche, graduations à droite (style Santé iOS).
-      const W = 320,
-        H = 168,
-        plotL = 2,
-        plotR = 284,
-        plotT = 10,
-        plotB = 140;
-      const weights = pts.map((e) => e.weight);
-      let lo = Math.min(...weights);
-      let hi = Math.max(...weights);
-      const goal = this.goalWeight && this.goalWeight > 0 ? this.goalWeight : null;
-      // L'objectif n'étend l'échelle que s'il est proche de la courbe.
-      const showGoal = goal !== null && goal >= lo - 3 && goal <= hi + 3;
-      if (showGoal && goal !== null) {
-        lo = Math.min(lo, goal);
-        hi = Math.max(hi, goal);
-      }
-      lo = Math.floor(lo - 0.5);
-      hi = Math.ceil(hi + 0.5);
-      if (hi - lo < 2) hi = lo + 2;
-
-      const minX = Date.parse(pts[0]!.date);
-      const maxX = Date.parse(pts.at(-1)!.date);
-      const dx = Math.max(1, maxX - minX);
-      const sx = (d: number) => plotL + ((d - minX) / dx) * (plotR - plotL);
-      const sy = (y: number) => plotB - ((y - lo) / (hi - lo)) * (plotB - plotT);
+      const { W, H, plotL, plotR, plotB, lo, hi, goal, showGoal, sy, coords } =
+        bodyweightChartGeometry(pts, this.goalWeight);
       const fmtKg = (v: number) => (Number.isInteger(v) ? String(v) : loc(v.toFixed(1)));
 
-      const coords = pts.map((e) => [sx(Date.parse(e.date)), sy(e.weight)] as const);
       const linePath = smoothPath(coords);
       const areaPath =
         linePath +

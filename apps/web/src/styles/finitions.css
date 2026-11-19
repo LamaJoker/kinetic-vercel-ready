@@ -228,3 +228,391 @@
 [data-mode='light'] :focus-visible {
   outline-color: rgb(var(--kinetic-neon-ink));
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   4. Rangée de pastilles défilante (k-seg à 5-6 choix)
+   ───────────────────────────────────────────────────────────────────────
+     <div class="k-seg k-seg-scroll" x-chip-scroll role="group" …>
+       <button class="k-seg-item" :aria-pressed="…">Force</button> …
+
+   Sur 390 px, six segments égaux deviennent illisibles : chaque choix est
+   ici une pastille à sa largeur naturelle, la rangée défile au doigt et
+   déborde jusqu'aux bords de l'écran (marge négative = gouttière de la page).
+   Fondu sur le bord où il reste du contenu (data-fade-start / -end posés
+   par lib/chip-scroll.ts, qui ramène aussi le choix actif à l'écran).
+   ═══════════════════════════════════════════════════════════════════════ */
+.k-seg.k-seg-scroll {
+  --k-chip-fade: 28px;
+  gap: 0.5rem;
+  margin-inline: -1rem;
+  padding: 2px 1rem;
+  border-radius: 0;
+  background: transparent;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 1rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.k-seg.k-seg-scroll::-webkit-scrollbar {
+  display: none;
+}
+.k-seg.k-seg-scroll::before {
+  display: none;
+}
+.k-seg.k-seg-scroll[data-fade-start] {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--k-chip-fade));
+  mask-image: linear-gradient(90deg, transparent, #000 var(--k-chip-fade));
+}
+.k-seg.k-seg-scroll[data-fade-end] {
+  -webkit-mask-image: linear-gradient(270deg, transparent, #000 var(--k-chip-fade));
+  mask-image: linear-gradient(270deg, transparent, #000 var(--k-chip-fade));
+}
+.k-seg.k-seg-scroll[data-fade-start][data-fade-end] {
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 var(--k-chip-fade),
+    #000 calc(100% - var(--k-chip-fade)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 var(--k-chip-fade),
+    #000 calc(100% - var(--k-chip-fade)),
+    transparent
+  );
+}
+/* Spécificité renforcée : passe devant les règles « 5-6 segments » ci-dessus */
+.k-seg.k-seg-scroll.k-seg-scroll > .k-seg-item {
+  flex: none;
+  min-height: 2.25rem;
+  padding: 0.4375rem 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  letter-spacing: -0.01em;
+  font-weight: 500;
+  overflow: visible;
+  background: var(--k-seg-bg);
+  box-shadow: inset 0 0 0 0.5px var(--separator);
+  transition:
+    transform 300ms var(--k-spring),
+    background-color 200ms ease,
+    color 200ms ease;
+}
+.k-seg.k-seg-scroll.k-seg-scroll
+  > .k-seg-item:is(.on, [aria-pressed='true'], [aria-selected='true']) {
+  font-weight: 600;
+  color: rgb(var(--k-on-accent));
+  background-color: rgb(var(--kinetic-neon));
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(
+      115deg,
+      rgb(var(--kinetic-electric) / 0) 35%,
+      rgb(var(--kinetic-electric) / 0.32) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 4px 12px -6px rgb(var(--kinetic-neon) / var(--k-btn-glow));
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-seg.k-seg-scroll.k-seg-scroll > .k-seg-item {
+    transition: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   5. Tuiles de raccourcis (accueil)
+   ───────────────────────────────────────────────────────────────────────
+     <a class="k-card k-tile k-press"><span class="k-tile-ico" data-tone="info">
+       <svg>…</svg></span><span class="k-tile-label">Progression</span></a>
+
+   Grande icône blanche dans une pastille dégradée (façon icône d'app iOS :
+   reflet en haut, lueur colorée dessous), libellé centré sur UNE ligne.
+   Tons : neon (corail), electric (rose), info (violet), teal (turquoise),
+   gold (ambre), coral (rouge doux) — tous issus de la palette.
+   ═══════════════════════════════════════════════════════════════════════ */
+.k-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  min-width: 0;
+  min-height: 7rem;
+  padding: 0.875rem 0.5rem 0.75rem;
+  color: var(--tx);
+  text-decoration: none;
+}
+.k-tile-ico {
+  --k-tone: var(--kinetic-neon);
+  --k-tone-2: var(--kinetic-electric);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 16px;
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 52%),
+    linear-gradient(145deg, rgb(var(--k-tone)), rgb(var(--k-tone-2)));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.12),
+    0 8px 18px -10px rgb(var(--k-tone) / 0.9);
+}
+.k-tile-ico svg {
+  width: 1.75rem;
+  height: 1.75rem;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18));
+}
+.k-tile-ico[data-tone='electric'] {
+  --k-tone: var(--kinetic-electric);
+  --k-tone-2: var(--k-info);
+}
+.k-tile-ico[data-tone='info'] {
+  --k-tone: var(--k-info);
+  --k-tone-2: 120 104 240;
+}
+.k-tile-ico[data-tone='teal'] {
+  --k-tone: var(--k-success);
+  --k-tone-2: 40 170 190;
+}
+.k-tile-ico[data-tone='gold'] {
+  --k-tone: var(--k-warning);
+  --k-tone-2: 255 140 80;
+}
+.k-tile-ico[data-tone='coral'] {
+  --k-tone: var(--k-danger);
+  --k-tone-2: var(--kinetic-electric);
+}
+/* Compteur (succès débloqués) posé sur le coin de la pastille */
+.k-tile-badge {
+  position: absolute;
+  top: -0.375rem;
+  right: -0.5rem;
+  min-width: 1.375rem;
+  height: 1.375rem;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.375rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--k-on-accent));
+  background: rgb(var(--kinetic-neon));
+  box-shadow: 0 0 0 2px rgb(var(--surface));
+}
+.k-tile-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   6. Médaillons de succès (page Succès)
+   ───────────────────────────────────────────────────────────────────────
+     <span class="k-medal is-unlocked|is-locked" data-cat="streak" data-tier="2">
+       <span class="k-medal-face"><span class="k-medal-emoji">⚡</span></span>
+       <span class="k-medal-lock">…</span>
+     </span>
+
+   - Face : dégradé de la catégorie (séances corail, séries ambre, PR
+     turquoise, volume violet, force rouge-rose).
+   - Anneau : métal du rang (1 bronze, 2 argent, 3 or, 4 platine, 5 diamant
+     irisé), avec un reflet diagonal par-dessus toute la médaille.
+   - Verrouillé : anneau et face gris, emoji en silhouette (luminosité 0),
+     petit cadenas en bas à droite.
+   ═══════════════════════════════════════════════════════════════════════ */
+.k-medal {
+  --k-cat: var(--kinetic-neon);
+  --k-cat-2: var(--kinetic-electric);
+  --k-metal: linear-gradient(145deg, #ffe7c2, #c98a4b 45%, #8a5427 70%, #e3a66b);
+  position: relative;
+  display: block;
+  flex: none;
+  width: 4.75rem;
+  height: 4.75rem;
+  padding: 4px;
+  border-radius: 9999px;
+  background: var(--k-metal);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.28),
+    0 10px 22px -12px rgb(var(--k-cat) / 0.95);
+}
+.k-medal[data-cat='streak'] {
+  --k-cat: var(--k-warning);
+  --k-cat-2: 255 120 70;
+}
+.k-medal[data-cat='pr'] {
+  --k-cat: var(--k-success);
+  --k-cat-2: 40 160 200;
+}
+.k-medal[data-cat='volume'] {
+  --k-cat: var(--k-info);
+  --k-cat-2: 110 90 230;
+}
+.k-medal[data-cat='strength'] {
+  --k-cat: var(--k-danger);
+  --k-cat-2: var(--kinetic-electric);
+}
+.k-medal[data-tier='2'] {
+  --k-metal: linear-gradient(145deg, #ffffff, #b9c0cf 45%, #79829a 70%, #e4e8f0);
+}
+.k-medal[data-tier='3'] {
+  --k-metal: linear-gradient(145deg, #fff6c2, #ffd60a 40%, #b98500 70%, #ffe46b);
+}
+.k-medal[data-tier='4'] {
+  --k-metal: linear-gradient(145deg, #f2fffd, #9fe7e0 40%, #5c8fa3 70%, #d8f6ff);
+}
+.k-medal[data-tier='5'] {
+  --k-metal: conic-gradient(
+    from 210deg,
+    #ff9ad5,
+    #a895ff,
+    #7fd8ff,
+    #8affd0,
+    #fff59a,
+    #ffb38a,
+    #ff9ad5
+  );
+}
+.k-medal-face {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(160deg, rgb(var(--k-cat)), rgb(var(--k-cat-2)) 85%);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.25);
+}
+.k-medal-emoji {
+  position: relative;
+  font-size: 2rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+}
+/* Reflet diagonal (verre poli) par-dessus la face */
+.k-medal-face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    125deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.12) 32%,
+    rgba(255, 255, 255, 0) 33%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+/* Verrouillé : silhouette grisée */
+.k-medal.is-locked {
+  background: var(--k-seg-bg);
+  box-shadow: inset 0 0 0 1px var(--separator);
+}
+.k-medal.is-locked .k-medal-face {
+  background: rgb(var(--surface) / 0.6);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+.k-medal.is-locked .k-medal-face::after {
+  opacity: 0.25;
+}
+.k-medal.is-locked .k-medal-emoji {
+  filter: grayscale(1) brightness(0);
+  opacity: 0.32;
+}
+[data-mode='light'] .k-medal.is-locked .k-medal-emoji {
+  opacity: 0.18;
+}
+.k-medal-lock {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  color: var(--tx2);
+  background: rgb(var(--surface));
+  box-shadow:
+    0 0 0 2px rgb(var(--surface)),
+    inset 0 0 0 1px var(--separator);
+}
+.k-medal-lock svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+/* Progression vers le prochain palier */
+.k-medal-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  margin-top: 0.625rem;
+}
+.k-medal-bar {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: var(--k-seg-bg);
+}
+.k-medal-bar i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transform-origin: left center;
+  background: linear-gradient(90deg, rgb(var(--kinetic-neon)), rgb(var(--kinetic-electric)));
+  transition: transform 600ms var(--k-ease, ease);
+}
+.k-medal-progress-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tx2);
+  font-variant-numeric: tabular-nums;
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-medal-bar i {
+    transition: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   7. Nom d'exercice dans l'en-tête de séance : deux lignes au plus
+   (coupure entre les mots, césure en dernier recours), jamais « Rowing b… ».
+   ═══════════════════════════════════════════════════════════════════════ */
+.k-ex-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  line-height: 1.25;
+}

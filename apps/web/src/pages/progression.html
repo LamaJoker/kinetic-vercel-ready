@@ -11,7 +11,7 @@
         />
       </svg>
     </a>
-    <h1 class="font-display font-bold text-white">Progression</h1>
+    <h1 data-large-title class="font-display font-bold text-white">Progression</h1>
   </div>
 
   <!-- Chargement : blocs fantômes -->
@@ -87,6 +87,7 @@
       <span
         class="k-stat text-[2.75rem]"
         x-text="$num.loc(formatNumber(weeklyReview.tonnageKg))"
+        x-count
       ></span>
       <span class="k-unit">kg soulevés</span>
     </p>
@@ -173,7 +174,8 @@
   <!-- Onglets : contrôle segmenté -->
   <div
     x-show="totalSessions > 0"
-    class="k-seg mb-3"
+    class="k-seg k-seg-scroll mb-3"
+    x-chip-scroll
     role="group"
     aria-label="Onglets de progression"
   >
@@ -238,7 +240,8 @@
         <div>
           <div class="mt-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
             <p class="k-stat text-[2.75rem]">
-              <span x-text="formatNumber(forceLatest(), 1)"></span><span class="k-unit">kg</span>
+              <span x-text="formatNumber(forceLatest(), 1)" x-count></span
+              ><span class="k-unit">kg</span>
             </p>
             <p
               class="mb-1 inline-flex items-center rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold tabular-nums"
@@ -246,7 +249,9 @@
               x-text="$num.loc(forceDeltaLabel())"
             ></p>
           </div>
-          <div x-svg="forceSvg()" class="w-full mt-4 text-gray-500"></div>
+          <div class="k-scrub mt-4" x-scrub="forceScrub()">
+            <div x-svg="forceSvg()" class="w-full text-gray-500"></div>
+          </div>
           <div class="flex items-center gap-4 mt-3 text-xs text-gray-500">
             <span class="inline-flex items-center gap-1.5">
               <span class="w-2.5 h-2.5 rounded-full bg-kinetic-neon" aria-hidden="true"></span>
@@ -294,7 +299,7 @@
           ></p>
           <div class="flex items-baseline gap-3 mt-1">
             <p class="k-stat text-[2.5rem]">
-              <span x-text="$num.loc(formatNumber(weeklyBuckets.at(-1).tonnageKg))"></span
+              <span x-text="$num.loc(formatNumber(weeklyBuckets.at(-1).tonnageKg))" x-count></span
               ><span class="k-unit">kg</span>
             </p>
             <span class="text-sm text-gray-500 ml-auto tabular-nums">

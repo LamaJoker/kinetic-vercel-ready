@@ -51,9 +51,7 @@ describe('THEMES', () => {
 describe('rewardsStore initial state', () => {
   it('starts with correct defaults', () => {
     const store = rewardsStore();
-    expect(store.showRewardModal).toBe(false);
-    expect(store.pendingReward).toBeNull();
-    expect(store.pendingLevel).toBe(0);
+    expect('showRewardModal' in store).toBe(false); // récompense : carte de célébration
     expect(store.freezeTokens).toBe(0);
     expect(store.currentTheme).toBe('electrique');
     expect(store.allThemes).toBe(THEMES);
@@ -134,17 +132,6 @@ describe('rewardsStore getters (via _currentLevel mock)', () => {
   });
 });
 
-describe('rewardsStore.dismissModal', () => {
-  it('hides the modal and clears pending reward', () => {
-    const store = rewardsStore();
-    store.showRewardModal = true;
-    store.pendingReward = REWARDS[0] ?? null;
-    store.dismissModal();
-    expect(store.showRewardModal).toBe(false);
-    expect(store.pendingReward).toBeNull();
-  });
-});
-
 describe('rewardsStore._assertLevel', () => {
   it('throws when level is too low', () => {
     const store = makeStoreWithLevel(3);
@@ -181,59 +168,16 @@ describe('rewardsStore.init / destroy', () => {
     vi.clearAllMocks();
   });
 
-  it('registers a listener for EVENT_LEVELUP on init', () => {
+  it('no longer listens to EVENT_LEVELUP (the celebration card shows the reward)', () => {
     const store = rewardsStore();
     store.init();
-    expect(listeners.has(STORAGE_KEYS.EVENT_LEVELUP)).toBe(true);
-    expect(listeners.get(STORAGE_KEYS.EVENT_LEVELUP)!.size).toBe(1);
-  });
-
-  it('removes the EVENT_LEVELUP listener on destroy', () => {
-    const store = rewardsStore();
-    store.init();
-    store.destroy();
     expect(listeners.get(STORAGE_KEYS.EVENT_LEVELUP)?.size ?? 0).toBe(0);
+    store.destroy();
   });
 
   it('destroy is idempotent (no-op when called without init)', () => {
     const store = rewardsStore();
     expect(() => store.destroy()).not.toThrow();
-  });
-
-  it('shows modal for a non-base reward on LEVELUP event', () => {
-    const store = makeStoreWithLevel(3);
-    store.init();
-    const nonBase = REWARDS.find((r) => r.kind !== 'base');
-    if (!nonBase) return;
-    const event = new CustomEvent(STORAGE_KEYS.EVENT_LEVELUP, {
-      detail: { level: nonBase.level, title: nonBase.title },
-    });
-    listeners.get(STORAGE_KEYS.EVENT_LEVELUP)?.forEach((fn) => fn(event));
-    expect(store.showRewardModal).toBe(true);
-    expect(store.pendingLevel).toBe(nonBase.level);
-    expect(store.pendingReward).toBe(nonBase);
-  });
-
-  it('does NOT show modal for a base reward (no physical unlock)', () => {
-    const store = makeStoreWithLevel(1);
-    store.init();
-    const base = REWARDS.find((r) => r.kind === 'base');
-    if (!base) return;
-    const event = new CustomEvent(STORAGE_KEYS.EVENT_LEVELUP, {
-      detail: { level: base.level, title: base.title },
-    });
-    listeners.get(STORAGE_KEYS.EVENT_LEVELUP)?.forEach((fn) => fn(event));
-    expect(store.showRewardModal).toBe(false);
-  });
-
-  it('ignores LEVELUP events with no detail', () => {
-    const store = rewardsStore();
-    store.init();
-    const event = new CustomEvent(STORAGE_KEYS.EVENT_LEVELUP); // no detail
-    expect(() =>
-      listeners.get(STORAGE_KEYS.EVENT_LEVELUP)?.forEach((fn) => fn(event)),
-    ).not.toThrow();
-    expect(store.showRewardModal).toBe(false);
   });
 });
 

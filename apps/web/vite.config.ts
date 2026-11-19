@@ -1,6 +1,20 @@
 import { defineConfig, type Plugin } from 'vite';
 import { basename, resolve } from 'path';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, readdirSync, writeFileSync } from 'fs';
+
+/**
+ * Remplit les jetons de public/sw.js (copié tel quel par Vite) :
+ *   __SW_BUILD__      version unique du déploiement (nom des caches versionnés) ;
+ *   __SW_EXERCISES__  noms des schémas public/exercises/*.svg, précachés à
+ *                     l'installation pour fonctionner hors ligne.
+ */
+export function injectSwTokens(src: string, version: string, exerciseNames: string[]): string {
+  const names = exerciseNames
+    .filter((n) => /^[a-z0-9-]+$/.test(n))
+    .sort()
+    .join(',');
+  return src.replace(/__SW_BUILD__/g, version).replace(/__SW_EXERCISES__/g, names);
+}
 
 /**
  * Injects a build-time cache-busting version into dist/sw.js.
@@ -16,7 +30,10 @@ function injectSwVersion(): Plugin {
       const swOut = resolve(__dirname, 'dist/sw.js');
       try {
         const src = readFileSync(swOut, 'utf8');
-        writeFileSync(swOut, src.replace(/__SW_BUILD__/g, version), 'utf8');
+        const names = readdirSync(resolve(__dirname, 'public/exercises'))
+          .filter((f) => f.endsWith('.svg'))
+          .map((f) => f.slice(0, -4));
+        writeFileSync(swOut, injectSwTokens(src, version, names), 'utf8');
       } catch {
         // Not a production build (e.g. vite dev) — silently skip.
       }

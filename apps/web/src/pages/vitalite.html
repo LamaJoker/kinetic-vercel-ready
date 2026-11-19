@@ -1,7 +1,7 @@
 <div class="max-w-md mx-auto px-4 pt-8 pb-8">
   <!-- Header -->
   <div class="k-nav">
-    <h1 class="font-display font-bold text-white">Récupération</h1>
+    <h1 data-large-title class="font-display font-bold text-white">Récupération</h1>
     <span class="ml-auto text-xs text-gray-500" x-text="$today"> </span>
     <button
       type="button"
@@ -404,137 +404,146 @@
   <!-- ── Liste des tâches ───────────────────────────────────────────────────── -->
   <div class="k-list k-stagger" x-data>
     <template x-for="task in $store.vitalite.tasks" :key="task.id">
+      <!-- Glisser à droite = cocher (turquoise) ; à gauche = masquer / supprimer (corail) -->
       <div
-        class="relative flex items-stretch [&+&]:before:absolute [&+&]:before:top-0 [&+&]:before:right-0 [&+&]:before:left-[3.75rem] [&+&]:before:h-[0.5px] [&+&]:before:bg-[var(--separator)] [&+&]:before:content-['']"
+        class="k-swipe k-swipe-sep"
+        x-swipe:right="$store.vitalite.complete(task.id)"
+        x-swipe:left="$store.vitalite.swipeRemove(task.id)"
+        :data-swipe-right="task.done || $store.vitalite.isLocked(task.id) ? 'off' : 'on'"
+        :data-swipe-left="$store.vitalite.swipeLeftLabel(task) ? 'on' : 'off'"
+        data-swipe-right-label="Fait"
+        :data-swipe-left-label="$store.vitalite.swipeLeftLabel(task)"
       >
-        <!-- Carte principale -->
-        <button
-          @click="!task.done && $store.vitalite.complete(task.id)"
-          :disabled="task.done || $store.vitalite.isLocked(task.id)"
-          class="group flex-1 min-w-0 flex items-center gap-3.5 pl-4 pr-1 py-3.5 text-left transition-colors active:bg-kinetic-elevated disabled:cursor-not-allowed"
-        >
-          <!-- Coche animée : le cercle se remplit, la coche se trace -->
-          <div class="relative w-7 h-7 flex-shrink-0">
-            <span
-              class="absolute inset-0 rounded-full ring-2 ring-inset ring-gray-700 transition-opacity duration-200"
-              :class="task.done ? 'opacity-0' : 'opacity-100'"
-              aria-hidden="true"
-            ></span>
-            <span
-              class="absolute inset-0 rounded-full bg-kinetic-neon bg-gradient-to-br from-white/25 to-transparent flex items-center justify-center transition duration-500 ease-[cubic-bezier(.34,1.56,.64,1)] motion-reduce:transition-none"
-              :class="task.done ? 'scale-100 opacity-100' : 'scale-50 opacity-0'"
-              aria-hidden="true"
-            >
-              <svg
-                class="w-4 h-4 text-kinetic-on-accent"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="m5 12.5 4.5 4.5L19 7.5"
-                  pathLength="1"
-                  class="[stroke-dasharray:1] transition-[stroke-dashoffset] duration-500 delay-150 ease-out motion-reduce:transition-none"
-                  :class="task.done ? '[stroke-dashoffset:0]' : '[stroke-dashoffset:1]'"
-                />
-              </svg>
-            </span>
-          </div>
-
-          <!-- Contenu -->
-          <div class="flex-1 min-w-0">
-            <p class="flex items-center gap-2 text-base leading-snug">
+        <div class="k-swipe-content flex items-stretch">
+          <!-- Carte principale -->
+          <button
+            @click="!task.done && $store.vitalite.complete(task.id)"
+            :disabled="task.done || $store.vitalite.isLocked(task.id)"
+            class="group flex-1 min-w-0 flex items-center gap-3.5 pl-4 pr-1 py-3.5 text-left transition-colors active:bg-kinetic-elevated disabled:cursor-not-allowed"
+          >
+            <!-- Coche animée : le cercle se remplit, la coche se trace -->
+            <div class="relative w-7 h-7 flex-shrink-0">
               <span
-                class="k-prio-dot w-2 h-2 flex-shrink-0 rounded-full transition-colors duration-300"
-                :class="$store.vitalite.priorityDot(task)"
+                class="absolute inset-0 rounded-full ring-2 ring-inset ring-gray-700 transition-opacity duration-200"
+                :class="task.done ? 'opacity-0' : 'opacity-100'"
                 aria-hidden="true"
               ></span>
               <span
-                class="min-w-0 transition-colors duration-300"
-                :class="task.done ? 'text-gray-500 line-through decoration-gray-600' : 'text-white font-medium'"
-                x-text="task.title"
-              ></span>
-            </p>
-            <p
-              class="text-xs mt-1 pl-4 text-gray-500 tabular-nums"
-              x-text="$store.vitalite.taskMeta(task)"
-            ></p>
+                class="absolute inset-0 rounded-full bg-kinetic-neon bg-gradient-to-br from-white/25 to-transparent flex items-center justify-center transition duration-500 ease-[cubic-bezier(.34,1.56,.64,1)] motion-reduce:transition-none"
+                :class="task.done ? 'scale-100 opacity-100' : 'scale-50 opacity-0'"
+                aria-hidden="true"
+              >
+                <svg
+                  class="w-4 h-4 text-kinetic-on-accent"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="m5 12.5 4.5 4.5L19 7.5"
+                    pathLength="1"
+                    class="[stroke-dasharray:1] transition-[stroke-dashoffset] duration-500 delay-150 ease-out motion-reduce:transition-none"
+                    :class="task.done ? '[stroke-dashoffset:0]' : '[stroke-dashoffset:1]'"
+                  />
+                </svg>
+              </span>
+            </div>
+
+            <!-- Contenu -->
+            <div class="flex-1 min-w-0">
+              <p class="flex items-center gap-2 text-base leading-snug">
+                <span
+                  class="k-prio-dot w-2 h-2 flex-shrink-0 rounded-full transition-colors duration-300"
+                  :class="$store.vitalite.priorityDot(task)"
+                  aria-hidden="true"
+                ></span>
+                <span
+                  class="min-w-0 transition-colors duration-300"
+                  :class="task.done ? 'text-gray-500 line-through decoration-gray-600' : 'text-white font-medium'"
+                  x-text="task.title"
+                ></span>
+              </p>
+              <p
+                class="text-xs mt-1 pl-4 text-gray-500 tabular-nums"
+                x-text="$store.vitalite.taskMeta(task)"
+              ></p>
+            </div>
+
+            <!-- Spinner -->
+            <div
+              x-show="$store.vitalite.completingId === task.id"
+              class="w-5 h-5 border-2 border-kinetic-electric border-t-transparent rounded-full animate-spin flex-shrink-0"
+            ></div>
+          </button>
+
+          <!-- Actions secondaires : icônes discrètes, cibles tactiles de 44 px -->
+          <div class="flex items-center flex-shrink-0 pr-1.5">
+            <button
+              x-show="task.done && !$store.vitalite.isLocked(task.id)"
+              @click.stop="$store.vitalite.undo(task.id)"
+              title="Annuler"
+              aria-label="Annuler la complétion de cette tâche"
+              class="w-11 h-11 rounded-full flex items-center justify-center text-gray-500 transition active:scale-90 active:bg-kinetic-elevated active:text-white"
+            >
+              <svg
+                class="w-[18px] h-[18px]"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+              </svg>
+            </button>
+            <button
+              x-show="$store.vitalite.editing && $store.vitalite.isCustom(task.id)"
+              @click.stop="$store.vitalite.deleteCustomTask(task.id)"
+              title="Supprimer"
+              aria-label="Supprimer cette tâche personnalisée"
+              class="w-11 h-11 rounded-full flex items-center justify-center text-gray-500 transition active:scale-90 active:bg-kinetic-elevated active:text-kinetic-electric"
+            >
+              <svg
+                class="w-[18px] h-[18px]"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M4 7h16M10 11v6M14 11v6M9 7V4.5h6V7M6 7l1 13h10l1-13" />
+              </svg>
+            </button>
+            <button
+              x-show="$store.vitalite.editing && !$store.vitalite.isCustom(task.id) && !$store.vitalite.isLocked(task.id) && !task.done"
+              @click.stop="$store.vitalite.hideTask(task.id)"
+              title="Masquer"
+              aria-label="Masquer cette tâche (réversible)"
+              class="w-11 h-11 rounded-full flex items-center justify-center text-gray-500 transition active:scale-90 active:bg-kinetic-elevated active:text-white"
+            >
+              <svg
+                class="w-[18px] h-[18px]"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 5c5 0 9 4.5 10 7a13 13 0 0 1-3.2 4.3M6.6 6.6C4.3 8 2.7 10 2 12c1 2.5 5 7 10 7 1.6 0 3.1-.4 4.4-1.1"
+                />
+              </svg>
+            </button>
           </div>
-
-          <!-- Spinner -->
-          <div
-            x-show="$store.vitalite.completingId === task.id"
-            class="w-5 h-5 border-2 border-kinetic-electric border-t-transparent rounded-full animate-spin flex-shrink-0"
-          ></div>
-        </button>
-
-        <!-- Actions secondaires : icônes discrètes, cibles tactiles de 44 px -->
-        <div class="flex items-center flex-shrink-0 pr-1.5">
-          <button
-            x-show="task.done && !$store.vitalite.isLocked(task.id)"
-            @click.stop="$store.vitalite.undo(task.id)"
-            title="Annuler"
-            aria-label="Annuler la complétion de cette tâche"
-            class="w-11 h-11 rounded-full flex items-center justify-center text-gray-500 transition active:scale-90 active:bg-kinetic-elevated active:text-white"
-          >
-            <svg
-              class="w-[18px] h-[18px]"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
-            </svg>
-          </button>
-          <button
-            x-show="$store.vitalite.editing && $store.vitalite.isCustom(task.id)"
-            @click.stop="$store.vitalite.deleteCustomTask(task.id)"
-            title="Supprimer"
-            aria-label="Supprimer cette tâche personnalisée"
-            class="w-11 h-11 rounded-full flex items-center justify-center text-gray-500 transition active:scale-90 active:bg-kinetic-elevated active:text-kinetic-electric"
-          >
-            <svg
-              class="w-[18px] h-[18px]"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path d="M4 7h16M10 11v6M14 11v6M9 7V4.5h6V7M6 7l1 13h10l1-13" />
-            </svg>
-          </button>
-          <button
-            x-show="$store.vitalite.editing && !$store.vitalite.isCustom(task.id) && !$store.vitalite.isLocked(task.id) && !task.done"
-            @click.stop="$store.vitalite.hideTask(task.id)"
-            title="Masquer"
-            aria-label="Masquer cette tâche (réversible)"
-            class="w-11 h-11 rounded-full flex items-center justify-center text-gray-500 transition active:scale-90 active:bg-kinetic-elevated active:text-white"
-          >
-            <svg
-              class="w-[18px] h-[18px]"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 5c5 0 9 4.5 10 7a13 13 0 0 1-3.2 4.3M6.6 6.6C4.3 8 2.7 10 2 12c1 2.5 5 7 10 7 1.6 0 3.1-.4 4.4-1.1"
-              />
-            </svg>
-          </button>
         </div>
       </div>
     </template>

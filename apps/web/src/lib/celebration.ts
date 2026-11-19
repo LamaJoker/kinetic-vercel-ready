@@ -16,9 +16,15 @@
  *   - coupé pendant le chargement de la démo (`setCelebrationsMuted`) et tant
  *     que l'utilisateur n'a pas encore touché l'écran depuis le lancement :
  *     rien au démarrage (démo rechargée, santé synchronisée, rattrapage d'XP) ;
- *   - prefers-reduced-motion : simple fondu, sans particules (CSS).
+ *   - prefers-reduced-motion : simple fondu, sans particules (CSS) ;
+ *   - un niveau qui débloque une récompense n'affiche QU'UNE carte : la
+ *     récompense (emoji, titre, description) y est intégrée et la carte reste
+ *     un peu plus longtemps (CELEBRATION_REWARD_MS). Plus de modale séparée.
+ *
+ * Les niveaux gagnés par les bonus automatiques (objectifs de la semaine,
+ * +20 % vitalité) passent par `announceLevelUp`, comme les autres.
  */
-import { STORAGE_KEYS } from '@kinetic/core';
+import { REWARDS, STORAGE_KEYS } from '@kinetic/core';
 import { hapticCelebrate } from './haptics';
 
 export type CelebrationKind = 'record' | 'level' | 'routine';
@@ -31,10 +37,20 @@ export interface CelebrationDetail {
   subtitle?: string;
   /** Texte de la médaille pour un niveau (« 6 »). */
   badge?: string;
+  /** Récompense débloquée par ce niveau (intégrée à la même carte). */
+  reward?: CelebrationReward;
+}
+
+export interface CelebrationReward {
+  emoji: string;
+  title: string;
+  text: string;
 }
 
 /** Durée d'affichage d'une carte avant sa sortie automatique. */
 export const CELEBRATION_MS = 2400;
+/** Carte de niveau avec récompense : le temps de lire la description. */
+export const CELEBRATION_REWARD_MS = 4600;
 /** Durée de l'animation de sortie (doit suivre styles/celebrations.css). */
 export const CELEBRATION_EXIT_MS = 240;
 /** Cartes en attente au plus : au-delà, les plus récentes sont ignorées. */
@@ -57,15 +73,67 @@ export function recordCelebration(
   return { kind: 'record', title: 'Nouveau record !', subtitle: name ? `${name} ${perf}` : perf };
 }
 
-/** « Niveau 6 atteint » — récompense débloquée en sous-titre s'il y en a une. */
-export function levelCelebration(level: number, rewardTitle = ''): CelebrationDetail {
-  const reward = rewardTitle.trim();
+/** Récompense « réelle » (hors niveau de base) associée à un niveau. */
+export function rewardForLevel(level: number): CelebrationReward | undefined {
+  const r = REWARDS.find((entry) => entry.level === level);
+  if (!r || r.kind === 'base') return undefined;
+  return { emoji: r.emoji, title: r.title, text: r.description };
+}
+
+/**
+ * « Niveau 6 atteint » — récompense débloquée en sous-titre s'il y en a une.
+ * `reward` (objet) l'intègre à la carte ; une simple chaîne garde l'ancien
+ * comportement (titre seul en sous-titre).
+ */
+export function levelCelebration(
+  level: number,
+  reward: string | CelebrationReward = '',
+): CelebrationDetail {
+  const rewardTitle = (typeof reward === 'string' ? reward : reward.title).trim();
   return {
     kind: 'level',
     title: `Niveau ${level} atteint`,
-    subtitle: reward ? `Récompense débloquée\u00a0: ${reward}` : 'Continue sur ta lancée',
+    subtitle: rewardTitle ? `Récompense débloquée\u00a0: ${rewardTitle}` : 'Continue sur ta lancée',
     badge: String(level),
+    ...(typeof reward === 'object' && rewardTitle ? { reward } : {}),
   };
+}
+
+/** Durée d'affichage d'une carte (plus longue si une récompense est à lire). */
+export function celebrationDuration(detail: CelebrationDetail | null | undefined): number {
+  return detail?.reward ? CELEBRATION_REWARD_MS : CELEBRATION_MS;
+}
+
+/**
+ * Plus haut niveau atteint parmi plusieurs gains d'XP successifs (tâche puis
+ * bonus +20 %, par ex.) — `undefined` si aucun n'a fait monter de niveau.
+ */
+export function highestLevelUp(
+  results: ReadonlyArray<object | null | undefined>,
+): number | undefined {
+  let best: number | undefined;
+  for (const raw of results) {
+    // Résultats d'awardXp / completeTask : « déjà crédité » et échecs n'ont pas ces champs.
+    const r = raw as { leveledUp?: unknown; newLevel?: unknown } | null | undefined;
+    if (!r?.leveledUp || typeof r.newLevel !== 'number' || !Number.isFinite(r.newLevel)) continue;
+    if (best === undefined || r.newLevel > best) best = r.newLevel;
+  }
+  return best;
+}
+
+/**
+ * Annonce un niveau gagné (EVENT_LEVELUP) : la carte de célébration le
+ * présente, avec sa récompense. Utilisé par vitalité et objectifs.
+ */
+export function announceLevelUp(level: number | undefined): void {
+  if (level === undefined || !Number.isFinite(level) || level <= 0) return;
+  if (typeof window === 'undefined') return;
+  const reward = REWARDS.find((entry) => entry.level === level);
+  window.dispatchEvent(
+    new CustomEvent(STORAGE_KEYS.EVENT_LEVELUP, {
+      detail: { level, title: reward?.title ?? '' },
+    }),
+  );
 }
 
 /** « Routine du jour complète » — « 5 sur 5 · 100 % ». */
@@ -122,11 +190,21 @@ export function asCelebration(raw: unknown): CelebrationDetail | null {
   const d = raw as Partial<CelebrationDetail>;
   if (d.kind !== 'record' && d.kind !== 'level' && d.kind !== 'routine') return null;
   if (typeof d.title !== 'string' || d.title === '') return null;
+  const r = d.reward as Partial<CelebrationReward> | undefined;
+  const reward =
+    r && typeof r === 'object' && typeof r.title === 'string' && r.title
+      ? {
+          emoji: typeof r.emoji === 'string' ? r.emoji : '',
+          title: r.title,
+          text: typeof r.text === 'string' ? r.text : '',
+        }
+      : undefined;
   return {
     kind: d.kind,
     title: d.title,
     ...(typeof d.subtitle === 'string' && d.subtitle ? { subtitle: d.subtitle } : {}),
     ...(typeof d.badge === 'string' && d.badge ? { badge: d.badge } : {}),
+    ...(reward ? { reward } : {}),
   };
 }
 
@@ -179,7 +257,10 @@ export function celebration() {
         const d = (e as CustomEvent<{ level?: unknown; title?: unknown }>).detail;
         const level = Number(d?.level);
         if (!Number.isFinite(level) || level <= 0) return;
-        this.push(levelCelebration(level, typeof d?.title === 'string' ? d.title : ''));
+        // Récompense lue depuis REWARDS (source de vérité), le titre de
+        // l'événement ne sert que de repli.
+        const reward = rewardForLevel(level);
+        this.push(levelCelebration(level, reward ?? (typeof d?.title === 'string' ? d.title : '')));
       };
       const arm = (): void => {
         this._armed = true;
@@ -213,7 +294,7 @@ export function celebration() {
       if (!next) return;
       hapticCelebrate();
       if (this._timer) clearTimeout(this._timer);
-      this._timer = setTimeout(() => this.dismiss(), CELEBRATION_MS);
+      this._timer = setTimeout(() => this.dismiss(), celebrationDuration(next));
     },
 
     /** Toucher la carte, Échap ou fin du délai : sortie puis carte suivante. */
@@ -252,6 +333,26 @@ export function celebration() {
     },
     get isRoutine(): boolean {
       return this.current?.kind === 'routine';
+    },
+    get hasReward(): boolean {
+      return !!this.current?.reward;
+    },
+    get rewardEmoji(): string {
+      return this.current?.reward?.emoji ?? '';
+    },
+    get rewardTitle(): string {
+      return this.current?.reward?.title ?? '';
+    },
+    get rewardText(): string {
+      return this.current?.reward?.text ?? '';
+    },
+    /** Sous-titre masqué quand la récompense est présentée en détail. */
+    get showSubtitle(): boolean {
+      return !!this.current?.subtitle && !this.current?.reward;
+    },
+    get cardKindClass(): string {
+      const base = this.leaving ? 'is-out' : 'is-in';
+      return this.current?.reward ? `${base} has-reward` : base;
     },
   };
 }

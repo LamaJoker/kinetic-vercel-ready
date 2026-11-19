@@ -22,10 +22,10 @@ describe('achievements page — présentation', () => {
     expect(make([]).ringStyle).toBe('--p: 0');
   });
 
-  it('medalClass : or pour un succès débloqué, gris sinon', () => {
+  it('medalClass : médaillon coloré si débloqué, silhouette sinon', () => {
     const page = make(['a']);
-    expect(page.medalClass('a')).toContain('radial-gradient');
-    expect(page.medalClass('b')).toBe('bg-kinetic-elevated');
+    expect(page.medalClass('a')).toBe('k-medal is-unlocked');
+    expect(page.medalClass('b')).toBe('k-medal is-locked');
   });
 
   it('tierDotClass : points pleins jusqu’au niveau, estompés au-delà', () => {
@@ -36,10 +36,40 @@ describe('achievements page — présentation', () => {
   });
 });
 
-describe('achievements page — creux de médaille', () => {
-  it('medalWellClass : creux sombre pour un succès débloqué', () => {
-    const page = make(['a']);
-    expect(page.medalWellClass('a')).toContain('radial-gradient');
-    expect(page.medalWellClass('b')).toBe('ring-white/10');
+describe('achievements page — prochain palier', () => {
+  const catalog = [
+    { id: 'sessions:1' },
+    { id: 'sessions:10' },
+    { id: 'sessions:25' },
+    { id: 'streak:3' },
+  ] as Achievement[];
+  const metrics = {
+    totalCompletedSessions: 4,
+    bestStreak: 1,
+    totalPRs: 0,
+    totalTonnageKg: 0,
+    bestE1rmByLift: {},
+  };
+  function withMetrics(unlocked: string[], m: typeof metrics | null = metrics) {
+    const page = make(unlocked);
+    page.$store.achievements.catalog = catalog;
+    page.$store.achievements.metrics = m;
+    return page;
+  }
+
+  it('barre seulement sur le premier palier verrouillé de chaque série', () => {
+    const page = withMetrics(['sessions:1']);
+    expect(page.showProgress('sessions:1')).toBe(false); // débloqué
+    expect(page.showProgress('sessions:10')).toBe(true);
+    expect(page.showProgress('sessions:25')).toBe(false); // pas encore le prochain
+    expect(page.showProgress('streak:3')).toBe(true);
+    expect(page.progressLabel('sessions:10')).toBe('4 / 10 séances');
+    expect(page.progressStyle('sessions:10')).toBe('transform: scaleX(0.400)');
+  });
+
+  it('pas de barre tant que les mesures ne sont pas calculées', () => {
+    const page = withMetrics([], null);
+    expect(page.showProgress('sessions:1')).toBe(false);
+    expect(page.progressLabel('sessions:1')).toBe('');
   });
 });

@@ -2,6 +2,7 @@
 import { ROLE_COLORS } from '../lib/palette';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
+import type { ScrubData } from '../lib/chart-scrub';
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
@@ -141,6 +142,36 @@ function val(entry: MeasurementEntry, key: MetricKey): number | undefined {
 }
 
 type ProgressPhotoLike = { id: string };
+
+/** Géométrie de la courbe de mensurations (viewBox 320 × 150), partagée par le tracé et le parcours au doigt. */
+export function mensurationsChartGeometry(pts: ReadonlyArray<{ x: number; y: number }>) {
+  const W = 320,
+    H = 150,
+    padL = 4,
+    padR = 34,
+    padY = 10,
+    labelH = 18;
+  const ys = pts.map((p) => p.y);
+  const pad = Math.max(0.5, (Math.max(...ys) - Math.min(...ys)) * 0.08);
+  // Bornes arrondies à un pas « rond » pour que les repères tombent sur des valeurs nettes.
+  const rawMin = Math.min(...ys) - pad;
+  const rawMax = Math.max(...ys) + pad;
+  const span = rawMax - rawMin;
+  const step = span <= 4 ? 0.5 : span <= 10 ? 1 : 5;
+  const minY = Math.floor(rawMin / step) * step;
+  let maxY = Math.ceil(rawMax / step) * step;
+  // Nombre pair de pas : le repère du milieu tombe lui aussi sur un multiple du pas.
+  if (Math.round((maxY - minY) / step) % 2 === 1) maxY += step;
+  const minX = pts[0]?.x ?? 0;
+  const maxX = pts.at(-1)?.x ?? 0;
+  const dx = Math.max(1, maxX - minX);
+  const dy = Math.max(0.1, maxY - minY);
+  const chartH = H - labelH;
+  const plotW = W - padL - padR;
+  const sx = (d: number) => padL + ((d - minX) / dx) * plotW;
+  const sy = (y: number) => chartH - padY - ((y - minY) / dy) * (chartH - padY * 2);
+  return { W, H, padL, padR, padY, chartH, step, minY, maxY, dy, sx, sy };
+}
 
 export function mensurations() {
   return {
@@ -664,6 +695,29 @@ export function mensurations() {
 
     // ── SVG Chart ─────────────────────────────────────────────
 
+    /** Parcours au doigt de la courbe (directive x-scrub) : un point par mesure. */
+    chartScrub(): ScrubData | null {
+      const pts = this.chartPoints();
+      if (pts.length < 2) return null;
+      const g = mensurationsChartGeometry(pts);
+      return {
+        w: g.W,
+        h: g.H,
+        top: g.padY - 4,
+        bottom: g.chartH,
+        points: pts.map((p) => ({
+          x: g.sx(p.x),
+          y: g.sy(p.y),
+          label: new Date(p.x).toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          }),
+          value: `${this.formatCm(p.y)} cm`,
+        })),
+      };
+    },
+
     chartSvg(): string {
       const pts = this.chartPoints();
       if (pts.length < 2) return '';
@@ -671,32 +725,8 @@ export function mensurations() {
       const metricDef = this.activeMetricDef;
       // Les textes et la grille utilisent currentColor (gris système du conteneur),
       // ce qui fonctionne en mode sombre comme en mode clair.
-      const W = 320,
-        H = 150,
-        padL = 4,
-        padR = 34,
-        padY = 10,
-        labelH = 18;
-      const ys = pts.map((p) => p.y);
-      const pad = Math.max(0.5, (Math.max(...ys) - Math.min(...ys)) * 0.08);
-      // Bornes arrondies à un pas « rond » pour que les repères tombent sur des valeurs nettes.
-      const rawMin = Math.min(...ys) - pad;
-      const rawMax = Math.max(...ys) + pad;
-      const span = rawMax - rawMin;
-      const step = span <= 4 ? 0.5 : span <= 10 ? 1 : 5;
-      const minY = Math.floor(rawMin / step) * step;
-      let maxY = Math.ceil(rawMax / step) * step;
-      // Nombre pair de pas : le repère du milieu tombe lui aussi sur un multiple du pas.
-      if (Math.round((maxY - minY) / step) % 2 === 1) maxY += step;
-      const minX = pts[0]!.x;
-      const maxX = pts.at(-1)!.x;
-      const dx = Math.max(1, maxX - minX);
-      const dy = Math.max(0.1, maxY - minY);
-      const chartH = H - labelH;
-      const plotW = W - padL - padR;
-
-      const sx = (d: number) => padL + ((d - minX) / dx) * plotW;
-      const sy = (y: number) => chartH - padY - ((y - minY) / dy) * (chartH - padY * 2);
+      const { W, H, padL, padR, padY, chartH, step, maxY, dy, sx, sy } =
+        mensurationsChartGeometry(pts);
 
       // Une seule teinte pour la série : violet (--k-info), l'accent corail
       // reste réservé à l'action principale. Classes Tailwind (fill-/stroke-,

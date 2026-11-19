@@ -68,7 +68,7 @@
   </section>
 
   <div class="k-nav">
-    <h1 class="font-display font-bold text-white">Séances</h1>
+    <h1 data-large-title class="font-display font-bold text-white">Séances</h1>
     <span class="ml-auto text-xs text-gray-500" x-text="$today"></span>
   </div>
 
@@ -302,14 +302,16 @@
                     class="flex w-full min-h-11 items-center gap-2 text-left transition active:opacity-60"
                   >
                     <span class="min-w-0 flex-1">
-                      <span class="flex items-center gap-2">
+                      <!-- Nom sur deux lignes au plus : avec les 4 actions (superset),
+                           une seule ligne coupait « Rowing b… » -->
+                      <span class="flex items-start gap-2">
                         <span
                           x-show="supersetTag(entry.exerciseId)"
-                          class="flex-shrink-0 rounded-md bg-kinetic-purple/15 px-1.5 py-0.5 text-xs font-bold tabular-nums text-kinetic-purple"
+                          class="mt-px flex-shrink-0 rounded-md bg-kinetic-purple/15 px-1.5 py-0.5 text-xs font-bold tabular-nums text-kinetic-purple"
                           x-text="supersetTag(entry.exerciseId)"
                         ></span>
                         <span
-                          class="k-card-title truncate"
+                          class="k-card-title k-ex-name min-w-0"
                           x-text="exerciseName(entry.exerciseId)"
                         ></span>
                       </span>
@@ -349,7 +351,10 @@
                     </svg>
                   </button>
                 </h3>
-                <div x-show="isActiveEntry(entry.exerciseId)" class="flex items-center gap-2">
+                <div
+                  x-show="isActiveEntry(entry.exerciseId)"
+                  class="flex flex-shrink-0 items-center gap-1.5"
+                >
                   <button
                     type="button"
                     x-show="hasGuide(entry.exerciseId)"
@@ -778,62 +783,72 @@
                 </div>
                 <ol class="overflow-hidden rounded-2xl bg-kinetic-elevated">
                   <template x-for="(s, i) in workSets(entry)" :key="s.setIndex">
-                    <li class="k-item animate-slide-up">
-                      <button
-                        type="button"
-                        @click="openSetEditor(entry.exerciseId, s.setIndex)"
-                        title="Modifier la série"
-                        class="grid w-full grid-cols-[1.75rem_1fr_2.75rem_3.25rem] items-center gap-2 px-3 min-h-11 py-2 text-left transition-colors active:bg-kinetic-raised"
-                      >
-                        <span
-                          class="flex h-6 w-6 items-center justify-center rounded-full bg-kinetic-neon/15 text-xs font-bold tabular-nums text-kinetic-neon"
-                          x-text="i + 1"
-                        ></span>
-                        <span
-                          x-show="!isTimedEntrySet(s)"
-                          class="flex min-w-0 items-baseline gap-1 tabular-nums text-white"
-                        >
-                          <span class="text-lg font-semibold" x-text="$num.loc(s.weightKg)"></span>
-                          <span class="text-sm text-gray-500">kg</span>
-                          <span class="mx-0.5 text-gray-500" aria-hidden="true">×</span>
-                          <span class="text-lg font-semibold" x-text="s.reps"></span>
-                          <span
-                            x-show="isSetPr(entry.exerciseId, s.weightKg, s.reps)"
-                            class="ml-1.5 self-center text-[11px] font-bold text-kinetic-electric"
-                            >PR</span
-                          >
-                        </span>
-                        <span
-                          x-show="isTimedEntrySet(s)"
-                          class="flex min-w-0 items-baseline gap-1 tabular-nums text-white"
+                    <!-- Glisser à gauche = supprimer (avec « Annuler ») -->
+                    <li
+                      class="k-item k-swipe k-swipe-on-elevated animate-slide-up"
+                      x-swipe:left="swipeDeleteSet(entry.exerciseId, s.setIndex)"
+                      data-swipe-left-label="Supprimer"
+                    >
+                      <div class="k-swipe-content">
+                        <button
+                          type="button"
+                          @click="openSetEditor(entry.exerciseId, s.setIndex)"
+                          title="Modifier la série"
+                          class="grid w-full grid-cols-[1.75rem_1fr_2.75rem_3.25rem] items-center gap-2 px-3 min-h-11 py-2 text-left transition-colors active:bg-kinetic-raised"
                         >
                           <span
-                            class="text-base font-semibold leading-tight"
-                            x-text="$num.loc(timedMain(s))"
+                            class="flex h-6 w-6 items-center justify-center rounded-full bg-kinetic-neon/15 text-xs font-bold tabular-nums text-kinetic-neon"
+                            x-text="i + 1"
                           ></span>
                           <span
-                            x-show="isTimedSetPr(entry.exerciseId, s)"
-                            class="ml-1.5 self-center text-[11px] font-bold text-kinetic-electric"
-                            >PR</span
+                            x-show="!isTimedEntrySet(s)"
+                            class="flex min-w-0 items-baseline gap-1 tabular-nums text-white"
                           >
-                        </span>
-                        <span
-                          class="text-right text-sm tabular-nums text-gray-400"
-                          x-text="$num.loc(s.rpe)"
-                        ></span>
-                        <span
-                          class="text-right text-sm tabular-nums"
-                          :class="isSetPr(entry.exerciseId, s.weightKg, s.reps) ? 'font-semibold text-kinetic-electric' : 'text-gray-500'"
-                          x-text="setSideValue(s)"
-                        ></span>
-                      </button>
-                      <template x-if="s.note">
-                        <p
-                          class="-mt-1 pb-2 pl-[3rem] pr-3 text-xs italic text-gray-500 leading-snug"
-                        >
-                          <span x-text="$num.loc(s.note)"></span>
-                        </p>
-                      </template>
+                            <span
+                              class="text-lg font-semibold"
+                              x-text="$num.loc(s.weightKg)"
+                            ></span>
+                            <span class="text-sm text-gray-500">kg</span>
+                            <span class="mx-0.5 text-gray-500" aria-hidden="true">×</span>
+                            <span class="text-lg font-semibold" x-text="s.reps"></span>
+                            <span
+                              x-show="isSetPr(entry.exerciseId, s.weightKg, s.reps)"
+                              class="ml-1.5 self-center text-[11px] font-bold text-kinetic-electric"
+                              >PR</span
+                            >
+                          </span>
+                          <span
+                            x-show="isTimedEntrySet(s)"
+                            class="flex min-w-0 items-baseline gap-1 tabular-nums text-white"
+                          >
+                            <span
+                              class="text-base font-semibold leading-tight"
+                              x-text="$num.loc(timedMain(s))"
+                            ></span>
+                            <span
+                              x-show="isTimedSetPr(entry.exerciseId, s)"
+                              class="ml-1.5 self-center text-[11px] font-bold text-kinetic-electric"
+                              >PR</span
+                            >
+                          </span>
+                          <span
+                            class="text-right text-sm tabular-nums text-gray-400"
+                            x-text="$num.loc(s.rpe)"
+                          ></span>
+                          <span
+                            class="text-right text-sm tabular-nums"
+                            :class="isSetPr(entry.exerciseId, s.weightKg, s.reps) ? 'font-semibold text-kinetic-electric' : 'text-gray-500'"
+                            x-text="setSideValue(s)"
+                          ></span>
+                        </button>
+                        <template x-if="s.note">
+                          <p
+                            class="-mt-1 pb-2 pl-[3rem] pr-3 text-xs italic text-gray-500 leading-snug"
+                          >
+                            <span x-text="$num.loc(s.note)"></span>
+                          </p>
+                        </template>
+                      </div>
                     </li>
                   </template>
                 </ol>
@@ -1004,59 +1019,58 @@
                     </button>
                   </div>
 
-                  <!-- Charge × reps : gros chiffres, stepper iOS dessous -->
+                  <!-- Charge × reps : gros chiffres, gros − / + de chaque côté
+                   (appui maintenu = répétition accélérée ; champ éditable au clavier) -->
                   <template x-if="!isTimed(entry.exerciseId)">
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="space-y-2">
                       <div
-                        class="rounded-2xl bg-kinetic-elevated p-2 ring-1 ring-inset ring-white/[0.06]"
+                        class="rounded-2xl bg-kinetic-elevated px-2 pb-2 pt-1.5 ring-1 ring-inset ring-white/[0.06]"
                       >
                         <label
                           for="f-seances-kg"
-                          class="block pt-1 text-center text-xs font-medium text-gray-400"
+                          class="block text-center text-xs font-medium text-gray-400"
                           >Charge (kg)</label
                         >
-                        <input
-                          id="f-seances-kg"
-                          type="number"
-                          min="0"
-                          step="0.5"
-                          inputmode="decimal"
-                          x-model.number="draft.weightKg"
-                          class="block h-[4.5rem] w-full min-w-0 rounded-lg bg-transparent text-center font-display text-[3.25rem] font-bold leading-none tabular-nums text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                        />
-                        <div
-                          class="flex h-12 overflow-hidden rounded-xl bg-kinetic-raised divide-x divide-white/10"
-                        >
+                        <div class="k-gym-stepper">
                           <button
                             type="button"
-                            @click="bumpWeight(-1)"
+                            x-hold="bumpWeight(-1)"
                             aria-label="Diminuer la charge"
-                            class="flex flex-1 items-center justify-center text-white transition active:opacity-60"
+                            class="k-step-btn"
                           >
                             <svg
-                              class="h-5 w-5"
+                              class="h-6 w-6"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
-                              stroke-width="2.2"
+                              stroke-width="2.4"
                               stroke-linecap="round"
                               aria-hidden="true"
                             >
                               <path d="M5 12h14" />
                             </svg>
                           </button>
+                          <input
+                            id="f-seances-kg"
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            inputmode="decimal"
+                            x-model.number="draft.weightKg"
+                            class="block h-16 w-full min-w-0 rounded-lg bg-transparent text-center font-display text-[3.25rem] font-bold leading-none tabular-nums text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
                           <button
                             type="button"
-                            @click="bumpWeight(1)"
+                            x-hold="bumpWeight(1)"
                             aria-label="Augmenter la charge"
-                            class="flex flex-1 items-center justify-center text-white transition active:opacity-60"
+                            class="k-step-btn"
                           >
                             <svg
-                              class="h-5 w-5"
+                              class="h-6 w-6"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
-                              stroke-width="2.2"
+                              stroke-width="2.4"
                               stroke-linecap="round"
                               aria-hidden="true"
                             >
@@ -1066,54 +1080,52 @@
                         </div>
                       </div>
                       <div
-                        class="rounded-2xl bg-kinetic-elevated p-2 ring-1 ring-inset ring-white/[0.06]"
+                        class="rounded-2xl bg-kinetic-elevated px-2 pb-2 pt-1.5 ring-1 ring-inset ring-white/[0.06]"
                       >
                         <label
                           for="f-seances-reps"
-                          class="block pt-1 text-center text-xs font-medium text-gray-400"
+                          class="block text-center text-xs font-medium text-gray-400"
                           >Reps</label
                         >
-                        <input
-                          id="f-seances-reps"
-                          type="number"
-                          min="1"
-                          inputmode="numeric"
-                          x-model.number="draft.reps"
-                          class="block h-[4.5rem] w-full min-w-0 rounded-lg bg-transparent text-center font-display text-[3.25rem] font-bold leading-none tabular-nums text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                        />
-                        <div
-                          class="flex h-12 overflow-hidden rounded-xl bg-kinetic-raised divide-x divide-white/10"
-                        >
+                        <div class="k-gym-stepper">
                           <button
                             type="button"
-                            @click="bumpReps(-1)"
+                            x-hold="bumpReps(-1)"
                             aria-label="Diminuer les reps"
-                            class="flex flex-1 items-center justify-center text-white transition active:opacity-60"
+                            class="k-step-btn"
                           >
                             <svg
-                              class="h-5 w-5"
+                              class="h-6 w-6"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
-                              stroke-width="2.2"
+                              stroke-width="2.4"
                               stroke-linecap="round"
                               aria-hidden="true"
                             >
                               <path d="M5 12h14" />
                             </svg>
                           </button>
+                          <input
+                            id="f-seances-reps"
+                            type="number"
+                            min="1"
+                            inputmode="numeric"
+                            x-model.number="draft.reps"
+                            class="block h-16 w-full min-w-0 rounded-lg bg-transparent text-center font-display text-[3.25rem] font-bold leading-none tabular-nums text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
                           <button
                             type="button"
-                            @click="bumpReps(1)"
+                            x-hold="bumpReps(1)"
                             aria-label="Augmenter les reps"
-                            class="flex flex-1 items-center justify-center text-white transition active:opacity-60"
+                            class="k-step-btn"
                           >
                             <svg
-                              class="h-5 w-5"
+                              class="h-6 w-6"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
-                              stroke-width="2.2"
+                              stroke-width="2.4"
                               stroke-linecap="round"
                               aria-hidden="true"
                             >
@@ -1137,48 +1149,71 @@
                           class="block pt-1 text-center text-xs font-medium text-gray-400"
                           >Durée (min:s)</label
                         >
-                        <input
-                          id="f-seances-duration"
-                          x-show="!stopwatchRunning(entry.exerciseId)"
-                          type="text"
-                          autocomplete="off"
-                          placeholder="0:45"
-                          x-model="draft.duration"
-                          class="block h-[4.5rem] w-full min-w-0 rounded-lg bg-transparent text-center font-display text-[3.25rem] font-bold leading-none tabular-nums text-white placeholder:text-gray-600"
-                        />
-                        <p
-                          x-show="stopwatchRunning(entry.exerciseId)"
-                          class="flex h-[4.5rem] items-center justify-center font-display text-[3.25rem] font-bold leading-none tabular-nums text-kinetic-neon"
-                          role="timer"
-                          aria-label="Chronomètre"
-                          x-text="stopwatchLabel()"
-                        ></p>
-                        <div class="grid grid-cols-[1fr_1.6fr_1fr] gap-1.5">
+                        <!-- − / + : 5 s par appui, appui maintenu = défilement accéléré -->
+                        <div class="k-gym-stepper">
                           <button
                             type="button"
-                            @click="bumpDuration(-15)"
-                            aria-label="Retirer 15 secondes"
-                            class="h-12 rounded-xl bg-kinetic-raised text-sm font-semibold text-white transition active:opacity-60"
+                            x-hold="bumpDuration(-5)"
+                            aria-label="Retirer 5 secondes"
+                            class="k-step-btn"
                           >
-                            −15 s
+                            <svg
+                              class="h-6 w-6"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2.4"
+                              stroke-linecap="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M5 12h14" />
+                            </svg>
                           </button>
+                          <div class="min-w-0">
+                            <input
+                              id="f-seances-duration"
+                              x-show="!stopwatchRunning(entry.exerciseId)"
+                              type="text"
+                              autocomplete="off"
+                              placeholder="0:45"
+                              x-model="draft.duration"
+                              class="block h-16 w-full min-w-0 rounded-lg bg-transparent text-center font-display text-[3.25rem] font-bold leading-none tabular-nums text-white placeholder:text-gray-600"
+                            />
+                            <p
+                              x-show="stopwatchRunning(entry.exerciseId)"
+                              class="flex h-16 items-center justify-center font-display text-[3.25rem] font-bold leading-none tabular-nums text-kinetic-neon"
+                              role="timer"
+                              aria-label="Chronomètre"
+                              x-text="stopwatchLabel()"
+                            ></p>
+                          </div>
                           <button
                             type="button"
-                            @click="toggleStopwatch(entry.exerciseId)"
-                            :aria-pressed="stopwatchRunning(entry.exerciseId) ? 'true' : 'false'"
-                            :class="stopwatchRunning(entry.exerciseId) ? 'bg-kinetic-raised text-kinetic-neon' : 'bg-kinetic-neon text-kinetic-on-accent'"
-                            class="h-12 rounded-xl text-base font-bold transition active:opacity-80"
-                            x-text="stopwatchRunning(entry.exerciseId) ? 'Arrêter' : 'Démarrer'"
-                          ></button>
-                          <button
-                            type="button"
-                            @click="bumpDuration(15)"
-                            aria-label="Ajouter 15 secondes"
-                            class="h-12 rounded-xl bg-kinetic-raised text-sm font-semibold text-white transition active:opacity-60"
+                            x-hold="bumpDuration(5)"
+                            aria-label="Ajouter 5 secondes"
+                            class="k-step-btn"
                           >
-                            +15 s
+                            <svg
+                              class="h-6 w-6"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2.4"
+                              stroke-linecap="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M12 5v14M5 12h14" />
+                            </svg>
                           </button>
                         </div>
+                        <button
+                          type="button"
+                          @click="toggleStopwatch(entry.exerciseId)"
+                          :aria-pressed="stopwatchRunning(entry.exerciseId) ? 'true' : 'false'"
+                          :class="stopwatchRunning(entry.exerciseId) ? 'bg-kinetic-raised text-kinetic-neon' : 'bg-kinetic-neon text-kinetic-on-accent'"
+                          class="mt-1.5 h-12 w-full rounded-xl text-base font-bold transition active:opacity-80"
+                          x-text="stopwatchRunning(entry.exerciseId) ? 'Arrêter' : 'Démarrer'"
+                        ></button>
                       </div>
                       <div
                         x-show="isDistance(entry.exerciseId)"
@@ -1240,7 +1275,7 @@
                         >
                           <button
                             type="button"
-                            @click="bumpWeight(-1)"
+                            x-hold="bumpWeight(-1)"
                             aria-label="Diminuer la charge"
                             class="flex flex-1 items-center justify-center text-white transition active:opacity-60"
                           >
@@ -1258,7 +1293,7 @@
                           </button>
                           <button
                             type="button"
-                            @click="bumpWeight(1)"
+                            x-hold="bumpWeight(1)"
                             aria-label="Augmenter la charge"
                             class="flex flex-1 items-center justify-center text-white transition active:opacity-60"
                           >
@@ -1826,7 +1861,11 @@
     </div>
     <div class="space-y-2" x-show="templates.length > 0">
       <template x-for="t in templates" :key="t.id">
-        <div class="flex items-center gap-2">
+        <div
+          class="flex items-center gap-2"
+          data-k-menu
+          @k-menu="templateMenu($event.detail, t.id)"
+        >
           <button
             @click="startFromTemplate(t.id)"
             class="k-press flex-1 rounded-2xl bg-kinetic-elevated px-4 py-3.5 text-left ring-1 ring-inset ring-white/[0.06] active:bg-kinetic-raised"
@@ -1962,7 +2001,12 @@
 
     <div class="k-list k-stagger" x-show="sessions.length > 0 && historyView === 'list'">
       <template x-for="s in visibleSessions()" :key="s.id">
-        <div class="k-item scroll-mt-20" :id="'history-' + s.id">
+        <div
+          class="k-item scroll-mt-20"
+          :id="'history-' + s.id"
+          data-k-menu
+          @k-menu="sessionMenu($event.detail, s.id)"
+        >
           <!-- Ligne résumé (cliquable pour étendre) -->
           <button
             @click="toggleSessionDetail(s.id)"

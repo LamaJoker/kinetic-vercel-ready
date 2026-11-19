@@ -154,7 +154,8 @@ describe('carte « Partager en image » : résumé de séance', () => {
 
 describe('carte « Partager en image » : formats et libellés', () => {
   it('durée : minutes, puis heures', () => {
-    expect(shareDurationParts(0)).toEqual({ value: '0', unit: 'min' });
+    expect(shareDurationParts(0)).toEqual({ value: '<\u00a01', unit: 'min' });
+    expect(shareDurationParts(0, false)).toEqual({ value: '—', unit: '' });
     expect(shareDurationParts(59)).toEqual({ value: '59', unit: 'min' });
     expect(shareDurationParts(65)).toEqual({ value: '1 h 05', unit: '' });
   });
