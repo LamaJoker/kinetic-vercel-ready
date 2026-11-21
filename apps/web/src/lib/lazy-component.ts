@@ -16,6 +16,8 @@ type Register = (name: string, factory: Factory) => void | Promise<void>;
 export const LAZY_COMPONENTS: Record<string, () => Promise<Factory>> = {
   trainingCalendar: () => import('../components/training-calendar').then((m) => m.trainingCalendar),
   muscleMap: () => import('../components/muscle-map').then((m) => m.muscleMap),
+  strengthGoals: () => import('../components/strength-goals').then((m) => m.strengthGoals),
+  weekPlan: () => import('../components/week-plan').then((m) => m.weekPlan),
 };
 
 const loaded = new Map<string, Promise<void>>();
@@ -53,6 +55,16 @@ export function loadTrainingCalendar(): Promise<void> {
 /** Carte des muscles (Progression › Muscles, aperçu de l'accueil). */
 export function loadMuscleMap(): Promise<void> {
   return loadLazyComponent('muscleMap');
+}
+
+/** Objectifs de force (Progression, aperçu de l'accueil). */
+export function loadStrengthGoals(): Promise<void> {
+  return loadLazyComponent('strengthGoals');
+}
+
+/** Planning de la semaine du programme suivi (accueil, /program). */
+export function loadWeekPlan(): Promise<void> {
+  return loadLazyComponent('weekPlan');
 }
 
 /** Tests uniquement. */

@@ -17,7 +17,8 @@ import {
 import { navigate } from '../router';
 import { loadActiveSession } from '../lib/training/active-session';
 import { hapticLight } from '../lib/haptics';
-import { loadMuscleMap } from '../lib/lazy-component';
+import { loadMuscleMap, loadStrengthGoals, loadWeekPlan } from '../lib/lazy-component';
+import type { PlanTodayDetail } from '../components/week-plan';
 
 const PATTERN_LABELS: Record<'push' | 'pull' | 'legs', string> = {
   push: 'pousser',
@@ -43,7 +44,11 @@ export function dashboard() {
     /** Aperçu « carte des muscles » : exercices (muscles) et composant chargé à la demande. */
     mmExercises: [] as Exercise[],
     muscleMapReady: false,
+    /** Aperçu de l'objectif de force le plus proche (seulement s'il y a des objectifs). */
+    goalsReady: false,
     training: null as TrainingSnapshot | null,
+    /** Planning de la semaine du programme suivi (components/week-plan.ts, à la demande). */
+    weekPlanReady: false,
     /** Une séance non terminée est enregistrée : le bouton la reprend au lieu d'en démarrer une. */
     hasActiveSession: false,
 
@@ -118,6 +123,26 @@ export function dashboard() {
       return 'bg-white/5 text-gray-500';
     },
 
+    /**
+     * Programme suivi : la séance prévue aujourd'hui (éventuellement déplacée)
+     * devient la « Séance du jour » si un modèle porte son nom.
+     */
+    onPlanToday(e: CustomEvent<PlanTodayDetail>): void {
+      const d = e.detail;
+      if (!this.training || !d || d.done || !d.template) return;
+      const t = d.template;
+      this.training = {
+        ...this.training,
+        next: {
+          templateId: t.id,
+          name: t.name,
+          exerciseCount: t.exerciseCount,
+          setCount: t.setCount,
+          reason: 'program',
+        },
+      };
+    },
+
     /** Démarre la séance proposée (même mécanisme que « Programme du jour »). */
     startNextSession(): void {
       const next = this.training?.next;
@@ -185,8 +210,33 @@ export function dashboard() {
         const templates = await loadTemplates(deps.storage);
         this.training = buildTrainingSnapshot(this._allSessions, templates);
         this._loadMuscleMapPreview(deps.storage);
+        void this._loadWeekPlan(deps.storage);
+        const goals = await deps.storage.get<unknown[]>(STORAGE_KEYS.STRENGTH_GOALS);
+        if (Array.isArray(goals) && goals.length > 0) {
+          void loadStrengthGoals().then(
+            () => {
+              this.goalsReady = true;
+            },
+            (err: unknown) => console.warn('[dashboard] objectifs indisponibles :', err),
+          );
+        }
       } catch (err) {
         console.error('[dashboard] init failed:', err);
+      }
+    },
+
+    /** Planning de la semaine, seulement si un programme est suivi. */
+    async _loadWeekPlan(storage: Parameters<typeof loadExercises>[0]): Promise<void> {
+      try {
+        const [split, catalog] = await Promise.all([
+          storage.get(STORAGE_KEYS.PROGRAM_ACTIVE),
+          storage.get(STORAGE_KEYS.ACTIVE_PROGRAM),
+        ]);
+        if (!split && !catalog) return;
+        await loadWeekPlan();
+        this.weekPlanReady = true;
+      } catch (err) {
+        console.warn('[dashboard] planning indisponible :', err);
       }
     },
 

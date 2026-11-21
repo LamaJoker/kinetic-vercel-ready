@@ -57,6 +57,8 @@ export const PAGE_COMPONENTS: Record<string, () => Promise<ComponentMap>> = {
     import('./pages/programs.page').then((m) => ({ programsPage: m.programsPage })),
   './pages/glossaire.html': () =>
     import('./pages/glossaire.page').then((m) => ({ glossairePage: m.glossairePage })),
+  './pages/tools.html': () =>
+    import('./pages/tools.page').then((m) => ({ toolsPage: m.toolsPage })),
   './pages/template-editor.html': () =>
     import('./pages/template-editor.page').then((m) => ({ templateEditor: m.templateEditor })),
 };

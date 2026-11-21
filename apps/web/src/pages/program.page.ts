@@ -1,6 +1,8 @@
 ﻿import { STORAGE_KEYS, PRESET_SPLITS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { navigate } from '../router';
+import { loadWeekPlan } from '../lib/lazy-component';
+import type { PlanTodayDetail } from '../components/week-plan';
 
 interface ProgramDay {
   dayOfWeek: number;
@@ -110,6 +112,12 @@ export function program() {
     todoStatus: {} as Record<string, boolean>,
     generating: false,
     generatedCount: 0,
+    /** Planning de la semaine qui s'adapte (components/week-plan.ts, à la demande). */
+    weekPlanReady: false,
+    /** Séance prévue aujourd'hui selon le planning (undefined : pas encore connu). */
+    planTodayName: undefined as string | null | undefined,
+    /** Séances faites / prévues selon le planning (remplace les jours cochés). */
+    planWeek: null as { doneCount: number; total: number } | null,
 
     availableSplits: [
       {
@@ -144,6 +152,11 @@ export function program() {
 
     get todayFocus(): ProgramDay | null {
       if (!this.activeProgram) return null;
+      // La semaine s'adapte : la séance du jour est celle du planning (déplacée ou non).
+      if (this.planTodayName !== undefined) {
+        const name = this.planTodayName;
+        return this.activeProgram.schedule.find((d) => !d.restDay && d.focus === name) ?? null;
+      }
       const day = new Date().getDay();
       return this.activeProgram.schedule.find((d) => d.dayOfWeek === day) ?? null;
     },
@@ -170,10 +183,12 @@ export function program() {
     },
 
     get totalTrainingDays(): number {
+      if (this.planWeek) return this.planWeek.total;
       return this.activeProgram?.schedule.filter((d) => !d.restDay).length ?? 0;
     },
 
     get completedTrainingDays(): number {
+      if (this.planWeek) return this.planWeek.doneCount;
       return this.completedDayIds.filter((d) => {
         const pd = this.activeProgram?.schedule.find((s) => s.dayOfWeek === d);
         return pd && !pd.restDay;
@@ -188,6 +203,28 @@ export function program() {
     /** Anneau de la semaine (style CSP « --p: N »). */
     get weekRingStyle(): string {
       return `--p: ${this.weekProgressPct}`;
+    },
+
+    onPlanToday(e: CustomEvent<PlanTodayDetail>): void {
+      const d = e.detail;
+      if (!d || d.program !== '/program') return;
+      this.planTodayName = d.name;
+      this.planWeek = { doneCount: d.doneCount, total: d.total };
+    },
+
+    /** (Re)crée le planning : au chargement, puis après un changement de programme. */
+    async _showWeekPlan(): Promise<void> {
+      try {
+        this.weekPlanReady = false;
+        this.planTodayName = undefined;
+        this.planWeek = null;
+        await loadWeekPlan();
+        requestAnimationFrame(() => {
+          this.weekPlanReady = true;
+        });
+      } catch (err) {
+        console.warn('[program] planning indisponible :', err);
+      }
     },
 
     getExercisesForFocus(focus: string): TodoExercise[] {
@@ -216,6 +253,8 @@ export function program() {
         if (completed) this.completedDayIds = completed;
         if (todo) this.todoStatus = todo;
         if (typeof genCount === 'number') this.generatedCount = genCount;
+        const catalog = await deps.storage.get(STORAGE_KEYS.ACTIVE_PROGRAM);
+        if (stored || catalog) void this._showWeekPlan();
       } catch (err) {
         console.error('[program] init failed:', err);
       }
@@ -332,6 +371,7 @@ export function program() {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEYS.PROGRAM_ACTIVE, prog);
         this.activeProgram = prog;
+        void this._showWeekPlan();
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
             detail: { kind: 'success', message: 'Programme activé ✓' },

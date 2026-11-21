@@ -57,6 +57,15 @@ import {
   type WorkoutFocus,
   type SubstitutionResult,
   type ExerciseCues,
+  detectPlateau,
+  dismissPlateau,
+  isPlateauDismissed,
+  goalLabel,
+  normalizeGoals,
+  setMeetsGoal,
+  type PlateauDismissals,
+  type PlateauReport,
+  type StrengthGoal,
 } from '@kinetic/core';
 import { UuidGenerator } from '@kinetic/adapters-web';
 import { getDeps } from '../deps';
@@ -356,6 +365,13 @@ export function seances() {
     stopwatch: null as { exerciseId: string; startMs: number } | null,
     /** Menu « ⋯ » ouvert (superset) : id de l'exercice. */
     menuFor: null as string | null,
+    /** Alerte de plateau dépliée (pistes) pour cet exercice. */
+    plateauOpenFor: null as string | null,
+    plateauDismissed: {} as PlateauDismissals,
+    _plateauCache: new Map<string, PlateauReport | null>(),
+    _plateauCacheVersion: '',
+    /** Objectifs de force (célébrés à la série qui les remplit). */
+    _strengthGoals: [] as StrengthGoal[],
 
     nowMs: Date.now(),
     tickHandle: null as number | null,
@@ -595,6 +611,10 @@ export function seances() {
         this._plates = await deps.storage.get<{ barKg?: number; enabledPlates?: number[] }>(
           STORAGE_KEYS.PLATE_PREFS,
         );
+
+        this.plateauDismissed =
+          (await deps.storage.get<PlateauDismissals>(STORAGE_KEYS.PLATEAU_DISMISSED)) ?? {};
+        this._strengthGoals = normalizeGoals(await deps.storage.get(STORAGE_KEYS.STRENGTH_GOALS));
 
         // ── Import partagé en attente (depuis ?import=… au boot) ─────────
         try {
@@ -1488,6 +1508,7 @@ export function seances() {
         return;
       }
 
+      this._checkGoals(exerciseId, weightKg, reps);
       if (isPr && hadRecord) {
         // Carte flottante de la coquille (lib/celebration.ts) : ne bloque pas la
         // saisie et vibre elle-même (impact fort, une fois).
@@ -1790,6 +1811,79 @@ export function seances() {
     exerciseNeedsDeload(exerciseId: string): boolean {
       if (this.isTimed(exerciseId)) return false;
       return needsDeload(this._historyForExercise(exerciseId));
+    },
+
+    // ─── Objectifs de force et plateaux ──────────────────────
+
+    /** Série de travail qui remplit un objectif : marqué atteint et célébré. */
+    _checkGoals(exerciseId: string, weightKg: number, reps: number): void {
+      const met = this._strengthGoals.filter(
+        (g) => !g.achievedAt && g.exerciseId === exerciseId && setMeetsGoal(g, { weightKg, reps }),
+      );
+      if (met.length === 0) return;
+      const at = nowIso();
+      this._strengthGoals = this._strengthGoals.map((g) =>
+        met.includes(g) ? { ...g, achievedAt: at } : g,
+      );
+      void getDeps().then((deps) =>
+        deps.storage.set(STORAGE_KEYS.STRENGTH_GOALS, this._strengthGoals),
+      );
+      for (const g of met)
+        celebrate({
+          kind: 'record',
+          title: 'Objectif atteint !',
+          subtitle: goalLabel(g, this.exerciseName(exerciseId)),
+        });
+    },
+
+    /** Plateau sur l'exercice (séances terminées), null si aucun, masqué ou chronométré. */
+    plateauFor(exerciseId: string): PlateauReport | null {
+      if (!exerciseId || this.isTimed(exerciseId)) return null;
+      if (isPlateauDismissed(this.plateauDismissed, exerciseId, Date.now())) return null;
+      const version = sessionsCacheVersion(this.sessions);
+      if (this._plateauCacheVersion !== version) {
+        this._plateauCache = new Map();
+        this._plateauCacheVersion = version;
+      }
+      if (!this._plateauCache.has(exerciseId)) {
+        const incrementKg = this.exercises.find((e) => e.id === exerciseId)?.incrementKg;
+        this._plateauCache.set(
+          exerciseId,
+          detectPlateau(this.sessions, exerciseId, {
+            now: Date.now(),
+            ...(incrementKg ? { incrementKg } : {}),
+          }),
+        );
+      }
+      return this._plateauCache.get(exerciseId) ?? null;
+    },
+
+    /** « Plateau depuis 4 séances » (vide sans plateau). */
+    plateauLabel(exerciseId: string): string {
+      const p = this.plateauFor(exerciseId);
+      return p ? `Plateau depuis ${p.sessions} séances` : '';
+    },
+
+    plateauSuggestions(exerciseId: string): PlateauReport['suggestions'] {
+      return this.plateauFor(exerciseId)?.suggestions ?? [];
+    },
+
+    togglePlateau(exerciseId: string): void {
+      this.plateauOpenFor = this.plateauOpenFor === exerciseId ? null : exerciseId;
+    },
+
+    async hidePlateau(exerciseId: string): Promise<void> {
+      this.plateauDismissed = dismissPlateau(this.plateauDismissed, exerciseId, Date.now());
+      this.plateauOpenFor = null;
+      hapticLight();
+      const deps = await getDeps();
+      await deps.storage.set(STORAGE_KEYS.PLATEAU_DISMISSED, this.plateauDismissed);
+    },
+
+    /** Piste « variante » : ouvre les alternatives (substitution existante). */
+    plateauVariants(exerciseId: string): void {
+      this.plateauOpenFor = null;
+      if (this.substitutionFor !== exerciseId) this.openSubstitution(exerciseId);
     },
 
     // ─── La dernière fois ────────────────────────────────────

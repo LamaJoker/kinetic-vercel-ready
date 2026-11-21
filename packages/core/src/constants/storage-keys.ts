@@ -71,6 +71,8 @@ export const STORAGE_KEYS = {
   PROGRAM_TODO_STATUS: (dayKey: string) => `kinetic:program:todoStatus:${dayKey}` as const,
   // Clé sessionStorage : template pré-sélectionné depuis la page Programme
   PROGRAM_AUTO_TEMPLATE: 'kinetic:program:auto-template' as const,
+  /** Semaine qui s'adapte : { week, programId, moves, skipped, unavailable } (semaine en cours). */
+  PROGRAM_WEEK_PLAN: 'kinetic:program:week-plan' as const,
 
   // ─── Objectif coach séance (localStorage) ─────────────────────
   COACH_GOAL: 'kinetic:coach-goal' as const,
@@ -94,6 +96,10 @@ export const STORAGE_KEYS = {
   // ─── Objectifs ────────────────────────────────────────────────
   GOALS: 'kinetic:goals' as const,
   GOALS_WEEKLY: 'kinetic:goals:weekly' as const,
+  /** Objectifs de force (« Squat 140 kg ») : StrengthGoal[]. */
+  STRENGTH_GOALS: 'kinetic:goals:strength' as const,
+  /** Alertes de plateau masquées : exercice → date ISO de fin du masquage. */
+  PLATEAU_DISMISSED: 'kinetic:plateau:dismissed' as const,
 
   // ─── Récompenses ──────────────────────────────────────────────
   REWARDS_UNLOCKED: 'kinetic:rewards:unlocked' as const,

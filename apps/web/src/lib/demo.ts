@@ -2,7 +2,8 @@
  * demo.ts — jeu de données de démonstration (mode invité uniquement).
  *
  * Permet d'explorer Kinetic « rempli » sans rien saisir : 8 semaines de
- * Push/Pull/Legs avec surcharge progressive, pesées, mensurations, XP et série.
+ * Push/Pull/Legs avec surcharge progressive (sauf un plateau au développé
+ * militaire), objectifs de force, pesées, mensurations, XP et série.
  * Déterministe (PRNG à graine fixe) et réversible : chaque clé écrite est listée
  * dans `DEMO_MANIFEST`, `clearDemoData()` retire exactement ces clés.
  */
@@ -39,6 +40,9 @@ const START_KG: Record<string, [number, number]> = {
   hipthrust: [100, 5],
 };
 
+/** Charge figée (plateau) : le développé militaire stagne, pour montrer l'alerte de plateau. */
+const PLATEAU_IDS = new Set(['ohp']);
+
 const ROTATION = [
   'tpl-push-a',
   'tpl-pull-a',
@@ -50,6 +54,12 @@ const ROTATION = [
 /** Jours d'entraînement : lundi, mardi, jeudi, samedi (0 = lundi). */
 const TRAINING_WEEKDAYS = [0, 1, 3, 5];
 const WEEKS = 8;
+const DEMO_DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+const DEMO_MUSCLES: Record<'push' | 'pull' | 'legs', string[]> = {
+  push: ['pectoraux', 'épaules', 'triceps'],
+  pull: ['dos', 'biceps', 'trapèzes'],
+  legs: ['quadriceps', 'ischio', 'mollets', 'fessiers'],
+};
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -85,7 +95,11 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
   const sessions: WorkoutSession[] = [];
   let rotationIndex = 0;
 
+  /** Rang dans la rotation au lundi de la semaine en cours (programme de démo). */
+  let weekStartRotation = 0;
+
   for (let w = 0; w < WEEKS; w++) {
+    if (w === WEEKS - 1) weekStartRotation = rotationIndex;
     for (const wd of TRAINING_WEEKDAYS) {
       const day = new Date(firstMonday);
       day.setDate(firstMonday.getDate() + w * 7 + wd);
@@ -101,11 +115,13 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
 
       const entries = tpl.exercises.map((ex) => {
         const [base, inc] = START_KG[ex.exerciseId] ?? [20, 2.5];
-        const load = base + inc * Math.floor(w / 2);
+        const load = PLATEAU_IDS.has(ex.exerciseId) ? base : base + inc * Math.floor(w / 2);
         const sets: SetEntry[] = [];
         for (let i = 0; i < ex.sets; i++) {
           const fatigue = i >= ex.sets - 1 ? 1 : 0;
-          const reps = Math.max(3, ex.targetReps - fatigue - (rand() < 0.2 ? 1 : 0));
+          // Poids du corps : la progression passe par les reps (+1 toutes les 3 semaines).
+          const extra = base === 0 ? Math.floor(w / 3) : 0;
+          const reps = Math.max(3, ex.targetReps + extra - fatigue - (rand() < 0.2 ? 1 : 0));
           t += (90 + Math.floor(rand() * 60)) * 1000;
           sets.push({
             setIndex: i,
@@ -201,6 +217,43 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
     ]),
   ];
   const lastTrained = sessions[sessions.length - 1];
+
+  // Objectifs de force : en route (date estimée), tendance plate (plateau), atteint.
+  const goalsSince = new Date(today);
+  goalsSince.setDate(today.getDate() - 35);
+  const createdAt = goalsSince.toISOString();
+  const dlDone = sessions
+    .flatMap((s) => s.entries.filter((e) => e.exerciseId === 'dl').flatMap((e) => e.sets))
+    .find((set) => set.weightKg >= 130)?.performedAt;
+  const strengthGoals = [
+    { id: 'demo-goal-sq', exerciseId: 'sq', kind: 'weight', targetKg: 140, createdAt },
+    { id: 'demo-goal-bp', exerciseId: 'bp', kind: 'reps', targetKg: 85, targetReps: 8, createdAt },
+    { id: 'demo-goal-ohp', exerciseId: 'ohp', kind: 'e1rm', targetKg: 65, createdAt },
+    {
+      id: 'demo-goal-dl',
+      exerciseId: 'dl',
+      kind: 'weight',
+      targetKg: 130,
+      createdAt: new Date(firstMonday).toISOString(),
+      ...(dlDone ? { achievedAt: dlDone } : {}),
+    },
+  ];
+  // Programme suivi (semaine qui s'adapte) : les 4 jours de la démo, dans l'ordre de la
+  // rotation. Le prochain jour d'entraînement (après aujourd'hui) est marqué indisponible : sa séance est
+  // déplacée, pour montrer le planning de l'accueil et de /program.
+  const todayIdx = (today.getDay() + 6) % 7;
+  const programSchedule = [0, 1, 2, 3, 4, 5, 6].map((d) => {
+    const slot = TRAINING_WEEKDAYS.indexOf(d);
+    const tpl = templates.get(ROTATION[(weekStartRotation + slot) % ROTATION.length]!);
+    const label = DEMO_DAY_LABELS[d]!;
+    const dayOfWeek = (d + 1) % 7;
+    if (slot < 0 || !tpl)
+      return { dayOfWeek, label, focus: 'Repos', muscleGroups: [], restDay: true };
+    const kind = tpl.id.includes('push') ? 'push' : tpl.id.includes('pull') ? 'pull' : 'legs';
+    return { dayOfWeek, label, focus: tpl.name, muscleGroups: DEMO_MUSCLES[kind], restDay: false };
+  });
+  // Jamais aujourd'hui : la « Séance du jour » de l'accueil reste faisable.
+  const nextSlot = TRAINING_WEEKDAYS.find((d) => d > todayIdx);
   const values: Array<[StorageKey, unknown]> = [
     [
       STORAGE_KEYS.USER_PROFILE,
@@ -218,8 +271,32 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
     ],
     [STORAGE_KEYS.BODYWEIGHT_ENTRIES, bodyweight],
     [STORAGE_KEYS.BODYWEIGHT_GOAL, 76],
+    [STORAGE_KEYS.STRENGTH_GOALS, strengthGoals],
     [STORAGE_KEYS.MEASUREMENTS_ENTRIES, measurements],
     [STORAGE_KEYS.XP, { xp: 2350 }],
+    [
+      STORAGE_KEYS.PROGRAM_ACTIVE,
+      {
+        id: 'demo-program',
+        name: 'Push Pull Legs — 4 jours',
+        splitType: 'ppl',
+        daysPerWeek: TRAINING_WEEKDAYS.length,
+        goal: 'hypertrophie',
+        schedule: programSchedule,
+        createdAt: firstMonday.toISOString(),
+        active: true,
+      },
+    ],
+    [
+      STORAGE_KEYS.PROGRAM_WEEK_PLAN,
+      {
+        week: localIsoDate(mondayThisWeek),
+        programId: 'demo-program',
+        moves: {},
+        skipped: [],
+        unavailable: nextSlot === undefined ? [] : [nextSlot],
+      },
+    ],
     [STORAGE_KEYS.NUTRITION_LOG(localIsoDate(today)), todayMeals],
     [
       STORAGE_KEYS.STREAK,

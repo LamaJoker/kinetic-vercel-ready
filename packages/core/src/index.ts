@@ -90,6 +90,11 @@ export * from './domain/exercise-measure.domain.js';
 export * from './domain/training-calendar.domain.js';
 export * from './domain/muscle-map.domain.js';
 export * from './domain/session-share-card.domain.js';
+export * from './domain/week-plan.domain.js';
+export * from './domain/strength-goals.domain.js';
+export * from './domain/plateau.domain.js';
+export * from './domain/strength-tools.domain.js';
+export * from './domain/period-compare.domain.js';
 
 // ─── Use Cases (orchestration) ────────────────────────────────
 export { completeTask_usecase } from './usecases/complete-task.usecase.js';

@@ -40,7 +40,10 @@ export const BUDGETS = {
   singleJsRaw: 350 * 1024, // 350 KiB par fichier JS
   singleJsGzip: 110 * 1024, // 110 KiB gzip par fichier JS
   initialJsGzip: 130 * 1024, // 130 KiB gzip chargés avant le premier écran
-  totalJsGzip: 250 * 1024, // 250 KiB gzip pour tout le JS
+  // Tout le JS, écrans chargés à la demande compris. Le démarrage est tenu par
+  // initialJsGzip ; ce plafond évite seulement une dérive globale (relevé de 250 à
+  // 350 KiB : les écrans à la demande sont dans l'app et ne ralentissent pas l'ouverture).
+  totalJsGzip: 350 * 1024,
   totalTemplatesGzip: 100 * 1024, // 100 KiB gzip de gabarits de pages (.txt)
   totalCssGzip: 30 * 1024, // 30 KiB gzip pour tout le CSS
 };

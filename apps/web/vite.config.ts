@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, transformWithEsbuild, type Plugin } from 'vite';
 import { basename, resolve } from 'path';
 import { readFileSync, readdirSync, writeFileSync } from 'fs';
 
@@ -26,14 +26,20 @@ function injectSwVersion(): Plugin {
   const version = `kinetic-v${Date.now()}`;
   return {
     name: 'inject-sw-version',
-    closeBundle() {
+    async closeBundle() {
       const swOut = resolve(__dirname, 'dist/sw.js');
       try {
         const src = readFileSync(swOut, 'utf8');
         const names = readdirSync(resolve(__dirname, 'public/exercises'))
           .filter((f) => f.endsWith('.svg'))
           .map((f) => f.slice(0, -4));
-        writeFileSync(swOut, injectSwTokens(src, version, names), 'utf8');
+        // Minifié (commentaires, espaces) : ~1,6 KiB gzip de moins à chaque installation.
+        const { code } = await transformWithEsbuild(injectSwTokens(src, version, names), 'sw.js', {
+          minify: true,
+          loader: 'js',
+          target: 'es2020',
+        });
+        writeFileSync(swOut, code, 'utf8');
       } catch {
         // Not a production build (e.g. vite dev) — silently skip.
       }
@@ -154,6 +160,11 @@ export const LAZY_CORE_MODULES = [
   'domain/session-share-card.domain', // carte « Partager en image » (Séances)
   'domain/superset.domain', // supersets (Séances, éditeur de modèles)
   'domain/exercise-measure.domain', // exercices chronométrés / distance (Séances, Records)
+  'domain/week-plan.domain', // semaine qui s'adapte (Programme, accueil si programme suivi)
+  'domain/strength-goals.domain', // objectifs de force (Progression, accueil, Séances)
+  'domain/plateau.domain', // alerte de stagnation (Séances, Progression)
+  'domain/strength-tools.domain', // calculateurs 1RM / % / RPE (page Outils)
+  'domain/period-compare.domain', // comparer deux périodes (Progression)
 ];
 export const LAZY_TRAINING_MODULES = [
   'training/import', // import Strong / Hevy (Profil)

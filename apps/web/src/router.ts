@@ -30,10 +30,26 @@ import {
  * que le service worker les mette en cache → toutes les pages restent
  * disponibles hors-ligne.
  */
-const PAGE_LOADERS = import.meta.glob('./pages/*.html', {
-  query: '?raw',
-  import: 'default',
-}) as Record<string, () => Promise<string | (() => Promise<string>)>>;
+type PageLoader = () => Promise<string | (() => Promise<string>)>;
+/**
+ * Au build, chaque module de gabarit ne contient qu'une URL : importés d'emblée
+ * (eager) plutôt qu'en ~22 petits chunks, ~3 KiB gzip de JS en moins au total.
+ * En dev, ce sont les chaînes HTML complètes : chargées à la demande.
+ */
+const PAGE_LOADERS: Record<string, PageLoader> = import.meta.env.DEV
+  ? (import.meta.glob('./pages/*.html', { query: '?raw', import: 'default' }) as Record<
+      string,
+      PageLoader
+    >)
+  : Object.fromEntries(
+      Object.entries(
+        import.meta.glob('./pages/*.html', {
+          query: '?raw',
+          import: 'default',
+          eager: true,
+        }) as Record<string, string | (() => Promise<string>)>,
+      ).map(([file, template]) => [file, () => Promise.resolve(template)]),
+    );
 
 type RouteKey =
   | '/'
@@ -54,6 +70,7 @@ type RouteKey =
   | '/photos'
   | '/programs'
   | '/glossaire'
+  | '/outils'
   | '/modele'
   | '/exercices'
   | '/legal/cgu'
@@ -78,6 +95,7 @@ const ROUTES: Record<RouteKey, string> = {
   '/photos': './pages/photos.html',
   '/programs': './pages/programs.html',
   '/glossaire': './pages/glossaire.html',
+  '/outils': './pages/tools.html',
   '/modele': './pages/template-editor.html',
   '/exercices': './pages/template-editor.html',
   '/legal/cgu': './pages/legal-cgu.html',

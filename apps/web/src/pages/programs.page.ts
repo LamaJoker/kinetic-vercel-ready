@@ -139,6 +139,8 @@ export function programsPage() {
         await deps.storage.set(STORAGE_KEYS.ACTIVE_PROGRAM, {
           id: this.selectedProgram.id,
           weekIndex: this.currentWeekIndex,
+          // Le programme suivi est le plus récemment choisi (catalogue ou découpage /program).
+          selectedAt: new Date().toISOString(),
         });
       } catch (err) {
         console.warn('[programs] persist active failed:', err);

@@ -33,7 +33,8 @@ export interface NextSession {
   name: string;
   exerciseCount: number;
   setCount: number;
-  reason: 'first' | 'rotation' | 'next-template';
+  /** program : séance prévue aujourd'hui par le programme suivi (semaine qui s'adapte). */
+  reason: 'first' | 'rotation' | 'next-template' | 'program';
 }
 
 export interface WeekDay {

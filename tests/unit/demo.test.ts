@@ -71,3 +71,28 @@ describe('données de démo', () => {
     expect(await storage.get('kinetic:training:active-session')).toEqual({ v: 1 });
   });
 });
+
+describe('données de démo : objectifs de force et plateau', () => {
+  it('montre un plateau au développé militaire, pas sur les exercices qui progressent', async () => {
+    const { detectPlateau } = await import('@kinetic/core');
+    const { sessions } = buildDemoData(NOW);
+    const now = NOW.getTime();
+    const plateau = detectPlateau(sessions, 'ohp', { now, incrementKg: 1.25 });
+    expect(plateau?.sessions).toBeGreaterThanOrEqual(4);
+    for (const id of ['bp', 'sq', 'dl', 'row'])
+      expect(detectPlateau(sessions, id, { now })).toBeNull();
+  });
+
+  it('objectifs : un en route avec date, un sur tendance plate, un atteint', async () => {
+    const { evaluateGoal, normalizeGoals } = await import('@kinetic/core');
+    const { sessions, values } = buildDemoData(NOW);
+    const goals = normalizeGoals(values.find(([k]) => k === 'kinetic:goals:strength')?.[1]);
+    expect(goals).toHaveLength(4);
+    const states = Object.fromEntries(
+      goals.map((g) => [g.exerciseId, evaluateGoal(g, sessions, NOW.getTime()).state]),
+    );
+    expect(states['sq']).toBe('on-track');
+    expect(states['ohp']).toBe('flat');
+    expect(states['dl']).toBe('achieved');
+  });
+});

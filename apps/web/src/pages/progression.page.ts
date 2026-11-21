@@ -2,6 +2,13 @@
 import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
 import {
+  detectPlateau,
+  dismissPlateau,
+  isPlateauDismissed,
+  suggestSubstitutions,
+  type PlateauDismissals,
+  type PlateauReport,
+  type PlateauSuggestion,
   weeklyVolume,
   perExerciseStats,
   muscleDistribution,
@@ -15,14 +22,23 @@ import {
   type PersonalRecord,
   type WeeklyReview,
   workSetsOf,
+  comparePeriods,
+  presetRanges,
+  normalizeRange,
+  formatRange,
+  type ComparePreset,
+  type DayRange,
+  type MetricDelta,
+  type PeriodComparison,
+  type RowDelta,
 } from '@kinetic/core';
 import type { Exercise, WorkoutSession } from '../lib/training/types';
 import { loadExercises, loadSessions } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
-import { loadMuscleMap } from '../lib/lazy-component';
+import { loadMuscleMap, loadStrengthGoals } from '../lib/lazy-component';
 import type { ScrubData } from '../lib/chart-scrub';
 
-type Tab = 'force' | 'volume' | 'muscles' | 'records' | 'heatmap';
+type Tab = 'force' | 'volume' | 'muscles' | 'records' | 'heatmap' | 'compare';
 
 /** Géométrie de la courbe e1RM (viewBox 320 × 172), partagée par le tracé et le parcours au doigt. */
 export function forceChartGeometry(pts: ReadonlyArray<{ x: number; y: number }>) {
@@ -54,6 +70,11 @@ export function forceChartGeometry(pts: ReadonlyArray<{ x: number; y: number }>)
 }
 
 export function progression() {
+  /** Plateaux calculés, par exercice, pour un historique donné (hors état réactif). */
+  const plateauCache = {
+    sessions: null as unknown,
+    map: new Map<string, PlateauReport | null>(),
+  };
   return {
     loading: false,
     activeTab: 'force' as Tab,
@@ -62,12 +83,22 @@ export function progression() {
     selectedExerciseId: '',
     /** Carte des muscles chargée (import() au premier affichage de l'onglet). */
     muscleMapReady: false,
+    /** « Mes objectifs » (composant strengthGoals, chargé à la demande). */
+    goalsReady: false,
+    /** Alertes de plateau masquées (exercice → fin du masquage). */
+    plateauDismissed: {} as PlateauDismissals,
     // M1 FIX: cache pour éviter de recalculer O(sessions×sets) à chaque getter Alpine
     _cachedSets: null as AnalyticsSet[] | null,
     _sessionSavedHandler: null as ((e: Event) => void) | null,
 
     async init(): Promise<void> {
       this.loading = true;
+      loadStrengthGoals().then(
+        () => {
+          this.goalsReady = true;
+        },
+        (err: unknown) => console.warn('[progression] objectifs indisponibles :', err),
+      );
       this._cachedSets = null; // invalider le cache au rechargement
       // Lien direct vers un onglet (« /progression?tab=muscles » depuis l'accueil).
       const tab = new URLSearchParams(window.location?.search ?? '').get('tab');
@@ -76,7 +107,8 @@ export function progression() {
         tab === 'volume' ||
         tab === 'muscles' ||
         tab === 'records' ||
-        tab === 'heatmap'
+        tab === 'heatmap' ||
+        tab === 'compare'
       ) {
         this.setTab(tab);
       }
@@ -84,6 +116,7 @@ export function progression() {
         const deps = await getDeps();
         this.exercises = await loadExercises(deps.storage);
         this.sessions = await loadSessions(deps.storage);
+        await this._loadPlateauDismissed();
         // Le premier rendu (avant chargement) a mis en cache une liste vide :
         // sans cette invalidation, bilan hebdo, régularité et courbes restaient à 0.
         this._cachedSets = null;
@@ -120,6 +153,7 @@ export function progression() {
 
     setTab(t: Tab): void {
       this.activeTab = t;
+      if (t === 'compare') this._loadBodyweight();
       if (t === 'muscles' && !this.muscleMapReady) {
         loadMuscleMap().then(
           () => {
@@ -408,6 +442,98 @@ export function progression() {
       return d > 0.05 ? 'up' : d < -0.05 ? 'down' : 'flat';
     },
 
+    // ─── Plateaux (alerte de stagnation) ─────────────────────
+
+    async _loadPlateauDismissed(): Promise<void> {
+      const deps = await getDeps();
+      this.plateauDismissed =
+        (await deps.storage.get<PlateauDismissals>(STORAGE_KEYS.PLATEAU_DISMISSED)) ?? {};
+    },
+
+    /** Plateau en cours sur l'exercice (null si aucun ou masqué). Mis en cache par historique. */
+    plateau(exerciseId: string): PlateauReport | null {
+      const now = Date.now();
+      if (!exerciseId || isPlateauDismissed(this.plateauDismissed, exerciseId, now)) return null;
+      const cache = plateauCache;
+      if (cache.sessions !== this.sessions) {
+        cache.sessions = this.sessions;
+        cache.map.clear();
+      }
+      if (!cache.map.has(exerciseId)) {
+        const incrementKg = this.exercises.find((e) => e.id === exerciseId)?.incrementKg;
+        cache.map.set(
+          exerciseId,
+          detectPlateau(this.sessions, exerciseId, {
+            now,
+            ...(incrementKg ? { incrementKg } : {}),
+          }),
+        );
+      }
+      return cache.map.get(exerciseId) ?? null;
+    },
+
+    /** Exercices en plateau (liste de l'onglet Force). */
+    get plateaus(): PlateauReport[] {
+      return this.exerciseStats.flatMap((st) => this.plateau(st.exerciseId) ?? []);
+    },
+
+    /** Plateau de l'exercice affiché, en liste (0 ou 1) pour nommer la variable dans x-for. */
+    get selectedPlateaus(): PlateauReport[] {
+      const p = this.plateau(this.selectedExerciseId);
+      return p ? [p] : [];
+    },
+
+    get otherPlateaus(): PlateauReport[] {
+      return this.plateaus.filter((p) => p.exerciseId !== this.selectedExerciseId);
+    },
+
+    plateauTitle(p: PlateauReport): string {
+      return `Plateau depuis ${p.sessions} séances`;
+    },
+
+    /** « Meilleure série : 47,5 kg × 8, le 3 nov. » */
+    plateauSince(p: PlateauReport): string {
+      const set = p.topKg > 0 ? `${loc(String(p.topKg))} kg × ${p.topReps}` : `${p.topReps} reps`;
+      return `Meilleure série : ${set}, le ${this.formatDate(p.since)}`;
+    },
+
+    /** Détail d'une piste ; la variante cite les alternatives du catalogue. */
+    suggestionDetail(p: PlateauReport, sg: PlateauSuggestion): string {
+      if (sg.id !== 'variant') return sg.detail;
+      const target = this.exercises.find((e) => e.id === p.exerciseId);
+      if (!target) return sg.detail;
+      const toLike = (e: Exercise) => ({ ...e, equipment: [e.equipment] });
+      const alts = suggestSubstitutions({
+        target: toLike(target),
+        candidates: this.exercises.filter((e) => !e.hidden).map(toLike),
+        limit: 2,
+      });
+      return alts.length
+        ? `${sg.detail} Par exemple : ${alts.map((a) => a.exercise.name).join(', ')}.`
+        : sg.detail;
+    },
+
+    selectExercise(id: string): void {
+      this.selectedExerciseId = id;
+    },
+
+    /** « Masquer pour cet exercice » : quelques semaines. */
+    async hidePlateau(exerciseId: string): Promise<void> {
+      this.plateauDismissed = dismissPlateau(this.plateauDismissed, exerciseId, Date.now());
+      const deps = await getDeps();
+      await deps.storage.set(STORAGE_KEYS.PLATEAU_DISMISSED, this.plateauDismissed);
+      window.dispatchEvent(
+        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+          detail: { kind: 'info', message: 'Alerte masquée pour 3 semaines sur cet exercice.' },
+        }),
+      );
+    },
+
+    /** Ouvre la feuille « Nouvel objectif » (composant strengthGoals) pour l'exercice affiché. */
+    newGoalForSelected(): void {
+      window.dispatchEvent(new CustomEvent('k-goal-new', { detail: this.selectedExerciseId }));
+    },
+
     // ─── Présentation (anneaux, barres, trophées) ────────────
 
     /** Style de l'anneau de régularité : `--p` borné à 0–100 (build CSP). */
@@ -467,6 +593,9 @@ export function progression() {
         calves: 'Mollets',
         core: 'Abdos',
         forearms: 'Avant-bras',
+        upper_back: 'Haut du dos',
+        rear_delts: 'Arrière d’épaule',
+        posterior: 'Chaîne postérieure',
       };
       return map[m] ?? m.charAt(0).toUpperCase() + m.slice(1);
     },
@@ -563,6 +692,104 @@ export function progression() {
       return span < 0.5
         ? this.sessions.length
         : Math.round((this.sessions.length / span) * 10) / 10;
+    },
+
+    // ─── Onglet COMPARER : deux périodes ─────────────────────
+
+    cmpPreset: 'month' as ComparePreset,
+    /** Plages personnalisées (AAAA-MM-JJ, champs date). */
+    cmpAStart: '',
+    cmpAEnd: '',
+    cmpBStart: '',
+    cmpBEnd: '',
+    _bodyweight: null as Array<{ date: string; weight: number }> | null,
+    _cmpCache: null as { key: string; value: PeriodComparison | null } | null,
+
+    async _loadBodyweight(): Promise<void> {
+      if (this._bodyweight) return;
+      this._bodyweight = [];
+      try {
+        const deps = await getDeps();
+        const bw = await deps.storage.get<Array<{ date: string; weight: number }>>(
+          STORAGE_KEYS.BODYWEIGHT_ENTRIES,
+        );
+        this._bodyweight = Array.isArray(bw) ? bw : [];
+      } catch (err) {
+        console.warn('[progression] pesées indisponibles :', err);
+      }
+    },
+
+    setPreset(p: ComparePreset): void {
+      if (p === 'custom' && !this.cmpAStart) {
+        // Point de départ : les plages du préréglage en cours, modifiables.
+        const r = this.cmpRanges();
+        if (r) {
+          this.cmpAStart = r.a.start;
+          this.cmpAEnd = r.a.end;
+          this.cmpBStart = r.b.start;
+          this.cmpBEnd = r.b.end;
+        }
+      }
+      this.cmpPreset = p;
+    },
+
+    cmpRanges(): { a: DayRange; b: DayRange } | null {
+      if (this.cmpPreset !== 'custom') return presetRanges(this.cmpPreset, new Date());
+      const a = normalizeRange(this.cmpAStart, this.cmpAEnd);
+      const b = normalizeRange(this.cmpBStart, this.cmpBEnd);
+      return a && b ? { a, b } : null;
+    },
+
+    get comparison(): PeriodComparison | null {
+      const r = this.cmpRanges();
+      const bw = this._bodyweight ?? [];
+      const key = `${r?.a.start}|${r?.a.end}|${r?.b.start}|${r?.b.end}|${this.sessions.length}|${bw.length}`;
+      if (this._cmpCache?.key === key) return this._cmpCache.value;
+      const value = r
+        ? comparePeriods(
+            {
+              sessions: this.sessions,
+              musclesByExercise: new Map(this.exercises.map((e) => [e.id, e.muscles ?? []])),
+              bodyweight: bw,
+            },
+            r.a,
+            r.b,
+          )
+        : null;
+      this._cmpCache = { key, value };
+      return value;
+    },
+
+    cmpLabel(which: 'a' | 'b'): string {
+      const r = this.cmpRanges();
+      return r ? formatRange(r[which]) : '';
+    },
+
+    /** Valeur d'un indicateur pour la période A ou B (« — » sans donnée). */
+    cmpValue(m: MetricDelta, which: 'a' | 'b'): string {
+      const v = m[which];
+      if (v === null) return '\u2014';
+      const text = m.key === 'tonnage' ? this.formatTonnage(v) : this.formatNumber(v, 1);
+      const unit = m.key === 'tonnage' && v >= 100000 ? 't' : m.unit;
+      return unit ? `${text}\u00A0${unit}` : text;
+    },
+
+    /** Écart en % : « +12 % », « nouveau » si la référence est vide, « = » si stable. */
+    cmpDelta(m: MetricDelta | RowDelta): string {
+      if (m.pct !== null) return this.formatPct(m.pct);
+      const a = m.a ?? 0;
+      return a > 0 && !m.b ? 'nouveau' : m.trend === 'flat' ? '=' : '\u2014';
+    },
+
+    /** Couleur de l'écart : turquoise si mieux, corail si moins bien, gris sinon. */
+    cmpToneClass(m: MetricDelta | RowDelta): string {
+      const tone =
+        'tone' in m ? m.tone : m.trend === 'up' ? 'good' : m.trend === 'down' ? 'bad' : 'neutral';
+      return tone === 'good'
+        ? 'text-kinetic-teal'
+        : tone === 'bad'
+          ? 'text-kinetic-neon'
+          : 'text-gray-400';
     },
 
     get avgDurationMin(): number {

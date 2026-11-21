@@ -171,6 +171,194 @@
     </div>
   </section>
 
+  <!-- Mes objectifs de force (components/strength-goals.ts, chargé à la demande) -->
+  <template x-if="goalsReady && totalSessions > 0">
+    <section
+      x-data="strengthGoals"
+      class="mb-6"
+      aria-labelledby="prog-goals-title"
+      @k-goal-new.window="openNew($event.detail)"
+    >
+      <div class="flex items-center justify-between gap-3 mb-2.5">
+        <h2 id="prog-goals-title" class="k-section">Mes objectifs</h2>
+        <button type="button" class="k-link" @click="openNew()">Ajouter</button>
+      </div>
+      <button
+        type="button"
+        x-show="statuses.length === 0"
+        class="k-card k-press block w-full text-left"
+        @click="openNew()"
+      >
+        <span class="block text-base font-semibold text-white">Fixe-toi un objectif de force</span>
+        <span class="mt-1 block text-sm text-gray-500 leading-snug"
+          >« Squat 140 kg », « Tractions 20 kg × 8 »… Kinetic suit ta tendance et estime la date
+          d'atteinte.</span
+        >
+      </button>
+      <div x-show="statuses.length > 0" class="k-list">
+        <template x-for="st in statuses" :key="st.goal.id">
+          <button
+            type="button"
+            class="k-row w-full text-left"
+            data-k-menu
+            @k-menu="goalMenu($event.detail, st.goal.id)"
+            @click="edit(st.goal.id)"
+          >
+            <span
+              class="k-ring-box w-12 h-12 flex-shrink-0"
+              :class="st.state === 'achieved' ? 'text-kinetic-teal' : 'text-kinetic-neon'"
+            >
+              <svg class="k-ring" viewBox="0 0 36 36" aria-hidden="true" style="--k-ring-w: 4">
+                <circle class="k-ring-track" cx="18" cy="18" r="15.5" pathLength="100" />
+                <circle
+                  class="k-ring-value"
+                  cx="18"
+                  cy="18"
+                  r="15.5"
+                  pathLength="100"
+                  :style="ringStyle(st)"
+                />
+              </svg>
+              <span
+                class="text-[0.7rem] font-bold tabular-nums text-white"
+                x-text="st.pct + '%'"
+              ></span>
+            </span>
+            <span class="min-w-0 flex-1">
+              <span
+                class="block text-base leading-snug font-semibold text-white"
+                x-text="label(st)"
+              ></span>
+              <span
+                class="mt-0.5 block text-xs leading-snug text-gray-500 tabular-nums"
+                x-text="$num.loc(detail(st))"
+              ></span>
+              <span
+                class="mt-0.5 block text-xs font-semibold leading-snug"
+                :class="etaClass(st)"
+                x-text="eta(st)"
+              ></span>
+            </span>
+            <svg class="k-chevron flex-shrink-0" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+              <path
+                d="m1 1 6 6-6 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </template>
+      </div>
+      <p x-show="statuses.length > 0" class="mt-2 px-1 text-xs text-gray-500 leading-snug">
+        Tendance robuste sur tes 6 à 12 dernières semaines (séries de travail). Appui long pour
+        modifier ou supprimer.
+      </p>
+
+      <!-- Feuille : créer / modifier un objectif -->
+      <div
+        x-show="sheet"
+        class="k-backdrop fixed"
+        style="display: none"
+        @click.self="close()"
+        @keydown.escape.window="close()"
+      >
+        <div class="k-sheet" role="dialog" aria-modal="true" aria-labelledby="goal-sheet-title">
+          <h3
+            id="goal-sheet-title"
+            class="font-display text-xl font-bold text-white text-center"
+            x-text="sheetTitle"
+          ></h3>
+          <label for="goal-exercise" class="k-label mt-4">Exercice</label>
+          <select id="goal-exercise" x-model="form.exerciseId" class="k-field">
+            <option value="">Choisir un exercice…</option>
+            <template x-for="o in options" :key="o.id">
+              <option :value="o.id" x-text="o.name" :selected="o.id === form.exerciseId"></option>
+            </template>
+          </select>
+          <p
+            x-show="formHint"
+            class="mt-1.5 text-xs text-gray-500 tabular-nums"
+            x-text="$num.loc(formHint)"
+          ></p>
+          <div class="k-seg mt-4" role="group" aria-label="Type d'objectif">
+            <button
+              type="button"
+              class="k-seg-item"
+              :aria-pressed="kindPressed('weight')"
+              @click="setKind('weight')"
+            >
+              Charge
+            </button>
+            <button
+              type="button"
+              class="k-seg-item"
+              :aria-pressed="kindPressed('reps')"
+              @click="setKind('reps')"
+            >
+              Reps
+            </button>
+            <button
+              type="button"
+              class="k-seg-item"
+              :aria-pressed="kindPressed('e1rm')"
+              @click="setKind('e1rm')"
+            >
+              e1RM
+            </button>
+          </div>
+          <div class="mt-4 flex gap-3">
+            <div class="min-w-0 flex-1">
+              <label
+                for="goal-kg"
+                class="k-label"
+                x-text="form.kind === 'e1rm' ? 'e1RM visée (kg)' : 'Charge (kg)'"
+              ></label>
+              <input
+                id="goal-kg"
+                type="text"
+                inputmode="decimal"
+                x-model="form.targetKg"
+                placeholder="140"
+                class="k-field tabular-nums"
+              />
+            </div>
+            <div x-show="form.kind === 'reps'" class="w-28 flex-shrink-0">
+              <label for="goal-reps" class="k-label">Reps</label>
+              <input
+                id="goal-reps"
+                type="number"
+                inputmode="numeric"
+                min="2"
+                max="50"
+                x-model="form.targetReps"
+                class="k-field tabular-nums"
+              />
+            </div>
+          </div>
+          <p
+            class="mt-2 text-xs text-gray-500 leading-snug"
+            x-text="form.kind === 'weight' ? 'Atteint dès que tu soulèves cette charge sur une série de travail.' : form.kind === 'reps' ? 'Atteint dès que tu fais ces reps à cette charge.' : 'Atteint quand ta 1 rép. max estimée (Epley) dépasse la cible.'"
+          ></p>
+          <p
+            x-show="formError"
+            x-text="formError"
+            class="mt-2 text-sm text-kinetic-electric"
+            role="alert"
+          ></p>
+          <div class="mt-5 space-y-2">
+            <button type="button" class="k-btn-primary" @click="save()">Enregistrer</button>
+            <button type="button" x-show="form.id" class="k-btn-2" @click="removeEdited()">
+              <span class="text-kinetic-electric">Supprimer l'objectif</span>
+            </button>
+            <button type="button" class="k-link mx-auto flex" @click="close()">Annuler</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </template>
+
   <!-- Onglets : contrôle segmenté -->
   <div
     x-show="totalSessions > 0"
@@ -218,6 +406,14 @@
       class="k-seg-item"
     >
       Activité
+    </button>
+    <button
+      type="button"
+      @click="setTab('compare')"
+      :aria-pressed="activeTab === 'compare' ? 'true' : 'false'"
+      class="k-seg-item"
+    >
+      Comparer
     </button>
   </div>
 
@@ -277,6 +473,85 @@
         </p>
       </template>
     </div>
+
+    <!-- Plateau sur l'exercice affiché : pistes concrètes, masquable -->
+    <template x-for="p in selectedPlateaus" :key="p.exerciseId">
+      <section class="k-card mt-3" aria-label="Alerte de plateau">
+        <div class="flex items-start gap-3">
+          <span
+            class="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-kinetic-gold/15 text-kinetic-gold"
+            aria-hidden="true"
+          >
+            <svg
+              class="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 17l5-5 4 3 4-6h5" />
+            </svg>
+          </span>
+          <div class="min-w-0 flex-1">
+            <h2 class="k-card-title text-kinetic-gold" x-text="plateauTitle(p)"></h2>
+            <p class="mt-0.5 text-xs text-gray-500 tabular-nums" x-text="plateauSince(p)"></p>
+          </div>
+        </div>
+        <ul class="mt-3 space-y-3">
+          <template x-for="sg in p.suggestions" :key="sg.id">
+            <li>
+              <p class="text-sm font-semibold text-white" x-text="sg.title"></p>
+              <p
+                class="mt-0.5 text-sm text-gray-400 leading-snug"
+                x-text="suggestionDetail(p, sg)"
+              ></p>
+            </li>
+          </template>
+        </ul>
+        <button type="button" class="k-link mt-3" @click="hidePlateau(p.exerciseId)">
+          Masquer pour cet exercice
+        </button>
+      </section>
+    </template>
+
+    <!-- Autres exercices en plateau -->
+    <template x-if="otherPlateaus.length > 0">
+      <section class="mt-3" aria-labelledby="prog-plateaus-title">
+        <h2 id="prog-plateaus-title" class="k-section mb-2.5">Plateaux détectés</h2>
+        <div class="k-list">
+          <template x-for="p in otherPlateaus" :key="p.exerciseId">
+            <button
+              type="button"
+              class="k-row w-full text-left"
+              @click="selectExercise(p.exerciseId)"
+            >
+              <span class="min-w-0 flex-1">
+                <span
+                  class="block truncate text-base text-white"
+                  x-text="exerciseName(p.exerciseId)"
+                ></span>
+                <span class="block text-xs text-kinetic-gold" x-text="plateauTitle(p)"></span>
+              </span>
+              <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+                <path
+                  d="m1 1 6 6-6 6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </template>
+        </div>
+      </section>
+    </template>
+
+    <button type="button" class="k-btn-2 mt-3" @click="newGoalForSelected()">
+      Fixer un objectif sur cet exercice
+    </button>
   </div>
 
   <!-- ─── Onglet VOLUME ─────────────────────────────────────── -->
@@ -612,5 +887,244 @@
         </template>
       </ul>
     </div>
+  </div>
+
+  <!-- ─── Onglet COMPARER : deux périodes ───────────────────── -->
+  <div x-show="totalSessions > 0 && activeTab === 'compare'" x-transition.opacity.duration.200ms>
+    <div
+      class="k-seg k-seg-scroll mb-3"
+      x-chip-scroll
+      role="group"
+      aria-label="Période de référence"
+    >
+      <button
+        type="button"
+        @click="setPreset('month')"
+        :aria-pressed="cmpPreset === 'month' ? 'true' : 'false'"
+        class="k-seg-item"
+      >
+        Mois préc.
+      </button>
+      <button
+        type="button"
+        @click="setPreset('year')"
+        :aria-pressed="cmpPreset === 'year' ? 'true' : 'false'"
+        class="k-seg-item"
+      >
+        Il y a 1 an
+      </button>
+      <button
+        type="button"
+        @click="setPreset('4w')"
+        :aria-pressed="cmpPreset === '4w' ? 'true' : 'false'"
+        class="k-seg-item"
+      >
+        4 semaines
+      </button>
+      <button
+        type="button"
+        @click="setPreset('custom')"
+        :aria-pressed="cmpPreset === 'custom' ? 'true' : 'false'"
+        class="k-seg-item"
+      >
+        Personnalisé
+      </button>
+    </div>
+
+    <div x-show="cmpPreset === 'custom'" class="k-card mb-3 grid grid-cols-2 gap-x-3 gap-y-2">
+      <p class="col-span-2 text-xs font-semibold text-kinetic-neon">Période A</p>
+      <label class="text-xs text-gray-500"
+        >Du<input type="date" x-model="cmpAStart" class="k-field mt-1"
+      /></label>
+      <label class="text-xs text-gray-500"
+        >Au<input type="date" x-model="cmpAEnd" class="k-field mt-1"
+      /></label>
+      <p class="col-span-2 mt-1 text-xs font-semibold text-kinetic-purple">Période B (référence)</p>
+      <label class="text-xs text-gray-500"
+        >Du<input type="date" x-model="cmpBStart" class="k-field mt-1"
+      /></label>
+      <label class="text-xs text-gray-500"
+        >Au<input type="date" x-model="cmpBEnd" class="k-field mt-1"
+      /></label>
+    </div>
+
+    <template x-if="!comparison">
+      <p class="k-card text-sm text-gray-400">Choisis les dates des deux périodes.</p>
+    </template>
+
+    <template x-if="comparison">
+      <div>
+        <div class="k-hero mb-4">
+          <h2 class="k-card-title">A comparé à B</h2>
+          <p class="mt-2 flex items-center gap-2 text-sm text-white">
+            <span class="w-2.5 h-2.5 rounded-full bg-kinetic-neon" aria-hidden="true"></span>
+            <span>A · <span x-text="cmpLabel('a')"></span></span>
+          </p>
+          <p class="mt-1 flex items-center gap-2 text-sm text-gray-400">
+            <span class="w-2.5 h-2.5 rounded-full bg-kinetic-purple" aria-hidden="true"></span>
+            <span>B · <span x-text="cmpLabel('b')"></span></span>
+          </p>
+        </div>
+
+        <ul class="k-list mb-6" aria-label="Indicateurs">
+          <template x-for="m in comparison.metrics" :key="m.key">
+            <li class="k-row gap-3">
+              <span class="flex-1 min-w-0 text-base text-white" x-text="m.label"></span>
+              <span class="text-right">
+                <span
+                  class="block font-semibold tabular-nums text-white"
+                  x-text="$num.loc(cmpValue(m, 'a'))"
+                ></span>
+                <span
+                  class="block text-xs tabular-nums text-gray-500"
+                  x-text="$num.loc('vs ' + cmpValue(m, 'b'))"
+                ></span>
+              </span>
+              <span
+                class="inline-flex items-center justify-end gap-0.5 w-[4.5rem] flex-shrink-0 text-sm font-semibold tabular-nums"
+                :class="cmpToneClass(m)"
+              >
+                <svg
+                  x-show="m.trend === 'up'"
+                  class="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 19V5M5 12l7-7 7 7" />
+                </svg>
+                <svg
+                  x-show="m.trend === 'down'"
+                  class="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14M5 12l7 7 7-7" />
+                </svg>
+                <span x-text="$num.loc(cmpDelta(m))"></span>
+              </span>
+            </li>
+          </template>
+        </ul>
+
+        <h2 class="k-section mb-2.5">Top exercices (tonnage)</h2>
+        <ul class="k-list mb-6" x-show="comparison.topExercises.length">
+          <template x-for="r in comparison.topExercises" :key="r.id">
+            <li class="k-row gap-3">
+              <span
+                class="flex-1 min-w-0 truncate text-base text-white"
+                x-text="exerciseName(r.id)"
+              ></span>
+              <span class="text-right">
+                <span
+                  class="block font-semibold tabular-nums text-white"
+                  x-text="$num.loc(formatTonnage(r.a) + ' kg')"
+                ></span>
+                <span
+                  class="block text-xs tabular-nums text-gray-500"
+                  x-text="$num.loc('vs ' + formatTonnage(r.b) + ' kg')"
+                ></span>
+              </span>
+              <span
+                class="inline-flex items-center justify-end gap-0.5 w-[4.5rem] flex-shrink-0 text-sm font-semibold tabular-nums"
+                :class="cmpToneClass(r)"
+              >
+                <svg
+                  x-show="r.trend === 'up'"
+                  class="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 19V5M5 12l7-7 7 7" />
+                </svg>
+                <svg
+                  x-show="r.trend === 'down'"
+                  class="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14M5 12l7 7 7-7" />
+                </svg>
+                <span x-text="$num.loc(cmpDelta(r))"></span>
+              </span>
+            </li>
+          </template>
+        </ul>
+        <p x-show="!comparison.topExercises.length" class="k-card mb-6 text-sm text-gray-400">
+          Aucune série chargée sur ces périodes.
+        </p>
+
+        <h2 class="k-section mb-2.5">Séries par groupe musculaire</h2>
+        <ul class="k-list" x-show="comparison.muscles.length">
+          <template x-for="r in comparison.muscles" :key="r.id">
+            <li class="k-row gap-3">
+              <span
+                class="flex-1 min-w-0 truncate text-base text-white"
+                x-text="muscleLabel(r.id)"
+              ></span>
+              <span class="text-right tabular-nums">
+                <span class="font-semibold text-white" x-text="$num.loc(r.a)"></span>
+                <span class="text-xs text-gray-500" x-text="$num.loc('vs ' + r.b)"></span>
+              </span>
+              <span
+                class="inline-flex items-center justify-end gap-0.5 w-[4.5rem] flex-shrink-0 text-sm font-semibold tabular-nums"
+                :class="cmpToneClass(r)"
+              >
+                <svg
+                  x-show="r.trend === 'up'"
+                  class="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 19V5M5 12l7-7 7 7" />
+                </svg>
+                <svg
+                  x-show="r.trend === 'down'"
+                  class="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14M5 12l7 7 7-7" />
+                </svg>
+                <span x-text="$num.loc(cmpDelta(r))"></span>
+              </span>
+            </li>
+          </template>
+        </ul>
+        <p class="mt-2 text-xs text-gray-500">
+          Muscle principal = 1 série, secondaires = ½. Échauffements exclus. Les périodes
+          prédéfinies s'arrêtent au même jour pour rester comparables.
+        </p>
+      </div>
+    </template>
   </div>
 </div>

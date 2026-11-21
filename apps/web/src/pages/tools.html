@@ -1,0 +1,381 @@
+<div x-data="toolsPage" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-8">
+  <div class="k-nav">
+    <a href="/" class="k-back" aria-label="Retour">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2.4"
+          d="M15 19l-7-7 7-7"
+        />
+      </svg>
+    </a>
+    <div class="flex-1">
+      <h1 data-large-title data-page-title class="font-display font-bold text-white">Outils</h1>
+      <p class="text-gray-500">1RM, pourcentages et RPE</p>
+    </div>
+  </div>
+
+  <div class="k-seg mb-5" role="group" aria-label="Outils de calcul">
+    <button
+      type="button"
+      @click="setTab('rm')"
+      :aria-pressed="tab === 'rm' ? 'true' : 'false'"
+      class="k-seg-item"
+    >
+      1RM
+    </button>
+    <button
+      type="button"
+      @click="setTab('pct')"
+      :aria-pressed="tab === 'pct' ? 'true' : 'false'"
+      class="k-seg-item"
+    >
+      Pourcentages
+    </button>
+    <button
+      type="button"
+      @click="setTab('rpe')"
+      :aria-pressed="tab === 'rpe' ? 'true' : 'false'"
+      class="k-seg-item"
+    >
+      RPE
+    </button>
+  </div>
+
+  <!-- ─── Calculateur de 1RM ─────────────────────────────── -->
+  <section x-show="tab === 'rm'" aria-labelledby="tools-rm-title">
+    <div class="k-hero mb-4">
+      <h2 id="tools-rm-title" class="k-card-title mb-3">Estimer ton 1RM</h2>
+      <label for="f-tools-kg" class="block text-center text-xs font-medium text-gray-400"
+        >Charge (kg)</label
+      >
+      <div class="k-gym-stepper mb-4">
+        <button
+          type="button"
+          x-hold="stepWeight(-2.5)"
+          aria-label="Retirer 2,5 kg"
+          class="k-step-btn"
+        >
+          <svg
+            class="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14" />
+          </svg>
+        </button>
+        <input
+          id="f-tools-kg"
+          type="number"
+          min="0"
+          step="0.5"
+          inputmode="decimal"
+          x-model.number="weight"
+          class="block h-16 w-full min-w-0 bg-transparent text-center font-display text-[3rem] font-bold tabular-nums text-white outline-none [appearance:textfield]"
+        />
+        <button
+          type="button"
+          x-hold="stepWeight(2.5)"
+          aria-label="Ajouter 2,5 kg"
+          class="k-step-btn"
+        >
+          <svg
+            class="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+      </div>
+      <label for="f-tools-reps" class="block text-center text-xs font-medium text-gray-400"
+        >Répétitions</label
+      >
+      <div class="k-gym-stepper">
+        <button
+          type="button"
+          x-hold="stepReps(-1)"
+          aria-label="Une répétition de moins"
+          class="k-step-btn"
+        >
+          <svg
+            class="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14" />
+          </svg>
+        </button>
+        <input
+          id="f-tools-reps"
+          type="number"
+          min="1"
+          max="20"
+          step="1"
+          inputmode="numeric"
+          x-model.number="reps"
+          class="block h-16 w-full min-w-0 bg-transparent text-center font-display text-[3rem] font-bold tabular-nums text-white outline-none [appearance:textfield]"
+        />
+        <button
+          type="button"
+          x-hold="stepReps(1)"
+          aria-label="Une répétition de plus"
+          class="k-step-btn"
+        >
+          <svg
+            class="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <template x-if="estimate">
+      <div class="k-card">
+        <p class="text-xs text-gray-500">1RM estimé (moyenne)</p>
+        <p class="k-stat text-[2.75rem]" aria-live="polite">
+          <span x-text="fmt(estimate.average)"></span><span class="k-unit">kg</span>
+        </p>
+        <dl class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/10">
+          <div>
+            <dt class="text-xs text-gray-500">Epley</dt>
+            <dd class="k-stat text-[1.25rem] mt-0.5" x-text="fmt(estimate.epley)"></dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-500">Brzycki</dt>
+            <dd class="k-stat text-[1.25rem] mt-0.5" x-text="fmt(estimate.brzycki)"></dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-500">Lombardi</dt>
+            <dd class="k-stat text-[1.25rem] mt-0.5" x-text="fmt(estimate.lombardi)"></dd>
+          </div>
+        </dl>
+        <p x-show="!estimate.reliable" class="mt-3 text-sm text-kinetic-gold">
+          Au-delà de 10 répétitions, l'estimation devient approximative.
+        </p>
+        <button type="button" @click="useEstimate()" class="k-btn-primary w-full mt-4">
+          Utiliser comme max
+        </button>
+      </div>
+    </template>
+    <p x-show="!estimate" class="k-card text-sm text-gray-400">
+      Saisis une charge et 1 à 20 répétitions.
+    </p>
+  </section>
+
+  <!-- Max de référence (onglets % et RPE) -->
+  <section x-show="tab !== 'rm'" class="k-hero mb-4" aria-labelledby="tools-max-title">
+    <h2 id="tools-max-title" class="k-card-title mb-3">Ton max (1RM)</h2>
+    <label for="f-tools-ex" class="k-label">Exercice</label>
+    <select id="f-tools-ex" x-model="exerciseId" @change="pickExercise()" class="k-field mb-3">
+      <option value="">Saisie libre</option>
+      <template x-for="k in known" :key="k.id">
+        <option :value="k.id" x-text="k.name + ' · ' + fmt(k.e1rm) + ' kg'"></option>
+      </template>
+    </select>
+    <div class="k-gym-stepper">
+      <button
+        type="button"
+        x-hold="stepMax(-2.5)"
+        aria-label="Retirer 2,5 kg au max"
+        class="k-step-btn"
+      >
+        <svg
+          class="h-6 w-6"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M5 12h14" />
+        </svg>
+      </button>
+      <input
+        id="f-tools-max"
+        type="number"
+        min="0"
+        step="0.5"
+        inputmode="decimal"
+        aria-label="Max en kilos"
+        x-model.number="oneRm"
+        class="block h-16 w-full min-w-0 bg-transparent text-center font-display text-[3rem] font-bold tabular-nums text-white outline-none [appearance:textfield]"
+      />
+      <button
+        type="button"
+        x-hold="stepMax(2.5)"
+        aria-label="Ajouter 2,5 kg au max"
+        class="k-step-btn"
+      >
+        <svg
+          class="h-6 w-6"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </button>
+    </div>
+    <p class="mt-2 text-center text-xs text-gray-500" x-text="$num.loc(roundingLabel)"></p>
+  </section>
+
+  <!-- ─── Table de pourcentages ──────────────────────────── -->
+  <section x-show="tab === 'pct'" aria-label="Table de pourcentages">
+    <div class="k-list">
+      <template x-for="row in pctRows" :key="row.pct">
+        <div class="k-row">
+          <span
+            class="w-14 flex-shrink-0 font-semibold tabular-nums text-kinetic-neon"
+            x-text="row.pct + ' %'"
+          ></span>
+          <span class="flex-1 min-w-0">
+            <span
+              class="block font-display text-lg font-bold tabular-nums text-white"
+              x-text="$num.loc(row.load.kg + ' kg')"
+            ></span>
+            <span
+              class="block truncate text-xs text-gray-500"
+              x-show="row.load.perSide"
+              x-text="$num.loc('Par côté : ' + row.load.perSide)"
+            ></span>
+          </span>
+          <span class="text-xs tabular-nums text-gray-500" x-text="fmt(row.exactKg)"></span>
+        </div>
+      </template>
+    </div>
+    <p x-show="!pctRows.length" class="k-card text-sm text-gray-400">
+      Indique ton max pour voir la table.
+    </p>
+  </section>
+
+  <!-- ─── RPE : charge pour X reps à RPE Y + table ───────── -->
+  <section x-show="tab === 'rpe'" aria-labelledby="tools-rpe-title">
+    <div class="k-card mb-4">
+      <h2 id="tools-rpe-title" class="k-card-title mb-3">Charge pour une série</h2>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <p class="text-center text-xs font-medium text-gray-400">Répétitions</p>
+          <div class="flex items-center justify-between gap-1 mt-1">
+            <button
+              type="button"
+              x-hold="stepTargetReps(-1)"
+              aria-label="Une répétition de moins"
+              class="k-step-btn k-step-btn-sm"
+            >
+              −
+            </button>
+            <span class="k-stat text-[1.75rem]" x-text="targetReps"></span>
+            <button
+              type="button"
+              x-hold="stepTargetReps(1)"
+              aria-label="Une répétition de plus"
+              class="k-step-btn k-step-btn-sm"
+            >
+              +
+            </button>
+          </div>
+        </div>
+        <div>
+          <p class="text-center text-xs font-medium text-gray-400">RPE</p>
+          <div class="flex items-center justify-between gap-1 mt-1">
+            <button
+              type="button"
+              x-hold="stepRpe(-0.5)"
+              aria-label="Baisser la RPE"
+              class="k-step-btn k-step-btn-sm"
+            >
+              −
+            </button>
+            <span class="k-stat text-[1.75rem]" x-text="$num.loc(targetRpe)"></span>
+            <button
+              type="button"
+              x-hold="stepRpe(0.5)"
+              aria-label="Monter la RPE"
+              class="k-step-btn k-step-btn-sm"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </div>
+      <template x-if="rpeLoad">
+        <div class="mt-4 pt-4 border-t border-white/10" aria-live="polite">
+          <p class="k-stat text-[2.5rem]">
+            <span x-text="$num.loc(rpeLoad.load.kg)"></span><span class="k-unit">kg</span>
+          </p>
+          <p
+            class="text-sm text-gray-400"
+            x-text="$num.loc(rpeLoad.pct + ' % du max · exact ' + fmt(rpeLoad.exactKg) + ' kg')"
+          ></p>
+          <p
+            class="text-xs text-gray-500 mt-0.5"
+            x-show="rpeLoad.load.perSide"
+            x-text="$num.loc('Par côté : ' + rpeLoad.load.perSide)"
+          ></p>
+        </div>
+      </template>
+    </div>
+
+    <h2 class="k-section mb-2.5">Table RPE (% du 1RM)</h2>
+    <div class="k-card !p-2 overflow-x-auto">
+      <table class="w-full text-center text-xs tabular-nums">
+        <thead>
+          <tr class="text-gray-500">
+            <th scope="col" class="py-1 font-medium">Reps</th>
+            <template x-for="rpe in RPES" :key="rpe">
+              <th scope="col" class="py-1 font-medium" x-text="$num.loc(rpe)"></th>
+            </template>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="row in RPE_ROWS" :key="row.reps">
+            <tr>
+              <th scope="row" class="py-0.5 font-semibold text-gray-400" x-text="row.reps"></th>
+              <template x-for="(p, i) in row.pcts" :key="i">
+                <td class="p-0">
+                  <button
+                    type="button"
+                    @click="pickCell(row.reps, RPES[i])"
+                    class="w-full rounded-md py-1.5 text-gray-200"
+                    :class="isCell(row.reps, RPES[i]) ? 'bg-kinetic-neon text-kinetic-on-accent font-bold' : ''"
+                    :aria-pressed="isCell(row.reps, RPES[i]) ? 'true' : 'false'"
+                    x-text="$num.loc(p.toFixed(0))"
+                  ></button>
+                </td>
+              </template>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-2 text-xs text-gray-500">
+      Charte de Tuchscherer (RTS) : RPE 10 = échec, RPE 8 = encore 2 répétitions en réserve. Touche
+      une case pour calculer sa charge.
+    </p>
+  </section>
+</div>
