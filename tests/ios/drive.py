@@ -62,6 +62,11 @@ while time.time() < deadline:
         seen = step["step"]
         if seen == 1:
             print(f"premier écran de démo affiché après {time.time() - t0:.1f} s", flush=True)
+            try:
+                with open(os.path.join(docs, "kinetic-autotest-demo.json")) as fh:
+                    print("chargement de la démo :", fh.read(), flush=True)
+            except OSError:
+                print("chargement de la démo : pas de compte rendu", flush=True)
         print(f"étape {seen} {step['route']} : {json.dumps(step.get('diag'), ensure_ascii=False)}", flush=True)
         if step["route"] == "fin":
             break

@@ -63,6 +63,40 @@ export async function runAutotest(openRoute: (route: string) => void): Promise<v
   window.addEventListener('unhandledrejection', (e) =>
     errors.push(`rejection: ${String((e as PromiseRejectionEvent).reason).slice(0, 200)}`),
   );
+  // Erreurs et avertissements écrits par l'app elle-même (stockage, stores…).
+  for (const level of ['error', 'warn'] as const) {
+    const original = console[level].bind(console);
+    console[level] = (...args: unknown[]) => {
+      if (errors.length < 12) {
+        errors.push(
+          `${level}: ${args
+            .map((a) => String(a))
+            .join(' ')
+            .slice(0, 220)}`,
+        );
+      }
+      original(...args);
+    };
+  }
+  /** Nombre de clés stockées et séances, ou la raison de l'échec (stockage bloqué ?). */
+  const storageProbe = async (): Promise<string> => {
+    try {
+      const { getDeps } = await import('../deps');
+      const deps = await getDeps();
+      const timeout = new Promise<string>((resolve) =>
+        setTimeout(() => resolve('délai dépassé (3 s)'), 3000),
+      );
+      const probe = (async () => {
+        const started = Date.now();
+        const keys = await deps.storage.keys();
+        const sessions = keys.filter((k) => k.includes('training:session')).length;
+        return `${keys.length} clés, ${sessions} séances, ${Date.now() - started} ms`;
+      })();
+      return await Promise.race([probe, timeout]);
+    } catch (err) {
+      return `échec : ${String(err).slice(0, 160)}`;
+    }
+  };
   const snapshot = () => {
     const outlet = document.getElementById('app-outlet');
     return {
@@ -74,12 +108,14 @@ export async function runAutotest(openRoute: (route: string) => void): Promise<v
       errors: errors.splice(0),
     };
   };
-  const writeStep = (step: number, route: string) =>
-    Filesystem.writeFile({
+  const writeStep = async (step: number, route: string) => {
+    const diag = { ...snapshot(), storage: await storageProbe() };
+    await Filesystem.writeFile({
       path: STEP_FILE,
-      data: JSON.stringify({ step, route, diag: snapshot() }),
+      data: JSON.stringify({ step, route, diag }),
       ...where,
     });
+  };
 
   if (plan.demo) {
     const { getDeps } = await import('../deps');
@@ -92,7 +128,18 @@ export async function runAutotest(openRoute: (route: string) => void): Promise<v
     });
     if (!hasProfile) {
       const { loadDemoData } = await import('./demo');
-      await loadDemoData(deps.storage);
+      const started = Date.now();
+      let outcome: string;
+      try {
+        outcome = `${await loadDemoData(deps.storage)} séances écrites`;
+      } catch (err) {
+        outcome = `échec : ${String(err).slice(0, 200)}`;
+      }
+      await Filesystem.writeFile({
+        path: 'kinetic-autotest-demo.json',
+        data: JSON.stringify({ outcome, ms: Date.now() - started, storage: await storageProbe() }),
+        ...where,
+      });
       window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_ONBOARDING_COMPLETE));
       window.location.assign('/');
       return;
