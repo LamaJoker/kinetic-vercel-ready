@@ -20,6 +20,8 @@ export const LAZY_COMPONENTS: Record<string, () => Promise<Factory>> = {
   weekPlan: () => import('../components/week-plan').then((m) => m.weekPlan),
   formCheckin: () => import('../components/wellness').then((m) => m.formCheckin),
   waterTracker: () => import('../components/wellness').then((m) => m.waterTracker),
+  challengesPanel: () => import('../components/challenges').then((m) => m.challengesPanel),
+  challengeCard: () => import('../components/challenges').then((m) => m.challengeCard),
 };
 
 const loaded = new Map<string, Promise<void>>();
@@ -74,6 +76,16 @@ export function loadWellness(): Promise<void> {
   return Promise.all([loadLazyComponent('formCheckin'), loadLazyComponent('waterTracker')]).then(
     () => undefined,
   );
+}
+
+/** Défis : section de la page Succès. */
+export function loadChallengesPanel(): Promise<void> {
+  return loadLazyComponent('challengesPanel');
+}
+
+/** Défis : carte compacte de l'accueil. */
+export function loadChallengeCard(): Promise<void> {
+  return loadLazyComponent('challengeCard');
 }
 
 /** Tests uniquement. */

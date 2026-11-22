@@ -1,5 +1,5 @@
 ﻿import { loc } from '../lib/num';
-import { STORAGE_KEYS } from '@kinetic/core';
+import { STORAGE_KEYS, defaultRecapPeriod, recapLabel, recapOf } from '@kinetic/core';
 import { getDeps } from '../deps';
 import {
   detectPlateau,
@@ -535,6 +535,20 @@ export function progression() {
     },
 
     // ─── Présentation (anneaux, barres, trophées) ────────────
+
+    /** Entrée permanente du bilan : le mois écoulé et l'année en cours. */
+    get recapMonthTitle(): string {
+      return `Bilan ${recapOf(defaultRecapPeriod(new Date()))}`;
+    },
+    get recapMonthHref(): string {
+      return `/bilan?periode=${defaultRecapPeriod(new Date()).key}`;
+    },
+    get recapYearTitle(): string {
+      return `Bilan ${recapLabel({ kind: 'year', key: String(new Date().getFullYear()) })}`;
+    },
+    get recapYearHref(): string {
+      return `/bilan?periode=${new Date().getFullYear()}`;
+    },
 
     /** Style de l'anneau de régularité : `--p` borné à 0–100 (build CSP). */
     get consistencyRingStyle(): string {

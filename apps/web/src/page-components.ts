@@ -69,6 +69,9 @@ export const PAGE_COMPONENTS: Record<string, () => Promise<ComponentMap>> = {
     import('./pages/glossaire.page').then((m) => ({ glossairePage: m.glossairePage })),
   './pages/tools.html': () =>
     import('./pages/tools.page').then((m) => ({ toolsPage: m.toolsPage })),
+  './pages/bilan.html': () => import('./pages/bilan.page').then((m) => ({ bilan: m.bilan })),
+  './pages/timers.html': () =>
+    import('./pages/timers.page').then((m) => ({ timersPage: m.timersPage })),
   './pages/vitalite.html': () =>
     import('./components/wellness').then((m) => ({ formHistory: m.formHistory })),
   './pages/template-editor.html': () =>

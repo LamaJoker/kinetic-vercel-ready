@@ -114,6 +114,7 @@ import './styles/native-feel.css';
 import './styles/finitions.css';
 import './styles/celebrations.css';
 import './styles/gestes.css';
+import './styles/stage.css';
 
 // ─── Stores ──────────────────────────────────────────────────
 // Directive x-svg : remplace x-html, interdit par le build CSP d'Alpine.
@@ -355,6 +356,19 @@ document.addEventListener('visibilitychange', () => {
   else void (Alpine.store('vitalite') as { syncHealth(): Promise<void> }).syncHealth();
 });
 window.addEventListener(STORAGE_KEYS.EVENT_SESSION_SAVED, () => void syncSessionReminder());
+// Défis réussis : célébrés juste après une séance ou un check-in (module chargé à ce
+// moment-là ; regroupé pour un import de séances en lot).
+let challengeTimer: ReturnType<typeof setTimeout> | undefined;
+function checkChallenges(): void {
+  clearTimeout(challengeTimer);
+  challengeTimer = setTimeout(() => {
+    void import('./lib/challenges')
+      .then((m) => m.refreshChallenges())
+      .catch((err: unknown) => console.warn('[kinetic] défis :', err));
+  }, 800);
+}
+window.addEventListener(STORAGE_KEYS.EVENT_SESSION_SAVED, checkChallenges);
+window.addEventListener(STORAGE_KEYS.EVENT_CHECKIN_SAVED, checkChallenges);
 window.addEventListener(STORAGE_KEYS.EVENT_STREAK_UPDATED, () => {
   (Alpine.store('vitalite') as { _syncNative(): void })._syncNative();
 });

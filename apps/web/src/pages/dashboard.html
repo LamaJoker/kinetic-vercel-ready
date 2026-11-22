@@ -106,6 +106,38 @@
     </template>
   </section>
 
+  <!-- Bilan du mois écoulé : les 3 premiers jours du mois (recap.domain) -->
+  <template x-if="recapTeaser">
+    <a
+      :href="recapTeaser.href"
+      class="k-hero k-press mb-3 flex items-center gap-4"
+      aria-label="Ouvrir le bilan du mois"
+    >
+      <span class="text-4xl leading-none" aria-hidden="true">🎉</span>
+      <span class="min-w-0 flex-1">
+        <span class="block text-xs font-semibold uppercase tracking-wider text-gray-400"
+          >Bilan</span
+        >
+        <span
+          class="mt-0.5 block text-lg font-bold leading-snug text-white"
+          x-text="recapTeaser.title"
+        ></span>
+        <span class="mt-0.5 block text-sm text-gray-400"
+          >Tes chiffres, tes records, ton favori.</span
+        >
+      </span>
+      <svg class="k-chevron flex-shrink-0" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </a>
+  </template>
+
   <!-- Forme du jour : check-in du matin en 3 touches (components/wellness.ts, à la demande) -->
   <template x-if="wellnessReady">
     <section x-data="formCheckin" class="k-card mb-3" aria-labelledby="form-title">
@@ -523,6 +555,26 @@
       </span>
       <span class="k-tile-label">Outils</span>
     </a>
+    <!-- Minuteurs HIIT : sur toute la largeur, en ligne -->
+    <a
+      href="/minuteurs"
+      class="k-card k-tile k-press col-span-3 !min-h-0 !flex-row !justify-start !gap-4 !px-4 !py-3"
+    >
+      <span class="k-tile-ico" data-tone="coral" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="13" r="8" />
+          <path d="M12 9v4l2.5 2.5M9 2h6" />
+        </svg>
+      </span>
+      <span class="k-tile-label">Minuteurs HIIT</span>
+    </a>
     <!-- 7e tuile : sur toute la largeur, en ligne (pas de tuile seule sur sa rangée) -->
     <a
       href="/achievements"
@@ -825,6 +877,47 @@
         </svg>
       </a>
     </section>
+  </template>
+
+  <!-- Défi le plus proche (components/challenges.ts, à la demande) -->
+  <template x-if="challengeReady">
+    <a
+      href="/achievements"
+      x-data="challengeCard"
+      x-show="current"
+      style="display: none"
+      class="k-card k-press mb-3 flex items-center gap-4"
+      aria-label="Défi le plus proche : voir mes défis"
+    >
+      <span class="k-ring-box w-14 h-14 flex-shrink-0 text-kinetic-neon">
+        <svg class="k-ring" viewBox="0 0 36 36" aria-hidden="true" style="--k-ring-w: 4">
+          <circle class="k-ring-track" cx="18" cy="18" r="15.5" pathLength="100" />
+          <circle
+            class="k-ring-value"
+            cx="18"
+            cy="18"
+            r="15.5"
+            pathLength="100"
+            :style="ringStyle"
+          />
+        </svg>
+        <span class="text-xl leading-none" aria-hidden="true" x-text="emoji"></span>
+      </span>
+      <div class="min-w-0 flex-1">
+        <h2 class="k-card-title">Défi en cours</h2>
+        <p class="mt-1 text-base font-semibold leading-snug text-white" x-text="title"></p>
+        <p class="mt-0.5 text-sm leading-snug text-gray-400 tabular-nums" x-text="detail"></p>
+      </div>
+      <svg class="k-chevron flex-shrink-0" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </a>
   </template>
 
   <!-- Objectif de force le plus proche (components/strength-goals.ts, à la demande) -->

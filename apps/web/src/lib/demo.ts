@@ -7,7 +7,18 @@
  * Déterministe (PRNG à graine fixe) et réversible : chaque clé écrite est listée
  * dans `DEMO_MANIFEST`, `clearDemoData()` retire exactement ces clés.
  */
-import { STORAGE_KEYS, type StoragePort, type StorageKey } from '@kinetic/core';
+import {
+  STORAGE_KEYS,
+  autoChallenges,
+  evaluateChallenge,
+  periodRange,
+  recordCompleted,
+  suggestedChallenges,
+  type ChallengeData,
+  type ChallengeDef,
+  type StoragePort,
+  type StorageKey,
+} from '@kinetic/core';
 import type { WorkoutSession, SetEntry } from './training/types';
 import { DEFAULT_TEMPLATES } from './training/seed';
 import { saveSession, sessionStorageKey } from './training/storage';
@@ -147,9 +158,25 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
     }
   }
 
+  // Quelques notes de séries (historique, bilan PDF) : sans tirage aléatoire,
+  // pour ne rien changer au reste du jeu de données.
+  const notes: Array<[number, string]> = [
+    [2, 'Dernière série dure, garder la charge la prochaine fois'],
+    [6, 'Descente plus lente : technique bien plus propre'],
+    [11, 'Petite gêne au genou droit à l’échauffement, disparue ensuite'],
+  ];
+  for (const [back, note] of notes) {
+    const set = sessions[sessions.length - back]?.entries[0]?.sets[1];
+    if (set) set.note = note;
+  }
+
   // Pesées : 3 par semaine, de ~79,4 kg vers ~77,6 kg
-  const bodyweight: Array<{ date: string; weight: number; bodyFatPct: number | null; note: null }> =
-    [];
+  const bodyweight: Array<{
+    date: string;
+    weight: number;
+    bodyFatPct: number | null;
+    note: string | null;
+  }> = [];
   for (let d = WEEKS * 7; d >= 0; d -= 2) {
     const day = new Date(today);
     day.setDate(today.getDate() - d);
@@ -162,6 +189,8 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
       note: null,
     });
   }
+  const lightWeek = bodyweight[bodyweight.length - 4];
+  if (lightWeek) lightWeek.note = 'Semaine de décharge, sommeil un peu court';
 
   // Mensurations toutes les 2 semaines : cou + taille (+ hanches) donnent la courbe
   // de masse grasse estimée (méthode US Navy) dans Mensurations et Poids.
@@ -427,6 +456,36 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
     [STORAGE_KEYS.NUTRITION_RECENTS, nutritionRecents],
     [STORAGE_KEYS.NUTRITION_FAVORITES, nutritionFavorites],
     [STORAGE_KEYS.NUTRITION_RECIPES, nutritionRecipes],
+    // Minuteurs HIIT : deux préréglages prêts à lancer (page Minuteurs)
+    [
+      STORAGE_KEYS.TIMER_PRESETS,
+      [
+        {
+          id: 'demo-timer-tabata',
+          name: 'Tabata burpees',
+          config: {
+            mode: 'tabata',
+            workSec: 20,
+            restSec: 10,
+            rounds: 8,
+            warmupSec: 0,
+            cooldownSec: 0,
+          },
+        },
+        {
+          id: 'demo-timer-emom',
+          name: 'EMOM kettlebell 12 min',
+          config: {
+            mode: 'emom',
+            workSec: 60,
+            restSec: 0,
+            rounds: 12,
+            warmupSec: 0,
+            cooldownSec: 0,
+          },
+        },
+      ],
+    ],
     [
       STORAGE_KEYS.STREAK,
       {
@@ -438,6 +497,7 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
   ];
 
   values.push(...demoWellness(today));
+  values.push(demoChallenges(sessions, values, now));
   return { sessions, values };
 }
 
@@ -475,6 +535,52 @@ function demoWellness(today: Date): Array<[StorageKey, unknown]> {
     [STORAGE_KEYS.WELLNESS_CHECKINS, checkins],
     [STORAGE_KEYS.WELLNESS_WATER, water],
   ];
+}
+
+/**
+ * Défis : médailles des défis automatiques réussis ces dernières semaines et
+ * ces derniers mois, et le défi « check-ins d'affilée » relevé ce mois-ci.
+ * Les défis déjà réussis de la période en cours sont enregistrés comme tels :
+ * pas de célébration en rafale à l'ouverture de la démo.
+ */
+function demoChallenges(
+  sessions: readonly WorkoutSession[],
+  values: ReadonlyArray<[StorageKey, unknown]>,
+  now: Date,
+): [StorageKey, unknown] {
+  const read = (key: StorageKey) => values.find(([k]) => k === key)?.[1];
+  const checkins = (read(STORAGE_KEYS.WELLNESS_CHECKINS) ?? {}) as Record<string, unknown>;
+  const data: ChallengeData = {
+    sessions,
+    checkinDays: Object.keys(checkins),
+    water: (read(STORAGE_KEYS.WELLNESS_WATER) ?? {}) as Record<string, number[]>,
+  };
+  const names: Record<string, string> = { pullup: 'Tractions', dip: 'Dips' };
+  const nameOf = (id: string): string => names[id] ?? id;
+  const ctx = { data, now, nameOf };
+  const accepted = suggestedChallenges(ctx, autoChallenges(ctx)).filter(
+    (d) => d.metric === 'checkinStreak',
+  );
+  const defs = new Map<string, ChallengeDef>(accepted.map((d) => [d.id, d]));
+  for (let w = 0; w <= 5; w++) {
+    const at = new Date(now);
+    at.setDate(now.getDate() - 7 * w);
+    for (const d of autoChallenges({ ...ctx, now: at })) defs.set(d.id, d);
+  }
+  for (let m = 1; m <= 2; m++) {
+    const at = new Date(now.getFullYear(), now.getMonth() - m, 15, 12);
+    for (const d of autoChallenges({ ...ctx, now: at })) defs.set(d.id, d);
+  }
+  const progress = [...defs.values()].map((d) => evaluateChallenge(d, data, now));
+  const { store } = recordCompleted({ accepted, completed: [] }, progress, now.toISOString());
+  // Date de réussite : fin de la période (ou maintenant pour la période en cours).
+  const completed = store.completed.map((c) => {
+    const end = periodRange(c.period, c.periodKey).end;
+    const [y, m, d] = end.split('-').map(Number);
+    const at = new Date(y!, m! - 1, d!, 19);
+    return { ...c, completedAt: (at < now ? at : now).toISOString() };
+  });
+  return [STORAGE_KEYS.CHALLENGES, { ...store, completed }];
 }
 
 /**

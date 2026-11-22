@@ -99,6 +99,12 @@ export * from './domain/wellness.domain.js';
 export * from './domain/muscle-fatigue.domain.js';
 export * from './domain/nutrition-library.domain.js';
 export * from './domain/body-composition.domain.js';
+export * from './domain/pdf-writer.domain.js';
+export * from './domain/progress-report.domain.js';
+export * from './domain/challenges.domain.js';
+export * from './domain/recap.domain.js';
+export * from './domain/interval-timer.domain.js';
+export * from './domain/gym-mode.domain.js';
 
 // ─── Use Cases (orchestration) ────────────────────────────────
 export { completeTask_usecase } from './usecases/complete-task.usecase.js';

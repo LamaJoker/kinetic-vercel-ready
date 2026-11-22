@@ -679,6 +679,24 @@
         <span x-show="exportLoading">…</span>
       </button>
     </div>
+    <!-- Bilan PDF des progrès (module chargé à la demande) -->
+    <button type="button" class="k-row w-full text-left" @click="openPdfSheet()">
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Exporter un bilan PDF</span>
+        <span class="block text-xs text-gray-500"
+          >Séances, records, poids, mensurations, objectifs</span
+        >
+      </span>
+      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
     <!-- Sauvegarde automatique (application native) -->
     <label class="k-row cursor-pointer select-none" x-show="nativeApp">
       <span class="flex-1 min-w-0">
@@ -917,6 +935,80 @@
     <a href="/legal/cgu" class="underline">Conditions d'utilisation</a>
   </nav>
   <p class="text-center text-xs text-gray-500">Kinetic</p>
+
+  <!-- Feuille : bilan PDF (choix de la période) -->
+  <div
+    x-show="showPdfSheet"
+    @click.self="closePdfSheet()"
+    @keydown.escape.window="closePdfSheet()"
+    class="k-backdrop fixed"
+    style="display: none"
+  >
+    <div class="k-sheet" role="dialog" aria-modal="true" aria-labelledby="pdf-title">
+      <h3 id="pdf-title" class="font-display font-bold text-xl text-white text-center">
+        Bilan PDF
+      </h3>
+      <p class="mt-1.5 text-sm text-gray-400 text-center">
+        Un document de plusieurs pages à garder ou à montrer à ton coach : synthèse, records et
+        e1RM, poids de corps, mensurations, groupes musculaires, objectifs et notes.
+      </p>
+      <p class="mt-5 mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Période</p>
+      <div class="k-seg" role="group" aria-label="Période du bilan">
+        <button
+          type="button"
+          class="k-seg-item"
+          :aria-pressed="pdfPressed('4w')"
+          @click="setPdfPeriod('4w')"
+        >
+          4 sem.
+        </button>
+        <button
+          type="button"
+          class="k-seg-item"
+          :aria-pressed="pdfPressed('3m')"
+          @click="setPdfPeriod('3m')"
+        >
+          3 mois
+        </button>
+        <button
+          type="button"
+          class="k-seg-item"
+          :aria-pressed="pdfPressed('6m')"
+          @click="setPdfPeriod('6m')"
+        >
+          6 mois
+        </button>
+        <button
+          type="button"
+          class="k-seg-item"
+          :aria-pressed="pdfPressed('1y')"
+          @click="setPdfPeriod('1y')"
+        >
+          1 an
+        </button>
+        <button
+          type="button"
+          class="k-seg-item"
+          :aria-pressed="pdfPressed('all')"
+          @click="setPdfPeriod('all')"
+        >
+          Tout
+        </button>
+      </div>
+      <div class="mt-6 space-y-2">
+        <button
+          type="button"
+          @click="exportPdf()"
+          :disabled="pdfLoading"
+          class="k-btn-primary disabled:opacity-40"
+        >
+          <span x-show="!pdfLoading">Créer le PDF</span>
+          <span x-show="pdfLoading">Création…</span>
+        </button>
+        <button type="button" @click="closePdfSheet()" class="k-btn-2">Annuler</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Feuille : restaurer une sauvegarde automatique (application native) -->
   <div

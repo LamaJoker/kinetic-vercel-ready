@@ -73,6 +73,13 @@ import {
   lightenWeight,
   lightenSetCount,
   type CheckInLog,
+  gymView as gymViewOf,
+  gymSetTitle,
+  gymProgressLabel,
+  gymLastLabel,
+  nextGymExercise,
+  parseGymModePref,
+  type GymView,
 } from '@kinetic/core';
 import { UuidGenerator } from '@kinetic/adapters-web';
 import { getDeps } from '../deps';
@@ -277,6 +284,15 @@ function _readLighten(): LightenChoice | null {
       : null;
   } catch {
     return null;
+  }
+}
+
+/** « Mode salle » mémorisé sur l'appareil (localStorage). */
+function _readGymMode(): boolean {
+  try {
+    return parseGymModePref(localStorage.getItem(STORAGE_KEYS.GYM_MODE));
+  } catch {
+    return false;
   }
 }
 
@@ -1828,6 +1844,121 @@ export function seances() {
 
     closeMenu(): void {
       this.menuFor = null;
+    },
+
+    // ─── Mode salle (grand format, téléphone posé au sol) ───────────
+    /** Mémorisé : reste actif d'une séance à l'autre jusqu'à ce qu'on le quitte. */
+    gymMode: _readGymMode(),
+
+    /** Le mode salle s'affiche (seulement pendant une séance en cours). */
+    gymOn(): boolean {
+      return this.gymMode && !!this.currentSession;
+    },
+
+    setGymMode(on: boolean): void {
+      this.gymMode = on;
+      this.menuFor = null;
+      try {
+        localStorage.setItem(STORAGE_KEYS.GYM_MODE, on ? '1' : '0');
+      } catch {
+        /* localStorage indisponible : le mode vaut pour cette visite */
+      }
+      hapticMedium();
+    },
+
+    enterGymMode(): void {
+      this.setGymMode(true);
+    },
+
+    exitGymMode(): void {
+      this.setGymMode(false);
+    },
+
+    /** Exercice ouvert à la saisie (celui du mode salle). */
+    gymEntry(): SessionExerciseEntry | null {
+      return this.currentEntries.find((e) => this.isActiveEntry(e.exerciseId)) ?? null;
+    },
+
+    gymExerciseId(): string {
+      return this.gymEntry()?.exerciseId ?? '';
+    },
+
+    gymExerciseName(): string {
+      const id = this.gymExerciseId();
+      return id ? this.exerciseName(id) : '';
+    },
+
+    /** 'rest' (minuteur géant), 'reps', 'time', 'distance' ou 'empty'. */
+    gymView(): GymView {
+      const id = this.gymExerciseId();
+      return gymViewOf({
+        hasEntry: !!id,
+        restRemainingSec: this.restRemainingSec(),
+        measure: id ? this.measureOf(id) : 'reps',
+      });
+    },
+
+    gymIs(view: GymView): boolean {
+      return this.gymView() === view;
+    },
+
+    /** Saisie chronométrée (durée ou distance). */
+    gymTimed(): boolean {
+      const v = this.gymView();
+      return v === 'time' || v === 'distance';
+    },
+
+    /** « Série 3 · A1 », « Échauffement 1 ». */
+    gymSetTitle(): string {
+      const entry = this.gymEntry();
+      return entry
+        ? gymSetTitle(entry.sets, this.draftWarmup === true, this.supersetTag(entry.exerciseId))
+        : '';
+    },
+
+    /** « Exercice 2/5 ». */
+    gymProgress(): string {
+      return gymProgressLabel(this.currentEntries, this.gymExerciseId() || null);
+    },
+
+    /** « Dernière : 80 kg × 8 » (vide avant la première série). */
+    gymLastLabel(): string {
+      return gymLastLabel(this.gymEntry()?.sets ?? []);
+    },
+
+    /** Durée affichée en grand : chronomètre en marche, sinon la durée saisie. */
+    gymDurationLabel(): string {
+      const id = this.gymExerciseId();
+      if (id && this.stopwatchRunning(id)) return this.stopwatchLabel();
+      return this.draft.duration || '0:00';
+    },
+
+    gymStopwatchRunning(): boolean {
+      const id = this.gymExerciseId();
+      return !!id && this.stopwatchRunning(id);
+    },
+
+    gymToggleStopwatch(): void {
+      const id = this.gymExerciseId();
+      if (id) this.toggleStopwatch(id);
+    },
+
+    /** « Valider la série » : même chemin que « + Série » (records, repos, supersets). */
+    gymValidate(): void {
+      const id = this.gymExerciseId();
+      if (id) this.addSet(id);
+    },
+
+    gymHasNext(): boolean {
+      return nextGymExercise(this.currentEntries, this.gymExerciseId() || null) !== null;
+    },
+
+    /** « Exercice suivant » : le prochain sans série, sinon le suivant dans l'ordre. */
+    gymNext(): void {
+      const next = nextGymExercise(this.currentEntries, this.gymExerciseId() || null);
+      if (!next) return;
+      this.setActiveEntry(next);
+      hapticLight();
     },
 
     _entryIndex(exerciseId: string): number {

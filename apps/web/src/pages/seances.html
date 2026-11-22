@@ -3,7 +3,7 @@
   <!-- Pas de x-transition : le minuteur réévalue x-show chaque seconde, ce qui
        relançait la transition de sortie en boucle (calque invisible bloquant). -->
   <section
-    x-show="fullscreenRest && restRemainingSec() > 0"
+    x-show="fullscreenRest && restRemainingSec() > 0 && !gymOn()"
     :class="fullscreenRest ? '' : 'pointer-events-none'"
     class="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-[60] mx-auto max-w-md k-toast rounded-[28px] overflow-hidden"
     role="timer"
@@ -67,6 +67,218 @@
     </div>
   </section>
 
+  <!-- ── Mode salle : grand format, lisible téléphone posé au sol ─────────── -->
+  <section
+    x-show="gymOn()"
+    style="display: none"
+    class="k-stage z-[55] gap-3"
+    :class="gymIs('rest') ? 'k-stage-rest' : ''"
+    role="region"
+    aria-label="Mode salle"
+  >
+    <div class="flex items-center gap-2">
+      <button type="button" @click="exitGymMode()" class="k-stage-btn min-h-[3rem] px-4 text-base">
+        Quitter le mode salle
+      </button>
+      <p
+        class="k-stage-muted ml-auto text-xl font-semibold tabular-nums"
+        x-text="$num.loc(elapsedLabel())"
+      ></p>
+    </div>
+
+    <!-- Exercice courant -->
+    <div>
+      <p class="k-stage-muted text-base font-semibold" x-text="gymProgress()"></p>
+      <h2
+        class="font-display text-[2.25rem] font-extrabold leading-[1.05] text-white [overflow-wrap:anywhere]"
+        x-text="gymExerciseName()"
+      ></h2>
+      <div class="mt-2 flex flex-wrap items-center gap-2">
+        <p
+          class="font-display text-[1.75rem] font-bold text-kinetic-neon tabular-nums"
+          x-text="gymSetTitle()"
+        ></p>
+        <button
+          type="button"
+          x-show="!gymIs('rest') && !gymIs('empty')"
+          @click="toggleDraftWarmup()"
+          :aria-pressed="draftWarmup ? 'true' : 'false'"
+          class="k-stage-btn ml-auto min-h-[3rem] px-4 text-base"
+          :class="draftWarmup ? 'k-stage-go' : ''"
+        >
+          Échauffement
+        </button>
+      </div>
+      <p class="k-stage-muted mt-1 text-lg tabular-nums" x-text="$num.loc(gymLastLabel())"></p>
+    </div>
+
+    <!-- Repos : minuteur géant -->
+    <div x-show="gymIs('rest')" class="flex flex-1 flex-col items-center justify-center">
+      <p class="k-stage-accent text-2xl font-extrabold uppercase tracking-wide">Repos</p>
+      <div class="k-ring-box k-stage-accent mt-2 aspect-square w-[min(60vw,16rem,30vh)]">
+        <svg class="k-ring" viewBox="0 0 36 36" aria-hidden="true" style="--k-ring-w: 2.4">
+          <circle class="k-ring-track" cx="18" cy="18" r="16.3" pathLength="100" />
+          <circle
+            class="k-ring-value [transition:stroke-dashoffset_1s_linear]"
+            cx="18"
+            cy="18"
+            r="16.3"
+            pathLength="100"
+            :style="restRingStyle()"
+          />
+        </svg>
+        <p
+          class="k-stage-digits font-display text-[min(18vw,5.5rem,9vh)]"
+          role="timer"
+          aria-label="Repos restant"
+          x-text="$num.loc(restLabel())"
+        ></p>
+      </div>
+      <div class="mt-4 flex w-full gap-2">
+        <button
+          type="button"
+          @click="addRestSec(-15)"
+          aria-label="Retirer 15 secondes"
+          class="k-stage-btn flex-1 tabular-nums"
+        >
+          −15
+        </button>
+        <button
+          type="button"
+          @click="addRestSec(15)"
+          aria-label="Ajouter 15 secondes"
+          class="k-stage-btn flex-1 tabular-nums"
+        >
+          +15
+        </button>
+        <button type="button" @click="skipRest()" class="k-stage-btn k-stage-go flex-[1.4]">
+          Passer
+        </button>
+      </div>
+    </div>
+
+    <!-- Charge × reps : chiffres énormes, gros − / + -->
+    <div x-show="gymIs('reps')" class="flex flex-1 flex-col justify-center gap-3">
+      <div>
+        <p class="k-stage-muted text-center text-lg font-semibold">Charge (kg)</p>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            x-hold="bumpWeight(-1)"
+            aria-label="Diminuer la charge"
+            class="k-stage-btn h-20 w-20 flex-shrink-0 text-4xl"
+          >
+            −
+          </button>
+          <p
+            class="k-stage-digits font-display min-w-0 flex-1 text-center text-[clamp(4rem,19vw,6.5rem)]"
+            x-text="$num.loc(draft.weightKg)"
+          ></p>
+          <button
+            type="button"
+            x-hold="bumpWeight(1)"
+            aria-label="Augmenter la charge"
+            class="k-stage-btn h-20 w-20 flex-shrink-0 text-4xl"
+          >
+            +
+          </button>
+        </div>
+      </div>
+      <div>
+        <p class="k-stage-muted text-center text-lg font-semibold">Reps</p>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            x-hold="bumpReps(-1)"
+            aria-label="Diminuer les reps"
+            class="k-stage-btn h-20 w-20 flex-shrink-0 text-4xl"
+          >
+            −
+          </button>
+          <p
+            class="k-stage-digits font-display min-w-0 flex-1 text-center text-[clamp(4rem,19vw,6.5rem)]"
+            x-text="draft.reps"
+          ></p>
+          <button
+            type="button"
+            x-hold="bumpReps(1)"
+            aria-label="Augmenter les reps"
+            class="k-stage-btn h-20 w-20 flex-shrink-0 text-4xl"
+          >
+            +
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Durée (et distance) : chronomètre géant -->
+    <div x-show="gymTimed()" class="flex flex-1 flex-col justify-center gap-3">
+      <p class="k-stage-muted text-center text-lg font-semibold">Durée</p>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          x-hold="bumpDuration(-5)"
+          aria-label="Retirer 5 secondes"
+          class="k-stage-btn h-20 w-20 flex-shrink-0 text-2xl"
+        >
+          −5
+        </button>
+        <p
+          class="k-stage-digits font-display min-w-0 flex-1 text-center text-[clamp(4rem,18vw,6rem)]"
+          :class="gymStopwatchRunning() ? 'text-kinetic-neon' : ''"
+          x-text="gymDurationLabel()"
+        ></p>
+        <button
+          type="button"
+          x-hold="bumpDuration(5)"
+          aria-label="Ajouter 5 secondes"
+          class="k-stage-btn h-20 w-20 flex-shrink-0 text-2xl"
+        >
+          +5
+        </button>
+      </div>
+      <button
+        type="button"
+        @click="gymToggleStopwatch()"
+        :aria-pressed="gymStopwatchRunning() ? 'true' : 'false'"
+        class="k-stage-btn w-full"
+        x-text="gymStopwatchRunning() ? 'Arrêter le chrono' : 'Démarrer le chrono'"
+      ></button>
+      <div x-show="gymIs('distance')" class="flex items-center gap-3">
+        <label for="f-gym-distance" class="k-stage-muted text-lg font-semibold">Distance</label>
+        <input
+          id="f-gym-distance"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          placeholder="0"
+          x-model="draft.distance"
+          class="h-16 min-w-0 flex-1 rounded-2xl bg-white/10 text-center font-display text-4xl font-bold tabular-nums text-white"
+        />
+        <span class="text-xl font-semibold text-white" x-text="draftDistUnit"></span>
+      </div>
+    </div>
+
+    <div x-show="gymIs('empty')" class="flex flex-1 items-center justify-center text-center">
+      <p class="k-stage-muted text-xl">Ajoute un exercice à ta séance pour le suivre ici.</p>
+    </div>
+
+    <!-- Actions principales : pleine largeur -->
+    <div class="space-y-2">
+      <button
+        type="button"
+        x-show="!gymIs('rest') && !gymIs('empty')"
+        @click="gymValidate()"
+        class="k-stage-btn k-stage-go min-h-[5rem] w-full text-2xl"
+      >
+        Valider la série
+      </button>
+      <button type="button" x-show="gymHasNext()" @click="gymNext()" class="k-stage-btn w-full">
+        Exercice suivant
+      </button>
+    </div>
+  </section>
+
   <div class="k-nav">
     <h1 data-large-title class="font-display font-bold text-white">Séances</h1>
     <span class="ml-auto text-xs text-gray-500" x-text="$today"></span>
@@ -100,7 +312,29 @@
 
   <!-- ── Séance en cours ─────────────────────────────────────────────────── -->
   <section x-show="currentSession" class="mb-8 k-enter">
-    <h2 class="k-section mb-2.5">Séance en cours</h2>
+    <div class="mb-2.5 flex items-center justify-between gap-2">
+      <h2 class="k-section">Séance en cours</h2>
+      <button
+        type="button"
+        @click="enterGymMode()"
+        class="k-pill h-9 bg-kinetic-raised text-sm"
+        aria-label="Mode salle : écran grand format"
+      >
+        <svg
+          class="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+        </svg>
+        Mode salle
+      </button>
+    </div>
 
     <div x-show="currentSession" class="space-y-3">
       <!-- Tableau de bord : chrono, totaux, repos, fin de séance -->
@@ -610,6 +844,10 @@
                     <span class="min-w-0 flex-1 text-base text-white"
                       >Fixer un objectif de force</span
                     >
+                  </a>
+                  <a href="/minuteurs?finisher=1" class="k-row active:!bg-kinetic-raised">
+                    <span class="min-w-0 flex-1 text-base text-white">Finisher HIIT</span>
+                    <span class="text-xs text-gray-500">Tabata, EMOM…</span>
                   </a>
                 </div>
               </template>
@@ -1628,6 +1866,39 @@
           </button>
         </div>
       </div>
+
+      <!-- Finisher HIIT : minuteur plein écran, ajouté à la séance à la fin -->
+      <a href="/minuteurs?finisher=1" class="k-card k-press flex items-center gap-3">
+        <span
+          class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-kinetic-neon/15 text-kinetic-neon"
+          aria-hidden="true"
+        >
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M13 2 4 14h7l-1 8 9-12h-7Z" />
+          </svg>
+        </span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-base font-semibold text-white">Finir par un finisher HIIT</span>
+          <span class="block text-sm text-gray-400">Tabata, EMOM, AMRAP, intervalles</span>
+        </span>
+        <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+          <path
+            d="m1 1 6 6-6 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </a>
 
       <!-- Abandon explicite (rien n'est ajouté à l'historique) -->
       <div class="flex justify-center pt-1">

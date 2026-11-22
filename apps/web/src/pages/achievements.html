@@ -53,6 +53,191 @@
     </div>
   </section>
 
+  <!-- Défis de la semaine et du mois (components/challenges.ts, chargé à la demande) -->
+  <template x-if="challengesReady">
+    <section
+      x-data="challengesPanel"
+      id="defis"
+      class="mb-6"
+      aria-labelledby="ach-challenges-title"
+    >
+      <div class="flex items-center justify-between gap-3 mb-2.5">
+        <h2 id="ach-challenges-title" class="k-section">Défis</h2>
+        <button type="button" class="k-link" @click="openCustom()">Créer un défi</button>
+      </div>
+      <div x-show="!ready" class="k-skeleton h-24 rounded-2xl" aria-hidden="true"></div>
+      <div x-show="ready && progress.length > 0" class="k-list">
+        <template x-for="p in progress" :key="p.def.id">
+          <div class="k-row" data-k-menu @k-menu="challengeMenu($event.detail, p)">
+            <span class="k-ring-box w-12 h-12 flex-shrink-0" :class="tone(p)">
+              <svg class="k-ring" viewBox="0 0 36 36" aria-hidden="true" style="--k-ring-w: 4">
+                <circle class="k-ring-track" cx="18" cy="18" r="15.5" pathLength="100" />
+                <circle
+                  class="k-ring-value"
+                  cx="18"
+                  cy="18"
+                  r="15.5"
+                  pathLength="100"
+                  :style="ringStyle(p)"
+                />
+              </svg>
+              <span class="text-lg leading-none" aria-hidden="true" x-text="p.emoji"></span>
+            </span>
+            <span class="min-w-0 flex-1">
+              <span
+                class="block text-base leading-snug font-semibold text-white"
+                x-text="p.title"
+              ></span>
+              <span
+                class="mt-0.5 block text-xs leading-snug text-gray-500 tabular-nums"
+                x-text="p.progressLabel"
+              ></span>
+              <span
+                class="mt-0.5 block text-xs font-semibold leading-snug"
+                :class="statusClass(p)"
+                x-text="p.statusLabel"
+              ></span>
+            </span>
+            <span
+              class="text-[0.7rem] font-semibold text-gray-500 text-right"
+              x-text="originLabel(p)"
+            ></span>
+            <span class="sr-only" x-text="pct(p)"></span>
+          </div>
+        </template>
+      </div>
+
+      <!-- Défis proposés, adaptés au niveau -->
+      <template x-if="ready && suggestions.length > 0">
+        <div class="mt-4">
+          <h3 class="text-sm font-semibold text-gray-400 mb-2 px-1">À relever</h3>
+          <div class="k-list">
+            <template x-for="d in suggestions" :key="d.id">
+              <div class="k-row">
+                <span
+                  class="text-2xl w-12 text-center flex-shrink-0"
+                  aria-hidden="true"
+                  x-text="suggestionEmoji(d)"
+                ></span>
+                <span
+                  class="min-w-0 flex-1 text-[0.9375rem] leading-snug font-medium text-white"
+                  x-text="suggestionTitle(d)"
+                ></span>
+                <button type="button" class="k-pill-accent" @click="accept(d)">Relever</button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <!-- Médailles des défis réussis -->
+      <template x-if="ready && completed.length > 0">
+        <div class="mt-4">
+          <h3 class="text-sm font-semibold text-gray-400 mb-2 px-1">Défis réussis</h3>
+          <div class="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4">
+            <template x-for="c in completed" :key="c.id">
+              <div
+                class="k-card flex-shrink-0 w-36 flex flex-col items-center text-center px-3 pt-4 pb-3"
+              >
+                <span
+                  class="k-medal is-unlocked"
+                  :data-cat="medalCat(c)"
+                  :data-tier="medalTier(c)"
+                  aria-hidden="true"
+                >
+                  <span class="k-medal-face"
+                    ><span class="k-medal-emoji" x-text="c.emoji"></span
+                  ></span>
+                </span>
+                <span
+                  class="mt-2 block w-full text-sm font-semibold text-white leading-snug line-clamp-3"
+                  x-text="c.title"
+                ></span>
+                <span class="mt-1 block text-xs text-gray-500" x-text="medalDate(c)"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <!-- Feuille : défi personnel -->
+      <div
+        x-show="sheet"
+        class="k-backdrop fixed"
+        style="display: none"
+        @click.self="close()"
+        @keydown.escape.window="close()"
+      >
+        <div
+          class="k-sheet"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="challenge-sheet-title"
+        >
+          <h3
+            id="challenge-sheet-title"
+            class="font-display text-xl font-bold text-white text-center"
+          >
+            Nouveau défi
+          </h3>
+          <div class="k-seg mt-4" role="group" aria-label="Période du défi">
+            <button
+              type="button"
+              class="k-seg-item"
+              :aria-pressed="periodPressed('week')"
+              @click="setPeriod('week')"
+            >
+              Cette semaine
+            </button>
+            <button
+              type="button"
+              class="k-seg-item"
+              :aria-pressed="periodPressed('month')"
+              @click="setPeriod('month')"
+            >
+              Ce mois-ci
+            </button>
+          </div>
+          <label for="challenge-metric" class="k-label mt-4">Mesure</label>
+          <select id="challenge-metric" x-model="form.metric" class="k-field">
+            <template x-for="m in metrics" :key="m.key">
+              <option :value="m.key" x-text="m.label" :selected="m.key === form.metric"></option>
+            </template>
+          </select>
+          <div x-show="needsExercise">
+            <label for="challenge-exercise" class="k-label mt-4">Exercice</label>
+            <select id="challenge-exercise" x-model="form.exerciseId" class="k-field">
+              <option value="">Choisir un exercice…</option>
+              <template x-for="o in exerciseOptions" :key="o.id">
+                <option :value="o.id" x-text="o.name" :selected="o.id === form.exerciseId"></option>
+              </template>
+            </select>
+          </div>
+          <label for="challenge-target" class="k-label mt-4">Cible</label>
+          <input
+            id="challenge-target"
+            type="text"
+            inputmode="numeric"
+            x-model="form.target"
+            placeholder="12"
+            class="k-field tabular-nums"
+          />
+          <p class="mt-1.5 text-xs text-gray-500 tabular-nums" x-text="targetHint"></p>
+          <p
+            x-show="formError"
+            x-text="formError"
+            class="mt-2 text-sm text-kinetic-electric"
+            role="alert"
+          ></p>
+          <div class="mt-5 space-y-2">
+            <button type="button" class="k-btn-primary" @click="saveCustom()">Créer le défi</button>
+            <button type="button" class="k-link mx-auto flex" @click="close()">Annuler</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </template>
+
   <!-- Filtres catégorie : contrôle segmenté -->
   <div
     class="k-seg k-seg-scroll mb-3"

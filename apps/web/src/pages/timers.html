@@ -1,0 +1,307 @@
+<div x-data="timersPage" x-init="init()" class="max-w-md mx-auto px-4 pt-8 pb-28">
+  <div class="k-nav">
+    <a href="/outils" class="k-back" aria-label="Retour">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2.4"
+          d="M15 19l-7-7 7-7"
+        />
+      </svg>
+    </a>
+    <div class="flex-1">
+      <h1 data-large-title data-page-title class="font-display font-bold text-white">Minuteurs</h1>
+      <p class="text-gray-500">EMOM, AMRAP, Tabata, intervalles</p>
+    </div>
+  </div>
+
+  <!-- Finisher : ouvert depuis la séance en cours -->
+  <div
+    x-show="finisher && view === 'setup'"
+    style="display: none"
+    class="k-card mb-4 flex items-start gap-3 ring-1 ring-inset ring-kinetic-neon/40"
+  >
+    <span
+      class="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-kinetic-neon/15 text-kinetic-neon"
+      aria-hidden="true"
+    >
+      <svg
+        class="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M13 2 4 14h7l-1 8 9-12h-7Z" />
+      </svg>
+    </span>
+    <div class="min-w-0">
+      <p class="text-sm font-semibold text-white">Finisher de ta séance</p>
+      <p class="text-sm text-gray-400 leading-snug">
+        À la fin, il sera ajouté à
+        <span class="text-white" x-text="finisherSessionName || 'ta séance'"></span>
+        (exercice « Finisher HIIT »).
+      </p>
+    </div>
+  </div>
+
+  <!-- ─── Réglage ─────────────────────────────────────────── -->
+  <section x-show="view === 'setup'" aria-labelledby="timers-setup-title">
+    <h2 id="timers-setup-title" class="sr-only">Réglage du minuteur</h2>
+    <div class="k-seg mb-2" role="group" aria-label="Type de minuteur">
+      <template x-for="m in MODES" :key="m.key">
+        <button
+          type="button"
+          class="k-seg-item"
+          @click="setMode(m.key)"
+          :aria-pressed="modePressed(m.key)"
+          x-text="m.label"
+        ></button>
+      </template>
+    </div>
+    <p class="mb-4 px-1 text-sm text-gray-400" x-text="modeHint()"></p>
+
+    <div class="k-hero mb-4">
+      <p class="k-card-title" x-text="$num.loc(title())"></p>
+      <p class="mt-0.5 text-sm text-gray-400 tabular-nums">
+        Durée totale <span class="text-white" x-text="$num.loc(totalLabel())"></span>
+      </p>
+      <div class="mt-4 space-y-2">
+        <template x-for="f in fields()" :key="f.key">
+          <div class="flex items-center gap-2 rounded-2xl bg-kinetic-elevated py-2 pl-4 pr-2">
+            <span class="min-w-0 flex-1 text-base text-white" x-text="f.label"></span>
+            <button
+              type="button"
+              x-hold="bump(f, -1)"
+              :aria-label="decLabel(f)"
+              class="k-step-btn h-11 w-11 flex-shrink-0 rounded-xl bg-kinetic-raised"
+            >
+              <svg
+                class="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14" />
+              </svg>
+            </button>
+            <span
+              class="w-24 text-center font-display text-xl font-bold tabular-nums text-white"
+              x-text="$num.loc(fieldValue(f))"
+            ></span>
+            <button
+              type="button"
+              x-hold="bump(f, 1)"
+              :aria-label="incLabel(f)"
+              class="k-step-btn h-11 w-11 flex-shrink-0 rounded-xl bg-kinetic-raised"
+            >
+              <svg
+                class="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+          </div>
+        </template>
+      </div>
+      <button type="button" class="k-btn-primary mt-4 h-14 text-lg font-bold" @click="start()">
+        Démarrer
+      </button>
+      <button type="button" class="k-link mx-auto mt-3 block text-sm" @click="savePreset()">
+        Enregistrer ce réglage
+      </button>
+    </div>
+
+    <!-- Préréglages enregistrés -->
+    <h2 class="k-section mb-2.5" x-show="presets.length > 0">Mes préréglages</h2>
+    <div class="k-list mb-4" x-show="presets.length > 0">
+      <template x-for="p in presets" :key="p.id">
+        <div class="k-row">
+          <button type="button" class="min-w-0 flex-1 text-left" @click="usePreset(p)">
+            <span class="block truncate text-base text-white" x-text="$num.loc(p.name)"></span>
+            <span
+              class="block text-xs text-gray-500 tabular-nums"
+              x-text="$num.loc(presetTotal(p))"
+            ></span>
+          </button>
+          <button
+            type="button"
+            class="k-icon-btn"
+            @click="deletePreset(p.id)"
+            aria-label="Supprimer ce préréglage"
+          >
+            <svg
+              class="h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+      </template>
+    </div>
+    <p class="px-1 text-xs text-gray-500 leading-snug">
+      Un décompte de 10 s te laisse le temps de te placer. Bips 3-2-1 avant chaque changement, écran
+      gardé allumé. Le minuteur tient compte du temps passé si tu quittes l’app quelques secondes.
+    </p>
+  </section>
+
+  <!-- ─── Bilan ───────────────────────────────────────────── -->
+  <section
+    x-show="view === 'done'"
+    style="display: none"
+    class="k-hero mt-4 text-center"
+    aria-labelledby="timers-done-title"
+    aria-live="polite"
+  >
+    <h2 id="timers-done-title" class="text-xl font-bold text-white" x-text="doneTitle()"></h2>
+    <p class="mt-1 text-sm text-gray-400" x-text="$num.loc(doneSummary())"></p>
+    <p class="k-stat mt-3 text-[2.5rem]" x-text="$num.loc(workedLabel())"></p>
+    <p class="text-xs text-gray-500">d’effort</p>
+    <p x-show="recorded" class="mt-3 text-sm font-semibold text-kinetic-teal">
+      Ajouté à ta séance en cours.
+    </p>
+    <div class="mt-4 space-y-2">
+      <button
+        type="button"
+        x-show="canRecord()"
+        class="k-btn-primary h-12"
+        @click="recordFinisher()"
+      >
+        Ajouter à la séance
+      </button>
+      <a x-show="finisher" href="/seances" class="k-btn-2 h-12">Retour à la séance</a>
+      <button type="button" class="k-btn-2 h-12" @click="again()">Recommencer</button>
+      <button type="button" class="k-link mx-auto block h-11 text-sm" @click="backToSetup()">
+        Changer de réglage
+      </button>
+    </div>
+  </section>
+
+  <!-- ─── Minuteur en cours : plein écran ─────────────────── -->
+  <section
+    x-show="view === 'run'"
+    style="display: none"
+    class="k-stage z-[75]"
+    :class="toneClass()"
+    role="timer"
+    aria-label="Minuteur en cours"
+  >
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        class="k-stage-btn min-h-[3rem] px-4 text-base"
+        @click="stop()"
+        aria-label="Arrêter le minuteur"
+      >
+        Arrêter
+      </button>
+      <p
+        class="k-stage-muted flex-1 text-center text-base font-semibold tabular-nums"
+        x-text="$num.loc(totalLeftLabel())"
+      ></p>
+      <button
+        type="button"
+        class="k-stage-btn min-h-[3rem] w-14"
+        @click="toggleSound()"
+        :aria-pressed="sound ? 'true' : 'false'"
+        aria-label="Son des bips"
+      >
+        <svg
+          class="h-6 w-6"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+          <path x-show="sound" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" />
+          <path x-show="!sound" d="m16 9 5 6M21 9l-5 6" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="flex flex-1 flex-col items-center justify-center py-4 text-center">
+      <p
+        class="k-stage-accent font-display text-[2.75rem] font-extrabold uppercase leading-none tracking-wide"
+        x-text="phaseLabel()"
+      ></p>
+      <p
+        class="k-stage-muted mt-2 h-8 text-2xl font-semibold tabular-nums"
+        x-text="roundLabel()"
+      ></p>
+      <!-- Anneau : part restante de la phase -->
+      <div class="k-ring-box k-stage-accent mt-3 aspect-square w-[min(82vw,22rem)]">
+        <svg class="k-ring" viewBox="0 0 36 36" aria-hidden="true" style="--k-ring-w: 2.2">
+          <circle class="k-ring-track" cx="18" cy="18" r="16.4" pathLength="100" />
+          <circle
+            class="k-ring-value"
+            cx="18"
+            cy="18"
+            r="16.4"
+            pathLength="100"
+            :style="ringStyle()"
+          />
+        </svg>
+        <p
+          x-show="!countdownBig()"
+          class="k-stage-digits font-display text-[min(22vw,7.5rem)]"
+          x-text="$num.loc(clockText())"
+        ></p>
+        <p
+          x-show="countdownBig()"
+          class="k-stage-digits font-display text-[min(42vw,11rem)]"
+          x-text="prepSeconds()"
+        ></p>
+      </div>
+      <p class="k-stage-muted mt-4 text-lg" x-show="!paused()" x-text="$num.loc(nextLabel())"></p>
+      <p class="mt-4 text-lg font-bold text-white" x-show="paused()">En pause</p>
+    </div>
+
+    <!-- AMRAP : compteur de tours à toucher -->
+    <div x-show="isAmrap()" class="mb-3 flex items-stretch gap-2">
+      <button
+        type="button"
+        class="k-stage-btn w-20"
+        @click="addRound(-1)"
+        aria-label="Retirer un tour"
+      >
+        −1
+      </button>
+      <button type="button" class="k-stage-btn flex-1 gap-3" @click="addRound(1)">
+        <span>Tour fini</span>
+        <span class="k-stage-digits font-display text-4xl" x-text="amrapRounds"></span>
+      </button>
+    </div>
+
+    <div class="flex gap-2">
+      <button
+        type="button"
+        class="k-stage-btn k-stage-go flex-1"
+        @click="togglePause()"
+        x-text="paused() ? 'Reprendre' : 'Pause'"
+      ></button>
+      <button type="button" class="k-stage-btn flex-1" @click="skip()">Passer</button>
+    </div>
+  </section>
+</div>

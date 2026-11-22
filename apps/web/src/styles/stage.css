@@ -1,0 +1,110 @@
+/* ─── Écrans plein format « scène » : Minuteurs HIIT et Mode salle ─────────
+   Toujours sombres, même en mode clair : lisibles à 1–2 m, contraste maximal.
+   Les variables de couleur sont reprises en version sombre pour tout le
+   sous-arbre (les classes text-white, bg-white/X, k-stat… restent claires). */
+.k-stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background-color: #04050b;
+  color: #fff;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+  --ink: 4 5 11;
+  --surface: 16 19 33;
+  --elevated: 26 30 48;
+  --raised: 40 46 72;
+  --tx-rgb: 255 255 255;
+  --tx: #fff;
+  --tx2-rgb: 190 195 215;
+  --tx2: rgb(190 195 215);
+  --k-fill: 140 150 200;
+  --k-seg-bg: rgba(140, 150, 200, 0.2);
+  --kinetic-neon: 255 122 102;
+  --kinetic-neon-ink: 255 140 122;
+  --k-success: 94 224 200;
+  --k-success-ink: 94 224 200;
+  --k-on-accent: 26 13 18;
+  --k-ring-track-opacity: 0.18;
+  color-scheme: dark;
+  transition: background-color 0.35s ease;
+}
+/* Teinte de la phase : effort corail, repos turquoise (un halo, le fond reste noir). */
+.k-stage-work {
+  background-color: #1d0b0c;
+  background-image: radial-gradient(120% 70% at 50% 35%, rgb(255 122 102 / 0.38), transparent 70%);
+}
+.k-stage-rest {
+  background-color: #04141a;
+  background-image: radial-gradient(120% 70% at 50% 35%, rgb(94 224 200 / 0.3), transparent 70%);
+}
+.k-stage-prep {
+  background-image: radial-gradient(120% 70% at 50% 35%, rgb(168 149 255 / 0.22), transparent 70%);
+}
+.k-stage-work .k-stage-accent {
+  color: rgb(255 140 122);
+}
+.k-stage-rest .k-stage-accent {
+  color: rgb(94 224 200);
+}
+.k-stage-prep .k-stage-accent {
+  color: rgb(196 181 255);
+}
+/* Chiffres géants (compte à rebours, charge, reps) */
+.k-stage-digits {
+  font-weight: 800;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+.k-stage-muted {
+  color: rgb(255 255 255 / 0.68);
+}
+/* Gros boutons de la scène : ≥ 64 px, bord net pour les repérer de loin.
+   :where() : les utilitaires (taille de texte, hauteur) gardent la main. */
+:where(.k-stage-btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 4rem;
+  border-radius: 1.25rem;
+  background: rgb(255 255 255 / 0.1);
+  border: 1px solid rgb(255 255 255 / 0.16);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.25rem;
+  transition:
+    transform 0.12s ease,
+    background-color 0.2s ease;
+}
+.k-stage-btn:active {
+  transform: scale(0.97);
+  background: rgb(255 255 255 / 0.18);
+}
+.k-stage-go {
+  background: rgb(255 122 102);
+  border-color: transparent;
+  color: rgb(26 13 18);
+}
+.k-stage-go:active {
+  background: rgb(255 140 122);
+}
+/* Écran plein format affiché : les notifications passent en haut, sous la barre
+   « Quitter », pour ne pas masquer « Valider la série » ni « Pause ». */
+body:has(.k-stage:not([style*='display: none'])) .k-toast-stack {
+  top: calc(max(1rem, env(safe-area-inset-top)) + 4rem);
+  bottom: auto;
+  flex-direction: column;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-stage,
+  .k-stage-btn {
+    transition: none;
+  }
+  .k-stage-btn:active {
+    transform: none;
+  }
+}

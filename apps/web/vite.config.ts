@@ -169,6 +169,12 @@ export const LAZY_CORE_MODULES = [
   'domain/muscle-fatigue.domain', // fatigue par muscle (carte des muscles, accueil)
   'domain/nutrition-library.domain', // récents, favoris, recettes, protéines par repas (Nutrition)
   'domain/body-composition.domain', // masse grasse estimée, comparateur photos (Corps)
+  'domain/pdf-writer.domain', // générateur PDF minimal (bilan PDF, Profil / Bilan)
+  'domain/progress-report.domain', // bilan de progression en PDF (Profil / Bilan)
+  'domain/challenges.domain', // défis hebdo / mensuels (Succès, accueil)
+  'domain/recap.domain', // bilan du mois / de l'année (page Bilan)
+  'domain/interval-timer.domain', // minuteurs HIIT (page Minuteurs)
+  'domain/gym-mode.domain', // mode salle grand format (Séances)
 ];
 export const LAZY_TRAINING_MODULES = [
   'training/import', // import Strong / Hevy (Profil)

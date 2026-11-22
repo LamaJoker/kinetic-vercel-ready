@@ -6,6 +6,7 @@ import {
   computeXpState,
   type SharedProfile,
   type ProfileBestLift,
+  type ReportPeriodKey,
   workSetsOf,
 } from '@kinetic/core';
 import Alpine from 'alpinejs';
@@ -49,6 +50,9 @@ import {
   disableHealth,
   openHealthSettings,
 } from '../lib/health';
+
+/** Période du bilan PDF (REPORT_PERIODS, @kinetic/core). */
+type PdfPeriod = ReportPeriodKey;
 
 const WEEK_CHIPS = [
   { day: 1, label: 'L', name: 'lundi' },
@@ -152,6 +156,9 @@ export function profile() {
     savedAt: '',
     showResetModal: false,
     exportLoading: false,
+    showPdfSheet: false,
+    pdfPeriod: '3m' as PdfPeriod,
+    pdfLoading: false,
     importing: false,
     lastImportReport: null as ImportReport | null,
     restoring: false,
@@ -682,6 +689,51 @@ export function profile() {
             detail: { kind: 'error', message: 'Sauvegarde illisible. Choisis-en une autre.' },
           }),
         );
+      }
+    },
+
+    // ─── Bilan PDF (module chargé à la demande) ─────────────
+
+    openPdfSheet(): void {
+      this.showPdfSheet = true;
+    },
+
+    closePdfSheet(): void {
+      if (!this.pdfLoading) this.showPdfSheet = false;
+    },
+
+    setPdfPeriod(key: PdfPeriod): void {
+      this.pdfPeriod = key;
+      hapticTap();
+    },
+
+    pdfPressed(key: PdfPeriod): boolean {
+      return this.pdfPeriod === key;
+    },
+
+    async exportPdf(): Promise<void> {
+      if (this.pdfLoading) return;
+      this.pdfLoading = true;
+      try {
+        const { exportProgressPdf } = await import('../lib/progress-pdf');
+        await exportProgressPdf(this.pdfPeriod);
+        this.pdfLoading = false;
+        this.showPdfSheet = false;
+        if (!this.nativeApp)
+          window.dispatchEvent(
+            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+              detail: { kind: 'success', message: 'Bilan PDF téléchargé.' },
+            }),
+          );
+      } catch (err) {
+        console.error('[profile] exportPdf failed:', err);
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: 'Impossible de créer le bilan PDF. Réessaie.' },
+          }),
+        );
+      } finally {
+        this.pdfLoading = false;
       }
     },
 

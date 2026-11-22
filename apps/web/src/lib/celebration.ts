@@ -27,7 +27,7 @@
 import { REWARDS, STORAGE_KEYS } from '@kinetic/core';
 import { hapticCelebrate } from './haptics';
 
-export type CelebrationKind = 'record' | 'level' | 'routine';
+export type CelebrationKind = 'record' | 'level' | 'routine' | 'challenge';
 
 export interface CelebrationDetail {
   kind: CelebrationKind;
@@ -145,6 +145,16 @@ export function routineCelebration(total: number): CelebrationDetail {
   };
 }
 
+/** « Défi réussi ! » — « 12 séances ce mois-ci · +50 XP », médaille = emoji du défi. */
+export function challengeCelebration(title: string, emoji: string, xp: number): CelebrationDetail {
+  return {
+    kind: 'challenge',
+    title: 'Défi réussi !',
+    subtitle: xp > 0 ? `${title} · +${xp}\u00a0XP` : title,
+    badge: emoji || '🎯',
+  };
+}
+
 // ─── Coupure (chargement de la démo) ─────────────────────────────────────────
 
 let muted = false;
@@ -188,7 +198,8 @@ export function enqueueCelebration(
 export function asCelebration(raw: unknown): CelebrationDetail | null {
   if (!raw || typeof raw !== 'object') return null;
   const d = raw as Partial<CelebrationDetail>;
-  if (d.kind !== 'record' && d.kind !== 'level' && d.kind !== 'routine') return null;
+  if (d.kind !== 'record' && d.kind !== 'level' && d.kind !== 'routine' && d.kind !== 'challenge')
+    return null;
   if (typeof d.title !== 'string' || d.title === '') return null;
   const r = d.reward as Partial<CelebrationReward> | undefined;
   const reward =
@@ -328,8 +339,9 @@ export function celebration() {
     get isRecord(): boolean {
       return this.current?.kind === 'record';
     },
+    /** Médaille à texte : numéro du niveau, ou emoji d'un défi réussi. */
     get isLevel(): boolean {
-      return this.current?.kind === 'level';
+      return this.current?.kind === 'level' || this.current?.kind === 'challenge';
     },
     get isRoutine(): boolean {
       return this.current?.kind === 'routine';

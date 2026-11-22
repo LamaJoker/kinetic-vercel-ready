@@ -10,6 +10,7 @@ import {
   type AchievementMetrics,
   type AchievementProgress,
 } from '../lib/achievement-progress';
+import { loadChallengesPanel } from '../lib/lazy-component';
 
 type CategoryFilter = 'all' | 'milestone' | 'strength' | 'streak' | 'volume' | 'pr';
 
@@ -32,6 +33,8 @@ interface AchievementsAlpine {
   progressStyle: (id: string) => string;
   _progress: (id: string) => AchievementProgress | null;
   tierDotClass: (id: string, i: number, tier: number) => string;
+  /** Section « Défis » (components/challenges.ts, chargée à la demande). */
+  challengesReady: boolean;
   init: () => void;
 }
 
@@ -47,6 +50,7 @@ export function achievements(): AchievementsAlpine {
       { key: 'strength', label: 'Force' },
     ],
     $store: { achievements: { catalog: [], isUnlocked: () => false } },
+    challengesReady: false,
 
     get filteredCatalog(): Achievement[] {
       const catalog = this.$store.achievements.catalog;
@@ -103,7 +107,13 @@ export function achievements(): AchievementsAlpine {
     },
 
     init(): void {
-      // L'init du store est faite globalement dans main.ts. Rien à faire ici.
+      // L'init du store est faite globalement dans main.ts ; ici, seulement les défis.
+      void loadChallengesPanel().then(
+        () => {
+          this.challengesReady = true;
+        },
+        (err: unknown) => console.warn('[succès] défis indisponibles :', err),
+      );
     },
   };
 }

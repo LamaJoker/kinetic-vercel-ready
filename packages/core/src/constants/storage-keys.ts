@@ -70,6 +70,10 @@ export const STORAGE_KEYS = {
   /** Séance en cours (brouillon + repos), locale à l'appareil : survit au changement d'onglet,
    *  au rechargement et à la fermeture de l'app par l'OS. Effacée à la sauvegarde ou à l'abandon. */
   TRAINING_ACTIVE_SESSION: 'kinetic:training:active-session' as const,
+  /** Préréglages des minuteurs HIIT (TimerPreset[], page Minuteurs) : sauvegardés. */
+  TIMER_PRESETS: 'kinetic:training:timer-presets' as const,
+  /** localStorage : « Mode salle » (grand format) de la séance en cours, '1' = actif. */
+  GYM_MODE: 'kinetic:gym-mode' as const,
 
   // ─── Programme ────────────────────────────────────────────────
   PROGRAM: 'kinetic:program' as const,
@@ -129,6 +133,8 @@ export const STORAGE_KEYS = {
 
   // ─── Achievements (badges débloqués par exploit) ──────────────
   ACHIEVEMENTS_UNLOCKED: 'kinetic:achievements:unlocked' as const,
+  /** Défis acceptés / personnels et défis réussis (challenges.domain : ChallengeStore). */
+  CHALLENGES: 'kinetic:challenges' as const,
 
   // ─── Préférences UI ───────────────────────────────────────────
   PREF_UNIT: 'kinetic:pref:unit' as const, // 'kg' | 'lb'

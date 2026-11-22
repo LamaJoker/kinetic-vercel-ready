@@ -36,7 +36,9 @@ const DIST = join(process.cwd(), 'apps', 'web', 'dist');
 
 // Budgets en octets (raw / gzip / brotli)
 export const BUDGETS = {
-  totalDist: 2 * 1024 * 1024, // 2 MiB total
+  // Tout dist (police, schémas SVG, gabarits…) : l'app est installée sur le téléphone,
+  // relevé de 2 à 3 MiB ; la vitesse d'ouverture reste tenue par initialJsGzip.
+  totalDist: 3 * 1024 * 1024,
   singleJsRaw: 350 * 1024, // 350 KiB par fichier JS
   singleJsGzip: 110 * 1024, // 110 KiB gzip par fichier JS
   initialJsGzip: 130 * 1024, // 130 KiB gzip chargés avant le premier écran

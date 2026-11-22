@@ -71,6 +71,8 @@ type RouteKey =
   | '/programs'
   | '/glossaire'
   | '/outils'
+  | '/bilan'
+  | '/minuteurs'
   | '/modele'
   | '/exercices'
   | '/legal/cgu'
@@ -96,6 +98,8 @@ const ROUTES: Record<RouteKey, string> = {
   '/programs': './pages/programs.html',
   '/glossaire': './pages/glossaire.html',
   '/outils': './pages/tools.html',
+  '/bilan': './pages/bilan.html',
+  '/minuteurs': './pages/timers.html',
   '/modele': './pages/template-editor.html',
   '/exercices': './pages/template-editor.html',
   '/legal/cgu': './pages/legal-cgu.html',

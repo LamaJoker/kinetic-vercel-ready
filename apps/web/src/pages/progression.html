@@ -171,6 +171,29 @@
     </div>
   </section>
 
+  <!-- Bilan du mois et de l'année (page /bilan) -->
+  <section x-show="totalSessions > 0" class="mb-6" aria-labelledby="prog-recap-title">
+    <h2 id="prog-recap-title" class="k-section mb-2.5">Bilans</h2>
+    <div class="grid grid-cols-2 gap-3">
+      <a :href="recapMonthHref" class="k-hero k-press block !p-4">
+        <span class="block text-2xl leading-none" aria-hidden="true">🎉</span>
+        <span
+          class="mt-2 block font-semibold text-white leading-snug"
+          x-text="recapMonthTitle"
+        ></span>
+        <span class="mt-0.5 block text-xs text-gray-400">Le mois en grand</span>
+      </a>
+      <a :href="recapYearHref" class="k-card k-press block !p-4">
+        <span class="block text-2xl leading-none" aria-hidden="true">🏆</span>
+        <span
+          class="mt-2 block font-semibold text-white leading-snug"
+          x-text="recapYearTitle"
+        ></span>
+        <span class="mt-0.5 block text-xs text-gray-400">Ton année jusqu'ici</span>
+      </a>
+    </div>
+  </section>
+
   <!-- Mes objectifs de force (components/strength-goals.ts, chargé à la demande) -->
   <template x-if="goalsReady && totalSessions > 0">
     <section

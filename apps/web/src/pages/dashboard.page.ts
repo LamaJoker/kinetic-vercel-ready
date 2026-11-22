@@ -18,6 +18,7 @@ import { navigate } from '../router';
 import { loadActiveSession } from '../lib/training/active-session';
 import { hapticLight } from '../lib/haptics';
 import {
+  loadChallengeCard,
   loadMuscleMap,
   loadStrengthGoals,
   loadWeekPlan,
@@ -58,6 +59,10 @@ export function dashboard() {
     hasActiveSession: false,
     /** Forme du jour et eau (components/wellness.ts, à la demande). */
     wellnessReady: false,
+    /** Défi le plus proche (components/challenges.ts, à la demande). */
+    challengeReady: false,
+    /** « Ton bilan de novembre est prêt » : les 3 premiers jours du mois. */
+    recapTeaser: null as { title: string; href: string } | null,
 
     startLabel(): string {
       return this.hasActiveSession ? 'Reprendre la séance' : 'Commencer la séance';
@@ -223,6 +228,7 @@ export function dashboard() {
         this._allSessions = await loadSessions(deps.storage);
         const templates = await loadTemplates(deps.storage);
         this.training = buildTrainingSnapshot(this._allSessions, templates);
+        this._loadMotivation();
         this._loadMuscleMapPreview(deps.storage);
         void this._loadWeekPlan(deps.storage);
         const goals = await deps.storage.get<unknown[]>(STORAGE_KEYS.STRENGTH_GOALS);
@@ -237,6 +243,28 @@ export function dashboard() {
       } catch (err) {
         console.error('[dashboard] init failed:', err);
       }
+    },
+
+    /**
+     * Après le premier affichage : défi le plus proche (dès une séance) et, les
+     * 3 premiers jours du mois, la carte du bilan du mois écoulé (recap.domain
+     * chargé seulement ces jours-là).
+     */
+    _loadMotivation(): void {
+      if (this._allSessions.length > 0) {
+        void loadChallengeCard().then(
+          () => {
+            this.challengeReady = true;
+          },
+          (err: unknown) => console.warn('[dashboard] défis indisponibles :', err),
+        );
+      }
+      if (new Date().getDate() > 3) return;
+      void import('../lib/recap-teaser')
+        .then((m) => {
+          this.recapTeaser = m.recapTeaser(new Date(), this._allSessions);
+        })
+        .catch((err: unknown) => console.warn('[dashboard] bilan indisponible :', err));
     },
 
     /** Planning de la semaine, seulement si un programme est suivi. */
