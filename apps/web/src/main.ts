@@ -92,14 +92,16 @@ import { activeSessionBanner } from './components/active-session-banner';
 import { initPwaInstallPrompt, pwaInstallPrompt } from './lib/pwa-install';
 import { initTheme } from './lib/theme';
 import { initDisplayDensity } from './lib/display-mode';
+import { initTextSize } from './lib/text-size';
 
 // ─── Theme + densité : appliquer avant tout pour éviter le flash ─────────
 initTheme();
 initDisplayDensity();
+initTextSize(); // taille du texte : Dynamic Type (iPhone) ou réglage du profil
 
 import { getDeps } from './deps';
 
-import { initRouter } from './router';
+import { initRouter, navigate, preloadRoute } from './router';
 import { scheduleStreakReminder } from './lib/streak-reminder';
 import { Capacitor } from '@capacitor/core';
 import { syncWeeklyRecap, syncSessionReminder, syncBackupReminder } from './lib/reminders';
@@ -109,12 +111,14 @@ import { runMigrationsIfNeeded } from './lib/migrations';
 import { initMobile } from './lib/mobile';
 import { initAnalytics } from './lib/analytics';
 import { celebration } from './lib/celebration';
+import { afterFirstRender } from './lib/performance';
 import './styles.css';
 import './styles/native-feel.css';
 import './styles/finitions.css';
 import './styles/celebrations.css';
 import './styles/gestes.css';
 import './styles/stage.css';
+import './styles/text-size.css';
 
 // ─── Stores ──────────────────────────────────────────────────
 // Directive x-svg : remplace x-html, interdit par le build CSP d'Alpine.
@@ -158,14 +162,19 @@ Alpine.data('celebration', celebration); // célébrations (record, niveau), mon
 initPwaInstallPrompt();
 
 // ─── Error reporter (best effort, throttlé 30 min) ──────────────────────────
-import('./lib/error-reporter')
-  .then(({ initErrorReporter }) => initErrorReporter())
-  .catch(() => null);
+// Modules chargés après le premier écran : rien de tout ça n'est utile à la première image.
+afterFirstRender(() => {
+  import('./lib/error-reporter')
+    .then(({ initErrorReporter }) => initErrorReporter())
+    .catch(() => null);
+});
 
 // ─── Écran allumé pendant une séance en cours (Wake Lock, silencieux si absent) ─
-import('./lib/wake-lock')
-  .then(({ initSessionWakeLock }) => initSessionWakeLock())
-  .catch(() => null);
+afterFirstRender(() => {
+  import('./lib/wake-lock')
+    .then(({ initSessionWakeLock }) => initSessionWakeLock())
+    .catch(() => null);
+});
 
 // ─── Shell de la page (body x-data) ─────────────────────────────────────────
 // Remplace x-data="{ currentPath: location.pathname }" dans index.html.
@@ -321,6 +330,8 @@ try {
 window.Alpine = Alpine;
 
 // ─── Démarrage ───────────────────────────────────────────────
+// Page d'arrivée (gabarit + composant) demandée tout de suite, en parallèle du démarrage.
+preloadRoute(window.location.pathname);
 Alpine.start();
 initAnalytics();
 
@@ -333,7 +344,7 @@ requestAnimationFrame(() => {
 
 void initMobile();
 
-scheduleStreakReminder();
+afterFirstRender(scheduleStreakReminder);
 
 // Application Android : rappels reprogrammés au lancement et à chaque mise en
 // arrière-plan (les séances du jour sont alors comptées) ; pas et sommeil relus
@@ -350,7 +361,10 @@ function syncReminders(): void {
   if (Capacitor.isNativePlatform())
     void import('./lib/protein-reminder').then((m) => m.syncProteinReminder());
 }
-window.addEventListener(STORAGE_KEYS.EVENT_AUTH_READY, syncReminders, { once: true });
+// Rappels reprogrammés après le premier écran (lectures de séances, plugin natif).
+window.addEventListener(STORAGE_KEYS.EVENT_AUTH_READY, () => afterFirstRender(syncReminders), {
+  once: true,
+});
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') syncReminders();
   else void (Alpine.store('vitalite') as { syncHealth(): Promise<void> }).syncHealth();
@@ -383,6 +397,9 @@ async function refreshOnNewDay(): Promise<void> {
     const deps = await getDeps();
     await resetDailyTasks({ storage: deps.storage, clock: deps.clock });
     await (Alpine.store('vitalite') as { init(): Promise<void> }).init();
+    window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NEW_DAY, { detail: { day: today } }));
+    // Accueil affiché : redessiné pour la nouvelle journée (forme, eau, carte du jour).
+    if (window.location.pathname === '/') navigate('/', true);
   } catch (err) {
     console.warn('[kinetic] new-day refresh failed:', err);
   }
@@ -390,6 +407,10 @@ async function refreshOnNewDay(): Promise<void> {
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') void refreshOnNewDay();
 });
+// Écran resté allumé au-delà de minuit (pas de retour au premier plan) : vérifié chaque minute.
+setInterval(() => {
+  if (document.visibilityState === 'visible') void refreshOnNewDay();
+}, 60_000);
 
 // Application native : sauvegarde automatique hebdomadaire dans Documents, au
 // démarrage et au retour au premier plan (sans effet sur le web).
@@ -399,7 +420,7 @@ function autoBackup(): void {
     .then(([deps, { runAutoBackup }]) => runAutoBackup(deps.storage))
     .catch(() => undefined);
 }
-setTimeout(autoBackup, 4000);
+afterFirstRender(() => setTimeout(autoBackup, 3000));
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') autoBackup();
 });
@@ -410,14 +431,18 @@ void getDeps()
   .then(async (deps) => {
     await runMigrationsIfNeeded(deps.storage);
     await resetDailyTasks({ storage: deps.storage, clock: deps.clock });
-    await autoCompactOnStartup(deps.storage);
+    // Nettoyage (lecture de tout le stockage) : après le premier écran.
+    afterFirstRender(() => void autoCompactOnStartup(deps.storage).catch(() => undefined), 5000);
   })
   .catch(() => undefined);
 
 // Demander le stockage persistant : sans ça, iOS Safari (et Chrome sous
 // pression mémoire) peut évincer IndexedDB → perte des séances enregistrées.
 // `granted` requis pour que l'OS protège nos données.
-if (typeof navigator !== 'undefined' && navigator.storage?.persist) {
+if (typeof navigator !== 'undefined' && typeof navigator.storage?.persist === 'function') {
+  afterFirstRender(requestPersistentStorage);
+}
+function requestPersistentStorage(): void {
   navigator.storage
     .persisted()
     .then((already) => {

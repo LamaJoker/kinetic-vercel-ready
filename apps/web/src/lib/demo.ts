@@ -25,6 +25,10 @@ import { saveSession, sessionStorageKey } from './training/storage';
 import { localIsoDate } from './training/next-session';
 import { setCelebrationsMuted } from './celebration';
 
+const DEMO_PHOTO_PREFIX = 'demo-photo-';
+/** Préfixe des clés de séance (une clé par séance, cf. training/storage.ts). */
+const SESSION_KEY_PREFIX = STORAGE_KEYS.TRAINING_SESSION_PREFIX;
+
 /** Charges de départ (kg) et incrément toutes les 2 semaines. */
 const START_KG: Record<string, [number, number]> = {
   bp: [72.5, 2.5],
@@ -226,7 +230,7 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
     day.setDate(today.getDate() - d);
     day.setHours(8, 0, 0, 0);
     return {
-      id: `demo-photo-${i}`,
+      id: `${DEMO_PHOTO_PREFIX}${i}`,
       takenAt: day.toISOString(),
       label,
       dataUrl: demoPhotoDataUrl(waist, label),
@@ -615,6 +619,10 @@ export function demoPhotoDataUrl(waist: number, pose: 'front' | 'side'): string 
 export async function loadDemoData(storage: StoragePort, now: Date = new Date()): Promise<number> {
   const { sessions, values } = buildDemoData(now);
   const written: StorageKey[] = [];
+  // Alertes de plateau masquées pendant la démo (sur ses exercices) : parties avec
+  // elle, sauf si l'utilisateur en avait déjà avant.
+  if ((await storage.get(STORAGE_KEYS.PLATEAU_DISMISSED)) === null)
+    written.push(STORAGE_KEYS.PLATEAU_DISMISSED);
   // Pas de pluie de records / niveaux pendant l'écriture des 8 semaines de démo.
   setCelebrationsMuted(true);
   try {
@@ -637,12 +645,38 @@ export async function isDemoActive(storage: StoragePort): Promise<boolean> {
   return Array.isArray(await storage.get(STORAGE_KEYS.DEMO_MANIFEST));
 }
 
-/** Retire exactement les clés écrites par la démo. */
+/** Identifiants des photos de démo (silhouettes SVG). */
+export function isDemoPhotoId(id: unknown): id is string {
+  return typeof id === 'string' && id.startsWith(DEMO_PHOTO_PREFIX);
+}
+
+/**
+ * Retire exactement les clés écrites par la démo, plus ce qu'elle laisse
+ * ailleurs : images des photos de démo (store IndexedDB `kinetic-photos`),
+ * alertes de plateau masquées pendant la démo, séance commencée pendant la démo.
+ */
 export async function clearDemoData(storage: StoragePort): Promise<void> {
   const manifest = await storage.get<StorageKey[]>(STORAGE_KEYS.DEMO_MANIFEST);
   if (!Array.isArray(manifest)) return;
+  // Images des photos de démo : la liste est lue avant d'effacer les métadonnées.
+  const photos = await storage.get<Array<{ id?: unknown }>>(STORAGE_KEYS.PROGRESS_PHOTOS);
+  const photoIds = (Array.isArray(photos) ? photos : []).map((p) => p?.id).filter(isDemoPhotoId);
   for (const key of manifest) await storage.remove(key);
   // Une séance commencée pendant la démo porte sur ses modèles : elle part avec.
   await storage.remove(STORAGE_KEYS.TRAINING_ACTIVE_SESSION);
+  // Démo chargée par une version antérieure (manifeste sans cette clé) : sans
+  // aucune séance restante, un masquage d'alerte de plateau ne vient que d'elle.
+  if (!manifest.includes(STORAGE_KEYS.PLATEAU_DISMISSED)) {
+    const left = (await storage.keys()).some((k) => k.startsWith(SESSION_KEY_PREFIX));
+    if (!left) await storage.remove(STORAGE_KEYS.PLATEAU_DISMISSED);
+  }
   await storage.remove(STORAGE_KEYS.DEMO_MANIFEST);
+  if (photoIds.length > 0) {
+    try {
+      const { deletePhotoBlobs } = await import('./photos');
+      await deletePhotoBlobs(photoIds);
+    } catch (err) {
+      console.warn('[demo] images des photos de démo non effacées :', err);
+    }
+  }
 }

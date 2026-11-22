@@ -46,4 +46,89 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+    // Raccourcis de l'icône (appui long, UIApplicationShortcutItems d'Info.plist) :
+    // chaque action ouvre le lien interne com.lamajoker.kinetic://open/<action>,
+    // comme un widget. Application déjà lancée : événement appUrlOpen ; lancement
+    // à froid : iOS appelle aussi cette méthode (didFinishLaunching renvoie true)
+    // et le lien est relu par App.getLaunchUrl() (src/lib/mobile.ts).
+    func application(_ application: UIApplication, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
+        let prefix = "com.lamajoker.kinetic.shortcut."
+        guard shortcutItem.type.hasPrefix(prefix) else {
+            completionHandler(false)
+            return
+        }
+        let action = String(shortcutItem.type.dropFirst(prefix.count))
+        guard let url = URL(string: "com.lamajoker.kinetic://open/" + action) else {
+            completionHandler(false)
+            return
+        }
+        completionHandler(ApplicationDelegateProxy.shared.application(application, open: url, options: [:]))
+    }
+
+}
+
+/// Contrôleur principal (Main.storyboard) : enregistre les plugins propres à l'app.
+class KineticViewController: CAPBridgeViewController {
+    override func capacitorDidLoad() {
+        bridge?.registerPluginInstance(KineticIconPlugin())
+    }
+}
+
+/// Icône de l'application (Profil > Apparence). Identifiants partagés avec
+/// src/lib/app-icon.ts ; les icônes alternatives sont les jeux AppIcon-Nuit et
+/// AppIcon-Minimal d'Assets.xcassets (réglage ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES).
+@objc(KineticIconPlugin)
+public class KineticIconPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "KineticIconPlugin"
+    public let jsName = "KineticIcon"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "getIcon", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setIcon", returnType: CAPPluginReturnPromise)
+    ]
+
+    /// Identifiant JS → nom du jeu d'icônes alternatif (nil : icône principale « corail »).
+    private static let alternateNames: [String: String] = [
+        "nuit": "AppIcon-Nuit",
+        "minimal": "AppIcon-Minimal"
+    ]
+
+    @objc func getIcon(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            let app = UIApplication.shared
+            var icon = "corail"
+            if let current = app.alternateIconName {
+                for (id, name) in KineticIconPlugin.alternateNames where name == current {
+                    icon = id
+                }
+            }
+            call.resolve(["icon": icon, "supported": app.supportsAlternateIcons])
+        }
+    }
+
+    @objc func setIcon(_ call: CAPPluginCall) {
+        let icon = call.getString("icon") ?? ""
+        let name: String? = KineticIconPlugin.alternateNames[icon]
+        if icon != "corail" && name == nil {
+            call.reject("Icône inconnue")
+            return
+        }
+        DispatchQueue.main.async {
+            let app = UIApplication.shared
+            guard app.supportsAlternateIcons else {
+                call.reject("Icônes alternatives indisponibles")
+                return
+            }
+            if app.alternateIconName == name {
+                call.resolve(["icon": icon])
+                return
+            }
+            app.setAlternateIconName(name) { error in
+                if let error = error {
+                    call.reject(error.localizedDescription)
+                } else {
+                    call.resolve(["icon": icon])
+                }
+            }
+        }
+    }
 }

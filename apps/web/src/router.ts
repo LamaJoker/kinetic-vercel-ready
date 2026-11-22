@@ -6,7 +6,7 @@
 import Alpine from 'alpinejs';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from './deps';
-import { ric } from './lib/performance';
+import { afterFirstRender, ric } from './lib/performance';
 import { loadPageComponents } from './page-components';
 import {
   type NavDirection,
@@ -166,6 +166,21 @@ async function resolveHtml(path: string): Promise<string> {
     console.error('[router] page template load failed:', path, err);
     return LOAD_ERROR_HTML;
   }
+}
+
+/**
+ * Page d'arrivée : gabarit et composants demandés dès le chargement du script,
+ * en parallèle du démarrage d'Alpine et de la lecture du profil. Le rendu qui
+ * suit les retrouve prêts (mêmes promesses).
+ */
+export function preloadRoute(path: string): void {
+  const file = ROUTES[(path || '/').split('?')[0] as RouteKey];
+  const load = file ? PAGE_LOADERS[file] : undefined;
+  if (!file || !load) return;
+  void load()
+    .then(readTemplate)
+    .catch(() => undefined);
+  void loadPageComponents(file, registerComponent).catch(() => undefined);
 }
 
 let prefetched = false;
@@ -466,10 +481,9 @@ export function initRouter(): void {
   // appui long), chargés à part eux aussi.
   void import('./lib/native-ui').then(({ initNativeUi }) => initNativeUi()).catch(() => undefined);
 
-  if (typeof window.addEventListener === 'function') {
-    window.addEventListener('load', () => prefetchPages(), { once: true });
-    if (document.readyState === 'complete') prefetchPages();
-  }
+  // Gabarits des autres pages (hors-ligne) : préchargés après le premier écran,
+  // pour ne pas concurrencer les lectures et le rendu de la page d'arrivée.
+  afterFirstRender(prefetchPages, 5000);
 
   let _authReadyReceived = false;
 

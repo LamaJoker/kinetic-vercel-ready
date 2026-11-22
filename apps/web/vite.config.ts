@@ -175,6 +175,7 @@ export const LAZY_CORE_MODULES = [
   'domain/recap.domain', // bilan du mois / de l'année (page Bilan)
   'domain/interval-timer.domain', // minuteurs HIIT (page Minuteurs)
   'domain/gym-mode.domain', // mode salle grand format (Séances)
+  'domain/first-run-tour.domain', // visite de première utilisation (accueil, à la demande)
 ];
 export const LAZY_TRAINING_MODULES = [
   'training/import', // import Strong / Hevy (Profil)

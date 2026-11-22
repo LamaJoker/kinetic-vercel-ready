@@ -38,7 +38,13 @@ export const PAGE_COMPONENTS: Record<string, () => Promise<ComponentMap>> = {
   './pages/program.html': () =>
     import('./pages/program.page').then((m) => ({ program: m.program })),
   './pages/profile.html': () =>
-    import('./pages/profile.page').then((m) => ({ profile: m.profile })),
+    Promise.all([import('./pages/profile.page'), import('./components/native-extras')]).then(
+      ([m, n]) => ({
+        profile: m.profile,
+        appShortcuts: n.appShortcuts,
+        appIconPicker: n.appIconPicker,
+      }),
+    ),
   './pages/auth-callback.html': () =>
     import('./pages/auth-callback.page').then((m) => ({ authCallback: m.authCallback })),
   './pages/bodyweight.html': () =>

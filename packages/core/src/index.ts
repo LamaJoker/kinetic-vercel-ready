@@ -105,6 +105,8 @@ export * from './domain/challenges.domain.js';
 export * from './domain/recap.domain.js';
 export * from './domain/interval-timer.domain.js';
 export * from './domain/gym-mode.domain.js';
+export * from './domain/text-size.domain.js';
+export * from './domain/first-run-tour.domain.js';
 
 // ─── Use Cases (orchestration) ────────────────────────────────
 export { completeTask_usecase } from './usecases/complete-task.usecase.js';

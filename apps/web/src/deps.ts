@@ -12,6 +12,7 @@ import {
 } from '@kinetic/adapters-web';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { createDepsManager } from './deps.factory';
+import { afterFirstRender } from './lib/performance';
 
 export type { AppDeps } from './deps.factory';
 
@@ -35,8 +36,12 @@ const manager = createDepsManager({
   hasRemoteSync,
   syncTimeoutMs: 8000,
   onHybridReady: (storage) => {
-    void storage.syncFromRemote?.().catch((err) => {
-      console.warn('[deps] remote sync failed:', err);
+    // Synchro cloud après le premier écran : l'accueil s'affiche d'abord avec les
+    // données locales, la synchro ne concurrence ni ses lectures ni son rendu.
+    afterFirstRender(() => {
+      void storage.syncFromRemote?.().catch((err) => {
+        console.warn('[deps] remote sync failed:', err);
+      });
     });
   },
 });

@@ -437,6 +437,46 @@
       </button>
     </div>
     <div class="mb-8" aria-hidden="true" x-show="healthState !== 'unsupported'"></div>
+
+    <!-- Raccourcis : liens internes (icône de l'app, app Raccourcis d'iPhone) -->
+    <section x-data="appShortcuts" aria-labelledby="shortcuts-title">
+      <h2 id="shortcuts-title" class="k-section mb-2.5">Raccourcis</h2>
+      <div class="k-card mb-2.5 space-y-2 text-sm text-gray-400">
+        <p>
+          Appui long sur l'icône de Kinetic : Séance du jour, Pesée, +1 verre d'eau et Check-in du
+          matin.
+        </p>
+        <p x-show="!android">
+          Pour Siri, l'écran d'accueil ou une automatisation : ouvre l'app
+          <span class="text-white">Raccourcis</span>, touche +, ajoute l'action
+          <span class="text-white">« Ouvrir l'URL »</span>, colle un lien copié ci-dessous puis
+          donne un nom au raccourci.
+        </p>
+        <p x-show="android">
+          Les liens ci-dessous ouvrent aussi ces actions depuis une appli d'automatisation.
+        </p>
+      </div>
+      <div class="k-list">
+        <template x-for="item in items" :key="item.slug">
+          <div class="k-row">
+            <span class="flex-1 min-w-0">
+              <span class="block text-base text-white" x-text="item.title"></span>
+              <span class="block text-xs text-gray-500 truncate" x-text="item.hint"></span>
+            </span>
+            <button
+              type="button"
+              class="k-pill"
+              @click="copy(item)"
+              :aria-label="copyAria(item)"
+              x-text="copyLabel(item)"
+            >
+              Copier
+            </button>
+          </div>
+        </template>
+      </div>
+      <div class="mb-8" aria-hidden="true"></div>
+    </section>
   </div>
 
   <!-- Préférences -->
@@ -472,6 +512,88 @@
       </div>
       <p class="text-xs text-gray-500 mt-2">Auto suit le réglage de ton appareil.</p>
     </div>
+    <!-- Icône de l'application (native seulement : plugin KineticIcon) -->
+    <div x-data="appIconPicker" x-show="available" x-cloak>
+      <p class="text-sm font-semibold text-white mb-2">Icône de l'app</p>
+      <div class="grid grid-cols-3 gap-2" role="group" aria-label="Icône de l'app">
+        <button
+          type="button"
+          class="k-press flex flex-col items-center gap-1.5 rounded-2xl p-2.5 ring-1 ring-white/5 bg-kinetic-elevated aria-pressed:ring-2 aria-pressed:ring-kinetic-neon disabled:opacity-60"
+          @click="choose('corail')"
+          :aria-pressed="pressed('corail')"
+          :disabled="busy"
+        >
+          <svg class="w-12 h-12" viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="7" fill="#0B0E1A" />
+            <circle cx="16" cy="16" r="12" fill="#FF7A66" />
+            <circle
+              cx="16"
+              cy="16"
+              r="8.5"
+              fill="none"
+              stroke="#0B0E1A"
+              stroke-opacity=".25"
+              stroke-width="1.5"
+            />
+            <circle cx="16" cy="16" r="3.2" fill="#0B0E1A" />
+          </svg>
+          <span class="text-xs font-medium text-white">Corail</span>
+        </button>
+        <button
+          type="button"
+          class="k-press flex flex-col items-center gap-1.5 rounded-2xl p-2.5 ring-1 ring-white/5 bg-kinetic-elevated aria-pressed:ring-2 aria-pressed:ring-kinetic-neon disabled:opacity-60"
+          @click="choose('nuit')"
+          :aria-pressed="pressed('nuit')"
+          :disabled="busy"
+        >
+          <svg class="w-12 h-12" viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="7" fill="#05070F" />
+            <circle cx="16" cy="16" r="12" fill="#1A2036" />
+            <circle
+              cx="16"
+              cy="16"
+              r="8.5"
+              fill="none"
+              stroke="#FF7A66"
+              stroke-opacity=".9"
+              stroke-width="1.5"
+            />
+            <circle cx="16" cy="16" r="3.2" fill="#FF7A66" />
+          </svg>
+          <span class="text-xs font-medium text-white">Nuit</span>
+        </button>
+        <button
+          type="button"
+          class="k-press flex flex-col items-center gap-1.5 rounded-2xl p-2.5 ring-1 ring-white/5 bg-kinetic-elevated aria-pressed:ring-2 aria-pressed:ring-kinetic-neon disabled:opacity-60"
+          @click="choose('minimal')"
+          :aria-pressed="pressed('minimal')"
+          :disabled="busy"
+        >
+          <svg class="w-12 h-12" viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="7" fill="#F4F2EE" />
+            <circle cx="16" cy="16" r="11.2" fill="none" stroke="#0B0E1A" stroke-width="1.6" />
+            <circle
+              cx="16"
+              cy="16"
+              r="8.5"
+              fill="none"
+              stroke="#0B0E1A"
+              stroke-opacity=".25"
+              stroke-width="1.5"
+            />
+            <circle cx="16" cy="16" r="3.2" fill="#0B0E1A" />
+          </svg>
+          <span class="text-xs font-medium text-white">Minimaliste</span>
+        </button>
+      </div>
+      <p class="text-xs text-gray-500 mt-2" x-show="android">
+        Sur certains téléphones, Kinetic se ferme au changement d'icône : rouvre-la depuis l'écran
+        d'accueil.
+      </p>
+      <p class="text-xs text-gray-500 mt-2" x-show="!android">
+        L'iPhone confirme le changement par un message.
+      </p>
+    </div>
     <div>
       <p class="text-sm font-semibold text-white mb-2">Affichage</p>
       <div class="k-seg" role="group" aria-label="Affichage">
@@ -495,6 +617,46 @@
       <p class="text-xs text-gray-500 mt-2">
         Simple masque les détails poussés (périodisation, scores Wilks / IPF GL, équilibre
         musculaire).
+      </p>
+    </div>
+    <div>
+      <p class="text-sm font-semibold text-white mb-2">Taille du texte</p>
+      <div class="k-seg k-seg-fit" role="group" aria-label="Taille du texte">
+        <button
+          type="button"
+          @click="setTextSize('system')"
+          class="k-seg-item"
+          :aria-pressed="textSize === 'system' ? 'true' : 'false'"
+        >
+          Système
+        </button>
+        <button
+          type="button"
+          @click="setTextSize('normal')"
+          class="k-seg-item"
+          :aria-pressed="textSize === 'normal' ? 'true' : 'false'"
+        >
+          Normal
+        </button>
+        <button
+          type="button"
+          @click="setTextSize('large')"
+          class="k-seg-item"
+          :aria-pressed="textSize === 'large' ? 'true' : 'false'"
+        >
+          Grand
+        </button>
+        <button
+          type="button"
+          @click="setTextSize('xlarge')"
+          class="k-seg-item"
+          :aria-pressed="textSize === 'xlarge' ? 'true' : 'false'"
+        >
+          Très grand
+        </button>
+      </div>
+      <p class="text-xs text-gray-500 mt-2">
+        Système suit la taille du texte réglée sur ton téléphone (Accessibilité).
       </p>
     </div>
     <label class="flex items-center gap-3 cursor-pointer select-none" x-show="wakeLockAvailable">
@@ -652,6 +814,35 @@
         />
       </svg>
     </a>
+    <button type="button" class="k-row k-row-icon w-full text-left" @click="replayTour()">
+      <span class="k-glyph bg-kinetic-neon" aria-hidden="true">
+        <svg
+          class="h-[1.125rem] w-[1.125rem]"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="m14.8 9.2-1.9 3.7-3.7 1.9 1.9-3.7z" />
+        </svg>
+      </span>
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-white">Revoir la visite</span>
+        <span class="block text-xs text-gray-500">Les gestes et écrans clés en 7 étapes</span>
+      </span>
+      <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+        <path
+          d="m1 1 6 6-6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
   </div>
 
   <!-- Données -->

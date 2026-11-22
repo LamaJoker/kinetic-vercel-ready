@@ -5,4 +5,12 @@
     <string name="package_name">com.lamajoker.kinetic</string>
     <string name="custom_url_scheme">com.lamajoker.kinetic</string>
     <string name="health_connect_privacy_policy_url">https://kinetic-prod.vercel.app/legal/confidentialite</string>
+    <string name="shortcut_seance_short">Séance</string>
+    <string name="shortcut_seance_long">Séance du jour</string>
+    <string name="shortcut_pesee_short">Pesée</string>
+    <string name="shortcut_pesee_long">Saisir mon poids</string>
+    <string name="shortcut_eau_short">+1 verre</string>
+    <string name="shortcut_eau_long">Ajouter un verre d\'eau</string>
+    <string name="shortcut_checkin_short">Check-in</string>
+    <string name="shortcut_checkin_long">Check-in du matin</string>
 </resources>

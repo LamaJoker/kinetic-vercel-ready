@@ -10,7 +10,9 @@
  *   « / 2 000 »), virgule décimale, nombre de décimales, séparateur de milliers
  *   (espace fine, insécable ou ordinaire) et signe (« + », « − »).
  * - Premier affichage : l'animation part quand l'élément devient visible
- *   (IntersectionObserver) ; hors écran, rien ne bouge.
+ *   (IntersectionObserver) ; hors écran, rien ne bouge. Loin de l'écran, le
+ *   texte reste la vraie valeur (lecteur d'écran, capture de toute la page) ;
+ *   le point de départ (0) n'est posé qu'à l'approche, juste avant l'animation.
  * - Mouvement réduit (prefers-reduced-motion) : aucune animation, x-text seul.
  * - Texte sans nombre (« — ») : affiché tel quel ; le nombre suivant repart de 0.
  *
@@ -100,6 +102,8 @@ export function bindCountUp(el: HTMLElement): () => void {
   let pendingText: string | null = null; // texte final en attente de visibilité
   let raf = 0;
   let visible = typeof IntersectionObserver === 'undefined';
+  // Proche de l'écran (une demi-hauteur d'écran) : le point de départ peut être affiché.
+  let near = visible;
 
   let mo: MutationObserver | null = null;
   // Nos propres écritures ne doivent pas être prises pour une nouvelle valeur :
@@ -149,10 +153,16 @@ export function bindCountUp(el: HTMLElement): () => void {
       animate(text);
       return;
     }
-    // Pas encore à l'écran : on retient la valeur et on affiche son point de départ
-    // (pas d'éclair de la valeur finale avant l'animation).
+    // Pas encore à l'écran : on retient la valeur. Près de l'écran, on affiche son
+    // point de départ (pas d'éclair de la valeur finale avant l'animation) ; loin,
+    // la vraie valeur reste lisible (lecteur d'écran, capture, impression).
     pendingText = text;
-    const target = parseCountText(text);
+    showStartPoint();
+  };
+
+  const showStartPoint = (): void => {
+    if (!near || visible || pendingText === null) return;
+    const target = parseCountText(pendingText);
     if (target) write(countFrame(0, target, 0));
   };
 
@@ -160,10 +170,26 @@ export function bindCountUp(el: HTMLElement): () => void {
   mo.observe(el, { childList: true, characterData: true, subtree: true });
 
   let io: IntersectionObserver | null = null;
+  let nearIo: IntersectionObserver | null = null;
   if (!visible) {
+    // Créé avant `io` : pour un élément déjà à l'écran, ses rappels passent d'abord.
+    nearIo = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        near = true;
+        nearIo?.disconnect();
+        nearIo = null;
+        showStartPoint();
+      },
+      { rootMargin: '50% 0px' },
+    );
+    nearIo.observe(el);
     io = new IntersectionObserver((entries) => {
       if (!entries.some((e) => e.isIntersecting)) return;
       visible = true;
+      near = true;
+      nearIo?.disconnect();
+      nearIo = null;
       io?.disconnect();
       io = null;
       const text = pendingText;
@@ -179,6 +205,7 @@ export function bindCountUp(el: HTMLElement): () => void {
     cancelAnimationFrame(raf);
     mo.disconnect();
     io?.disconnect();
+    nearIo?.disconnect();
   };
 }
 

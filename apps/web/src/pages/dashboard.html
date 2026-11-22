@@ -1,4 +1,4 @@
-<div x-data="dashboard" x-init="init()" class="max-w-md mx-auto px-4 pt-6 pb-8">
+<div x-data="dashboard" class="max-w-md mx-auto px-4 pt-6 pb-8">
   <!-- En-tête : date en légende, grand titre, avatar -->
   <div class="flex items-end justify-between gap-3 mb-5">
     <div class="min-w-0">
@@ -60,18 +60,12 @@
           class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.08em] text-kinetic-neon"
         >
           <span class="w-1.5 h-1.5 rounded-full bg-kinetic-neon" aria-hidden="true"></span>
-          <span x-show="training.totalSessions === 0">Ta première séance</span>
-          <span x-show="training.totalSessions > 0 && training.daysSinceLast === 0">
-            Déjà entraîné aujourd'hui — prochaine séance
-          </span>
-          <span x-show="training.totalSessions > 0 && training.daysSinceLast !== 0">
-            Séance du jour
-          </span>
+          <span x-text="todayKicker">Séance du jour</span>
         </p>
         <h2
           id="today-session-title"
           class="font-display font-bold text-[2.25rem] leading-[1.1] tracking-tight text-white mt-2 break-words"
-          x-text="training.next.name"
+          x-text="todayTitle"
         ></h2>
         <p class="text-[0.9375rem] text-gray-400 mt-1" x-text="$num.loc(nextDetail)"></p>
 

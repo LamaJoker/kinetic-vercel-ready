@@ -17,10 +17,7 @@
             android:launchMode="singleTask"
             android:exported="true">
 
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            <!-- Entrée du lanceur : portée par les alias ci-dessous (une icône chacun). -->
 
             <!-- Deep link pour le callback OAuth Supabase (Google / GitHub / Magic Link) -->
             <!-- autoVerify intentionnellement absent : ne s'applique qu'aux https://, -->
@@ -33,6 +30,63 @@
             </intent-filter>
 
         </activity>
+
+        <!--
+          Icônes de l'application (Profil > Apparence) : un alias de lanceur par icône,
+          un seul activé à la fois (KineticIconPlugin). Les identifiants sont repris
+          dans src/lib/app-icon.ts. Chaque alias porte les raccourcis d'icône.
+        -->
+        <!-- Corail (par défaut) -->
+        <activity-alias
+            android:name=".IconCorail"
+            android:targetActivity=".MainActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:label="@string/title_activity_main">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity-alias>
+        <!-- Nuit -->
+        <activity-alias
+            android:name=".IconNuit"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_nuit"
+            android:roundIcon="@mipmap/ic_launcher_nuit_round"
+            android:label="@string/title_activity_main">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity-alias>
+        <!-- Minimaliste -->
+        <activity-alias
+            android:name=".IconMinimal"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_minimal"
+            android:roundIcon="@mipmap/ic_launcher_minimal_round"
+            android:label="@string/title_activity_main">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity-alias>
 
         <!-- Scanner de code-barres Google (téléchargé par les services Google Play) -->
         <meta-data

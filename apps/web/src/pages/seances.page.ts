@@ -71,7 +71,9 @@ import {
   normalizeCheckIn,
   localDay,
   lightenWeight,
+  lightenSet,
   lightenSetCount,
+  referencePerformance,
   type CheckInLog,
   gymView as gymViewOf,
   gymSetTitle,
@@ -107,7 +109,13 @@ import { suggestedRestSec, requestNotificationPermission } from '../lib/training
 import { scheduleRestAlert, cancelRestAlert } from '../lib/training/rest-alert';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import { hapticLight, hapticMedium, hapticSuccess, hapticHeavy } from '../lib/haptics';
-import { celebrate, recordCelebration } from '../lib/celebration';
+import {
+  celebrate,
+  goalCelebration,
+  mergeRecordAndGoals,
+  recordCelebration,
+  type CelebrationDetail,
+} from '../lib/celebration';
 import { loadTrainingCalendar } from '../lib/lazy-component';
 import { sessionShareSheet } from '../lib/session-share-sheet';
 import { exerciseIllustrations } from '../lib/exercise-illustrations';
@@ -1475,7 +1483,7 @@ export function seances() {
       const tpl = s?.templateId ? this.templates.find((t) => t.id === s.templateId) : undefined;
       const fromTpl = tpl?.exercises.find((e) => e.exerciseId === exerciseId)?.sets;
       if (fromTpl && fromTpl > 0) return fromTpl;
-      const last = this.lastTime(exerciseId)?.sets.length ?? 0;
+      const last = this._refTime(exerciseId)?.sets.length ?? 0;
       return last > 0 ? last : null;
     },
 
@@ -1634,14 +1642,15 @@ export function seances() {
         return;
       }
 
-      this._checkGoals(exerciseId, weightKg, reps);
-      if (isPr && hadRecord) {
-        // Carte flottante de la coquille (lib/celebration.ts) : ne bloque pas la
-        // saisie et vibre elle-même (impact fort, une fois).
-        celebrate(recordCelebration(this.exerciseName(exerciseId), weightKg, reps));
-      } else {
-        hapticSuccess(); // série validée
-      }
+      // Carte flottante de la coquille (lib/celebration.ts) : ne bloque pas la saisie
+      // et vibre elle-même (impact fort, une fois). Record et objectif remplis par la
+      // même série : une seule carte.
+      const cards = mergeRecordAndGoals(
+        isPr && hadRecord ? recordCelebration(this.exerciseName(exerciseId), weightKg, reps) : null,
+        this._checkGoals(exerciseId, weightKg, reps),
+      );
+      if (cards.length > 0) cards.forEach(celebrate);
+      else hapticSuccess(); // série validée
       this._afterWorkSet(exerciseId);
     },
 
@@ -2056,12 +2065,12 @@ export function seances() {
 
     // ─── Objectifs de force et plateaux ──────────────────────
 
-    /** Série de travail qui remplit un objectif : marqué atteint et célébré. */
-    _checkGoals(exerciseId: string, weightKg: number, reps: number): void {
+    /** Série de travail qui remplit un objectif : marqué atteint ; renvoie ses cartes de célébration. */
+    _checkGoals(exerciseId: string, weightKg: number, reps: number): CelebrationDetail[] {
       const met = this._strengthGoals.filter(
         (g) => !g.achievedAt && g.exerciseId === exerciseId && setMeetsGoal(g, { weightKg, reps }),
       );
-      if (met.length === 0) return;
+      if (met.length === 0) return [];
       const at = nowIso();
       this._strengthGoals = this._strengthGoals.map((g) =>
         met.includes(g) ? { ...g, achievedAt: at } : g,
@@ -2069,12 +2078,7 @@ export function seances() {
       void getDeps().then((deps) =>
         deps.storage.set(STORAGE_KEYS.STRENGTH_GOALS, this._strengthGoals),
       );
-      for (const g of met)
-        celebrate({
-          kind: 'record',
-          title: 'Objectif atteint !',
-          subtitle: goalLabel(g, this.exerciseName(exerciseId)),
-        });
+      return met.map((g) => goalCelebration(goalLabel(g, this.exerciseName(exerciseId))));
     },
 
     /** Plateau sur l'exercice (séances terminées), null si aucun, masqué ou chronométré. */
@@ -2151,10 +2155,38 @@ export function seances() {
       return last ? `Dernière fois · ${formatSetsShort(last.sets)}` : '';
     },
 
-    /** Série de la dernière fois qui correspond à la prochaine série de travail. */
+    /**
+     * Référence des charges : dernière séance NON allégée avec l'exercice (sinon la
+     * dernière). Une séance « Forme basse » ne sert jamais de base à la suivante.
+     */
+    _refTime(exerciseId: string): LastPerformance<SetEntry> | null {
+      this.lastTime(exerciseId); // remet le cache à jour si les séances ont changé
+      const key = `ref:${exerciseId}`;
+      if (!this._lastCache.has(key)) {
+        this._lastCache.set(
+          key,
+          referencePerformance(this.sessions, exerciseId, this.currentSession?.id),
+        );
+      }
+      return this._lastCache.get(key) ?? null;
+    },
+
+    /**
+     * Série de la dernière fois qui correspond à la prochaine série de travail.
+     * Séance allégée : la série de référence (non allégée), allégée de 10 % — comme
+     * le pré-remplissage, « Même chose » ne propose jamais la charge pleine.
+     */
     _sameAsLast(entry: SessionExerciseEntry): SetEntry | null {
+      const n = workSetsOf(entry.sets).length;
+      if (this.isLightened()) {
+        const ref = this._refTime(entry.exerciseId);
+        const set = ref ? matchingLastSet(ref.sets, n) : null;
+        if (!set) return null;
+        const inc = this.exercises.find((e) => e.id === entry.exerciseId)?.incrementKg ?? 2.5;
+        return lightenSet(set, inc);
+      }
       const last = this.lastTime(entry.exerciseId);
-      return last ? matchingLastSet(last.sets, workSetsOf(entry.sets).length) : null;
+      return last ? matchingLastSet(last.sets, n) : null;
     },
 
     /** « 42,5×8 » pour le bouton « Même chose » (vide sans historique). */
@@ -2177,7 +2209,7 @@ export function seances() {
     /** Cible de la n-ième série de travail : la dernière fois, ou le coach s'il propose de monter. */
     setTarget(exerciseId: string, workIndex: number): SetTarget | null {
       return nextSetTarget({
-        lastSets: this.lastTime(exerciseId)?.sets ?? [],
+        lastSets: this._refTime(exerciseId)?.sets ?? [],
         workIndex,
         coach: this.coachAdvice(exerciseId),
       });
@@ -3186,6 +3218,8 @@ export function seances() {
           durationMin,
           ...(avgRpe != null ? { avgRpe } : {}),
           ...(caloriesKcal != null ? { caloriesKcal } : {}),
+          // Séance « Forme basse » : marquée, pour que la suivante reparte de la charge pleine.
+          ...(this.isLightened() ? { lightened: true } : {}),
         };
         // Persist FIRST so a write failure doesn't leave the UI in an
         // inconsistent state (session shown in history but not on disk).

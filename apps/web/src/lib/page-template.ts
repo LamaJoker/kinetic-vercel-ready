@@ -11,15 +11,22 @@
  * déploiement) — le routeur affiche alors son message « Impossible de charger ».
  */
 export function pageTemplate(url: string): () => Promise<string> {
-  let html: string | null = null;
-  return async () => {
-    if (html !== null) return html;
-    const resp = await fetch(url);
-    const type = resp.headers.get('content-type') ?? '';
-    if (!resp.ok || type.includes('text/html')) {
-      throw new Error(`[page-template] ${url} : ${resp.status} ${type}`);
-    }
-    html = await resp.text();
-    return html;
+  // Promesse gardée : un préchargement (page d'arrivée, main.ts) et l'affichage
+  // qui suit partagent le même téléchargement. Oubliée en cas d'échec (réessai).
+  let pending: Promise<string> | null = null;
+  return () => {
+    if (pending) return pending;
+    pending = (async () => {
+      const resp = await fetch(url);
+      const type = resp.headers.get('content-type') ?? '';
+      if (!resp.ok || type.includes('text/html')) {
+        throw new Error(`[page-template] ${url} : ${resp.status} ${type}`);
+      }
+      return resp.text();
+    })();
+    pending.catch(() => {
+      pending = null;
+    });
+    return pending;
   };
 }

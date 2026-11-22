@@ -66,6 +66,49 @@
 	<string>UIStatusBarStyleLightContent</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.lamajoker.kinetic.shortcut.seance-du-jour</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Séance du jour</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Démarrer la séance prévue</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>play.fill</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.lamajoker.kinetic.shortcut.pesee</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Pesée</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Saisir mon poids</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>scalemass</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.lamajoker.kinetic.shortcut.eau</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>+1 verre d’eau</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Ajouter un verre</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>drop.fill</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.lamajoker.kinetic.shortcut.checkin</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Check-in du matin</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Sommeil, énergie, courbatures</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>sun.max</string>
+		</dict>
+	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>

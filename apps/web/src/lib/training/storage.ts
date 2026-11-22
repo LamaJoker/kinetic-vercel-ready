@@ -202,7 +202,34 @@ export function foldLegacySessions(storage: StoragePort): Promise<number> {
   return run.finally(() => foldInflight.delete(storage));
 }
 
-export async function loadSessions(storage: StoragePort): Promise<WorkoutSession[]> {
+/** Lecture des séances en cours, par stockage (appels simultanés regroupés). */
+const sessionsInflight = new WeakMap<StoragePort, Promise<WorkoutSession[]>>();
+
+function cloneSessions(list: WorkoutSession[]): WorkoutSession[] {
+  return typeof structuredClone === 'function'
+    ? structuredClone(list)
+    : (JSON.parse(JSON.stringify(list)) as WorkoutSession[]);
+}
+
+/**
+ * Toutes les séances, triées par date de début. Au démarrage, l'accueil, les
+ * objectifs et les succès les demandent en même temps : une seule lecture du
+ * stockage (une requête par séance) est faite, les appels simultanés en
+ * reçoivent une copie. Rien n'est gardé en cache une fois la lecture finie.
+ */
+export function loadSessions(storage: StoragePort): Promise<WorkoutSession[]> {
+  const pending = sessionsInflight.get(storage);
+  if (pending) return pending.then(cloneSessions);
+  const run = readSessions(storage);
+  sessionsInflight.set(storage, run);
+  const clear = (): void => {
+    if (sessionsInflight.get(storage) === run) sessionsInflight.delete(storage);
+  };
+  run.then(clear, clear);
+  return run;
+}
+
+async function readSessions(storage: StoragePort): Promise<WorkoutSession[]> {
   try {
     await foldLegacySessions(storage);
   } catch (err) {
@@ -225,11 +252,13 @@ export async function loadSessions(storage: StoragePort): Promise<WorkoutSession
 
 /** Crée ou met à jour UNE séance (seule sa clé est écrite / synchronisée). */
 export async function saveSession(storage: StoragePort, session: WorkoutSession): Promise<void> {
+  sessionsInflight.delete(storage); // une lecture en cours ne doit pas servir l'ancienne liste
   await storage.set(sessionStorageKey(session.id), plain(session));
 }
 
 /** Supprime UNE séance (la suppression est propagée au cloud). */
 export async function deleteSession(storage: StoragePort, id: string): Promise<void> {
+  sessionsInflight.delete(storage);
   await storage.remove(sessionStorageKey(id));
 }
 

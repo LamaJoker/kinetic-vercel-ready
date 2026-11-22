@@ -16,6 +16,7 @@ import {
   workSetsOf,
 } from '@kinetic/core';
 import { getDeps } from '../deps';
+import { afterFirstRender } from '../lib/performance';
 import { loadSessions, loadExercises } from '../lib/training/storage';
 import type { Exercise, WorkoutSession } from '../lib/training/types';
 import { estimateE1rmKg } from '../lib/training/rpe';
@@ -67,7 +68,16 @@ export function achievementsStore() {
       };
       window.addEventListener(STORAGE_KEYS.EVENT_SESSION_SAVED, this._sessionSavedHandler);
       window.addEventListener(STORAGE_KEYS.EVENT_DEPS_READY, this._depsReadyHandler);
-      await this.reload();
+      // Succès déjà débloqués tout de suite (pastille de l'accueil) ; le recalcul
+      // complet (toutes les séances) attend la fin du premier écran.
+      try {
+        const deps = await getDeps();
+        const stored = await deps.storage.get<string[]>(STORAGE_KEYS.ACHIEVEMENTS_UNLOCKED);
+        if (Array.isArray(stored)) this.unlockedIds = stored;
+      } catch {
+        /* relu par reload() ci-dessous */
+      }
+      afterFirstRender(() => void this.reload());
     },
 
     destroy(): void {

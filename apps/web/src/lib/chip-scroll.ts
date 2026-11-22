@@ -68,12 +68,16 @@ export function bindChipScroll(el: HTMLElement): () => void {
     el.toggleAttribute('data-fade-end', f.end);
   };
 
+  // Choix actif déjà ramené à l'écran une fois. Tant que non : la rangée était
+  // cachée (x-show, largeur nulle) et sera révélée dès qu'elle prend une taille.
+  let revealed = false;
   const reveal = (smooth: boolean): void => {
     const active = el.querySelector<HTMLElement>(ACTIVE_SELECTOR);
     if (!active || el.clientWidth === 0) {
       updateFades();
       return;
     }
+    revealed = true;
     const target = chipScrollTarget(
       el.clientWidth,
       el.scrollWidth,
@@ -106,7 +110,13 @@ export function bindChipScroll(el: HTMLElement): () => void {
     attributes: true,
     attributeFilter: ['aria-pressed', 'aria-selected', 'class'],
   });
-  const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(updateFades) : null;
+  // Rangée affichée après coup (ex. /progression?tab=compare : onglets cachés tant
+  // que les séances ne sont pas chargées) : l'onglet actif est amené à l'écran.
+  const onResize = (): void => {
+    if (revealed) updateFades();
+    else reveal(false);
+  };
+  const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(onResize) : null;
   ro?.observe(el);
   el.addEventListener('scroll', updateFades, { passive: true });
 

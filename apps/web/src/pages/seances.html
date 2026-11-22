@@ -87,7 +87,7 @@
     </div>
 
     <!-- Exercice courant -->
-    <div>
+    <div class="relative">
       <p class="k-stage-muted text-base font-semibold" x-text="gymProgress()"></p>
       <h2
         class="font-display text-[2.25rem] font-extrabold leading-[1.05] text-white [overflow-wrap:anywhere]"
@@ -110,6 +110,15 @@
         </button>
       </div>
       <p class="k-stage-muted mt-1 text-lg tabular-nums" x-text="$num.loc(gymLastLabel())"></p>
+      <!-- Notification sous l'en-tête (jamais sur le nom de l'exercice) ; la pile
+           habituelle, masquée à l'œil en mode salle, reste lue par les lecteurs d'écran. -->
+      <p
+        x-show="$store.notifications.stageToast()"
+        x-text="$store.notifications.stageToast()"
+        class="k-stage-toast"
+        aria-hidden="true"
+        style="display: none"
+      ></p>
     </div>
 
     <!-- Repos : minuteur géant -->

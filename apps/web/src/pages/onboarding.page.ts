@@ -1,6 +1,6 @@
 ﻿import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { STORAGE_KEYS } from '@kinetic/core';
+import { STORAGE_KEYS, parseTourState, tourStateAfterOnboarding } from '@kinetic/core';
 import { getDeps } from '../deps';
 import type { ActivityLevel, UserGoal, UserProfile } from '../lib/user/types';
 import { saveUserProfile, loadUserProfile } from '../lib/user/storage';
@@ -14,6 +14,17 @@ function nowIso(): string {
 function clamp(n: number, min: number, max: number): number {
   if (!Number.isFinite(n)) return min;
   return Math.max(min, Math.min(max, n));
+}
+
+/** Visite guidée proposée une fois sur l'accueil après l'onboarding (lib/first-run-tour.ts). */
+export function queueFirstRunTour(): void {
+  try {
+    const key = STORAGE_KEYS.FIRST_RUN_TOUR;
+    const next = tourStateAfterOnboarding(parseTourState(localStorage.getItem(key)));
+    if (next) localStorage.setItem(key, next);
+  } catch {
+    /* localStorage indisponible : pas de visite */
+  }
 }
 
 /** Carte d'objectif : liseré d'accent quand elle est sélectionnée. */
@@ -126,6 +137,7 @@ export function onboarding() {
         const deps = await getDeps();
         const { loadDemoData } = await import('../lib/demo');
         const count = await loadDemoData(deps.storage);
+        queueFirstRunTour();
         window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_ONBOARDING_COMPLETE));
         console.info(`[onboarding] démo chargée : ${count} séances`);
         // Rechargement complet : chaque store (XP, série, objectifs…) repart
@@ -156,6 +168,7 @@ export function onboarding() {
           ? { ...draft, createdAt: existing.createdAt, updatedAt: now }
           : { ...draft, createdAt: now, updatedAt: now };
         await saveUserProfile(deps.storage, next);
+        queueFirstRunTour();
 
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {

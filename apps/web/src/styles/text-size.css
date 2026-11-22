@@ -1,0 +1,142 @@
+/* Taille du texte agrandie (lib/text-size.ts → <html data-text-size="l|xl">).
+   Le texte courant grandit pleinement ; les grands chiffres et les grands
+   titres grandissent moins (comme Dynamic Type sur iOS), pour tenir sur une
+   ligne et garder la mise en page : jamais plus grands qu'en taille normale.
+   Sans effet en taille normale. */
+html[data-text-size='l'] {
+  --k-display-damp: 0.93;
+}
+html[data-text-size='xl'] {
+  --k-display-damp: 0.84;
+}
+
+html[data-text-size='l'] .text-\[1\.5rem\],
+html[data-text-size='xl'] .text-\[1\.5rem\] {
+  font-size: min(calc(1.5rem * var(--k-display-damp)), 24px);
+}
+html[data-text-size='l'] .text-\[1\.625rem\],
+html[data-text-size='xl'] .text-\[1\.625rem\] {
+  font-size: min(calc(1.625rem * var(--k-display-damp)), 26px);
+}
+html[data-text-size='l'] .text-\[1\.75rem\],
+html[data-text-size='xl'] .text-\[1\.75rem\] {
+  font-size: min(calc(1.75rem * var(--k-display-damp)), 28px);
+}
+html[data-text-size='l'] .text-\[2rem\],
+html[data-text-size='xl'] .text-\[2rem\] {
+  font-size: min(calc(2rem * var(--k-display-damp)), 32px);
+}
+html[data-text-size='l'] .text-\[2\.125rem\],
+html[data-text-size='xl'] .text-\[2\.125rem\] {
+  font-size: min(calc(2.125rem * var(--k-display-damp)), 34px);
+}
+html[data-text-size='l'] .text-\[2\.25rem\],
+html[data-text-size='xl'] .text-\[2\.25rem\] {
+  font-size: min(calc(2.25rem * var(--k-display-damp)), 36px);
+}
+html[data-text-size='l'] .text-\[2\.375rem\],
+html[data-text-size='xl'] .text-\[2\.375rem\] {
+  font-size: min(calc(2.375rem * var(--k-display-damp)), 38px);
+}
+html[data-text-size='l'] .text-\[2\.5rem\],
+html[data-text-size='xl'] .text-\[2\.5rem\] {
+  font-size: min(calc(2.5rem * var(--k-display-damp)), 40px);
+}
+html[data-text-size='l'] .text-\[2\.75rem\],
+html[data-text-size='xl'] .text-\[2\.75rem\] {
+  font-size: min(calc(2.75rem * var(--k-display-damp)), 44px);
+}
+html[data-text-size='l'] .text-\[3rem\],
+html[data-text-size='xl'] .text-\[3rem\] {
+  font-size: min(calc(3rem * var(--k-display-damp)), 48px);
+}
+html[data-text-size='l'] .text-\[3\.25rem\],
+html[data-text-size='xl'] .text-\[3\.25rem\] {
+  font-size: min(calc(3.25rem * var(--k-display-damp)), 52px);
+}
+html[data-text-size='l'] .text-\[3\.5rem\],
+html[data-text-size='xl'] .text-\[3\.5rem\] {
+  font-size: min(calc(3.5rem * var(--k-display-damp)), 56px);
+}
+html[data-text-size='l'] .text-\[3\.75rem\],
+html[data-text-size='xl'] .text-\[3\.75rem\] {
+  font-size: min(calc(3.75rem * var(--k-display-damp)), 60px);
+}
+html[data-text-size='l'] .text-2xl,
+html[data-text-size='xl'] .text-2xl {
+  font-size: min(calc(1.5rem * var(--k-display-damp)), 24px);
+}
+html[data-text-size='l'] .text-3xl,
+html[data-text-size='xl'] .text-3xl {
+  font-size: min(calc(1.875rem * var(--k-display-damp)), 30px);
+}
+html[data-text-size='l'] .text-4xl,
+html[data-text-size='xl'] .text-4xl {
+  font-size: min(calc(2.25rem * var(--k-display-damp)), 36px);
+}
+html[data-text-size='l'] .text-5xl,
+html[data-text-size='xl'] .text-5xl {
+  font-size: min(calc(3rem * var(--k-display-damp)), 48px);
+}
+html[data-text-size='l'] .text-6xl,
+html[data-text-size='xl'] .text-6xl {
+  font-size: min(calc(3.75rem * var(--k-display-damp)), 60px);
+}
+html[data-text-size='l'] .text-7xl,
+html[data-text-size='xl'] .text-7xl {
+  font-size: min(calc(4.5rem * var(--k-display-damp)), 72px);
+}
+/* Grand chiffre sans taille explicite (34 px par défaut, styles.css). */
+html[data-text-size='l'] .k-stat:not([class*='text-['], [class*='xl']),
+html[data-text-size='xl'] .k-stat:not([class*='text-['], [class*='xl']) {
+  font-size: min(calc(2.125rem * var(--k-display-damp)), 34px);
+}
+/* Titres et lignes de liste coupés (« … ») : en grand, jusqu'à deux lignes. */
+html[data-text-size='l'] :is(h1, h2, h3, p).truncate,
+html[data-text-size='xl'] :is(h1, h2, h3, p).truncate {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* Anneaux de synthèse : pas plus grands qu'en taille normale (un tiers de l'écran),
+   la place libérée revient aux chiffres à côté. */
+html[data-text-size='l'] .k-ring-box,
+html[data-text-size='xl'] .k-ring-box {
+  max-width: 34vw;
+  max-height: 34vw;
+}
+/* Rangées de 3-4 grands chiffres : colonnes plus étroites (marges en rem). */
+html[data-text-size='xl'] :is(.grid-cols-3, .grid-cols-4) .k-stat {
+  font-size: min(1.4rem, 28px);
+}
+/* Commandes segmentées : en très grand, un libellé long passe sur deux lignes
+   au lieu d'être coupé. */
+html[data-text-size='xl'] .k-seg-item {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* Commande segmentée à libellés inégaux : chaque option prend la place de son texte. */
+.k-seg-fit .k-seg-item {
+  flex: 1 1 auto;
+  padding-inline: 0.375rem;
+}
+/* Tuiles de raccourcis (3 par ligne) : libellé à sa taille normale, marges réduites. */
+html[data-text-size='xl'] .k-tile {
+  padding-inline: 0.25rem;
+}
+html[data-text-size='xl'] .k-tile-label {
+  font-size: 13px;
+}
+
+/* Bouton principal : libellé sur une ligne (« Commencer la séance » passait sur
+   deux lignes en Très grand) ; s'il passe quand même à la ligne, le bouton grandit. */
+html[data-text-size='l'] .k-btn-primary,
+html[data-text-size='xl'] .k-btn-primary {
+  height: auto;
+  min-height: 3.125rem;
+  padding: 0.375rem 0.875rem;
+  font-size: min(1rem, 18px);
+  text-align: center;
+}

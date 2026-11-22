@@ -11,6 +11,32 @@ interface NotificationPayload {
 
 type Toast = NotificationPayload & { id: number; visible: boolean };
 
+/** Durée par défaut d'une notification (ms). */
+export const TOAST_MS = 3500;
+/** Mode salle : notification raccourcie (elle se pose sous le nom de l'exercice). */
+export const STAGE_TOAST_MS = 2000;
+
+/**
+ * Durée d'affichage : raccourcie en mode salle (écran plein format), sauf pour
+ * une erreur qu'il faut avoir le temps de lire.
+ */
+export function toastDuration(
+  payload: Pick<NotificationPayload, 'kind' | 'duration'>,
+  inStage: boolean,
+): number {
+  const d = payload.duration ?? TOAST_MS;
+  return inStage && payload.kind !== 'error' ? Math.min(d, STAGE_TOAST_MS) : d;
+}
+
+/** Écran « Mode salle » affiché (seances.html, section .k-stage). */
+function stageShown(): boolean {
+  try {
+    return !!document.querySelector('.k-stage:not([style*="display: none"])');
+  } catch {
+    return false;
+  }
+}
+
 export function notificationsStore() {
   return {
     toasts: [] as Toast[],
@@ -38,7 +64,7 @@ export function notificationsStore() {
       const toast: Toast = { ...payload, id, visible: true };
       this.toasts = [...this.toasts, toast];
 
-      const duration = payload.duration ?? 3500;
+      const duration = toastDuration(payload, stageShown());
       setTimeout(() => {
         this.toasts = this.toasts.map((t) => (t.id === id ? { ...t, visible: false } : t));
         setTimeout(() => {
@@ -52,6 +78,19 @@ export function notificationsStore() {
       setTimeout(() => {
         this.toasts = this.toasts.filter((t) => t.id !== id);
       }, 300);
+    },
+
+    /**
+     * Mode salle : texte de la dernière notification visible, affiché dans l'écran
+     * plein format sous le nom de l'exercice (la pile habituelle y est masquée à
+     * l'œil mais reste annoncée aux lecteurs d'écran). Vide sinon.
+     */
+    stageToast(): string {
+      for (let i = this.toasts.length - 1; i >= 0; i--) {
+        const t = this.toasts[i]!;
+        if (t.visible) return t.message;
+      }
+      return '';
     },
 
     /** Couleur de la pastille d'état affichée dans le toast. */

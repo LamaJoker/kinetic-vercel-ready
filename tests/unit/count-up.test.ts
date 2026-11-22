@@ -75,7 +75,8 @@ describe('chiffres qui défilent : branchement', () => {
     const { vi } = await import('vitest');
     const { bindCountUp } = await import('../../apps/web/src/lib/count-up.js');
     // Faux observateurs : la mutation est livrée à la demande (comme une micro-tâche).
-    let ioCb: ((e: { isIntersecting: boolean }[]) => void) | null = null;
+    // Deux observateurs : « proche de l'écran » (créé d'abord), puis « visible ».
+    const ioCbs: ((e: { isIntersecting: boolean }[]) => void)[] = [];
     const queue: unknown[] = [];
     let moCb: (() => void) | null = null;
     class FakeMO {
@@ -90,7 +91,7 @@ describe('chiffres qui défilent : branchement', () => {
     }
     class FakeIO {
       constructor(cb: (e: { isIntersecting: boolean }[]) => void) {
-        ioCb = cb;
+        ioCbs.push(cb);
       }
       observe(): void {}
       disconnect(): void {}
@@ -121,10 +122,14 @@ describe('chiffres qui défilent : branchement', () => {
         }
       };
       bindCountUp(el as unknown as HTMLElement);
+      expect(ioCbs).toHaveLength(2);
+      const [nearCb, visibleCb] = ioCbs;
       xText('7');
-      expect(text).toBe('0'); // point de départ affiché
+      expect(text).toBe('7'); // loin de l'écran : la vraie valeur reste lisible
+      nearCb!([{ isIntersecting: true }]);
+      expect(text).toBe('0'); // à l'approche : point de départ affiché
       xText('0'); // vraie valeur : 0
-      ioCb!([{ isIntersecting: true }]);
+      visibleCb!([{ isIntersecting: true }]);
       // Aucune animation vers l'ancienne valeur 7.
       for (let i = 0; i < 5 && frames.length; i++) {
         const f = frames;
@@ -132,6 +137,46 @@ describe('chiffres qui défilent : branchement', () => {
         f.forEach((cb) => cb(performance.now() + 10_000));
       }
       expect(text).toBe('0');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('jamais à l’écran (capture de toute la page) : la vraie valeur, pas 0', async () => {
+    const { vi } = await import('vitest');
+    const { bindCountUp } = await import('../../apps/web/src/lib/count-up.js');
+    let moCb: (() => void) | null = null;
+    class FakeMO {
+      constructor(cb: () => void) {
+        moCb = cb;
+      }
+      observe(): void {}
+      disconnect(): void {}
+      takeRecords(): unknown[] {
+        return [];
+      }
+    }
+    class FakeIO {
+      observe(): void {}
+      disconnect(): void {}
+    }
+    vi.stubGlobal('MutationObserver', FakeMO);
+    vi.stubGlobal('IntersectionObserver', FakeIO);
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) });
+    try {
+      let text = '';
+      const el = {
+        get textContent() {
+          return text;
+        },
+        set textContent(v: string) {
+          text = v;
+        },
+      };
+      bindCountUp(el as unknown as HTMLElement);
+      el.textContent = '1759'; // x-text : métabolisme de base, plus bas dans la page
+      moCb!();
+      expect(text).toBe('1759');
     } finally {
       vi.unstubAllGlobals();
     }

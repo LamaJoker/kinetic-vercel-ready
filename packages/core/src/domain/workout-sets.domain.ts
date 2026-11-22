@@ -69,6 +69,8 @@ interface SessionLike<S> {
   id: string;
   startedAt: string;
   entries: ReadonlyArray<{ exerciseId: string; sets: readonly S[] }>;
+  /** Séance faite en version allégée (« Forme basse » : −10 % de charge). */
+  lightened?: boolean | undefined;
 }
 
 export interface LastPerformance<S> {
@@ -100,6 +102,25 @@ export function lastPerformance<S extends KindedSet>(
     bestMs = ms;
   }
   return best;
+}
+
+/**
+ * Performance de référence pour les cibles de charge : la dernière séance NON
+ * allégée où l'exercice a été fait, sinon la dernière tout court. Ainsi deux
+ * jours de « Forme basse » d'affilée ne cumulent pas la baisse (−10 % puis
+ * encore −10 %), et la séance normale suivante repart de la charge pleine.
+ */
+export function referencePerformance<S extends KindedSet>(
+  sessions: ReadonlyArray<SessionLike<S>>,
+  exerciseId: string,
+  excludeSessionId?: string | null,
+): LastPerformance<S> | null {
+  const full = lastPerformance(
+    sessions.filter((s) => s.lightened !== true),
+    exerciseId,
+    excludeSessionId,
+  );
+  return full ?? lastPerformance(sessions, exerciseId, excludeSessionId);
 }
 
 /**

@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS } from '@kinetic/core';
-import { deepLinkRoute } from './deep-link';
+import { createDeepLinkGate, firstLaunchUrl, parseDeepLink } from './deep-link';
 import { currentHistoryIdx } from './nav-motion';
 import { pageBackground } from './palette';
 
@@ -45,6 +45,39 @@ function openRoute(route: string): void {
     window.history.replaceState({ kIdx: currentHistoryIdx() }, '', route);
   }
   window.dispatchEvent(new PopStateEvent('popstate'));
+}
+
+/** Un même lien reçu deux fois de suite (lancement à froid) n'est traité qu'une fois. */
+const deepLinkGate = createDeepLinkGate();
+
+/**
+ * Lien interne (widget, notification, raccourci) : ouvre la page et lance
+ * l'action éventuelle. Faux si ce n'est pas un lien interne (retour OAuth…).
+ */
+function handleDeepLink(url: string): boolean {
+  const link = parseDeepLink(url);
+  if (!link) return false;
+  if (!deepLinkGate(url)) return true;
+  if (!link.action) {
+    openRoute(link.route);
+    return true;
+  }
+  const action = link.action;
+  void import('./shortcut-actions')
+    .then(({ runShortcutAction }) => runShortcutAction(action, openRoute))
+    .catch((err) => {
+      debugLog(`shortcut ${action}: ${String(err).slice(0, 200)}`);
+      openRoute(link.route);
+    });
+  return true;
+}
+
+function sessionMemory(): Storage | null {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -93,9 +126,10 @@ export async function initMobile(): Promise<void> {
     const launch = await CapApp.getLaunchUrl();
     if (launch?.url) {
       debugLog(`launchUrl: ${launch.url.slice(0, 200)}`);
-      const route = deepLinkRoute(launch.url);
-      if (route) openRoute(route);
-      else if (launch.url.startsWith('com.lamajoker.kinetic://')) {
+      if (parseDeepLink(launch.url)) {
+        // Après un rechargement de la page, le même lien revient : ne pas rejouer l'action.
+        if (firstLaunchUrl(launch.url, sessionMemory())) handleDeepLink(launch.url);
+      } else if (launch.url.startsWith('com.lamajoker.kinetic://')) {
         const { supabase } = await import('@kinetic/adapters-web');
         if (supabase) {
           await handleOAuthCallback(supabase, launch.url);
@@ -109,11 +143,7 @@ export async function initMobile(): Promise<void> {
     // ── Cas 2 : app en ARRIÈRE-PLAN → deep link reçu ───────────────────
     CapApp.addListener('appUrlOpen', async ({ url }) => {
       debugLog(`appUrlOpen: ${url.slice(0, 200)}`);
-      const route = deepLinkRoute(url);
-      if (route) {
-        openRoute(route);
-        return;
-      }
+      if (handleDeepLink(url)) return;
       if (!url.startsWith('com.lamajoker.kinetic://')) return;
       const { supabase } = await import('@kinetic/adapters-web');
       if (supabase) await handleOAuthCallback(supabase, url);

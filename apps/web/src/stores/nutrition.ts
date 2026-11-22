@@ -149,9 +149,11 @@ export function nutritionStore() {
     async init(): Promise<void> {
       try {
         const deps = await getDeps();
-        const stored = await deps.storage.get<NutritionPlan>(KEY_PLAN);
+        const [stored, log] = await Promise.all([
+          deps.storage.get<NutritionPlan>(KEY_PLAN),
+          deps.storage.get<LoggedMeal[]>(KEY_LOG(todayIso())),
+        ]);
         this.plan = stored;
-        const log = await deps.storage.get<LoggedMeal[]>(KEY_LOG(todayIso()));
         this.todayLog = log ?? [];
       } catch (err) {
         console.error('[nutrition] init failed:', err);

@@ -69,6 +69,11 @@ export async function deletePhoto(storage: StoragePort, id: string): Promise<Pho
   return next;
 }
 
+/** Supprime les images (Blobs) de ces photos, sans toucher aux métadonnées. Idempotent. */
+export async function deletePhotoBlobs(ids: readonly string[]): Promise<void> {
+  for (const id of ids) await idbDel(id, photoStore).catch(() => null);
+}
+
 // ─── Blob CRUD ──────────────────────────────────────────────────────────────
 
 /**

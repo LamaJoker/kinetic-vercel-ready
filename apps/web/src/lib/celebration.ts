@@ -73,6 +73,25 @@ export function recordCelebration(
   return { kind: 'record', title: 'Nouveau record !', subtitle: name ? `${name} ${perf}` : perf };
 }
 
+/** « Objectif atteint ! » — « Squat : 120 kg » (même carte que les records). */
+export function goalCelebration(goalLabelText: string): CelebrationDetail {
+  return { kind: 'record', title: 'Objectif atteint !', subtitle: goalLabelText };
+}
+
+/**
+ * Une même série bat un record ET remplit un objectif : une seule carte
+ * (« Nouveau record et objectif atteint ! ») au lieu de deux à la suite.
+ * Sans record, les cartes d'objectif restent telles quelles.
+ */
+export function mergeRecordAndGoals(
+  record: CelebrationDetail | null,
+  goals: readonly CelebrationDetail[],
+): CelebrationDetail[] {
+  if (!record) return [...goals];
+  if (goals.length === 0) return [record];
+  return [{ ...record, title: 'Nouveau record et objectif atteint !' }];
+}
+
 /** Récompense « réelle » (hors niveau de base) associée à un niveau. */
 export function rewardForLevel(level: number): CelebrationReward | undefined {
   const r = REWARDS.find((entry) => entry.level === level);

@@ -81,6 +81,7 @@ describe('store achievements', () => {
     const { achievementsStore } = await import('../../apps/web/src/stores/achievements.js');
     const store = achievementsStore();
     await store.init();
+    await store.reload(); // recalcul complet : différé après le premier écran dans l'app
     expect(store.isUnlocked('sessions:1')).toBe(true);
     expect(store.isUnlocked('does-not-exist')).toBe(false);
     store.destroy();
@@ -128,6 +129,7 @@ describe('store achievements', () => {
     const { achievementsStore } = await import('../../apps/web/src/stores/achievements.js');
     const store = achievementsStore();
     await store.init();
+    await store.reload(); // recalcul complet : différé après le premier écran dans l'app
     // Achievement "first-session" doit maintenant être présent
     // "sessions:1" est le badge pour la 1re séance complétée
     expect(store.unlockedIds).toContain('sessions:1');

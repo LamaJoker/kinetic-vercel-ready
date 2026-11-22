@@ -7,6 +7,7 @@ import {
   type SharedProfile,
   type ProfileBestLift,
   type ReportPeriodKey,
+  type TextSizePref,
   workSetsOf,
 } from '@kinetic/core';
 import Alpine from 'alpinejs';
@@ -16,6 +17,8 @@ import { loadSessions, loadExercises, loadCustomExercises } from '../lib/trainin
 import { estimateE1rmKg } from '../lib/training/rpe';
 import { getThemeMode, setThemeMode, type ThemeMode } from '../lib/theme';
 import { getDisplayDensity, setDisplayDensity, type DisplayDensity } from '../lib/display-mode';
+import { getTextSizePref, setTextSizePref } from '../lib/text-size';
+import { navigate } from '../router';
 import { hapticsEnabled, setHapticsEnabled, hapticTap } from '../lib/haptics';
 import { wakeLockEnabled, setWakeLockEnabled, wakeLockSupported } from '../lib/wake-lock';
 import {
@@ -192,6 +195,8 @@ export function profile() {
     healthOn: false,
     themeMode: 'dark' as ThemeMode,
     density: 'simple' as DisplayDensity,
+    /** Réglage « Taille du texte » (lib/text-size.ts). */
+    textSize: 'system' as TextSizePref,
     /** Réglage « Vibrations » (app native seulement, voir lib/haptics.ts). */
     hapticsOn: true,
     /** Réglage « Garder l'écran allumé en séance » (lib/wake-lock.ts). */
@@ -225,6 +230,21 @@ export function profile() {
     setDensity(density: DisplayDensity): void {
       this.density = density;
       setDisplayDensity(density);
+    },
+
+    setTextSize(pref: TextSizePref): void {
+      this.textSize = pref;
+      setTextSizePref(pref);
+    },
+
+    /** « Revoir la visite » : relancée sur l'accueil (lib/first-run-tour.ts). */
+    replayTour(): void {
+      try {
+        localStorage.setItem(STORAGE_KEYS.FIRST_RUN_TOUR, 'replay');
+      } catch {
+        /* localStorage indisponible : pas de visite */
+      }
+      navigate('/');
     },
 
     showDeleteAccount: false,
@@ -341,6 +361,7 @@ export function profile() {
         this.healthOn = this.healthState === 'available' && healthEnabled();
         this.themeMode = getThemeMode();
         this.density = getDisplayDensity();
+        this.textSize = getTextSizePref();
         this.hapticsOn = hapticsEnabled();
         this.wakeLockOn = wakeLockEnabled();
         this.wakeLockAvailable = wakeLockSupported();

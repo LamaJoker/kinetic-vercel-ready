@@ -6,6 +6,8 @@
  * le loader/prefetch est retiré. Restent les helpers UI utiles.
  */
 
+import { STORAGE_KEYS } from '@kinetic/core';
+
 // ─── Skeletons ───────────────────────────────────────────────
 
 export type SkeletonType = 'task-list' | 'dashboard' | 'profile' | 'xp-bar';
@@ -147,3 +149,55 @@ export const ric: (cb: IdleCb, opts?: { timeout?: number }) => number =
     .requestIdleCallback ??
   ((cb, opts) =>
     setTimeout(() => cb({ didTimeout: false, timeRemaining: () => 50 }), opts?.timeout ?? 1));
+
+// ─── Après le premier écran ──────────────────────────────────
+
+/** Événement du routeur : une page vient d'être affichée. */
+const ROUTE_CHANGED = STORAGE_KEYS.EVENT_ROUTE_CHANGED;
+/** Filet : si aucune page n'est affichée (erreur), le travail part quand même. */
+export const FIRST_RENDER_FALLBACK_MS = 5000;
+
+let firstRenderDone = false;
+let firstRenderWaiters: Array<() => void> = [];
+
+function flushFirstRender(): void {
+  if (firstRenderDone) return;
+  firstRenderDone = true;
+  const waiters = firstRenderWaiters;
+  firstRenderWaiters = [];
+  for (const run of waiters) run();
+}
+
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener(ROUTE_CHANGED, flushFirstRender, { once: true });
+  setTimeout(flushFirstRender, FIRST_RENDER_FALLBACK_MS);
+}
+
+/**
+ * Lance `cb` une fois le premier écran affiché, pendant un temps mort
+ * (requestIdleCallback, au plus `timeout` ms d'attente). Pour tout ce qui
+ * n'est pas utile à la première image : synchro, rappels, défis, sauvegarde
+ * automatique, préchargements, nettoyage du stockage.
+ */
+export function afterFirstRender(cb: () => void, timeout = 2000): void {
+  const run = (): void => {
+    ric(
+      () => {
+        try {
+          cb();
+        } catch (err) {
+          console.warn('[perf] tâche différée en échec :', err);
+        }
+      },
+      { timeout },
+    );
+  };
+  if (firstRenderDone) run();
+  else firstRenderWaiters.push(run);
+}
+
+/** Tests : remet l'attente du premier écran à zéro (ou la marque comme passée). */
+export function _setFirstRenderDoneForTesting(done: boolean): void {
+  firstRenderDone = done;
+  if (!done) firstRenderWaiters = [];
+}

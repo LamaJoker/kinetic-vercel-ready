@@ -85,4 +85,6 @@ export interface WorkoutSession {
   durationMin?: number;
   avgRpe?: number;
   caloriesKcal?: number;
+  /** Séance faite en version allégée (« Forme basse ») : ignorée pour les charges de référence. */
+  lightened?: boolean;
 }

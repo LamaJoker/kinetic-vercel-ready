@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Généré par scripts/generate-native-assets.mjs (variante « minimal »). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M54,54m-25.2,0a25.2,25.2 0,1 1,50.4 0a25.2,25.2 0,1 1,-50.4 0"
+        android:strokeColor="#FF0B0E1A"
+        android:strokeWidth="3.6" />
+    <path
+        android:pathData="M54,54m-19,0a19,19 0,1 1,38 0a19,19 0,1 1,-38 0"
+        android:strokeColor="#400B0E1A"
+        android:strokeWidth="3.4" />
+    <path
+        android:fillColor="#FF0B0E1A"
+        android:pathData="M54,54m-7.2,0a7.2,7.2 0,1 1,14.4 0a7.2,7.2 0,1 1,-14.4 0" />
+</vector>

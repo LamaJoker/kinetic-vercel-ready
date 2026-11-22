@@ -242,6 +242,19 @@ export function formCheckin() {
       void this._maybeSave();
     },
 
+    /**
+     * Jour courant recalculé au moment de la saisie (application restée ouverte
+     * après minuit). Vrai si la date a changé : le check-in de la veille n'est
+     * plus celui qu'on modifie.
+     */
+    _rollDay(): boolean {
+      const today = localDay(new Date());
+      if (today === this.date) return false;
+      this.date = today;
+      this.current = null;
+      return true;
+    },
+
     edit(): void {
       this._fillFromCurrent();
       this.editing = true;
@@ -256,8 +269,9 @@ export function formCheckin() {
         this._again = true;
         return;
       }
-      const first = !this.current;
-      const prev = this.current;
+      // Accueil ouvert avant minuit : la saisie va au jour où elle est faite.
+      const rolled = this._rollDay();
+      let prev = this.current;
       const c: CheckIn = {
         date: this.date,
         sleep: this.sleep,
@@ -270,6 +284,8 @@ export function formCheckin() {
       try {
         const deps = await getDeps();
         const log = await deps.storage.get<CheckInLog>(STORAGE_KEYS.WELLNESS_CHECKINS);
+        if (rolled) prev = normalizeCheckIn(log?.[c.date]);
+        const first = !prev;
         await deps.storage.set(STORAGE_KEYS.WELLNESS_CHECKINS, upsertCheckIn(log, c));
         this.current = c;
         if (first) {
@@ -411,6 +427,7 @@ export function waterTracker() {
     },
 
     async undo(): Promise<void> {
+      this.date = localDay(new Date()); // après minuit : on n'annule pas un verre de la veille
       if (!this.canUndo) return;
       const wasReached = this.reached;
       try {

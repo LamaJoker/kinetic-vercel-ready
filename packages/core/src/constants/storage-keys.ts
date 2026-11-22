@@ -83,6 +83,8 @@ export const STORAGE_KEYS = {
   PROGRAM_TODO_STATUS: (dayKey: string) => `kinetic:program:todoStatus:${dayKey}` as const,
   // Clé sessionStorage : template pré-sélectionné depuis la page Programme
   PROGRAM_AUTO_TEMPLATE: 'kinetic:program:auto-template' as const,
+  // Clé sessionStorage : dernier lien de lancement traité (raccourcis, lib/deep-link.ts)
+  DEEP_LINK_LAUNCH: 'kinetic:deep-link:launch' as const,
   /** Semaine qui s'adapte : { week, programId, moves, skipped, unavailable } (semaine en cours). */
   PROGRAM_WEEK_PLAN: 'kinetic:program:week-plan' as const,
 
@@ -186,6 +188,8 @@ export const STORAGE_KEYS = {
   DISPLAY_DENSITY: 'kinetic:display-density' as const, // 'simple' | 'advanced' — defaut simple
   HAPTICS_ENABLED: 'kinetic:haptics' as const, // localStorage, '0' = vibrations coupées (défaut : actives)
   WAKE_LOCK_ENABLED: 'kinetic:wake-lock' as const, // localStorage, '0' = écran libre en séance (défaut : gardé allumé)
+  TEXT_SIZE: 'kinetic:text-size' as const, // localStorage, 'system' | 'normal' | 'large' | 'xlarge' (défaut : system)
+  FIRST_RUN_TOUR: 'kinetic:first-run-tour' as const, // localStorage, visite guidée : 'pending' | 'replay' | 'done'
 
   // ─── Schéma IDB & Diagnostics ─────────────────────────────────
   SCHEMA_VERSION: 'kinetic:schema-version' as const,
@@ -212,6 +216,7 @@ export const STORAGE_KEYS = {
   EVENT_WAKE_LOCK_CHANGED: 'kinetic:wake-lock-changed' as const, // réglage « Garder l'écran allumé en séance »
   EVENT_REFRESH: 'kinetic:refresh' as const, // tirer pour rafraîchir (lib/native-gestures.ts)
   EVENT_CHECKIN_SAVED: 'kinetic:checkin-saved' as const, // check-in du matin enregistré (components/wellness.ts)
+  EVENT_NEW_DAY: 'kinetic:new-day' as const, // passage à minuit, application restée ouverte (main.ts)
   ERRORS_LAST_FLUSH: 'kinetic:errors:last-flush' as const, // localStorage, throttle exfiltration
 } as const;
 

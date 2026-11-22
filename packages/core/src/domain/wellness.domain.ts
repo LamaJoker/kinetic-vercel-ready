@@ -176,6 +176,12 @@ export function lightenWeight(weightKg: number, incrementKg = 2.5): number {
   return Math.round(out * 100) / 100;
 }
 
+/** La même série, charge allégée de 10 % (séance « Forme basse »). */
+export function lightenSet<S extends { weightKg: number }>(set: S, incrementKg = 2.5): S {
+  const w = Number(set.weightKg) || 0;
+  return w > 0 ? { ...set, weightKg: lightenWeight(w, incrementKg) } : { ...set };
+}
+
 /** Une série de moins (au moins une). */
 export function lightenSetCount(sets: number): number {
   const n = Math.round(Number(sets) || 0);

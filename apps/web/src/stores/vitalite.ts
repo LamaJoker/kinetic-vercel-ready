@@ -213,14 +213,17 @@ export function vitaliteStore() {
       try {
         const deps = await getDeps();
         const today = todayIso();
-        this.customSpecs =
-          (await withTimeout(deps.storage.get<CustomTaskSpec[]>(KEY_CUSTOM_TASKS))) ?? [];
-        const doneIds =
-          (await withTimeout(deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(today)))) ?? [];
-        this.hiddenIds = (await withTimeout(deps.storage.get<string[]>(KEY_HIDDEN_TASKS))) ?? [];
-        this._intervalLastDone =
-          (await withTimeout(deps.storage.get<Record<string, string>>(KEY_INTERVAL_LAST_DONE))) ??
-          {};
+        // Quatre lectures en parallèle (l'anneau « Récupération » de l'accueil en dépend).
+        const [customSpecs, doneIdsRaw, hiddenIds, intervalLastDone] = await Promise.all([
+          withTimeout(deps.storage.get<CustomTaskSpec[]>(KEY_CUSTOM_TASKS)),
+          withTimeout(deps.storage.get<string[]>(STORAGE_KEYS.VITALITE_DONE(today))),
+          withTimeout(deps.storage.get<string[]>(KEY_HIDDEN_TASKS)),
+          withTimeout(deps.storage.get<Record<string, string>>(KEY_INTERVAL_LAST_DONE)),
+        ]);
+        this.customSpecs = customSpecs ?? [];
+        const doneIds = doneIdsRaw ?? [];
+        this.hiddenIds = hiddenIds ?? [];
+        this._intervalLastDone = intervalLastDone ?? {};
         this._recomputeHiddenSpecsList();
         this.tasks = buildTasks(this.customSpecs)
           .filter((task) => {

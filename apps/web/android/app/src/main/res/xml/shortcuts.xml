@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Raccourcis d'icône (appui long sur l'icône de Kinetic). Chaque raccourci ouvre un
+  lien interne com.lamajoker.kinetic://open/<action>, traité par src/lib/deep-link.ts.
+  Déclaré sur chaque alias de lanceur (AndroidManifest.xml, icônes alternatives).
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="seance-du-jour"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_seance"
+        android:shortcutShortLabel="@string/shortcut_seance_short"
+        android:shortcutLongLabel="@string/shortcut_seance_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="com.lamajoker.kinetic://open/seance-du-jour"
+            android:targetPackage="com.lamajoker.kinetic"
+            android:targetClass="com.lamajoker.kinetic.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="pesee"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_pesee"
+        android:shortcutShortLabel="@string/shortcut_pesee_short"
+        android:shortcutLongLabel="@string/shortcut_pesee_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="com.lamajoker.kinetic://open/pesee"
+            android:targetPackage="com.lamajoker.kinetic"
+            android:targetClass="com.lamajoker.kinetic.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="eau"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_eau"
+        android:shortcutShortLabel="@string/shortcut_eau_short"
+        android:shortcutLongLabel="@string/shortcut_eau_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="com.lamajoker.kinetic://open/eau"
+            android:targetPackage="com.lamajoker.kinetic"
+            android:targetClass="com.lamajoker.kinetic.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="checkin"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_checkin"
+        android:shortcutShortLabel="@string/shortcut_checkin_short"
+        android:shortcutLongLabel="@string/shortcut_checkin_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="com.lamajoker.kinetic://open/checkin"
+            android:targetPackage="com.lamajoker.kinetic"
+            android:targetClass="com.lamajoker.kinetic.MainActivity" />
+    </shortcut>
+</shortcuts>

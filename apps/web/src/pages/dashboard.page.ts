@@ -17,6 +17,7 @@ import {
 import { navigate } from '../router';
 import { loadActiveSession } from '../lib/training/active-session';
 import { hapticLight } from '../lib/haptics';
+import { ric } from '../lib/performance';
 import {
   loadChallengeCard,
   loadMuscleMap,
@@ -31,6 +32,16 @@ const PATTERN_LABELS: Record<'push' | 'pull' | 'legs', string> = {
   pull: 'tirer',
   legs: 'jambes',
 };
+
+/** Visite guidée en attente (onboarding terminé ou relancée depuis le profil). */
+function firstRunTourQueued(): boolean {
+  try {
+    const state = localStorage.getItem(STORAGE_KEYS.FIRST_RUN_TOUR);
+    return state === 'pending' || state === 'replay';
+  } catch {
+    return false;
+  }
+}
 
 /** Pourcentage arrondi et borné à [0, 100] (anneaux de progression). */
 export function ringPercent(value: number, total: number): number {
@@ -57,6 +68,8 @@ export function dashboard() {
     weekPlanReady: false,
     /** Une séance non terminée est enregistrée : le bouton la reprend au lieu d'en démarrer une. */
     hasActiveSession: false,
+    /** Nom de la séance en cours (affiché par la carte du jour à la place de la séance proposée). */
+    activeSessionName: '',
     /** Forme du jour et eau (components/wellness.ts, à la demande). */
     wellnessReady: false,
     /** Défi le plus proche (components/challenges.ts, à la demande). */
@@ -68,10 +81,26 @@ export function dashboard() {
       return this.hasActiveSession ? 'Reprendre la séance' : 'Commencer la séance';
     },
 
-    /** « 3 exercices, 10 séries » */
+    /** Titre de la carte du jour : la séance en cours, sinon la séance proposée. */
+    get todayTitle(): string {
+      if (this.hasActiveSession && this.activeSessionName) return this.activeSessionName;
+      return this.training?.next?.name ?? '';
+    },
+
+    /** Petite ligne au-dessus du titre de la carte du jour. */
+    get todayKicker(): string {
+      if (this.hasActiveSession) return 'Séance en cours';
+      const t = this.training;
+      if (!t || t.totalSessions === 0) return 'Ta première séance';
+      return t.daysSinceLast === 0
+        ? 'Déjà entraîné aujourd’hui — prochaine séance'
+        : 'Séance du jour';
+    },
+
+    /** « 3 exercices, 10 séries » (rien sous une séance en cours : le bouton dit « Reprendre »). */
     get nextDetail(): string {
       const n = this.training?.next;
-      if (!n) return '';
+      if (!n || this.hasActiveSession) return '';
       return `${n.exerciseCount} exercices, ${n.setCount} séries`;
     },
 
@@ -203,12 +232,15 @@ export function dashboard() {
       try {
         const deps = await getDeps();
 
-        void loadActiveSession(deps.storage).then((snap) => {
+        const storage = deps.storage;
+
+        void loadActiveSession(storage).then((snap) => {
           this.hasActiveSession = !!snap;
+          this.activeSessionName = snap?.session.name ?? '';
         });
 
         // Avatar : initiale du prénom saisi dans le profil (même sans compte)
-        void deps.storage
+        void storage
           .get<{ displayName?: string }>(STORAGE_KEYS.PROFILE)
           .then((profile) => {
             const auth = Alpine.store('auth') as
@@ -218,30 +250,41 @@ export function dashboard() {
           })
           .catch(() => undefined);
 
-        const streakData = await deps.storage.get<StreakState>(STORAGE_KEYS.STREAK);
+        // Premier écran : série, séances et modèles lus en parallèle, puis la carte du jour.
+        const [streakData, sessions, templates] = await Promise.all([
+          storage.get<StreakState>(STORAGE_KEYS.STREAK).catch(() => null),
+          loadSessions(storage),
+          loadTemplates(storage),
+        ]);
         if (streakData) {
           this.streak = streakData.count ?? 0;
           this.bestStreak = streakData.best ?? 0;
         }
+        this._allSessions = sessions;
+        this.training = buildTrainingSnapshot(sessions, templates);
 
-        this.balance = await this._buildBalanceReport();
-        this._allSessions = await loadSessions(deps.storage);
-        const templates = await loadTemplates(deps.storage);
-        this.training = buildTrainingSnapshot(this._allSessions, templates);
+        // Le reste arrive ensuite, sans retarder la carte du jour.
         this._loadMotivation();
-        this._loadMuscleMapPreview(deps.storage);
-        void this._loadWeekPlan(deps.storage);
-        const goals = await deps.storage.get<unknown[]>(STORAGE_KEYS.STRENGTH_GOALS);
-        if (Array.isArray(goals) && goals.length > 0) {
-          void loadStrengthGoals().then(
-            () => {
-              this.goalsReady = true;
-            },
-            (err: unknown) => console.warn('[dashboard] objectifs indisponibles :', err),
-          );
-        }
+        this._loadMuscleMapPreview(storage);
+        void this._loadWeekPlan(storage);
+        void this._loadGoalsPreview(storage);
+        // Équilibre pousser / tirer / jambes : calcul sur tout l'historique, en tâche de fond.
+        ric(
+          () => {
+            void this._buildBalanceReport(sessions).then((b) => {
+              this.balance = b;
+            });
+          },
+          { timeout: 2000 },
+        );
       } catch (err) {
         console.error('[dashboard] init failed:', err);
+      }
+      // Visite guidée après l'onboarding ou « Revoir la visite » (module chargé seulement alors).
+      if (firstRunTourQueued()) {
+        void import('../lib/first-run-tour')
+          .then((m) => m.startFirstRunTourIfQueued())
+          .catch((err: unknown) => console.warn('[dashboard] visite indisponible :', err));
       }
     },
 
@@ -299,15 +342,24 @@ export function dashboard() {
         );
     },
 
-    async _buildBalanceReport(): Promise<BalanceReport | null> {
+    /** Aperçu de l'objectif de force le plus proche, seulement s'il y a des objectifs. */
+    async _loadGoalsPreview(storage: Parameters<typeof loadExercises>[0]): Promise<void> {
+      try {
+        const goals = await storage.get<unknown[]>(STORAGE_KEYS.STRENGTH_GOALS);
+        if (!Array.isArray(goals) || goals.length === 0) return;
+        await loadStrengthGoals();
+        this.goalsReady = true;
+      } catch (err) {
+        console.warn('[dashboard] objectifs indisponibles :', err);
+      }
+    },
+
+    async _buildBalanceReport(sessions: WorkoutSession[]): Promise<BalanceReport | null> {
       try {
         const deps = await getDeps();
-        const [sessions, exercises] = await Promise.all([
-          loadSessions(deps.storage),
-          loadExercises(deps.storage),
-        ]);
+        const exercises = await loadExercises(deps.storage);
         const musclesById = new Map(exercises.map((e: Exercise) => [e.id, e.muscles]));
-        const sets = (sessions as WorkoutSession[]).flatMap((s) =>
+        const sets = sessions.flatMap((s) =>
           s.entries.flatMap((entry) =>
             workSetsOf(entry.sets).map((set) => ({
               muscles: musclesById.get(entry.exerciseId) ?? [],
