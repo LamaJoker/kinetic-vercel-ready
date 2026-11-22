@@ -427,6 +427,8 @@ export interface ShareCardImage {
   blob: Blob;
   fileName: string;
   title: string;
+  /** Titre de la feuille de partage native (par défaut : « Partager ta séance »). */
+  dialogTitle?: string;
 }
 
 /** Attend Inter (si elle est chargée par la page) pour ne pas dessiner en police système. */
@@ -507,7 +509,7 @@ const defaultEnv: ShareEnv = {
     await Share.share({
       title: image.title,
       files: [written.uri],
-      dialogTitle: 'Partager ta séance',
+      dialogTitle: image.dialogTitle ?? 'Partager ta séance',
     });
   },
   canShareFiles(file) {

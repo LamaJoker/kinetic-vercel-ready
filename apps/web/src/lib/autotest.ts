@@ -61,19 +61,26 @@ export async function runAutotest(openRoute: (route: string) => void): Promise<v
   const t0 = Date.now();
   window.addEventListener('error', (e) => errors.push(`error: ${e.message}`));
   window.addEventListener('unhandledrejection', (e) =>
-    errors.push(`rejection: ${String((e as PromiseRejectionEvent).reason).slice(0, 200)}`),
+    errors.push(`rejection: ${describe((e as PromiseRejectionEvent).reason).slice(0, 200)}`),
   );
+  /** Texte lisible pour une erreur ou un objet (sinon « [object Object] »). */
+  const describe = (value: unknown): string => {
+    if (value instanceof Error) return `${value.name}: ${value.message}`;
+    if (value && typeof value === 'object') {
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return Object.prototype.toString.call(value);
+      }
+    }
+    return String(value);
+  };
   // Erreurs et avertissements écrits par l'app elle-même (stockage, stores…).
   for (const level of ['error', 'warn'] as const) {
     const original = console[level].bind(console);
     console[level] = (...args: unknown[]) => {
       if (errors.length < 12) {
-        errors.push(
-          `${level}: ${args
-            .map((a) => String(a))
-            .join(' ')
-            .slice(0, 220)}`,
-        );
+        errors.push(`${level}: ${args.map(describe).join(' ').slice(0, 220)}`);
       }
       original(...args);
     };

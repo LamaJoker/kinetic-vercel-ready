@@ -60,6 +60,29 @@
   fill: rgb(var(--k-success) / 0.4);
 }
 
+/* Mode « Récupération » : récupéré (turquoise), en cours (ambre), fatigué (corail). */
+.k-mm-fresh {
+  fill: rgb(var(--k-success) / 0.55);
+}
+.k-mm-rec {
+  fill: rgb(var(--k-warning));
+}
+.k-mm-tired {
+  fill: rgb(var(--k-hot));
+}
+.k-mm-key.k-mm-fresh,
+.k-mm-bar.k-mm-fresh {
+  background: rgb(var(--k-success) / 0.7);
+}
+.k-mm-key.k-mm-rec,
+.k-mm-bar.k-mm-rec {
+  background: rgb(var(--k-warning));
+}
+.k-mm-key.k-mm-tired,
+.k-mm-bar.k-mm-tired {
+  background: rgb(var(--k-hot));
+}
+
 /* Pastille de légende et barres de la liste (même échelle que la silhouette). */
 .k-mm-key {
   display: inline-block;

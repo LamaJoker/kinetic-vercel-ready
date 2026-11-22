@@ -165,6 +165,10 @@ export const LAZY_CORE_MODULES = [
   'domain/plateau.domain', // alerte de stagnation (Séances, Progression)
   'domain/strength-tools.domain', // calculateurs 1RM / % / RPE (page Outils)
   'domain/period-compare.domain', // comparer deux périodes (Progression)
+  'domain/wellness.domain', // forme du jour, eau (accueil, Récupération, Séances)
+  'domain/muscle-fatigue.domain', // fatigue par muscle (carte des muscles, accueil)
+  'domain/nutrition-library.domain', // récents, favoris, recettes, protéines par repas (Nutrition)
+  'domain/body-composition.domain', // masse grasse estimée, comparateur photos (Corps)
 ];
 export const LAZY_TRAINING_MODULES = [
   'training/import', // import Strong / Hevy (Profil)

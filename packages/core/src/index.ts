@@ -95,6 +95,10 @@ export * from './domain/strength-goals.domain.js';
 export * from './domain/plateau.domain.js';
 export * from './domain/strength-tools.domain.js';
 export * from './domain/period-compare.domain.js';
+export * from './domain/wellness.domain.js';
+export * from './domain/muscle-fatigue.domain.js';
+export * from './domain/nutrition-library.domain.js';
+export * from './domain/body-composition.domain.js';
 
 // ─── Use Cases (orchestration) ────────────────────────────────
 export { completeTask_usecase } from './usecases/complete-task.usecase.js';

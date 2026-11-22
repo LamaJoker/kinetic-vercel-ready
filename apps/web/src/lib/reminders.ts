@@ -46,6 +46,8 @@ export const ROUTINE_NOTIF_ID = 1001;
 export const WEEKLY_NOTIF_ID = 1002;
 export const SESSION_NOTIF_ID = 1003;
 export const BACKUP_NOTIF_ID = 1004;
+/** Rappel du soir « Il te manque … g de protéines » (lib/protein-reminder.ts). 1005 = alerte de repos. */
+export const PROTEIN_NOTIF_ID = 1008;
 
 export const BACKUP_INTERVAL_DAYS = 30;
 const DAY_MS = 86_400_000;

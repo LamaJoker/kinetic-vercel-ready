@@ -143,13 +143,13 @@
     </div>
   </section>
 
-  <!-- ── Journal du jour : une liste groupée par repas ───────────────────── -->
+  <!-- ── Journal du jour : un bloc par repas (protéines du repas en violet) ── -->
   <div x-show="$store.nutrition.plan" class="mb-8">
     <div class="flex items-center justify-between gap-3 mb-2.5">
       <h2 class="k-section">Journal du jour</h2>
       <button
         type="button"
-        @click="showAddForm = !showAddForm"
+        @click="openAdd('')"
         class="k-pill bg-kinetic-surface"
         aria-haspopup="dialog"
         :aria-expanded="showAddForm ? 'true' : 'false'"
@@ -169,20 +169,51 @@
       </button>
     </div>
 
-    <template x-if="$store.nutrition.todayLog.length === 0">
-      <div class="k-empty">
-        <p>Aucun repas enregistré aujourd'hui.</p>
-        <p class="text-sm text-gray-500 mt-1">Ajoute un aliment pour suivre tes macros.</p>
-      </div>
-    </template>
-
     <div class="space-y-5 k-stagger">
-      <template x-for="meal in $store.nutrition.todayLog" :key="meal.id">
-        <div>
-          <p class="k-caption mb-1.5" x-text="meal.mealName"></p>
+      <template x-for="meal in sections" :key="meal.mealName">
+        <section :aria-label="meal.mealName">
+          <div class="flex items-center gap-2.5 mb-1.5 px-1">
+            <h3 class="k-caption flex-1 min-w-0 truncate" x-text="meal.mealName"></h3>
+            <span
+              class="text-xs text-gray-500 tabular-nums"
+              x-show="meal.kcal > 0"
+              x-text="meal.kcal + ' kcal'"
+            ></span>
+            <span
+              class="inline-flex items-center gap-1.5"
+              x-show="meal.targetG > 0"
+              role="img"
+              :aria-label="meal.proteinAria"
+            >
+              <span class="k-ring-box w-6 h-6" aria-hidden="true">
+                <svg class="k-ring" viewBox="0 0 36 36">
+                  <g class="text-kinetic-protein" style="--k-ring-w: 5">
+                    <circle class="k-ring-track" cx="18" cy="18" r="14" pathLength="100" />
+                    <circle
+                      class="k-ring-value"
+                      cx="18"
+                      cy="18"
+                      r="14"
+                      pathLength="100"
+                      :style="meal.ringStyle"
+                    />
+                  </g>
+                </svg>
+              </span>
+              <span
+                class="text-xs font-semibold tabular-nums"
+                :class="meal.reached ? 'text-kinetic-protein' : 'text-gray-400'"
+                x-text="'P ' + meal.proteinLabel"
+              ></span>
+            </span>
+          </div>
           <div class="k-list">
-            <template x-for="(item, idx) in meal.items" :key="idx">
-              <div class="k-row">
+            <template x-for="item in meal.items" :key="item.idx">
+              <div
+                class="k-row"
+                data-k-menu
+                @k-menu="itemMenu($event.detail, meal.mealName, item.idx)"
+              >
                 <div class="flex-1 min-w-0">
                   <p class="text-base text-white truncate" x-text="item.food.name"></p>
                   <p
@@ -196,7 +227,7 @@
                 ></span>
                 <button
                   type="button"
-                  @click="$store.nutrition.removeMealItem(meal.mealName, idx)"
+                  @click="$store.nutrition.removeMealItem(meal.mealName, item.idx)"
                   class="k-icon-btn bg-transparent hover:text-kinetic-electric active:text-kinetic-electric"
                   :aria-label="'Retirer ' + item.food.name"
                 >
@@ -217,10 +248,153 @@
                 </button>
               </div>
             </template>
+            <div class="k-row flex-wrap gap-x-4 gap-y-1 py-2.5">
+              <button
+                type="button"
+                class="k-link text-sm"
+                @click="openAdd(meal.mealName)"
+                :aria-label="'Ajouter un aliment au repas ' + meal.mealName"
+              >
+                + Ajouter
+              </button>
+              <button
+                type="button"
+                class="k-link text-sm"
+                x-show="meal.canCopyYesterday"
+                @click="copyYesterday(meal.mealName)"
+                :aria-label="'Copier le repas d’hier dans ' + meal.mealName"
+              >
+                Copier le repas d’hier
+              </button>
+              <button
+                type="button"
+                class="k-link text-sm text-gray-400"
+                @click="openCopy(meal.mealName)"
+                :aria-label="'Copier un repas d’un autre jour dans ' + meal.mealName"
+              >
+                Autre jour…
+              </button>
+            </div>
           </div>
+        </section>
+      </template>
+    </div>
+  </div>
+
+  <!-- ── Protéines réparties : objectif par repas + rappel du soir ────────── -->
+  <div x-show="$store.nutrition.plan" class="mb-8">
+    <h2 class="k-section mb-2.5">Protéines réparties</h2>
+    <div class="k-list">
+      <div class="k-row flex-wrap">
+        <span class="flex-1 min-w-0 text-base text-white">Repas par jour</span>
+        <div class="k-seg w-48" role="group" aria-label="Repas par jour">
+          <button
+            type="button"
+            class="k-seg-item"
+            @click="setMealsPerDay(3)"
+            :aria-pressed="prefs.mealsPerDay === 3 ? 'true' : 'false'"
+          >
+            3
+          </button>
+          <button
+            type="button"
+            class="k-seg-item"
+            @click="setMealsPerDay(4)"
+            :aria-pressed="prefs.mealsPerDay === 4 ? 'true' : 'false'"
+          >
+            4
+          </button>
+          <button
+            type="button"
+            class="k-seg-item"
+            @click="setMealsPerDay(5)"
+            :aria-pressed="prefs.mealsPerDay === 5 ? 'true' : 'false'"
+          >
+            5
+          </button>
+          <button
+            type="button"
+            class="k-seg-item"
+            @click="setMealsPerDay(6)"
+            :aria-pressed="prefs.mealsPerDay === 6 ? 'true' : 'false'"
+          >
+            6
+          </button>
+        </div>
+      </div>
+      <label for="f-protein-meal" class="k-row cursor-text">
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Objectif par repas</span>
+          <span
+            class="block text-xs text-gray-500"
+            x-text="'Auto : ' + autoPerMealG + ' g (' + dailyProteinG + ' g ÷ ' + prefs.mealsPerDay + ' repas)'"
+          ></span>
+        </span>
+        <input
+          id="f-protein-meal"
+          x-model="perMealInput"
+          @change="savePrefs()"
+          type="number"
+          min="1"
+          max="200"
+          inputmode="numeric"
+          :placeholder="autoPerMealG"
+          class="w-16 bg-transparent text-right text-base font-semibold text-kinetic-protein tabular-nums placeholder:text-gray-500"
+        />
+        <span class="w-4 text-sm text-gray-500">g</span>
+      </label>
+      <label class="k-row cursor-pointer select-none">
+        <span class="flex-1 min-w-0">
+          <span class="block text-base text-white">Rappel du soir</span>
+          <span class="block text-xs text-gray-500"
+            >« Il te manque 35 g de protéines aujourd'hui »</span
+          >
+        </span>
+        <input
+          type="checkbox"
+          :checked="prefs.proteinReminder"
+          @change="toggleProteinReminder()"
+          class="peer sr-only"
+          aria-label="Rappel du soir si des protéines manquent"
+        />
+        <span
+          aria-hidden="true"
+          class="relative flex-shrink-0 w-[51px] h-[31px] rounded-full bg-kinetic-raised transition-colors duration-200 peer-checked:bg-kinetic-teal peer-focus-visible:ring-2 peer-focus-visible:ring-kinetic-neon after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:w-[27px] after:h-[27px] after:rounded-full after:bg-white after:shadow-md after:transition-transform after:duration-200 peer-checked:after:translate-x-5"
+        ></span>
+      </label>
+      <template x-if="prefs.proteinReminder">
+        <div>
+          <label for="f-protein-time" class="k-row cursor-pointer">
+            <span class="flex-1 text-base text-white">Heure</span>
+            <input
+              id="f-protein-time"
+              type="time"
+              x-model="prefs.proteinReminderTime"
+              @change="savePrefs()"
+              class="bg-transparent text-right text-base text-gray-300 tabular-nums"
+            />
+          </label>
+          <label for="f-protein-min" class="k-row cursor-text">
+            <span class="flex-1 text-base text-white">S'il manque plus de</span>
+            <input
+              id="f-protein-min"
+              type="number"
+              min="0"
+              max="200"
+              step="5"
+              inputmode="numeric"
+              x-model.number="prefs.proteinReminderMinG"
+              @change="savePrefs()"
+              class="w-16 bg-transparent text-right text-base text-white tabular-nums"
+            />
+            <span class="w-4 text-sm text-gray-500">g</span>
+          </label>
         </div>
       </template>
     </div>
+    <p class="mt-2 px-4 text-xs text-gray-500" x-show="!remindersNative">
+      Le rappel fonctionne dans l'application installée sur ton téléphone.
+    </p>
   </div>
 
   <!-- ── Objectifs scientifiques ─────────────────────────────────────────── -->
@@ -340,18 +514,55 @@
     </div>
   </div>
 
-  <!-- ── Feuille « Ajouter un aliment » ──────────────────────────────────── -->
+  <!-- Ajout rapide / copie : annulation possible quelques secondes -->
+  <div
+    x-show="undoLog"
+    style="display: none"
+    class="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[90] mx-auto flex max-w-md items-center gap-3 rounded-2xl k-toast px-4 py-2.5"
+    role="status"
+  >
+    <span class="flex-1 min-w-0 truncate text-sm text-white" x-text="undoLabel"></span>
+    <button type="button" class="k-link" @click="undoLast()">Annuler</button>
+  </div>
+
+  <!-- ── Feuille « Ajouter un aliment » (+ recette, + copie d'un autre jour) ─ -->
   <div
     x-show="showAddForm"
     class="k-backdrop fixed"
-    @click.self="showAddForm = false"
-    @keydown.escape.window="showAddForm = false"
+    @click.self="closeSheet()"
+    @keydown.escape.window="closeSheet()"
     style="display: none"
   >
     <div class="k-sheet" role="dialog" aria-modal="true" aria-labelledby="nutri-add-title">
       <div class="flex items-center justify-between gap-3 mb-4">
-        <h2 id="nutri-add-title" class="text-lg font-semibold text-white">Ajouter un aliment</h2>
-        <button type="button" @click="showAddForm = false" class="k-icon-btn" aria-label="Fermer">
+        <button
+          type="button"
+          x-show="sheetMode === 'recipe'"
+          @click="backToAdd()"
+          class="k-icon-btn"
+          aria-label="Retour aux recettes"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <h2
+          id="nutri-add-title"
+          class="flex-1 min-w-0 truncate text-lg font-semibold text-white"
+          x-text="sheetTitle"
+        >
+          Ajouter un aliment
+        </h2>
+        <button type="button" @click="closeSheet()" class="k-icon-btn" aria-label="Fermer">
           <svg
             class="w-4 h-4"
             fill="none"
@@ -366,298 +577,820 @@
         </button>
       </div>
 
-      <!-- Recherche dans la base d'aliments -->
-      <div class="relative">
-        <svg
-          class="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-gray-500 pointer-events-none"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          stroke-width="2.2"
-          stroke-linecap="round"
-          aria-hidden="true"
-        >
-          <circle cx="11" cy="11" r="6.5" />
-          <path d="M16 16l4.5 4.5" />
-        </svg>
-        <input
-          x-model="foodQuery"
-          @input.debounce.200ms="searchFood()"
-          @focus="searchFood()"
-          placeholder="Rechercher un aliment"
-          aria-label="Rechercher un aliment"
-          autocomplete="off"
-          class="k-field pl-10 pr-11"
-        />
-        <button
-          type="button"
-          x-show="foodQuery"
-          @click="clearFoodSelection()"
-          class="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-gray-500 active:opacity-60"
-          aria-label="Effacer la recherche"
-        >
-          <span class="w-[18px] h-[18px] rounded-full bg-gray-500 flex items-center justify-center">
+      <!-- ═════════════ Mode « ajout » ═════════════ -->
+      <div x-show="sheetMode === 'add'">
+        <p class="k-caption mb-1.5">Ajouter à</p>
+        <div class="k-seg mb-3" role="group" aria-label="Repas">
+          <template x-for="slot in mealSlots" :key="slot">
+            <button
+              type="button"
+              class="k-seg-item"
+              @click="setMeal(slot)"
+              :aria-pressed="newMeal.mealName === slot ? 'true' : 'false'"
+              x-text="slot"
+            ></button>
+          </template>
+        </div>
+
+        <div class="k-seg mb-4" role="group" aria-label="Source">
+          <button
+            type="button"
+            class="k-seg-item"
+            @click="setTab('search')"
+            :aria-pressed="addTab === 'search' ? 'true' : 'false'"
+          >
+            Chercher
+          </button>
+          <button
+            type="button"
+            class="k-seg-item"
+            @click="setTab('recents')"
+            :aria-pressed="addTab === 'recents' ? 'true' : 'false'"
+          >
+            Récents
+          </button>
+          <button
+            type="button"
+            class="k-seg-item"
+            @click="setTab('favorites')"
+            :aria-pressed="addTab === 'favorites' ? 'true' : 'false'"
+          >
+            Favoris
+          </button>
+          <button
+            type="button"
+            class="k-seg-item"
+            @click="setTab('recipes')"
+            :aria-pressed="addTab === 'recipes' ? 'true' : 'false'"
+          >
+            Recettes
+          </button>
+        </div>
+
+        <!-- ── Récents : un toucher = même quantité que la dernière fois ── -->
+        <div x-show="addTab === 'recents'">
+          <p x-show="recentViews.length === 0" class="py-6 text-center text-sm text-gray-500">
+            Les aliments que tu ajoutes apparaîtront ici, avec leur dernière quantité.
+          </p>
+          <p x-show="recentViews.length > 0" class="mb-2 text-xs text-gray-500">
+            Touche un aliment pour l'ajouter avec la même quantité.
+          </p>
+          <div class="bg-kinetic-ink rounded-xl overflow-hidden" x-show="recentViews.length > 0">
+            <template x-for="r in recentViews" :key="r.key">
+              <div class="k-row !py-1.5">
+                <button
+                  type="button"
+                  class="k-press flex-1 min-w-0 py-1.5 text-left"
+                  @click="quickAddRecent(r.i)"
+                  :aria-label="'Ajouter ' + r.name + ', ' + r.summary"
+                >
+                  <span class="block text-base text-white truncate" x-text="r.name"></span>
+                  <span
+                    class="block text-xs text-gray-500 tabular-nums"
+                    x-text="$num.loc(r.summary)"
+                  ></span>
+                </button>
+                <button
+                  type="button"
+                  class="k-icon-btn bg-transparent"
+                  @click="adjustRecent(r.i)"
+                  :aria-label="'Choisir la quantité : ' + r.name"
+                >
+                  <svg
+                    class="w-[18px] h-[18px]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="k-icon-btn bg-transparent"
+                  :class="r.fav ? 'text-kinetic-gold' : 'text-gray-500'"
+                  @click="toggleRecentFav(r.i)"
+                  :aria-pressed="r.fav ? 'true' : 'false'"
+                  :aria-label="'Favori : ' + r.name"
+                >
+                  <svg
+                    class="w-[18px] h-[18px]"
+                    viewBox="0 0 24 24"
+                    :fill="r.fav ? 'currentColor' : 'none'"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9Z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- ── Favoris ── -->
+        <div x-show="addTab === 'favorites'">
+          <p x-show="favoriteViews.length === 0" class="py-6 text-center text-sm text-gray-500">
+            Touche l'étoile d'un aliment pour l'épingler ici.
+          </p>
+          <div class="bg-kinetic-ink rounded-xl overflow-hidden" x-show="favoriteViews.length > 0">
+            <template x-for="f in favoriteViews" :key="f.key">
+              <div class="k-row !py-1.5">
+                <button
+                  type="button"
+                  class="k-press flex-1 min-w-0 py-1.5 text-left"
+                  @click="quickAddFavorite(f.i)"
+                  :aria-label="'Ajouter ' + f.name + ', ' + f.summary"
+                >
+                  <span class="block text-base text-white truncate" x-text="f.name"></span>
+                  <span
+                    class="block text-xs text-gray-500 tabular-nums"
+                    x-text="$num.loc(f.summary)"
+                  ></span>
+                </button>
+                <button
+                  type="button"
+                  class="k-icon-btn bg-transparent"
+                  @click="adjustFavorite(f.i)"
+                  :aria-label="'Choisir la quantité : ' + f.name"
+                >
+                  <svg
+                    class="w-[18px] h-[18px]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="k-icon-btn bg-transparent text-kinetic-gold"
+                  @click="unpinFavorite(f.i)"
+                  aria-pressed="true"
+                  :aria-label="'Favori : ' + f.name"
+                >
+                  <svg
+                    class="w-[18px] h-[18px]"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9Z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- ── Mes recettes : une portion en un toucher ── -->
+        <div x-show="addTab === 'recipes'">
+          <p x-show="recipeViews.length === 0" class="py-4 text-center text-sm text-gray-500">
+            Crée une recette (ingrédients + portions) : ses macros par portion sont calculées.
+          </p>
+          <div
+            class="bg-kinetic-ink rounded-xl overflow-hidden mb-3"
+            x-show="recipeViews.length > 0"
+          >
+            <template x-for="r in recipeViews" :key="r.id">
+              <div class="k-row !py-1.5">
+                <button
+                  type="button"
+                  class="k-press flex-1 min-w-0 py-1.5 text-left"
+                  @click="addRecipeServing(r.id)"
+                  :aria-label="'Ajouter 1 portion de ' + r.name"
+                >
+                  <span class="block text-base text-white truncate" x-text="r.name"></span>
+                  <span
+                    class="block text-xs text-gray-500 tabular-nums"
+                    x-text="$num.loc(r.summary)"
+                  ></span>
+                  <span class="block text-[11px] text-gray-500" x-text="r.detail"></span>
+                </button>
+                <button
+                  type="button"
+                  class="k-icon-btn bg-transparent"
+                  @click="editRecipe(r.id)"
+                  :aria-label="'Modifier la recette ' + r.name"
+                >
+                  <svg
+                    class="h-[18px] w-[18px]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
+                </button>
+              </div>
+            </template>
+          </div>
+          <button type="button" class="k-btn-2" @click="newRecipe()">+ Nouvelle recette</button>
+        </div>
+
+        <!-- ── Chercher : base d'aliments, code-barres, saisie manuelle ── -->
+        <div x-show="addTab === 'search'">
+          <!-- Recherche dans la base d'aliments -->
+          <div class="relative">
             <svg
-              class="w-2.5 h-2.5 text-kinetic-surface"
+              class="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-gray-500 pointer-events-none"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              stroke-width="4"
+              stroke-width="2.2"
               stroke-linecap="round"
               aria-hidden="true"
             >
-              <path d="M6 6l12 12M18 6L6 18" />
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="M16 16l4.5 4.5" />
             </svg>
-          </span>
-        </button>
-      </div>
-
-      <!-- Aliment sélectionné depuis la base -->
-      <template x-if="selectedFood">
-        <div class="mt-2 flex items-center gap-3 bg-kinetic-ink rounded-xl px-3.5 py-2.5">
-          <span
-            class="k-pop w-5 h-5 flex-shrink-0 rounded-full bg-kinetic-teal flex items-center justify-center"
-            aria-hidden="true"
-          >
-            <svg
-              class="w-3 h-3 text-kinetic-on-accent"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              stroke-width="3.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+            <input
+              x-model="foodQuery"
+              @input.debounce.200ms="searchFood()"
+              @focus="searchFood()"
+              placeholder="Rechercher un aliment"
+              aria-label="Rechercher un aliment"
+              autocomplete="off"
+              class="k-field pl-10 pr-11"
+            />
+            <button
+              type="button"
+              x-show="foodQuery"
+              @click="clearFoodSelection()"
+              class="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-gray-500 active:opacity-60"
+              aria-label="Effacer la recherche"
             >
-              <path d="M5 12.5l4.5 4.5L19 7.5" />
-            </svg>
-          </span>
-          <div class="min-w-0">
-            <p class="text-sm font-medium text-white truncate" x-text="selectedFood.name"></p>
-            <p
-              class="text-xs text-gray-500 tabular-nums"
-              x-text="selectedFood.kcal + ' kcal · P' + selectedFood.protein + 'g · G' + selectedFood.carbs + 'g · L' + selectedFood.fat + 'g /100g'"
-            ></p>
+              <span
+                class="w-[18px] h-[18px] rounded-full bg-gray-500 flex items-center justify-center"
+              >
+                <svg
+                  class="w-2.5 h-2.5 text-kinetic-surface"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </span>
+            </button>
+          </div>
+
+          <!-- Aliment sélectionné depuis la base -->
+          <template x-if="selectedFood">
+            <div class="mt-2 flex items-center gap-3 bg-kinetic-ink rounded-xl px-3.5 py-2.5">
+              <span
+                class="k-pop w-5 h-5 flex-shrink-0 rounded-full bg-kinetic-teal flex items-center justify-center"
+                aria-hidden="true"
+              >
+                <svg
+                  class="w-3 h-3 text-kinetic-on-accent"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  stroke-width="3.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                </svg>
+              </span>
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-white truncate" x-text="selectedFood.name"></p>
+                <p
+                  class="text-xs text-gray-500 tabular-nums"
+                  x-text="selectedFood.kcal + ' kcal · P' + selectedFood.protein + 'g · G' + selectedFood.carbs + 'g · L' + selectedFood.fat + 'g /100g'"
+                ></p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Résultats -->
+          <div
+            x-show="foodResults.length > 0"
+            class="mt-2 bg-kinetic-ink rounded-xl overflow-hidden"
+          >
+            <template x-for="food in foodResults" :key="food.id">
+              <button type="button" @click="selectFood(food)" class="k-row">
+                <span
+                  class="flex-1 min-w-0 text-base text-white truncate"
+                  x-text="food.name"
+                ></span>
+                <span
+                  class="text-xs text-gray-500 tabular-nums flex-shrink-0"
+                  x-text="food.kcal + ' kcal · P' + food.protein + 'g'"
+                ></span>
+              </button>
+            </template>
+            <button type="button" @click="foodResults = []" class="k-row">
+              <span class="flex-1 text-sm text-gray-400">Saisie manuelle</span>
+              <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+                <path
+                  d="M1 1l6 6-6 6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Code-barres (OpenFoodFacts) -->
+          <div class="mt-3 flex items-center gap-2">
+            <div class="relative flex-1 min-w-0">
+              <input
+                x-model="barcode"
+                @keydown.enter.prevent="scanProduct()"
+                inputmode="numeric"
+                placeholder="Code-barres"
+                aria-label="Code-barres (OpenFoodFacts)"
+                autocomplete="off"
+                class="k-field"
+              />
+            </div>
+            <button
+              type="button"
+              x-show="cameraScan"
+              @click="scanWithCamera()"
+              :disabled="scanning"
+              aria-label="Scanner avec l'appareil photo"
+              class="k-pill h-11 w-11 flex-shrink-0 !px-0 inline-flex items-center justify-center"
+            >
+              <svg
+                class="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M10.5 8v8M14 8v8M17 8v8"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              @click="scanProduct()"
+              :disabled="scanning || !barcode.trim()"
+              class="k-pill h-11"
+              x-text="scanning ? '…' : 'Chercher'"
+            ></button>
+          </div>
+
+          <!-- Saisie manuelle (si aucun aliment choisi dans la base) -->
+          <template x-if="!selectedFood">
+            <div class="mt-5">
+              <p class="k-caption mb-1.5">Saisie manuelle · valeurs pour 100 g</p>
+              <div class="bg-kinetic-ink rounded-xl overflow-hidden">
+                <div class="k-row">
+                  <input
+                    x-model="newMeal.name"
+                    placeholder="Nom de l'aliment"
+                    aria-label="Nom de l'aliment (saisie manuelle)"
+                    class="flex-1 min-w-0 bg-transparent text-base text-white placeholder:text-gray-500"
+                  />
+                </div>
+                <label for="f-nutrition-1" class="k-row cursor-text">
+                  <span class="flex-1 text-base text-white">Calories</span>
+                  <input
+                    id="f-nutrition-1"
+                    x-model.number="newMeal.kcal"
+                    type="number"
+                    min="0"
+                    inputmode="numeric"
+                    class="w-20 bg-transparent text-right text-base text-white tabular-nums"
+                  />
+                  <span class="w-8 text-sm text-gray-500">kcal</span>
+                </label>
+                <label for="f-nutrition-2" class="k-row cursor-text">
+                  <span class="flex-1 text-base text-white">Protéines</span>
+                  <input
+                    id="f-nutrition-2"
+                    x-model.number="newMeal.protein"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    inputmode="decimal"
+                    class="w-20 bg-transparent text-right text-base text-white tabular-nums"
+                  />
+                  <span class="w-8 text-sm text-gray-500">g</span>
+                </label>
+                <label for="f-nutrition-3" class="k-row cursor-text">
+                  <span class="flex-1 text-base text-white">Glucides</span>
+                  <input
+                    id="f-nutrition-3"
+                    x-model.number="newMeal.carbs"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    inputmode="decimal"
+                    class="w-20 bg-transparent text-right text-base text-white tabular-nums"
+                  />
+                  <span class="w-8 text-sm text-gray-500">g</span>
+                </label>
+                <label for="f-nutrition-4" class="k-row cursor-text">
+                  <span class="flex-1 text-base text-white">Lipides</span>
+                  <input
+                    id="f-nutrition-4"
+                    x-model.number="newMeal.fat"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    inputmode="decimal"
+                    class="w-20 bg-transparent text-right text-base text-white tabular-nums"
+                  />
+                  <span class="w-8 text-sm text-gray-500">g</span>
+                </label>
+              </div>
+            </div>
+          </template>
+
+          <!-- Quantité -->
+          <div class="mt-5 bg-kinetic-ink rounded-xl overflow-hidden">
+            <label for="f-nutrition-5" class="k-row cursor-text">
+              <span class="flex-1 text-base text-white">Quantité</span>
+              <input
+                id="f-nutrition-5"
+                x-model.number="newMeal.grams"
+                type="number"
+                min="1"
+                step="5"
+                inputmode="numeric"
+                class="w-20 bg-transparent text-right text-base font-semibold text-white tabular-nums"
+              />
+              <span class="w-8 text-sm text-gray-500">g</span>
+            </label>
+          </div>
+
+          <!-- Aperçu dynamique -->
+          <div class="mt-4 grid grid-cols-4 gap-2 text-center" aria-live="polite">
+            <div>
+              <p
+                class="font-display text-xl font-bold text-white tabular-nums leading-tight"
+                x-text="$num.round(newMeal.kcal * newMeal.grams / 100)"
+              ></p>
+              <p class="text-[11px] text-gray-500">kcal</p>
+            </div>
+            <div>
+              <p
+                class="font-display text-xl font-semibold text-white tabular-nums leading-tight"
+                x-text="$num.loc((newMeal.protein*newMeal.grams/100).toFixed(0))"
+              ></p>
+              <p class="text-[11px] text-gray-500 inline-flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-kinetic-protein" aria-hidden="true"></span>
+                Prot. (g)
+              </p>
+            </div>
+            <div>
+              <p
+                class="font-display text-xl font-semibold text-white tabular-nums leading-tight"
+                x-text="$num.loc((newMeal.carbs*newMeal.grams/100).toFixed(0))"
+              ></p>
+              <p class="text-[11px] text-gray-500 inline-flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-kinetic-carbs" aria-hidden="true"></span>
+                Gluc. (g)
+              </p>
+            </div>
+            <div>
+              <p
+                class="font-display text-xl font-semibold text-white tabular-nums leading-tight"
+                x-text="$num.loc((newMeal.fat*newMeal.grams/100).toFixed(0))"
+              ></p>
+              <p class="text-[11px] text-gray-500 inline-flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-kinetic-fat" aria-hidden="true"></span>
+                Lip. (g)
+              </p>
+            </div>
+          </div>
+          <div class="mt-5 flex items-center gap-2">
+            <button
+              type="button"
+              @click="toggleCurrentFav()"
+              :disabled="!newMeal.name"
+              class="k-icon-btn h-12 w-12 flex-shrink-0"
+              :class="currentIsFavorite ? 'text-kinetic-gold' : 'text-gray-400'"
+              :aria-pressed="currentIsFavorite ? 'true' : 'false'"
+              aria-label="Épingler cet aliment en favori"
+            >
+              <svg
+                class="w-5 h-5"
+                viewBox="0 0 24 24"
+                :fill="currentIsFavorite ? 'currentColor' : 'none'"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9Z"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              @click="logFood()"
+              :disabled="!newMeal.name || newMeal.grams <= 0"
+              class="k-btn flex-1"
+            >
+              Ajouter au journal
+            </button>
           </div>
         </div>
-      </template>
-
-      <!-- Résultats -->
-      <div x-show="foodResults.length > 0" class="mt-2 bg-kinetic-ink rounded-xl overflow-hidden">
-        <template x-for="food in foodResults" :key="food.id">
-          <button type="button" @click="selectFood(food)" class="k-row">
-            <span class="flex-1 min-w-0 text-base text-white truncate" x-text="food.name"></span>
-            <span
-              class="text-xs text-gray-500 tabular-nums flex-shrink-0"
-              x-text="food.kcal + ' kcal · P' + food.protein + 'g'"
-            ></span>
-          </button>
-        </template>
-        <button type="button" @click="foodResults = []" class="k-row">
-          <span class="flex-1 text-sm text-gray-400">Saisie manuelle</span>
-          <svg class="k-chevron" viewBox="0 0 8 14" fill="none" aria-hidden="true">
-            <path
-              d="M1 1l6 6-6 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
       </div>
 
-      <!-- Code-barres (OpenFoodFacts) -->
-      <div class="mt-3 flex items-center gap-2">
-        <div class="relative flex-1 min-w-0">
-          <input
-            x-model="barcode"
-            @keydown.enter.prevent="scanProduct()"
-            inputmode="numeric"
-            placeholder="Code-barres"
-            aria-label="Code-barres (OpenFoodFacts)"
-            autocomplete="off"
-            class="k-field"
-          />
-        </div>
-        <button
-          type="button"
-          x-show="cameraScan"
-          @click="scanWithCamera()"
-          :disabled="scanning"
-          aria-label="Scanner avec l'appareil photo"
-          class="k-pill h-11 w-11 flex-shrink-0 !px-0 inline-flex items-center justify-center"
-        >
-          <svg
-            class="w-5 h-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path
-              d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M10.5 8v8M14 8v8M17 8v8"
-            />
-          </svg>
-        </button>
-        <button
-          type="button"
-          @click="scanProduct()"
-          :disabled="scanning || !barcode.trim()"
-          class="k-pill h-11"
-          x-text="scanning ? '…' : 'Chercher'"
-        ></button>
-      </div>
-
-      <!-- Saisie manuelle (si aucun aliment choisi dans la base) -->
-      <template x-if="!selectedFood">
-        <div class="mt-5">
-          <p class="k-caption mb-1.5">Saisie manuelle · valeurs pour 100 g</p>
+      <!-- ═════════════ Mode « recette » ═════════════ -->
+      <template x-if="sheetMode === 'recipe' && recipeDraft">
+        <div>
           <div class="bg-kinetic-ink rounded-xl overflow-hidden">
             <div class="k-row">
               <input
-                x-model="newMeal.name"
-                placeholder="Nom de l'aliment"
-                aria-label="Nom de l'aliment (saisie manuelle)"
+                x-model="recipeDraft.name"
+                placeholder="Nom de la recette"
+                aria-label="Nom de la recette"
+                maxlength="60"
                 class="flex-1 min-w-0 bg-transparent text-base text-white placeholder:text-gray-500"
               />
             </div>
-            <label for="f-nutrition-1" class="k-row cursor-text">
-              <span class="flex-1 text-base text-white">Calories</span>
+            <label for="f-recipe-servings" class="k-row cursor-text">
+              <span class="flex-1 text-base text-white">Nombre de portions</span>
               <input
-                id="f-nutrition-1"
-                x-model.number="newMeal.kcal"
+                id="f-recipe-servings"
+                x-model.number="recipeDraft.servings"
                 type="number"
-                min="0"
+                min="1"
+                max="50"
                 inputmode="numeric"
-                class="w-20 bg-transparent text-right text-base text-white tabular-nums"
+                class="w-16 bg-transparent text-right text-base font-semibold text-white tabular-nums"
               />
-              <span class="w-8 text-sm text-gray-500">kcal</span>
-            </label>
-            <label for="f-nutrition-2" class="k-row cursor-text">
-              <span class="flex-1 text-base text-white">Protéines</span>
-              <input
-                id="f-nutrition-2"
-                x-model.number="newMeal.protein"
-                type="number"
-                min="0"
-                step="0.1"
-                inputmode="decimal"
-                class="w-20 bg-transparent text-right text-base text-white tabular-nums"
-              />
-              <span class="w-8 text-sm text-gray-500">g</span>
-            </label>
-            <label for="f-nutrition-3" class="k-row cursor-text">
-              <span class="flex-1 text-base text-white">Glucides</span>
-              <input
-                id="f-nutrition-3"
-                x-model.number="newMeal.carbs"
-                type="number"
-                min="0"
-                step="0.1"
-                inputmode="decimal"
-                class="w-20 bg-transparent text-right text-base text-white tabular-nums"
-              />
-              <span class="w-8 text-sm text-gray-500">g</span>
-            </label>
-            <label for="f-nutrition-4" class="k-row cursor-text">
-              <span class="flex-1 text-base text-white">Lipides</span>
-              <input
-                id="f-nutrition-4"
-                x-model.number="newMeal.fat"
-                type="number"
-                min="0"
-                step="0.1"
-                inputmode="decimal"
-                class="w-20 bg-transparent text-right text-base text-white tabular-nums"
-              />
-              <span class="w-8 text-sm text-gray-500">g</span>
             </label>
           </div>
+
+          <p class="k-caption mt-4 mb-1.5">Ingrédients</p>
+          <div
+            class="bg-kinetic-ink rounded-xl overflow-hidden"
+            x-show="recipeIngredientViews.length > 0"
+          >
+            <template x-for="ing in recipeIngredientViews" :key="ing.i + ing.name">
+              <div class="k-row">
+                <div class="flex-1 min-w-0">
+                  <p class="text-base text-white truncate" x-text="ing.name"></p>
+                  <p class="text-xs text-gray-500 tabular-nums" x-text="$num.loc(ing.summary)"></p>
+                </div>
+                <input
+                  type="number"
+                  min="1"
+                  step="5"
+                  inputmode="numeric"
+                  :value="ing.grams"
+                  @change="setIngredientGrams(ing.i, $event.target.value)"
+                  :aria-label="'Quantité de ' + ing.name + ' (g)'"
+                  class="w-16 bg-transparent text-right text-base font-semibold text-white tabular-nums"
+                />
+                <span class="w-4 text-sm text-gray-500">g</span>
+                <button
+                  type="button"
+                  class="k-icon-btn bg-transparent"
+                  @click="removeIngredient(ing.i)"
+                  :aria-label="'Retirer ' + ing.name + ' de la recette'"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                </button>
+              </div>
+            </template>
+          </div>
+          <p
+            class="mt-2 text-xs text-kinetic-protein tabular-nums"
+            x-text="$num.loc(recipeSummary)"
+          ></p>
+
+          <!-- Ajouter un ingrédient : recherche, favoris, récents, code-barres -->
+          <div class="mt-4 relative">
+            <input
+              x-model="recipeQuery"
+              @input.debounce.200ms="searchRecipeFood()"
+              placeholder="Ajouter un ingrédient"
+              aria-label="Rechercher un ingrédient"
+              autocomplete="off"
+              class="k-field"
+            />
+          </div>
+          <div
+            x-show="recipeResults.length > 0"
+            class="mt-2 bg-kinetic-ink rounded-xl overflow-hidden"
+          >
+            <template x-for="food in recipeResults" :key="food.id">
+              <button type="button" @click="addIngredientFromSearch(food)" class="k-row">
+                <span
+                  class="flex-1 min-w-0 text-base text-white truncate"
+                  x-text="food.name"
+                ></span>
+                <span class="text-xs text-gray-500 tabular-nums">+ 100 g</span>
+              </button>
+            </template>
+          </div>
+          <div class="mt-3 flex flex-wrap gap-2" x-show="favoriteViews.length > 0">
+            <template x-for="f in favoriteViews" :key="'fav-' + f.key">
+              <button
+                type="button"
+                class="k-pill text-xs"
+                @click="addIngredientFromFavorite(f.i)"
+                :aria-label="'Ingrédient favori : ' + f.name"
+              >
+                <span class="text-kinetic-gold" aria-hidden="true">★</span>
+                <span x-text="f.name"></span>
+              </button>
+            </template>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-2" x-show="recentViews.length > 0">
+            <template x-for="r in recentViews" :key="'rec-' + r.key">
+              <button
+                type="button"
+                class="k-pill text-xs"
+                @click="addIngredientFromRecent(r.i)"
+                :aria-label="'Ingrédient récent : ' + r.name"
+                x-text="r.name"
+              ></button>
+            </template>
+          </div>
+          <div class="mt-3 flex items-center gap-2">
+            <input
+              x-model="barcode"
+              @keydown.enter.prevent="scanProduct()"
+              inputmode="numeric"
+              placeholder="Code-barres"
+              aria-label="Code-barres de l'ingrédient"
+              autocomplete="off"
+              class="k-field flex-1 min-w-0"
+            />
+            <button
+              type="button"
+              x-show="cameraScan"
+              @click="scanWithCamera()"
+              :disabled="scanning"
+              aria-label="Scanner un ingrédient avec l'appareil photo"
+              class="k-pill h-11 w-11 flex-shrink-0 !px-0 inline-flex items-center justify-center"
+            >
+              <svg
+                class="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M10.5 8v8M14 8v8M17 8v8"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              @click="scanProduct()"
+              :disabled="scanning || !barcode.trim()"
+              class="k-pill h-11"
+              x-text="scanning ? '…' : 'Chercher'"
+            ></button>
+          </div>
+
+          <p
+            x-show="recipeError"
+            class="mt-4 text-sm text-kinetic-electric"
+            role="alert"
+            x-text="recipeError"
+          ></p>
+          <button type="button" class="k-btn mt-5" @click="saveRecipe()">
+            Enregistrer la recette
+          </button>
+          <button
+            type="button"
+            x-show="!recipeDraft.isNew"
+            class="mt-3 w-full py-2 text-sm font-semibold text-kinetic-electric"
+            @click="deleteRecipe()"
+            x-text="confirmDeleteRecipe ? 'Confirmer la suppression' : 'Supprimer la recette'"
+          ></button>
         </div>
       </template>
 
-      <!-- Repas + quantité -->
-      <div class="mt-5 bg-kinetic-ink rounded-xl overflow-hidden">
-        <label for="f-nutrition-meal" class="k-row cursor-pointer">
-          <span class="flex-1 text-base text-white">Repas</span>
-          <select
-            id="f-nutrition-meal"
-            x-model="newMeal.mealName"
-            class="appearance-none bg-transparent text-right text-base text-gray-400 pr-1 cursor-pointer"
+      <!-- ═════════════ Mode « copier un autre jour » ═════════════ -->
+      <div x-show="sheetMode === 'copy'">
+        <div class="flex items-center gap-2 mb-3">
+          <button
+            type="button"
+            class="k-icon-btn"
+            @click="shiftCopyDay(-1)"
+            aria-label="Jour précédent"
           >
-            <option value="Matin">Matin</option>
-            <option value="Déjeuner">Déjeuner</option>
-            <option value="Collation">Collation</option>
-            <option value="Dîner">Dîner</option>
-          </select>
-        </label>
-        <label for="f-nutrition-5" class="k-row cursor-text">
-          <span class="flex-1 text-base text-white">Quantité</span>
-          <input
-            id="f-nutrition-5"
-            x-model.number="newMeal.grams"
-            type="number"
-            min="1"
-            step="5"
-            inputmode="numeric"
-            class="w-20 bg-transparent text-right text-base font-semibold text-white tabular-nums"
-          />
-          <span class="w-8 text-sm text-gray-500">g</span>
-        </label>
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div class="flex-1 min-w-0 text-center">
+            <p
+              class="text-base font-semibold text-white first-letter:uppercase"
+              x-text="copyDayLabel"
+            ></p>
+            <input
+              type="date"
+              x-model="copyDate"
+              @change="loadCopyDay()"
+              aria-label="Jour à copier"
+              class="mt-1 bg-transparent text-center text-xs text-gray-400"
+            />
+          </div>
+          <button
+            type="button"
+            class="k-icon-btn"
+            @click="shiftCopyDay(1)"
+            :disabled="copyIsToday"
+            aria-label="Jour suivant"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+        <p
+          x-show="!copyLoading && copyMeals.length === 0"
+          class="py-6 text-center text-sm text-gray-500"
+        >
+          Rien de noté ce jour-là.
+        </p>
+        <div class="bg-kinetic-ink rounded-xl overflow-hidden" x-show="copyMeals.length > 0">
+          <template x-for="m in copyMeals" :key="m.mealName">
+            <button
+              type="button"
+              class="k-row text-left"
+              @click="copyFrom(m.mealName)"
+              :aria-label="'Copier ' + m.mealName + ' (' + m.count + ' aliments)'"
+            >
+              <span class="flex-1 min-w-0">
+                <span class="block text-base text-white" x-text="m.mealName"></span>
+                <span class="block text-xs text-gray-500 truncate" x-text="m.preview"></span>
+              </span>
+              <span
+                class="text-xs text-gray-400 tabular-nums flex-shrink-0"
+                x-text="$num.loc(m.kcal + ' kcal · P ' + m.proteinG.toFixed(0) + ' g')"
+              ></span>
+            </button>
+          </template>
+        </div>
       </div>
-
-      <!-- Aperçu dynamique -->
-      <div class="mt-4 grid grid-cols-4 gap-2 text-center" aria-live="polite">
-        <div>
-          <p
-            class="font-display text-xl font-bold text-white tabular-nums leading-tight"
-            x-text="$num.round(newMeal.kcal * newMeal.grams / 100)"
-          ></p>
-          <p class="text-[11px] text-gray-500">kcal</p>
-        </div>
-        <div>
-          <p
-            class="font-display text-xl font-semibold text-white tabular-nums leading-tight"
-            x-text="$num.loc((newMeal.protein*newMeal.grams/100).toFixed(0))"
-          ></p>
-          <p class="text-[11px] text-gray-500 inline-flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-kinetic-protein" aria-hidden="true"></span>
-            Prot. (g)
-          </p>
-        </div>
-        <div>
-          <p
-            class="font-display text-xl font-semibold text-white tabular-nums leading-tight"
-            x-text="$num.loc((newMeal.carbs*newMeal.grams/100).toFixed(0))"
-          ></p>
-          <p class="text-[11px] text-gray-500 inline-flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-kinetic-carbs" aria-hidden="true"></span>
-            Gluc. (g)
-          </p>
-        </div>
-        <div>
-          <p
-            class="font-display text-xl font-semibold text-white tabular-nums leading-tight"
-            x-text="$num.loc((newMeal.fat*newMeal.grams/100).toFixed(0))"
-          ></p>
-          <p class="text-[11px] text-gray-500 inline-flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-kinetic-fat" aria-hidden="true"></span>
-            Lip. (g)
-          </p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        @click="logFood()"
-        :disabled="!newMeal.name || newMeal.grams <= 0"
-        class="k-btn mt-5"
-      >
-        Ajouter au journal
-      </button>
     </div>
   </div>
 </div>

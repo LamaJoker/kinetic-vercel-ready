@@ -101,6 +101,7 @@ import { getDeps } from './deps';
 
 import { initRouter } from './router';
 import { scheduleStreakReminder } from './lib/streak-reminder';
+import { Capacitor } from '@capacitor/core';
 import { syncWeeklyRecap, syncSessionReminder, syncBackupReminder } from './lib/reminders';
 import { localIsoDate } from './lib/widget';
 import { autoCompactOnStartup } from './lib/storage-maintenance';
@@ -344,6 +345,9 @@ function syncReminders(): void {
   void syncWeeklyRecap();
   void syncSessionReminder();
   void syncBackupReminder(cloudSynced());
+  // Rappel « protéines du soir » : module chargé à la demande, appli installée seulement.
+  if (Capacitor.isNativePlatform())
+    void import('./lib/protein-reminder').then((m) => m.syncProteinReminder());
 }
 window.addEventListener(STORAGE_KEYS.EVENT_AUTH_READY, syncReminders, { once: true });
 document.addEventListener('visibilitychange', () => {

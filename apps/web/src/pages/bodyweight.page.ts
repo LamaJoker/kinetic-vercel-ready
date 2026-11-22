@@ -3,6 +3,7 @@ import { localIsoDate } from '../lib/widget';
 import { loc } from '../lib/num';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
+import { BODY_CHANGED_EVENT } from '../components/body-fat';
 import type { ScrubData } from '../lib/chart-scrub';
 
 interface BodyweightEntry {
@@ -227,6 +228,7 @@ export function bodyweight() {
           await deps.storage.set(STORAGE_KEY_GOAL, this.goalWeight);
         }
         this.entries = next;
+        window.dispatchEvent(new Event(BODY_CHANGED_EVENT));
         void writeBodyweight(entry.weight, entry.bodyFatPct);
         this.newWeight = null;
         this.newBf = null;
@@ -252,6 +254,7 @@ export function bodyweight() {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEY_ENTRIES, next);
         this.entries = next;
+        window.dispatchEvent(new Event(BODY_CHANGED_EVENT));
       } catch (err) {
         console.error('[bodyweight] removeEntry failed:', err);
         window.dispatchEvent(

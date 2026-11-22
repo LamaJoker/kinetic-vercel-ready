@@ -163,21 +163,44 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
     });
   }
 
-  const measurements = [WEEKS * 7, 28, 0].map((d, i) => {
+  // Mensurations toutes les 2 semaines : cou + taille (+ hanches) donnent la courbe
+  // de masse grasse estimée (méthode US Navy) dans Mensurations et Poids.
+  const measurements = [WEEKS * 7, 42, 28, 14, 0].map((d, i) => {
     const day = new Date(today);
     day.setDate(today.getDate() - d);
     const r = (x: number) => Math.round(x * 10) / 10;
     return {
       id: `demo-m${i}`,
       date: localIsoDate(day),
-      chest: r(101 + i * 0.8),
-      waist: r(84 - i * 1.2),
-      hips: r(97 - i * 0.4),
-      leftBicep: r(36 + i * 0.4),
-      rightBicep: r(36.3 + i * 0.4),
-      shoulders: r(118 + i * 0.7),
-      leftThigh: r(58 + i * 0.3),
-      rightThigh: r(58.2 + i * 0.3),
+      neck: r(37.6 + i * 0.1),
+      chest: r(101 + i * 0.4),
+      waist: r(84.6 - i * 0.6),
+      hips: r(97 - i * 0.2),
+      leftBicep: r(36 + i * 0.2),
+      rightBicep: r(36.3 + i * 0.2),
+      shoulders: r(118 + i * 0.35),
+      leftThigh: r(58 + i * 0.15),
+      rightThigh: r(58.2 + i * 0.15),
+    };
+  });
+
+  // Photos de progrès (silhouettes) : 2 poses, pour le comparateur avant / après.
+  const demoPhotos = (
+    [
+      [WEEKS * 7, 'front', 56],
+      [WEEKS * 7 - 1, 'side', 56],
+      [28, 'front', 50],
+      [0, 'front', 45],
+    ] as const
+  ).map(([d, label, waist], i) => {
+    const day = new Date(today);
+    day.setDate(today.getDate() - d);
+    day.setHours(8, 0, 0, 0);
+    return {
+      id: `demo-photo-${i}`,
+      takenAt: day.toISOString(),
+      label,
+      dataUrl: demoPhotoDataUrl(waist, label),
     };
   });
 
@@ -194,8 +217,9 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
     mealName: string,
     hour: number,
     items: Array<[ReturnType<typeof food>, number]>,
+    day: Date = today,
   ) => {
-    const at = new Date(today);
+    const at = new Date(day);
     at.setHours(hour, 15, 0, 0);
     return {
       id,
@@ -204,17 +228,117 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
       items: items.map(([f, grams]) => ({ food: f, grams })),
     };
   };
+  const oats = food("Flocons d'avoine", 372, 13.5, 58.7, 7);
+  const skyr = food('Skyr nature', 63, 11, 4, 0.2);
+  const banana = food('Banane', 89, 1.1, 22.8, 0.3);
+  const rice = food('Riz basmati cuit', 130, 2.7, 28, 0.3);
+  const chicken = food('Blanc de poulet', 110, 23, 0, 1.5);
+  const oil = food("Huile d'olive", 884, 0, 0, 100);
+  const whey = food('Whey protéine', 380, 78, 8, 5);
+  const eggs = food('Œufs entiers', 143, 12.6, 0.7, 9.5);
+  const milk = food('Lait demi-écrémé', 46, 3.3, 4.8, 1.6);
   const todayMeals = [
-    meal('demo-meal-1', 'Petit-déjeuner', 8, [
-      [food("Flocons d'avoine", 372, 13.5, 58.7, 7), 80],
-      [food('Skyr nature', 63, 11, 4, 0.2), 250],
-      [food('Banane', 89, 1.1, 22.8, 0.3), 120],
+    meal('demo-meal-1', 'Matin', 8, [
+      [oats, 80],
+      [skyr, 250],
+      [banana, 120],
     ]),
     meal('demo-meal-2', 'Déjeuner', 13, [
-      [food('Riz basmati cuit', 130, 2.7, 28, 0.3), 220],
-      [food('Blanc de poulet', 110, 23, 0, 1.5), 180],
-      [food("Huile d'olive", 884, 0, 0, 100), 10],
+      [rice, 220],
+      [chicken, 180],
+      [oil, 10],
     ]),
+  ];
+  // Hier : de quoi « Copier le repas d'hier » (collation et dîner pas encore notés aujourd'hui).
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const yesterdayMeals = [
+    meal(
+      'demo-meal-y1',
+      'Matin',
+      8,
+      [
+        [oats, 80],
+        [skyr, 250],
+        [banana, 120],
+      ],
+      yesterday,
+    ),
+    meal(
+      'demo-meal-y2',
+      'Déjeuner',
+      13,
+      [
+        [rice, 200],
+        [chicken, 160],
+      ],
+      yesterday,
+    ),
+    meal(
+      'demo-meal-y3',
+      'Collation',
+      17,
+      [
+        [whey, 30],
+        [milk, 250],
+      ],
+      yesterday,
+    ),
+    meal(
+      'demo-meal-y4',
+      'Dîner',
+      20,
+      [
+        [eggs, 180],
+        [rice, 150],
+        [oil, 10],
+      ],
+      yesterday,
+    ),
+  ];
+  // Récents (dernière quantité), favoris épinglés et deux recettes.
+  const usedAt = (daysAgo: number, hour: number) => {
+    const at = new Date(today);
+    at.setDate(today.getDate() - daysAgo);
+    at.setHours(hour, 15, 0, 0);
+    return at.toISOString();
+  };
+  const nutritionRecents = [
+    { food: chicken, grams: 180, usedAt: usedAt(0, 13) },
+    { food: rice, grams: 220, usedAt: usedAt(0, 13) },
+    { food: oil, grams: 10, usedAt: usedAt(0, 13) },
+    { food: banana, grams: 120, usedAt: usedAt(0, 8) },
+    { food: skyr, grams: 250, usedAt: usedAt(0, 8) },
+    { food: oats, grams: 80, usedAt: usedAt(0, 8) },
+    { food: eggs, grams: 180, usedAt: usedAt(1, 20) },
+    { food: milk, grams: 250, usedAt: usedAt(1, 17) },
+    { food: whey, grams: 30, usedAt: usedAt(1, 17) },
+  ];
+  const nutritionFavorites = [skyr, whey, chicken];
+  const nutritionRecipes = [
+    {
+      id: 'demo-recipe-bowl',
+      name: 'Bowl poulet riz',
+      servings: 2,
+      ingredients: [
+        { food: chicken, grams: 300 },
+        { food: rice, grams: 400 },
+        { food: oil, grams: 15 },
+      ],
+      updatedAt: usedAt(6, 19),
+    },
+    {
+      id: 'demo-recipe-porridge',
+      name: 'Porridge protéiné',
+      servings: 1,
+      ingredients: [
+        { food: oats, grams: 70 },
+        { food: milk, grams: 250 },
+        { food: whey, grams: 30 },
+        { food: banana, grams: 100 },
+      ],
+      updatedAt: usedAt(3, 8),
+    },
   ];
   const lastTrained = sessions[sessions.length - 1];
 
@@ -273,6 +397,7 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
     [STORAGE_KEYS.BODYWEIGHT_GOAL, 76],
     [STORAGE_KEYS.STRENGTH_GOALS, strengthGoals],
     [STORAGE_KEYS.MEASUREMENTS_ENTRIES, measurements],
+    [STORAGE_KEYS.PROGRESS_PHOTOS, demoPhotos],
     [STORAGE_KEYS.XP, { xp: 2350 }],
     [
       STORAGE_KEYS.PROGRAM_ACTIVE,
@@ -298,6 +423,10 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
       },
     ],
     [STORAGE_KEYS.NUTRITION_LOG(localIsoDate(today)), todayMeals],
+    [STORAGE_KEYS.NUTRITION_LOG(localIsoDate(yesterday)), yesterdayMeals],
+    [STORAGE_KEYS.NUTRITION_RECENTS, nutritionRecents],
+    [STORAGE_KEYS.NUTRITION_FAVORITES, nutritionFavorites],
+    [STORAGE_KEYS.NUTRITION_RECIPES, nutritionRecipes],
     [
       STORAGE_KEYS.STREAK,
       {
@@ -308,7 +437,72 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
     ],
   ];
 
+  values.push(...demoWellness(today));
   return { sessions, values };
+}
+
+/**
+ * Forme du jour et eau : check-ins des 29 derniers jours (pas aujourd'hui, pour
+ * que l'accueil propose le check-in en 3 touches) avec un creux il y a 4 jours,
+ * et l'eau de la semaine (objectif atteint la plupart des jours, 3 verres ce matin).
+ */
+function demoWellness(today: Date): Array<[StorageKey, unknown]> {
+  const rand = mulberry32(20261121);
+  const sleeps = ['bad', 'ok', 'good'] as const;
+  const checkins: Record<string, unknown> = {};
+  for (let d = 29; d >= 1; d--) {
+    if (d % 9 === 5) continue; // un oubli de temps en temps
+    const day = new Date(today);
+    day.setDate(today.getDate() - d);
+    const dip = d === 4 || d === 5; // nuit courte et grosses courbatures
+    const hours = dip ? 5.5 : Math.round((6.5 + rand() * 2) * 4) / 4;
+    checkins[localIsoDate(day)] = {
+      date: localIsoDate(day),
+      sleep: sleeps[hours < 6 ? 0 : hours < 7 ? 1 : 2],
+      sleepHours: hours,
+      energy: dip ? 2 : 3 + Math.floor(rand() * 3),
+      soreness: dip ? 'heavy' : rand() < 0.35 ? 'light' : 'none',
+    };
+  }
+  const water: Record<string, number[]> = {};
+  for (let d = 6; d >= 0; d--) {
+    const day = new Date(today);
+    day.setDate(today.getDate() - d);
+    const glasses = d === 0 ? 3 : d === 3 ? 7 : 11 + Math.floor(rand() * 2);
+    water[localIsoDate(day)] = Array.from({ length: glasses }, () => 250);
+  }
+  return [
+    [STORAGE_KEYS.WELLNESS_CHECKINS, checkins],
+    [STORAGE_KEYS.WELLNESS_WATER, water],
+  ];
+}
+
+/**
+ * Photo de progrès de démo : silhouette SVG (aucune vraie photo), plus fine à
+ * la taille au fil des semaines. Stockée en data URL : lib/photos.ts la migre
+ * vers son store d'images à la première lecture, comme une ancienne photo.
+ */
+export function demoPhotoDataUrl(waist: number, pose: 'front' | 'side'): string {
+  const w = pose === 'side' ? waist * 0.62 : waist;
+  const sh = pose === 'side' ? 44 : 78;
+  const hip = pose === 'side' ? w + 6 : w + 10;
+  const arms =
+    pose === 'side'
+      ? '<rect x="138" y="118" width="24" height="120" rx="12"/>'
+      : `<rect x="${150 - sh - 20}" y="118" width="24" height="125" rx="12" transform="rotate(8 ${150 - sh} 118)"/>` +
+        `<rect x="${150 + sh - 4}" y="118" width="24" height="125" rx="12" transform="rotate(-8 ${150 + sh} 118)"/>`;
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">' +
+    '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3f55"/>' +
+    '<stop offset="1" stop-color="#171a26"/></linearGradient></defs>' +
+    '<rect width="300" height="400" fill="url(#g)"/><ellipse cx="150" cy="388" rx="90" ry="8" fill="#000" opacity=".35"/>' +
+    '<g fill="#d9a48a"><circle cx="150" cy="62" r="27"/><rect x="138" y="84" width="24" height="26" rx="8"/>' +
+    `<path d="M${150 - sh} 112 Q150 100 ${150 + sh} 112 L${150 + w} 230 L${150 + hip} 268 L${150 - hip} 268 L${150 - w} 230 Z"/>` +
+    arms +
+    `<rect x="${150 - hip + 2}" y="262" width="${hip - 6}" height="122" rx="16"/>` +
+    `<rect x="154" y="262" width="${hip - 6}" height="122" rx="16"/></g>` +
+    `<path d="M${150 - w - 3} 240 L${150 + w + 3} 240 L${150 + hip + 2} 292 L${150 - hip - 2} 292 Z" fill="#2b3350"/></svg>`;
+  return 'data:image/svg+xml;base64,' + btoa(svg);
 }
 
 /** Écrit le jeu de démo et mémorise les clés pour pouvoir le retirer. */

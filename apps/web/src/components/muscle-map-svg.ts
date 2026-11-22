@@ -97,15 +97,21 @@ export interface MuscleMapSvgInput {
   compact?: boolean;
   /** Texte alternatif de l'image. */
   label?: string;
+  /**
+   * Mode « Récupération » : classe de couleur par zone (k-mm-fresh / k-mm-rec /
+   * k-mm-tired), à la place du palier de volume.
+   */
+  tones?: Partial<Record<MuscleRegion, string>>;
 }
 
 function shapes(list: readonly Shape[], input: MuscleMapSvgInput): string {
   return list
     .map(([region, d]) => {
       if (!region) return `<path d="${d}" class="k-mm-base"/>`;
-      const level = input.levels[region] ?? 0;
+      const tone = input.tones ? (input.tones[region] ?? 'k-mm-fresh') : null;
+      const cls = tone ?? `k-mm-l${input.levels[region] ?? 0}`;
       const on = input.selected === region ? ' k-mm-on' : '';
-      return `<path d="${d}" class="k-mm k-mm-l${level} mm-r-${region}${on}"/>`;
+      return `<path d="${d}" class="k-mm ${cls} mm-r-${region}${on}"/>`;
     })
     .join('');
 }

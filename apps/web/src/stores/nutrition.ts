@@ -226,6 +226,28 @@ export function nutritionStore() {
       }
     },
 
+    /**
+     * Remplace le journal du jour (copie de repas, recette, ajout rapide, annulation).
+     * `next` doit être fait d'objets bruts (pas de Proxy Alpine) : il part dans IDB.
+     */
+    async applyTodayLog(next: LoggedMeal[]): Promise<boolean> {
+      try {
+        const deps = await getDeps();
+        const clean = next.filter((m) => m.items.length > 0);
+        await deps.storage.set(KEY_LOG(todayIso()), clean);
+        this.todayLog = clean;
+        return true;
+      } catch (err) {
+        console.error('[nutrition] applyTodayLog failed:', err);
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+            detail: { kind: 'error', message: "Impossible d'enregistrer le journal. Réessaie." },
+          }),
+        );
+        return false;
+      }
+    },
+
     async removeMealItem(mealName: string, idx: number): Promise<void> {
       try {
         const deps = await getDeps();

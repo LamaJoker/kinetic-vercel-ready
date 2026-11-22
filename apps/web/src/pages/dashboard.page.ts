@@ -17,7 +17,12 @@ import {
 import { navigate } from '../router';
 import { loadActiveSession } from '../lib/training/active-session';
 import { hapticLight } from '../lib/haptics';
-import { loadMuscleMap, loadStrengthGoals, loadWeekPlan } from '../lib/lazy-component';
+import {
+  loadMuscleMap,
+  loadStrengthGoals,
+  loadWeekPlan,
+  loadWellness,
+} from '../lib/lazy-component';
 import type { PlanTodayDetail } from '../components/week-plan';
 
 const PATTERN_LABELS: Record<'push' | 'pull' | 'legs', string> = {
@@ -51,6 +56,8 @@ export function dashboard() {
     weekPlanReady: false,
     /** Une séance non terminée est enregistrée : le bouton la reprend au lieu d'en démarrer une. */
     hasActiveSession: false,
+    /** Forme du jour et eau (components/wellness.ts, à la demande). */
+    wellnessReady: false,
 
     startLabel(): string {
       return this.hasActiveSession ? 'Reprendre la séance' : 'Commencer la séance';
@@ -180,6 +187,13 @@ export function dashboard() {
         day: 'numeric',
         month: 'long',
       });
+
+      void loadWellness().then(
+        () => {
+          this.wellnessReady = true;
+        },
+        (err: unknown) => console.warn('[dashboard] forme du jour indisponible :', err),
+      );
 
       try {
         const deps = await getDeps();

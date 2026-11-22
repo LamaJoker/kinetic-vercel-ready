@@ -44,6 +44,14 @@ export const STORAGE_KEYS = {
   NUTRITION_LOG: (date: string) => `kinetic:nutrition:log:${date}` as const,
   NUTRITION_PLAN: 'kinetic:nutrition:plan' as const,
   NUTRITION_CUSTOM_FOODS: 'kinetic:nutrition:custom-foods' as const,
+  /** Derniers aliments utilisés, avec leur dernière quantité (RecentFood[]). */
+  NUTRITION_RECENTS: 'kinetic:nutrition:recents' as const,
+  /** Aliments épinglés (FoodPer100[]). */
+  NUTRITION_FAVORITES: 'kinetic:nutrition:favorites' as const,
+  /** Recettes (Recipe[]) : macros calculées par portion. */
+  NUTRITION_RECIPES: 'kinetic:nutrition:recipes' as const,
+  /** Réglages : repas par jour, objectif de protéines par repas, rappel du soir. */
+  NUTRITION_PREFS: 'kinetic:nutrition:prefs' as const,
 
   // ─── Entraînement ─────────────────────────────────────────────
   /** @deprecated Format historique (tableau unique). Lu uniquement pour la migration v2. */
@@ -100,6 +108,18 @@ export const STORAGE_KEYS = {
   STRENGTH_GOALS: 'kinetic:goals:strength' as const,
   /** Alertes de plateau masquées : exercice → date ISO de fin du masquage. */
   PLATEAU_DISMISSED: 'kinetic:plateau:dismissed' as const,
+
+  // ─── Forme du jour & hydratation (wellness.domain) ────────────
+  /** Check-ins du matin : { 'AAAA-MM-JJ': CheckIn } (120 derniers jours). */
+  WELLNESS_CHECKINS: 'kinetic:wellness:checkins' as const,
+  /** Verres d'eau par jour : { 'AAAA-MM-JJ': ml[] } (60 derniers jours). */
+  WELLNESS_WATER: 'kinetic:wellness:water' as const,
+  /** Réglages de l'eau : { goalMl (null = d'après le poids), glassMl }. */
+  WELLNESS_WATER_PREFS: 'kinetic:wellness:water-prefs' as const,
+  /** localStorage : choix « Forme basse » pour la séance en cours { sessionId, choice }. */
+  FORM_LIGHTEN: 'kinetic:form:lighten' as const,
+  /** localStorage : vue de la carte des muscles ('volume' | 'recovery'). */
+  MUSCLE_MAP_VIEW: 'kinetic:muscle-map:view' as const,
 
   // ─── Récompenses ──────────────────────────────────────────────
   REWARDS_UNLOCKED: 'kinetic:rewards:unlocked' as const,
@@ -185,6 +205,7 @@ export const STORAGE_KEYS = {
   EVENT_DENSITY_CHANGED: 'kinetic:density-changed' as const,
   EVENT_WAKE_LOCK_CHANGED: 'kinetic:wake-lock-changed' as const, // réglage « Garder l'écran allumé en séance »
   EVENT_REFRESH: 'kinetic:refresh' as const, // tirer pour rafraîchir (lib/native-gestures.ts)
+  EVENT_CHECKIN_SAVED: 'kinetic:checkin-saved' as const, // check-in du matin enregistré (components/wellness.ts)
   ERRORS_LAST_FLUSH: 'kinetic:errors:last-flush' as const, // localStorage, throttle exfiltration
 } as const;
 

@@ -98,7 +98,7 @@ describe('page-components : chargement des pages à la demande', () => {
 
   it('page sans composant propre : rien à charger', async () => {
     const register = vi.fn();
-    await loadPageComponents('./pages/vitalite.html', register);
+    await loadPageComponents('./pages/login.html', register);
     expect(register).not.toHaveBeenCalled();
   });
 });

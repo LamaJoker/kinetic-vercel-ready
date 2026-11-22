@@ -2,6 +2,7 @@
 import { ROLE_COLORS } from '../lib/palette';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from '../deps';
+import { BODY_CHANGED_EVENT } from '../components/body-fat';
 import type { ScrubData } from '../lib/chart-scrub';
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
@@ -616,6 +617,7 @@ export function mensurations() {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEY, next);
         this.entries = next;
+        window.dispatchEvent(new Event(BODY_CHANGED_EVENT));
         this._resetForm();
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
@@ -638,6 +640,7 @@ export function mensurations() {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEY, next);
         this.entries = next;
+        window.dispatchEvent(new Event(BODY_CHANGED_EVENT));
       } catch (err) {
         console.error('[mensurations] removeEntry failed:', err);
         window.dispatchEvent(

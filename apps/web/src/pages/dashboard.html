@@ -106,6 +106,132 @@
     </template>
   </section>
 
+  <!-- Forme du jour : check-in du matin en 3 touches (components/wellness.ts, à la demande) -->
+  <template x-if="wellnessReady">
+    <section x-data="formCheckin" class="k-card mb-3" aria-labelledby="form-title">
+      <div class="flex items-center justify-between gap-3">
+        <h2 id="form-title" class="k-card-title">Forme du jour</h2>
+        <button
+          type="button"
+          x-show="done"
+          class="k-link min-h-[44px] -my-2"
+          @click="edit()"
+          aria-label="Modifier le check-in du jour"
+        >
+          Modifier
+        </button>
+        <button type="button" x-show="editing" class="k-link min-h-[44px] -my-2" @click="finish()">
+          OK
+        </button>
+      </div>
+
+      <!-- Résultat : score en anneau -->
+      <div x-show="done" class="mt-3 flex items-center gap-4">
+        <div
+          class="k-ring-box h-[5.5rem] w-[5.5rem] flex-shrink-0"
+          :class="levelCls"
+          role="img"
+          :aria-label="'Score de forme : ' + score + ' sur 100, ' + levelLabel"
+        >
+          <svg class="k-ring" viewBox="0 0 36 36" aria-hidden="true" style="--k-ring-w: 3.6">
+            <circle class="k-ring-track" cx="18" cy="18" r="15.5" pathLength="100" />
+            <circle
+              class="k-ring-value"
+              cx="18"
+              cy="18"
+              r="15.5"
+              pathLength="100"
+              :style="ringStyle"
+            />
+          </svg>
+          <span class="k-stat text-[1.75rem] text-white" aria-hidden="true"
+            ><span x-text="score" x-count></span
+          ></span>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-lg font-semibold leading-tight" :class="levelCls" x-text="levelLabel"></p>
+          <p class="mt-1 text-sm leading-snug text-gray-400" x-text="summary"></p>
+          <p class="mt-1.5 text-sm leading-snug text-white" x-text="advice"></p>
+        </div>
+      </div>
+
+      <!-- Questions : chaque touche compte, enregistré dès la 3e -->
+      <div x-show="!done" class="mt-1">
+        <p class="text-sm text-gray-400" x-text="stepsLeft"></p>
+        <p class="k-label mt-3">Sommeil</p>
+        <div class="k-seg mt-1.5" role="group" aria-label="Qualité du sommeil">
+          <template x-for="o in sleepOptions" :key="o.value">
+            <button
+              type="button"
+              class="k-seg-item !min-h-[2.75rem]"
+              :aria-pressed="sleepPressed(o.value)"
+              @click="pickSleep(o.value)"
+              x-text="o.label"
+            ></button>
+          </template>
+        </div>
+        <button type="button" class="k-link mt-1 min-h-[44px] text-sm" @click="toggleHours()">
+          <span x-text="showHours ? 'Masquer les heures' : 'Préciser les heures'"></span>
+        </button>
+        <div x-show="showHours" class="flex items-center justify-between gap-3">
+          <span class="text-sm text-gray-400">Heures dormies</span>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="k-pill h-11 w-11 justify-center"
+              @click="bumpHours(-0.5)"
+              aria-label="Une demi-heure de moins"
+            >
+              −
+            </button>
+            <span
+              class="k-stat w-20 text-center text-xl text-white"
+              x-text="$num.loc(hoursLabel)"
+              aria-live="polite"
+            ></span>
+            <button
+              type="button"
+              class="k-pill h-11 w-11 justify-center"
+              @click="bumpHours(0.5)"
+              aria-label="Une demi-heure de plus"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <p class="k-label mt-3">Énergie</p>
+        <div class="k-seg mt-1.5" role="group" aria-label="Énergie, de 1 (vidé) à 5 (au top)">
+          <template x-for="n in energyOptions" :key="n">
+            <button
+              type="button"
+              class="k-seg-item !min-h-[2.75rem] tabular-nums"
+              :aria-pressed="energyPressed(n)"
+              @click="pickEnergy(n)"
+              x-text="n"
+            ></button>
+          </template>
+        </div>
+        <p class="mt-1 flex justify-between text-xs text-gray-500" aria-hidden="true">
+          <span>Vidé</span><span>Au top</span>
+        </p>
+
+        <p class="k-label mt-3">Courbatures</p>
+        <div class="k-seg mt-1.5" role="group" aria-label="Courbatures">
+          <template x-for="o in sorenessOptions" :key="o.value">
+            <button
+              type="button"
+              class="k-seg-item !min-h-[2.75rem]"
+              :aria-pressed="sorenessPressed(o.value)"
+              @click="pickSoreness(o.value)"
+              x-text="o.label"
+            ></button>
+          </template>
+        </div>
+      </div>
+    </section>
+  </template>
+
   <!-- Programme suivi : planning de la semaine qui s'adapte (components/week-plan.ts, à la demande) -->
   <div @k-plan-today.window="onPlanToday($event)">
     <template x-if="weekPlanReady">
@@ -471,42 +597,234 @@
     <p x-show="!$store.vitalite.allDone" class="mt-3 text-sm text-gray-500">Continuer la routine</p>
   </a>
 
-  <!-- Carte des muscles, aperçu 7 jours (composant chargé à la demande) -->
-  <template x-if="muscleMapReady">
-    <a
-      href="/progression?tab=muscles"
-      class="k-card k-press mb-3 flex items-center gap-4"
-      x-data="muscleMap"
-      data-compact="true"
-      x-effect="sync(_allSessions, mmExercises)"
-      aria-label="Carte des muscles sur 7 jours : voir le détail"
-    >
-      <div class="k-mm-box-sm w-36 flex-shrink-0" x-svg="svg()"></div>
-      <div class="min-w-0 flex-1">
-        <h2 class="k-card-title">Muscles · 7 j</h2>
-        <p class="mt-1 text-sm text-gray-400 tabular-nums" x-text="summary()"></p>
-        <p
-          x-show="topLabels()"
-          class="mt-2 text-sm font-semibold text-white leading-snug"
-          x-text="topLabels()"
-        ></p>
-        <div class="mt-3 flex flex-wrap items-center gap-1" aria-hidden="true">
-          <template x-for="l in legend" :key="l.key">
-            <span :class="l.cls"></span>
-          </template>
-          <span class="ml-1 whitespace-nowrap text-xs text-gray-500">peu → beaucoup</span>
+  <!-- Eau : un geste par verre (components/wellness.ts, à la demande) -->
+  <template x-if="wellnessReady">
+    <section x-data="waterTracker" class="k-card mb-3" aria-labelledby="water-title">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex min-w-0 items-center gap-2.5">
+          <span
+            class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-kinetic-purple/15 text-kinetic-purple"
+            aria-hidden="true"
+          >
+            <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2.7c.3 0 .6.14.8.38 2.9 3.5 6.2 8 6.2 11.42A7 7 0 0 1 12 21.5a7 7 0 0 1-7-7c0-3.42 3.3-7.92 6.2-11.42.2-.24.5-.38.8-.38Z"
+              />
+            </svg>
+          </span>
+          <h2 id="water-title" class="k-card-title">Eau</h2>
+        </div>
+        <button
+          type="button"
+          class="k-link -my-2 min-h-[44px]"
+          @click="openSettings()"
+          aria-label="Régler l'objectif d'eau et la taille du verre"
+        >
+          Régler
+        </button>
+      </div>
+
+      <div class="mt-3 flex items-end justify-between gap-3">
+        <p class="k-stat text-[2rem] text-kinetic-purple">
+          <span x-text="$num.loc(totalLabel)" x-count></span
+          ><span class="k-unit" x-text="$num.loc(goalLabel)"></span>
+        </p>
+        <p class="pb-1 text-sm text-gray-400 tabular-nums" x-text="glassesLabel"></p>
+      </div>
+      <div
+        class="mt-2 h-2.5 overflow-hidden rounded-full bg-kinetic-purple/15"
+        role="progressbar"
+        aria-label="Eau bue aujourd'hui"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        :aria-valuenow="percent"
+      >
+        <div
+          class="h-full rounded-full bg-kinetic-purple transition-all duration-500"
+          :style="barStyle"
+        ></div>
+      </div>
+
+      <div class="mt-4 flex items-center gap-2">
+        <button
+          type="button"
+          class="k-btn-primary flex-1"
+          @click="add()"
+          x-text="addLabel"
+        ></button>
+        <button
+          type="button"
+          class="k-pill h-12 px-4"
+          @click="undo()"
+          :disabled="!canUndo"
+          aria-label="Annuler le dernier verre"
+        >
+          Annuler
+        </button>
+      </div>
+
+      <!-- 7 derniers jours -->
+      <ol class="mt-4 grid grid-cols-7 gap-2" aria-label="Eau bue ces 7 derniers jours">
+        <template x-for="d in history" :key="d.date">
+          <li class="flex flex-col items-center gap-1" :aria-label="$num.loc(d.aria)">
+            <span class="flex h-10 w-3 items-end overflow-hidden rounded-full bg-white/5">
+              <span class="block w-full rounded-full" :class="d.cls" :style="d.style"></span>
+            </span>
+            <span class="text-[11px] text-gray-500" aria-hidden="true" x-text="d.initial"></span>
+          </li>
+        </template>
+      </ol>
+
+      <!-- Réglages (feuille) -->
+      <div
+        x-show="showSettings"
+        class="k-backdrop fixed"
+        style="display: none"
+        @click.self="closeSettings()"
+        @keydown.escape.window="closeSettings()"
+      >
+        <div class="k-sheet" role="dialog" aria-modal="true" aria-labelledby="water-sheet-title">
+          <h3 id="water-sheet-title" class="text-center font-display text-xl font-bold text-white">
+            Eau
+          </h3>
+          <p class="k-label mt-4">Objectif du jour</p>
+          <div class="mt-1.5 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              class="k-pill h-11 w-11 justify-center"
+              @click="bumpGoal(-250)"
+              aria-label="Objectif : 250 ml de moins"
+            >
+              −
+            </button>
+            <span
+              class="k-stat text-3xl text-white"
+              x-text="$num.loc(settingsGoalLabel)"
+              aria-live="polite"
+            ></span>
+            <button
+              type="button"
+              class="k-pill h-11 w-11 justify-center"
+              @click="bumpGoal(250)"
+              aria-label="Objectif : 250 ml de plus"
+            >
+              +
+            </button>
+          </div>
+          <p class="mt-2 text-center text-sm text-gray-400" x-text="$num.loc(autoGoalLabel)"></p>
+          <button
+            type="button"
+            x-show="!goalAuto"
+            class="k-link mx-auto mt-1 flex min-h-[44px]"
+            @click="useAutoGoal()"
+          >
+            Utiliser l'objectif conseillé
+          </button>
+
+          <p class="k-label mt-4">Taille d'un verre</p>
+          <div class="k-seg mt-1.5" role="group" aria-label="Taille d'un verre">
+            <template x-for="ml in glassOptions" :key="ml">
+              <button
+                type="button"
+                class="k-seg-item !min-h-[2.75rem] tabular-nums"
+                :aria-pressed="glassPressed(ml)"
+                @click="setGlass(ml)"
+                x-text="glassOptionLabel(ml)"
+              ></button>
+            </template>
+          </div>
+          <p class="mt-3 text-sm text-gray-500">
+            L'objectif atteint coche « Boire 2 L d'eau » dans ta routine de récupération.
+          </p>
+          <button type="button" class="k-btn-2 mt-5" @click="closeSettings()">OK</button>
         </div>
       </div>
-      <svg class="k-chevron flex-shrink-0" viewBox="0 0 8 14" fill="none" aria-hidden="true">
-        <path
-          d="m1 1 6 6-6 6"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </a>
+    </section>
+  </template>
+
+  <!-- Carte des muscles : récupération ou volume 7 jours (composant chargé à la demande) -->
+  <template x-if="muscleMapReady">
+    <section
+      class="k-card mb-3"
+      x-data="muscleMap"
+      data-compact="true"
+      data-view="recovery"
+      x-effect="sync(_allSessions, mmExercises)"
+      aria-labelledby="mm-home-title"
+    >
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <h2
+          id="mm-home-title"
+          class="k-card-title"
+          x-text="isRecovery ? 'Muscles · récup' : 'Muscles · 7 j'"
+        ></h2>
+        <div class="k-seg w-40" role="group" aria-label="Affichage de la carte">
+          <button
+            type="button"
+            class="k-seg-item"
+            @click="setView('recovery')"
+            :aria-pressed="viewPressed('recovery')"
+          >
+            Récup
+          </button>
+          <button
+            type="button"
+            class="k-seg-item"
+            @click="setView('volume')"
+            :aria-pressed="viewPressed('volume')"
+          >
+            Volume
+          </button>
+        </div>
+      </div>
+      <a
+        href="/progression?tab=muscles"
+        class="k-press flex items-center gap-4"
+        aria-label="Carte des muscles : voir le détail"
+      >
+        <div class="k-mm-box-sm w-36 flex-shrink-0" x-svg="svg()"></div>
+        <div class="min-w-0 flex-1">
+          <template x-if="isRecovery">
+            <div>
+              <p class="text-sm font-semibold leading-snug text-white" x-text="freshLabel()"></p>
+              <ul class="mt-3 space-y-1.5" aria-label="Légende">
+                <template x-for="l in recoveryLegend" :key="l.key">
+                  <li class="flex items-center gap-1.5 text-xs text-gray-400">
+                    <span :class="l.cls" aria-hidden="true"></span>
+                    <span x-text="l.label"></span>
+                  </li>
+                </template>
+              </ul>
+            </div>
+          </template>
+          <template x-if="!isRecovery">
+            <div>
+              <p class="text-sm text-gray-400 tabular-nums" x-text="summary()"></p>
+              <p
+                x-show="topLabels()"
+                class="mt-2 text-sm font-semibold leading-snug text-white"
+                x-text="topLabels()"
+              ></p>
+              <div class="mt-3 flex flex-wrap items-center gap-1" aria-hidden="true">
+                <template x-for="l in legend" :key="l.key">
+                  <span :class="l.cls"></span>
+                </template>
+                <span class="ml-1 whitespace-nowrap text-xs text-gray-500">peu → beaucoup</span>
+              </div>
+            </div>
+          </template>
+        </div>
+        <svg class="k-chevron flex-shrink-0" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+          <path
+            d="m1 1 6 6-6 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </a>
+    </section>
   </template>
 
   <!-- Objectif de force le plus proche (components/strength-goals.ts, à la demande) -->

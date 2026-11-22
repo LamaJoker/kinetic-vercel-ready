@@ -19,6 +19,10 @@ type ComponentMap = Record<string, ComponentFactory>;
 const helpTip = (): Promise<ComponentMap> =>
   import('./components/help-tip').then((m) => ({ helpTip: m.helpTip }));
 
+/** Masse grasse estimée (Mensurations, Poids). */
+const bodyFatCard = (): Promise<ComponentMap> =>
+  import('./components/body-fat').then((m) => ({ bodyFatCard: m.bodyFatCard }));
+
 export const PAGE_COMPONENTS: Record<string, () => Promise<ComponentMap>> = {
   './pages/dashboard.html': () =>
     import('./pages/dashboard.page').then((m) => ({ dashboard: m.dashboard })),
@@ -38,11 +42,17 @@ export const PAGE_COMPONENTS: Record<string, () => Promise<ComponentMap>> = {
   './pages/auth-callback.html': () =>
     import('./pages/auth-callback.page').then((m) => ({ authCallback: m.authCallback })),
   './pages/bodyweight.html': () =>
-    import('./pages/bodyweight.page').then((m) => ({ bodyweight: m.bodyweight })),
+    Promise.all([import('./pages/bodyweight.page'), bodyFatCard()]).then(([m, b]) => ({
+      bodyweight: m.bodyweight,
+      ...b,
+    })),
   './pages/progression.html': () =>
     import('./pages/progression.page').then((m) => ({ progression: m.progression })),
   './pages/mensurations.html': () =>
-    import('./pages/mensurations.page').then((m) => ({ mensurations: m.mensurations })),
+    Promise.all([import('./pages/mensurations.page'), bodyFatCard()]).then(([m, b]) => ({
+      mensurations: m.mensurations,
+      ...b,
+    })),
   './pages/records.html': () =>
     Promise.all([import('./pages/records.page'), helpTip()]).then(([m, h]) => ({
       records: m.records,
@@ -59,6 +69,8 @@ export const PAGE_COMPONENTS: Record<string, () => Promise<ComponentMap>> = {
     import('./pages/glossaire.page').then((m) => ({ glossairePage: m.glossairePage })),
   './pages/tools.html': () =>
     import('./pages/tools.page').then((m) => ({ toolsPage: m.toolsPage })),
+  './pages/vitalite.html': () =>
+    import('./components/wellness').then((m) => ({ formHistory: m.formHistory })),
   './pages/template-editor.html': () =>
     import('./pages/template-editor.page').then((m) => ({ templateEditor: m.templateEditor })),
 };
@@ -69,7 +81,7 @@ const loaded = new Map<string, Promise<void>>();
 
 /**
  * Charge et enregistre (une seule fois) les composants d'un gabarit de page.
- * Sans entrée (vitalité, connexion, pages légales) : rien à charger. En cas
+ * Sans entrée (connexion, pages légales) : rien à charger. En cas
  * d'échec (hors-ligne, chunk disparu), l'essai suivant recommence.
  */
 export function loadPageComponents(

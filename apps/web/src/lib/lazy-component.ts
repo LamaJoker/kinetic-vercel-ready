@@ -18,6 +18,8 @@ export const LAZY_COMPONENTS: Record<string, () => Promise<Factory>> = {
   muscleMap: () => import('../components/muscle-map').then((m) => m.muscleMap),
   strengthGoals: () => import('../components/strength-goals').then((m) => m.strengthGoals),
   weekPlan: () => import('../components/week-plan').then((m) => m.weekPlan),
+  formCheckin: () => import('../components/wellness').then((m) => m.formCheckin),
+  waterTracker: () => import('../components/wellness').then((m) => m.waterTracker),
 };
 
 const loaded = new Map<string, Promise<void>>();
@@ -65,6 +67,13 @@ export function loadStrengthGoals(): Promise<void> {
 /** Planning de la semaine du programme suivi (accueil, /program). */
 export function loadWeekPlan(): Promise<void> {
   return loadLazyComponent('weekPlan');
+}
+
+/** Forme du jour et eau (accueil). */
+export function loadWellness(): Promise<void> {
+  return Promise.all([loadLazyComponent('formCheckin'), loadLazyComponent('waterTracker')]).then(
+    () => undefined,
+  );
 }
 
 /** Tests uniquement. */

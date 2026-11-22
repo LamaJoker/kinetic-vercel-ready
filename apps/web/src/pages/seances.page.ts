@@ -66,6 +66,13 @@ import {
   type PlateauDismissals,
   type PlateauReport,
   type StrengthGoal,
+  FORM_LOW_THRESHOLD,
+  formScore,
+  normalizeCheckIn,
+  localDay,
+  lightenWeight,
+  lightenSetCount,
+  type CheckInLog,
 } from '@kinetic/core';
 import { UuidGenerator } from '@kinetic/adapters-web';
 import { getDeps } from '../deps';
@@ -255,6 +262,24 @@ function _readCoachGoal(): CoachGoal {
   }
 }
 
+/** Choix « Forme basse » mémorisé pour une séance (Appliquer / Garder). */
+interface LightenChoice {
+  sessionId: string;
+  choice: 'apply' | 'keep';
+}
+
+function _readLighten(): LightenChoice | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(STORAGE_KEYS.FORM_LIGHTEN) ?? 'null') as unknown;
+    const c = v as LightenChoice | null;
+    return c && typeof c.sessionId === 'string' && (c.choice === 'apply' || c.choice === 'keep')
+      ? c
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function sessionsCacheVersion(sessions: readonly WorkoutSession[]): string {
   const last = sessions.at(-1);
   return `${sessions.length}:${last?.id ?? ''}:${last?.startedAt ?? ''}:${last?.endedAt ?? ''}`;
@@ -388,6 +413,10 @@ export function seances() {
     draftWarmup: false,
     /** Exercice + nombre de séries de travail pour lequel le brouillon a été pré-rempli. */
     _draftKey: '',
+    /** Score de forme du check-in du jour (null : pas de check-in). */
+    formScoreToday: null as number | null,
+    /** « Forme basse » : séance allégée (−10 % de charge, une série de moins) ou gardée. */
+    _lighten: null as LightenChoice | null,
     _lastCache: new Map<string, LastPerformance<SetEntry> | null>(),
     _lastCacheVersion: '',
     /** Réglages du calculateur de disques (barre, disques disponibles). */
@@ -615,6 +644,12 @@ export function seances() {
         this.plateauDismissed =
           (await deps.storage.get<PlateauDismissals>(STORAGE_KEYS.PLATEAU_DISMISSED)) ?? {};
         this._strengthGoals = normalizeGoals(await deps.storage.get(STORAGE_KEYS.STRENGTH_GOALS));
+
+        // Forme du jour (check-in du matin) : sous le seuil, proposer d'alléger la séance.
+        const checkIns = await deps.storage.get<CheckInLog>(STORAGE_KEYS.WELLNESS_CHECKINS);
+        const checkIn = normalizeCheckIn(checkIns?.[localDay(new Date())]);
+        this.formScoreToday = checkIn ? formScore(checkIn) : null;
+        this._lighten = _readLighten();
 
         // ── Import partagé en attente (depuis ?import=… au boot) ─────────
         try {
@@ -1363,6 +1398,81 @@ export function seances() {
       this.draft.rpe = c.rpe;
     },
 
+    // ─── Forme basse : alléger la séance en cours ─────────────────────────
+
+    showLightenOffer(): boolean {
+      const s = this.currentSession;
+      return (
+        !!s &&
+        this.formScoreToday !== null &&
+        this.formScoreToday < FORM_LOW_THRESHOLD &&
+        this._lighten?.sessionId !== s.id
+      );
+    },
+
+    lightenOfferTitle(): string {
+      return `Forme basse (${this.formScoreToday ?? 0}/100)`;
+    },
+
+    /** Séance en cours allégée : cibles et pré-remplissages réduits. */
+    isLightened(): boolean {
+      const s = this.currentSession;
+      return !!s && this._lighten?.sessionId === s.id && this._lighten.choice === 'apply';
+    },
+
+    _setLighten(choice: LightenChoice['choice']): void {
+      const s = this.currentSession;
+      if (!s) return;
+      this._lighten = { sessionId: s.id, choice };
+      try {
+        localStorage.setItem(STORAGE_KEYS.FORM_LIGHTEN, JSON.stringify(this._lighten));
+      } catch {
+        /* choix gardé pour cette visite seulement */
+      }
+    },
+
+    /** « Appliquer » : −10 % sur les charges pré-remplies, une série de moins par exercice. */
+    applyLighten(): void {
+      this._setLighten('apply');
+      this._draftKey = '';
+      this._syncDraft();
+      hapticLight();
+      window.dispatchEvent(
+        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+          detail: {
+            kind: 'success',
+            message: 'Séance allégée : −10 % de charge et une série de moins par exercice.',
+          },
+        }),
+      );
+    },
+
+    /** « Garder » : séance normale, la proposition ne revient pas pour cette séance. */
+    keepFullSession(): void {
+      this._setLighten('keep');
+      hapticLight();
+    },
+
+    /** Séries de travail prévues : celles du modèle, sinon celles de la dernière fois. */
+    plannedSets(exerciseId: string): number | null {
+      const s = this.currentSession;
+      const tpl = s?.templateId ? this.templates.find((t) => t.id === s.templateId) : undefined;
+      const fromTpl = tpl?.exercises.find((e) => e.exerciseId === exerciseId)?.sets;
+      if (fromTpl && fromTpl > 0) return fromTpl;
+      const last = this.lastTime(exerciseId)?.sets.length ?? 0;
+      return last > 0 ? last : null;
+    },
+
+    /** « 1/3 séries · −10 % » sous le nom de l'exercice (séance allégée), sinon vide. */
+    lightenedSetsLabel(entry: SessionExerciseEntry): string {
+      if (!this.isLightened()) return '';
+      const done = this.workSetCount(entry);
+      const planned = this.plannedSets(entry.exerciseId);
+      if (planned === null) return `${done} série${done > 1 ? 's' : ''} · −10 %`;
+      const n = lightenSetCount(planned);
+      return `${done}/${n} série${n > 1 ? 's' : ''} · −10 %`;
+    },
+
     // ─── Raccourcis +/- sur le draft ───────────────────────────────────────
     bumpReps(delta: number): void {
       const current = Number(this.draft.reps) || 0;
@@ -1962,7 +2072,10 @@ export function seances() {
       }
       const target = this.setTarget(entry.exerciseId, n);
       if (target) {
-        this.draft.weightKg = target.weightKg;
+        const inc = this.exercises.find((e) => e.id === entry.exerciseId)?.incrementKg ?? 2.5;
+        this.draft.weightKg = this.isLightened()
+          ? lightenWeight(target.weightKg, inc)
+          : target.weightKg;
         this.draft.reps = target.reps;
       }
     },

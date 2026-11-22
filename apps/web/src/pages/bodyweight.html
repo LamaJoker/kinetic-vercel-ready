@@ -193,6 +193,91 @@
     </div>
   </div>
 
+  <!-- Masse grasse estimée (méthode US Navy) — components/body-fat.ts -->
+  <section
+    x-data="bodyFatCard"
+    x-on:k-body-changed.window="refresh()"
+    x-show="loaded"
+    class="k-card k-enter mb-8"
+    aria-labelledby="bf-title"
+  >
+    <div class="flex items-center justify-between gap-3">
+      <h2 id="bf-title" class="k-card-title">Masse grasse estimée</h2>
+      <span class="k-badge">Estimation ±3–4 %</span>
+    </div>
+
+    <template x-if="hasEstimate">
+      <div>
+        <div class="mt-2 flex items-end justify-between gap-3">
+          <p class="k-stat text-[2.75rem] tracking-tight">
+            <span x-text="pctText" x-count></span><span class="k-unit">%</span>
+          </p>
+          <span
+            class="mb-2 inline-flex items-center h-7 px-2.5 rounded-full bg-kinetic-purple/15 text-sm font-semibold text-kinetic-purple"
+            x-text="categoryLabel"
+          ></span>
+        </div>
+        <p class="text-sm text-gray-400" x-text="basisText"></p>
+        <p x-show="issue" class="text-sm text-kinetic-gold text-pretty mt-1" x-text="issue"></p>
+        <p
+          x-show="deltaText"
+          class="text-sm text-gray-400 tabular-nums mt-0.5"
+          x-text="deltaText"
+        ></p>
+
+        <dl x-show="masses" class="grid grid-cols-2 gap-2 mt-4">
+          <div class="rounded-2xl bg-kinetic-elevated/60 px-3 py-2.5">
+            <dt class="text-xs font-medium text-gray-400">Masse maigre</dt>
+            <dd class="k-stat text-xl mt-0.5">
+              <span x-text="leanText"></span><span class="k-unit">kg</span>
+            </dd>
+          </div>
+          <div class="rounded-2xl bg-kinetic-elevated/60 px-3 py-2.5">
+            <dt class="text-xs font-medium text-gray-400">Masse grasse</dt>
+            <dd class="k-stat text-xl mt-0.5">
+              <span x-text="fatText"></span><span class="k-unit">kg</span>
+            </dd>
+          </div>
+        </dl>
+
+        <template x-if="series.length >= 2">
+          <div class="k-scrub k-scrub-purple mt-4" x-scrub="chartScrub()">
+            <div x-svg="chartSvg()" class="w-full text-gray-500"></div>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <template x-if="!hasEstimate">
+      <div class="mt-2">
+        <p class="text-sm text-gray-400 text-pretty" x-text="missingText"></p>
+        <a x-show="needsProfile" href="/onboarding" class="k-link inline-flex min-h-11 items-center"
+          >Renseigner mon profil</a
+        >
+        <a
+          x-show="!needsProfile && linkMeasures"
+          href="/mensurations"
+          class="k-link inline-flex min-h-11 items-center"
+          >Saisir mes mensurations</a
+        >
+      </div>
+    </template>
+
+    <p
+      x-show="manualPct !== null"
+      class="mt-3 pt-3 border-t border-[color:var(--separator)] flex items-baseline justify-between gap-3 text-sm"
+    >
+      <span class="text-white">Ta mesure</span>
+      <span class="text-gray-400 tabular-nums" x-text="manualText"></span>
+    </p>
+
+    <p class="mt-3 text-xs leading-relaxed text-gray-500 text-pretty">
+      Méthode US Navy (tours de cou, de taille, de hanches chez la femme, et ta taille) : compte ±3
+      à 4 % d'écart avec une mesure de référence. Suis surtout la tendance, mesurée dans les mêmes
+      conditions.
+    </p>
+  </section>
+
   <!-- Nouvelle pesée -->
   <section class="mb-8">
     <h2 class="k-section mb-2.5">Nouvelle pesée</h2>
