@@ -32,7 +32,7 @@ simulateur de synchro). Les plus graves :
 | P2      | `vitals_rate_limit` ouverte à anon, droits TRUNCATE hérités, ai-coach sans plafond global ni contrôle Pro par défaut, send-push exploitable en SSRF | Fuite, abus, coût                                                                  |
 | P2      | Outbox non atomique, trigger de quota en O(données), Capacitor Android vulnérable (GHSA-rvm3-566m-v7fv)                                             | Perte après fermeture forcée, lenteur, faille native                               |
 
-Les revues adversariales menées après les corrections ont trouvé **13 problèmes supplémentaires**,
+Les revues adversariales menées après les corrections ont trouvé **18 problèmes supplémentaires**,
 tous corrigés avec un test (écritures sur liste périmée, base locale ancienne écrasant le cloud,
 séance écrite en mode de secours perdue, mélange de comptes en mode de secours, effacement
 pendant une synchro en vol, plafond IA global vidé par des comptes d'essai, trigger privilégié
@@ -55,6 +55,19 @@ plafond push refusant un rafraîchissement, etc.).
 | `vite.config.ts`, `lib/derived-cache.ts`, `lib/pr-index.ts`, `lib/training/storage.ts`                  | Code rare chargé à la demande, calculs mémorisés, cache des séances                                                                                                                                                                                                                                                                  | PERF-05/06/11                                   | JS initial 129,1 → 121,6 KiB gzip ; pages fluides avec un long historique                                                                       |
 | `tsconfig`, `vitest.config.ts`, `eslint.config.js`, `.github/workflows/ci.yml`                          | typecheck hors de `dist`, seuils de couverture, frontières d'architecture vérifiées, tests SQL en CI                                                                                                                                                                                                                                 | QA-05/06/12                                     | Régressions détectées automatiquement                                                                                                           |
 
+### Problème trouvé au test iPhone de la 9.16.0
+
+Sur le simulateur iPhone, environ un lancement sur sept, toutes les lectures du stockage local
+restaient sans réponse après le rechargement qui suit le chargement de la démo : écrans vides
+(0 séance) alors que les données étaient bien enregistrées, sans aucune erreur. Le même symptôme
+avait été vu une fois en 9.11 : c'est un défaut ancien et intermittent de WebKit (IndexedDB qui ne
+répond plus au démarrage ou après une navigation), pas une régression. Parade
+(`packages/adapter-web/src/sync/idb.ts`, `local-db.ts`, `apps/web/src/lib/storage-unresponsive.ts`) :
+réveil d'IndexedDB avant ouverture, ouverture et lectures avec délai et réessai, jamais de repli
+vers une base vide, un seul rechargement automatique puis un message clair (« Tes données ne sont
+pas perdues… », bouton « Réessayer »). 25 tests ; le test iPhone enchaîne désormais 4 installations
+neuves et signale tout stockage bloqué (4 / 4 propres après correctif).
+
 ## C. Sécurité
 
 Garanti et testé (SQL réel + tests des fonctions Edge) :
@@ -74,10 +87,10 @@ Garanti et testé (SQL réel + tests des fonctions Edge) :
 
 | Suite                                                              | Résultat                                                                      | Commande                                                         |
 | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Unitaires + intégration                                            | **2 692 tests, 226 fichiers, tous verts**                                     | `pnpm test`                                                      |
+| Unitaires + intégration                                            | **2 717 tests, 228 fichiers, tous verts**                                     | `pnpm test`                                                      |
 | Couverture                                                         | seuils respectés (global 83 % lignes ; core 97 % ; sync 87 % ; training 94 %) | `pnpm test:coverage`                                             |
 | SQL sur Postgres 16 réel (migrations 001→011, 010 et 011 rejouées) | **457 assertions**                                                            | `pnpm test:sql`                                                  |
-| E2E Playwright (Chromium mobile + bureau)                          | **112 / 112**                                                                 | `pnpm e2e`                                                       |
+| E2E Playwright (Chromium mobile + bureau ; WebKit mobile)          | **112 / 112** ; WebKit : **32 / 32** (pages et parcours)                      | `pnpm e2e`                                                       |
 | Simulateur iPhone (parcours de 14 écrans)                          | vert à chaque version publiée                                                 | CI « Test iPhone »                                               |
 | Types, lint, format, budget, audit natif                           | OK                                                                            | `pnpm typecheck`, `lint`, `format:check`, `size`, `audit:native` |
 
@@ -98,7 +111,7 @@ Scénarios exigés :
 
 **Non exécuté** (et pourquoi) :
 
-- E2E Firefox et WebKit : navigateurs non installés dans l'environnement de travail (Chromium seul).
+- E2E Firefox (non installé) ; sous WebKit, seule la suite `pages.spec.ts` a été lancée.
 - Tests contre une **vraie instance Supabase** : aucune instance de test disponible. Le SQL est
   testé sur Postgres 16 avec une émulation fidèle d'`auth.uid()` et des rôles Supabase ;
   la passerelle Edge réelle (verify_jwt, en-têtes) n'est pas testée.
@@ -137,7 +150,7 @@ Les anciennes versions de l'app continuent de fonctionner après 010/011 (testé
 6. **Stockage plein** : l'utilisateur est prévenu mais l'espace récupérable n'est pas affiché.
 7. **Dette de structure** : composant Séances de ~2 400 lignes (plan de découpage documenté),
    notifications dupliquées.
-8. **Marges de budget** : total JS 343,5 / 350 KiB, gabarits 95,6 / 100 KiB.
+8. **Marges de budget** : total JS 345,7 / 350 KiB, gabarits 95,6 / 100 KiB.
 9. Un pull fait par un **autre onglet** n'est pas vu par une page déjà ouverte (cas web multi-onglets).
 
 ## G. Évaluation honnête
