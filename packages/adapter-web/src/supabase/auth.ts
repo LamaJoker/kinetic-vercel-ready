@@ -29,6 +29,9 @@ if (typeof SUPABASE_ANON_KEY === 'string' && SUPABASE_ANON_KEY.length > 20 && !i
   );
 }
 
+/** Clé de stockage de la session Supabase (option `storageKey` du client). */
+export const AUTH_STORAGE_KEY = 'kinetic-auth';
+
 /** Détecte Capacitor (APK Android / iOS) */
 const isCapacitor =
   typeof window !== 'undefined' && !!(window as unknown as Record<string, unknown>)['Capacitor'];
@@ -100,7 +103,7 @@ export const supabase =
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: false, // géré manuellement dans auth-callback.page.ts
-          storageKey: 'kinetic-auth',
+          storageKey: AUTH_STORAGE_KEY,
           flowType: 'pkce', // toujours pkce ; verifier stocké dans la WebView APK
         },
       })
@@ -112,6 +115,46 @@ export type AuthUser = {
   avatar_url: string | null;
   full_name: string | null;
 };
+
+function toAuthUser(raw: unknown): AuthUser | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const u = raw as { id?: unknown; email?: unknown; user_metadata?: Record<string, unknown> };
+  if (typeof u.id !== 'string' || u.id.length === 0) return null;
+  const meta = u.user_metadata ?? {};
+  return {
+    id: u.id,
+    email: typeof u.email === 'string' ? u.email : null,
+    avatar_url: typeof meta['avatar_url'] === 'string' ? meta['avatar_url'] : null,
+    full_name: typeof meta['full_name'] === 'string' ? meta['full_name'] : null,
+  };
+}
+
+/**
+ * Utilisateur de la session enregistrée SUR L'APPAREIL (lecture locale synchrone du
+ * stockage `kinetic-auth`, aucun appel réseau, session expirée comprise).
+ * Sert à choisir la base locale du compte au démarrage, même hors-ligne
+ * (docs/architecture/sync.md § 4.5) : jamais `getUser()` (réseau, jusqu'à 8 s).
+ */
+export function getLocalSessionUser(
+  storage: Pick<Storage, 'getItem'> | null = typeof localStorage !== 'undefined'
+    ? localStorage
+    : null,
+  storageKey: string = AUTH_STORAGE_KEY,
+): AuthUser | null {
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(storageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as {
+      user?: unknown;
+      currentSession?: { user?: unknown };
+      refresh_token?: unknown;
+    };
+    return toAuthUser(parsed.user ?? parsed.currentSession?.user);
+  } catch {
+    return null;
+  }
+}
 
 export async function getAuthUser(): Promise<AuthUser | null> {
   if (!supabase) return null;

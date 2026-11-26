@@ -161,9 +161,24 @@ export const STORAGE_KEYS = {
   SYNC_CURSOR: 'kinetic:sync:cursor' as const,
   /** Outbox persistante des écritures non confirmées par le cloud (survit au reload). */
   SYNC_OUTBOX: 'kinetic:sync:outbox' as const,
+  /**
+   * Suppressions d'éléments d'une collection synchronisée : clé sœur `{ [idÉlément]: dateIso }`
+   * (sync.md « Fusion par domaine »), écrite dans la même transaction que la collection.
+   */
+  ITEM_TOMBSTONES: (collectionKey: string) => `kinetic:deleted:${collectionKey}` as const,
+  ITEM_TOMBSTONES_PREFIX: 'kinetic:deleted:' as const,
   /** sessionStorage : horodatage du dernier reload après un chunk introuvable (anti-boucle). */
   PRELOAD_RELOAD_AT: 'kinetic:preload-reload-at' as const,
   SYNC_INITIAL_DONE: '_kinetic:initial-sync-done' as const,
+  /** Ancienne base `keyval-store` : nom de la base par compte qui a reçu ses données (migration locale). */
+  SYNC_MIGRATED_TO: 'kinetic:migrated-to' as const,
+  /**
+   * Ancienne base `keyval-store` utilisée en REPLI (base du compte impossible à ouvrir) :
+   * clés écrites pendant le repli, par base cible. Reprises à la prochaine ouverture.
+   */
+  SYNC_FALLBACK_JOURNAL: 'kinetic:sync:fallback-journal' as const,
+  /** localStorage : propriétaires dont l'app a tourné en repli (écritures à reprendre). */
+  SYNC_FALLBACK_OWNERS: 'kinetic:sync:fallback-owners' as const,
   DEVICE_ID: 'kinetic:deviceId' as const,
 
   // ─── Rappels & Notifications ──────────────────────────────────
@@ -210,6 +225,8 @@ export const STORAGE_KEYS = {
   EVENT_SESSION_SAVED: 'kinetic:session-saved' as const,
   EVENT_ACTIVE_SESSION_CHANGED: 'kinetic:active-session-changed' as const, // bandeau « Séance en cours »
   EVENT_SYNC_FAILED: 'kinetic:sync-failed' as const,
+  EVENT_SYNC_STATUS: 'kinetic:sync-status' as const, // état de synchro (SyncStatus), sync.md § 4.9
+  EVENT_SYNC_APPLIED: 'kinetic:sync-applied' as const, // clés modifiées par la synchro ou un autre onglet
   EVENT_ROUTE_CHANGED: 'kinetic:route-changed' as const,
   EVENT_THEME_CHANGED: 'kinetic:theme-changed' as const,
   EVENT_DENSITY_CHANGED: 'kinetic:density-changed' as const,

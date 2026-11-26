@@ -12,53 +12,109 @@ export interface AppDeps {
   idGen: IdGeneratorPort;
   notifier: NotifierPort;
   dailyLogSync: DailyLogSyncPort;
+  /** Propriétaire de la base locale : identifiant du compte ou `'guest'`. */
+  owner?: string;
 }
 
-export interface AuthLikeUser {
-  id: string;
-}
-
+/** Stockage de l'app avec, s'il synchronise, son cycle de vie (SyncedStorage). */
 export interface FlushableStorage extends StoragePort {
-  flushPendingWrites?(): Promise<void>;
-  syncFromRemote?(): Promise<void>;
+  start?(): void;
+  flushPendingWrites?(opts?: { ignoreBackoff?: boolean }): Promise<void>;
+  syncFromRemote?(opts?: { force?: boolean }): Promise<void>;
+  pendingCount?(): Promise<number>;
   dispose?(): void;
+  /** Écritures d'un repli précédent reprises à l'ouverture (ou rien à reprendre). */
+  fallbackRecovered?: boolean;
 }
+
+/**
+ * Mémo SYNCHRONE (hors IndexedDB : la base du compte est justement indisponible) des
+ * propriétaires dont l'app a tourné en repli : à la prochaine ouverture réussie de leur
+ * base, les écritures faites pendant le repli sont reprises.
+ */
+export interface FallbackMarks {
+  add(owner: string): void;
+  has(owner: string): boolean;
+  delete(owner: string): void;
+}
+
+export const GUEST_OWNER = 'guest';
 
 export interface DepsFactoryOptions {
-  createLocalStorage: () => StoragePort;
+  /**
+   * Repli : ancienne base locale, si la base du compte ne peut pas être ouverte. Les
+   * écritures y sont journalisées pour être reprises par la base du compte (`owner`).
+   */
+  createLocalStorage: (owner: string) => StoragePort | Promise<StoragePort>;
+  /** Propriétaires passés en repli (voir `FallbackMarks`). */
+  fallbackMarks?: FallbackMarks;
   createClock: () => ClockPort;
   createIdGen: () => IdGeneratorPort;
   createNotifier: () => NotifierPort;
   createNoopDailyLogSync: () => DailyLogSyncPort;
-  createRemoteStorage: (userId: string) => StoragePort;
-  createHybridStorage: (local: StoragePort, remote: StoragePort) => FlushableStorage;
   createDailyLogSync: () => DailyLogSyncPort;
-  getAuthUser: () => Promise<AuthLikeUser | null>;
+  /** Cloud configuré (client Supabase valide). */
   hasRemoteSync: boolean;
-  syncTimeoutMs: number;
-  onHybridReady?: (storage: FlushableStorage) => void;
+  /**
+   * Compte de la session enregistrée SUR L'APPAREIL (lecture locale, sans réseau,
+   * session expirée comprise) ; `null` = pas de session (mode invité).
+   */
+  getSessionUserId: () => string | null;
+  /**
+   * Ouvre la base locale du propriétaire (`userId` ou `'guest'`) ; `recoverFallbackWrites`
+   * demande la reprise des écritures d'un repli précédent.
+   */
+  openStorage: (
+    owner: string,
+    opts: { recoverFallbackWrites: boolean },
+  ) => Promise<FlushableStorage>;
+  /** Base ouverte et adoptée : démarrage de la synchro (après le premier rendu). */
+  onStorageReady?: (storage: FlushableStorage, owner: string) => void;
 }
 
 export interface DepsManager {
   getDeps(): Promise<AppDeps>;
+  /** Propriétaire voulu d'après la session locale (compte ou `'guest'`). */
+  desiredOwner(): string;
+  /** Propriétaire de la base actuellement utilisée (`null` si pas encore ouverte). */
+  currentOwner(): string | null;
   resetDeps(): void;
   flushAndResetDeps(): Promise<void>;
   setDepsForTesting(mock: AppDeps): void;
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
-  return Promise.race([
-    promise,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
-  ]);
-}
-
+/**
+ * Dépendances de l'app. Le stockage est choisi SANS appel réseau (sync.md § 4.5) :
+ * session locale présente → base du compte + synchro (même hors-ligne) ; sinon base
+ * invité. Un changement de compte change de base : aucune donnée d'un compte n'est
+ * visible ni poussée dans un autre.
+ */
 export function createDepsManager(options: DepsFactoryOptions): DepsManager {
   let deps: AppDeps | null = null;
   let inflight: Promise<AppDeps> | null = null;
   let abortCtrl: AbortController | null = null;
 
+  const desiredOwner = (): string => {
+    if (!options.hasRemoteSync) return GUEST_OWNER;
+    try {
+      return options.getSessionUserId() ?? GUEST_OWNER;
+    } catch (err) {
+      console.warn('[deps] lecture de la session locale impossible :', err);
+      return GUEST_OWNER;
+    }
+  };
+
+  const disposeStorage = (storage: StoragePort | undefined): void => {
+    (storage as FlushableStorage | undefined)?.dispose?.();
+  };
+
   return {
+    desiredOwner,
+
+    currentOwner(): string | null {
+      return deps?.owner ?? null;
+    },
+
     async getDeps(): Promise<AppDeps> {
       if (deps) return deps;
       if (inflight) return inflight;
@@ -67,37 +123,41 @@ export function createDepsManager(options: DepsFactoryOptions): DepsManager {
       abortCtrl = ctrl;
 
       inflight = (async (): Promise<AppDeps> => {
-        const local = options.createLocalStorage();
         const clock = options.createClock();
         const idGen = options.createIdGen();
         const notifier = options.createNotifier();
+        const owner = desiredOwner();
 
-        let storage: StoragePort = local;
-        let dailyLogSync: DailyLogSyncPort = options.createNoopDailyLogSync();
-
-        if (options.hasRemoteSync) {
-          try {
-            const user = await withTimeout(options.getAuthUser(), options.syncTimeoutMs);
-            if (ctrl.signal.aborted) {
-              return { storage: local, clock, idGen, notifier, dailyLogSync };
-            }
-
-            if (user) {
-              const remote = options.createRemoteStorage(user.id);
-              const hybrid = options.createHybridStorage(local, remote);
-              options.onHybridReady?.(hybrid);
-              storage = hybrid;
-              dailyLogSync = options.createDailyLogSync();
-            }
-          } catch (err) {
-            console.warn('[deps] remote bootstrap failed, using local storage:', err);
-          }
+        let storage: StoragePort;
+        let synced: FlushableStorage | null = null;
+        const marks = options.fallbackMarks;
+        const recover = safeHas(marks, owner);
+        try {
+          synced = await options.openStorage(owner, { recoverFallbackWrites: recover });
+          storage = synced;
+          if (recover && synced.fallbackRecovered === true) safeCall(() => marks?.delete(owner));
+        } catch (err) {
+          // Base du compte inutilisable (propriétaire différent, IndexedDB en panne,
+          // migration échouée) : ancienne base locale, réessai au prochain lancement. Le
+          // repli est mémorisé AVANT toute écriture : elles seront reprises par la base.
+          console.warn('[deps] base locale du compte indisponible, repli :', err);
+          safeCall(() => marks?.add(owner));
+          storage = await options.createLocalStorage(owner);
         }
 
-        const result: AppDeps = { storage, clock, idGen, notifier, dailyLogSync };
-        if (!ctrl.signal.aborted) {
-          deps = result;
+        const dailyLogSync =
+          synced && owner !== GUEST_OWNER && options.hasRemoteSync
+            ? options.createDailyLogSync()
+            : options.createNoopDailyLogSync();
+        const result: AppDeps = { storage, clock, idGen, notifier, dailyLogSync, owner };
+
+        if (ctrl.signal.aborted) {
+          // Reconstruction demandée pendant l'ouverture : base libérée, rien n'est mis en cache.
+          disposeStorage(synced ?? undefined);
+          return result;
         }
+        deps = result;
+        if (synced) options.onStorageReady?.(synced, owner);
         return result;
       })();
 
@@ -111,19 +171,20 @@ export function createDepsManager(options: DepsFactoryOptions): DepsManager {
     resetDeps(): void {
       abortCtrl?.abort();
       abortCtrl = null;
+      const previous = deps;
       deps = null;
+      disposeStorage(previous?.storage);
     },
 
     async flushAndResetDeps(): Promise<void> {
       const currentStorage = deps?.storage as FlushableStorage | undefined;
       if (currentStorage?.flushPendingWrites) {
         try {
-          await currentStorage.flushPendingWrites();
+          await currentStorage.flushPendingWrites({ ignoreBackoff: true });
         } catch (err) {
           console.warn('[deps] flush before reset failed:', err);
         }
       }
-      currentStorage?.dispose?.();
       this.resetDeps();
     },
 
@@ -131,4 +192,20 @@ export function createDepsManager(options: DepsFactoryOptions): DepsManager {
       deps = mock;
     },
   };
+}
+
+function safeHas(marks: FallbackMarks | undefined, owner: string): boolean {
+  try {
+    return marks?.has(owner) ?? false;
+  } catch {
+    return false;
+  }
+}
+
+function safeCall(fn: () => void): void {
+  try {
+    fn();
+  } catch (err) {
+    console.warn('[deps] mémo du repli indisponible :', err);
+  }
 }

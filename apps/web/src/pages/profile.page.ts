@@ -11,7 +11,7 @@ import {
   workSetsOf,
 } from '@kinetic/core';
 import Alpine from 'alpinejs';
-import { getDeps } from '../deps';
+import { getDeps, getSyncedStorage } from '../deps';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import { loadSessions, loadExercises, loadCustomExercises } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
@@ -76,9 +76,30 @@ function backupLabel(now: Date = new Date()): string {
   return `Dernière sauvegarde il y a ${days} jours`;
 }
 
+/** Données réellement sauvegardées dans le cloud (rien en attente ni bloqué), F6. */
 function isCloudSynced(): boolean {
-  const auth = Alpine.store('auth') as { isAuthenticated: boolean; isGuest: boolean };
-  return auth.isAuthenticated && !auth.isGuest;
+  return (Alpine.store('sync') as { cloudBackedUp: boolean }).cloudBackedUp;
+}
+
+function notify(kind: 'success' | 'error' | 'info', message: string): void {
+  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
+}
+
+const RECOVERY_REASONS: Record<string, string> = {
+  resync: 'Absent du cloud',
+  reconcile: 'Version de cet appareil',
+  conflict: 'Version remplacée',
+};
+
+function recoveryReason(reason: string): string {
+  return RECOVERY_REASONS[reason] ?? 'Mis de côté';
+}
+
+/** Libellé lisible d'une clé mise de côté (séance, pesées…). */
+function recoveryTitle(key: string): string {
+  if (key.startsWith(STORAGE_KEYS.TRAINING_SESSION_PREFIX)) return 'Séance';
+  const last = key.split(':').filter(Boolean).slice(1).join(' › ');
+  return last || key;
 }
 
 async function programTrainingDays(): Promise<number[] | null> {
@@ -191,6 +212,17 @@ export function profile() {
     backupChoice: null as BackupFile | null,
     restoringBackup: false,
     cloudSynced: false,
+    // ─── Synchronisation (sync.md § 4.1, 4.4, 4.7) ───
+    /** Modifications non envoyées au moment d'ouvrir « Effacer les données de cet appareil ». */
+    resetPendingCount: 0,
+    showCloudDeleteModal: false,
+    cloudDeleteState: 'idle' as 'idle' | 'pending' | 'done' | 'error',
+    cloudDeleteError: '',
+    showRecovery: false,
+    recoveryItems: [] as Array<{ id: string; title: string; detail: string }>,
+    guestDataCount: 0,
+    guestDataDecision: null as 'linked' | 'declined' | null,
+    guestBusy: false,
     healthState: 'unsupported' as 'unsupported' | 'not-installed' | 'available',
     healthOn: false,
     themeMode: 'dark' as ThemeMode,
@@ -272,8 +304,10 @@ export function profile() {
           anonKey: env['VITE_SUPABASE_ANON_KEY'] ?? '',
           client: supabase as never,
         });
-        const deps = await getDeps();
-        await deps.storage.clear().catch(() => undefined);
+        // Compte supprimé côté serveur (cascade) : la base locale du compte est supprimée.
+        const synced = await getSyncedStorage();
+        if (synced) await synced.destroyLocalDatabase().catch(() => undefined);
+        else await (await getDeps()).storage.clear().catch(() => undefined);
         await signOut().catch(() => undefined);
         try {
           sessionStorage.setItem(ACCOUNT_DELETED_FLAG, '1');
@@ -337,6 +371,7 @@ export function profile() {
         }
 
         await this._refreshStorageUsage();
+        void this._refreshSyncExtras();
         this.nativeApp = Capacitor.isNativePlatform();
         this.androidApp = this.nativeApp && Capacitor.getPlatform() === 'android';
         const reminders = getReminderPrefs();
@@ -938,15 +973,140 @@ export function profile() {
       }
     },
 
+    // ─── Synchronisation ───────────────────────────────────────────────────
+
+    /** Données invité à rattacher, éléments mis de côté. */
+    async _refreshSyncExtras(): Promise<void> {
+      const storage = await getSyncedStorage();
+      if (!storage) return;
+      try {
+        if (storage.syncEnabled) {
+          const guest = await storage.guestDataSummary();
+          this.guestDataCount = guest.count;
+          this.guestDataDecision = guest.decision;
+        }
+        const items = await storage.listRecovery();
+        this.recoveryItems = items.map((it) => ({
+          id: it.id,
+          title: recoveryTitle(it.key),
+          detail: `${recoveryReason(it.reason)} · ${new Date(it.at).toLocaleDateString('fr-FR')}`,
+        }));
+      } catch (err) {
+        console.warn('[profile] état de synchro :', err);
+      }
+    },
+
+    get showGuestImport(): boolean {
+      return this.guestDataCount > 0 && this.guestDataDecision !== 'linked';
+    },
+
+    get guestDataLabel(): string {
+      return `${plural(this.guestDataCount, 'élément')} enregistré${this.guestDataCount > 1 ? 's' : ''} en mode invité sur cet appareil`;
+    },
+
+    /** « Ajouter les données de cet appareil à votre compte » (fusion par domaine). */
+    async importGuestData(): Promise<void> {
+      if (this.guestBusy) return;
+      this.guestBusy = true;
+      try {
+        const storage = await getSyncedStorage();
+        if (!storage) return;
+        const { written } = await storage.importGuestData();
+        await storage.flushPendingWrites({ ignoreBackoff: true });
+        notify(
+          'success',
+          `Données de cet appareil ajoutées à votre compte (${plural(written, 'élément')}).`,
+        );
+        await this._refreshSyncExtras();
+      } catch (err) {
+        notify('error', err instanceof Error ? err.message : 'Ajout impossible pour le moment.');
+      } finally {
+        this.guestBusy = false;
+      }
+    },
+
+    /** « Ne pas les ajouter » : la base invité reste intacte, l'offre reste dans le profil. */
+    async declineGuestData(): Promise<void> {
+      const storage = await getSyncedStorage();
+      await storage?.declineGuestData().catch(() => undefined);
+      this.guestDataDecision = 'declined';
+    },
+
+    openRecovery(): void {
+      this.showRecovery = true;
+      void this._refreshSyncExtras();
+    },
+
+    async restoreRecoveryItem(id: string): Promise<void> {
+      const storage = await getSyncedStorage();
+      try {
+        await storage?.restoreRecovery(id);
+        notify('success', 'Élément restauré.');
+      } catch (err) {
+        notify('error', err instanceof Error ? err.message : 'Restauration impossible.');
+      }
+      await this._refreshSyncExtras();
+      await storage?.publishStatus();
+    },
+
+    async discardRecoveryItem(id: string): Promise<void> {
+      const storage = await getSyncedStorage();
+      await storage?.discardRecovery(id).catch(() => undefined);
+      await this._refreshSyncExtras();
+      await storage?.publishStatus();
+    },
+
+    /** « Effacer les données de cet appareil » : avertit s'il reste des envois en attente. */
+    async openResetModal(): Promise<void> {
+      const storage = await getSyncedStorage();
+      this.resetPendingCount = storage ? await storage.pendingCount().catch(() => 0) : 0;
+      this.showResetModal = true;
+    },
+
+    get resetWarning(): string {
+      const n = this.resetPendingCount;
+      if (n === 0) return '';
+      return `${plural(n, 'modification')} pas encore ${n > 1 ? 'envoyées' : 'envoyée'} au cloud ${n > 1 ? 'seront perdues' : 'sera perdue'}. Attends la synchronisation pour les garder.`;
+    },
+
+    openCloudDelete(): void {
+      this.cloudDeleteState = 'idle';
+      this.cloudDeleteError = '';
+      this.showCloudDeleteModal = true;
+    },
+
+    /**
+     * « Supprimer toutes mes données (cloud compris) » : la demande est persistée ;
+     * le succès n'est affiché qu'après la réponse du serveur.
+     */
+    async confirmCloudDelete(): Promise<void> {
+      if (this.cloudDeleteState === 'pending') return;
+      this.cloudDeleteState = 'pending';
+      this.cloudDeleteError = '';
+      try {
+        const storage = await getSyncedStorage();
+        if (!storage || !storage.syncEnabled)
+          throw new Error('Aucun compte cloud sur cet appareil.');
+        await storage.deleteAllCloudData();
+        this.cloudDeleteState = 'done';
+        setTimeout(() => window.location.reload(), 1500);
+      } catch (err) {
+        this.cloudDeleteState = 'error';
+        this.cloudDeleteError =
+          err instanceof Error ? err.message : 'La suppression a échoué. Réessaie plus tard.';
+      }
+    },
+
     async doReset(): Promise<void> {
       this.showResetModal = false;
       try {
         const deps = await getDeps();
-        // Clear all storage — les stores Alpine se rechargent proprement au reload
+        // Données de CET appareil seulement (le cloud n'est pas touché) ; les stores
+        // Alpine se rechargent proprement au reload.
         await deps.storage.clear();
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: 'Données réinitialisées ✓' },
+            detail: { kind: 'success', message: 'Données de cet appareil effacées ✓' },
           }),
         );
         // Reload complet pour repartir de zéro

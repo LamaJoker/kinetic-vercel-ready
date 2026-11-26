@@ -9,8 +9,11 @@ export type { StaticStorageKey } from './constants/storage-keys.js';
 export { createClock, incrementClock, mergeClock, compareClocks, resolveConflict } from './crdt.js';
 export type { VectorClock, ClockComparison, CRDTValue } from './crdt.js';
 
+// ─── Synchronisation (état, résolution de conflit) ───────────
+export * from './sync/index.js';
+
 // ─── Ports (interfaces) ───────────────────────────────────────
-export type { StoragePort, StorageKey } from './ports/storage.port.js';
+export type { StoragePort, StorageKey, StorageWrite } from './ports/storage.port.js';
 export type { ClockPort } from './ports/clock.port.js';
 export type { IdGeneratorPort } from './ports/id-generator.port.js';
 export type { NotifierPort, NotificationPayload, NotificationKind } from './ports/notifier.port.js';

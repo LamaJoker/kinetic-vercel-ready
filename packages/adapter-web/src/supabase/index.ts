@@ -1,10 +1,12 @@
 export { HybridStorage } from './HybridStorage.js';
 export { SupabaseStorage } from './SupabaseStorage.js';
+export { SupabaseSyncRemote } from './SupabaseSyncRemote.js';
 export { SupabaseDailyLogSync, NoopDailyLogSync } from './SupabaseDailyLogSync.js';
 export { AuthRateLimiter, authRateLimiter } from './RateLimiter.js';
 export {
   supabase,
   getAuthUser,
+  getLocalSessionUser,
   signInWithEmail,
   signInWithGitHub,
   signInWithGoogle,

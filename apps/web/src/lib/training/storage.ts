@@ -64,8 +64,8 @@ async function loadCatalogExercises(storage: StoragePort): Promise<Exercise[]> {
   }
   if (stored.length > 0) return localizeExercises(stored);
 
-  await storage.set(KEY_EXERCISES, [...DEFAULT_EXERCISES]);
-  return localizeExercises(DEFAULT_EXERCISES);
+  // Catalogue indisponible : catalogue embarqué en mémoire, sans l'écrire (sync.md § 4.6).
+  return localizeExercises([...DEFAULT_EXERCISES]);
 }
 
 async function fetchCatalog(): Promise<Exercise[]> {
@@ -107,10 +107,16 @@ export async function saveExercises(storage: StoragePort, exercises: Exercise[])
   );
 }
 
+/**
+ * Modèles de séance. `null` (clé absente) → modèles par défaut EN MÉMOIRE, jamais
+ * écrits : avant la première synchro, une écriture écraserait les modèles du compte
+ * (audit qualité F3, sync.md § 4.6). Ils sont enregistrés à la première modification
+ * (saveTemplates). Un échec de lecture est propagé (jamais traité comme « absent »).
+ * Une liste vide est un choix de l'utilisateur (tous ses modèles supprimés) : respectée.
+ */
 export async function loadTemplates(storage: StoragePort): Promise<WorkoutTemplate[]> {
   const data = await storage.get<WorkoutTemplate[]>(KEY_TEMPLATES);
-  if (Array.isArray(data) && data.length > 0) return data;
-  await storage.set(KEY_TEMPLATES, [...DEFAULT_TEMPLATES]);
+  if (Array.isArray(data)) return data;
   return [...DEFAULT_TEMPLATES];
 }
 

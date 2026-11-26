@@ -230,6 +230,16 @@ export default defineConfig({
             return lazy ? `core-${lazy.split('/').pop()!.replace('.domain', '')}` : 'kinetic-core';
           }
           // Adapters (packages/adapter-web)
+          // Moteur de synchro et migration locale : chargés à la demande (après le
+          // premier rendu / au premier lancement), hors du bundle de démarrage.
+          if (id.includes('packages/adapter-web/src/sync/engine')) return 'kinetic-sync-engine';
+          // Repli sur l'ancienne base (panne de la base du compte) : même lot, à la demande.
+          if (
+            id.includes('packages/adapter-web/src/sync/legacy-migration') ||
+            id.includes('packages/adapter-web/src/sync/fallback-storage')
+          ) {
+            return 'kinetic-sync-migration';
+          }
           if (id.includes('packages/adapter-web/')) return 'kinetic-adapters';
           // Stores Alpine — partagés entre toutes les pages
           if (id.includes('apps/web/src/stores/')) return 'stores';

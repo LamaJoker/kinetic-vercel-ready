@@ -21,6 +21,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 vi.mock('@kinetic/adapters-web', () => ({
   supabase: null,
   getAuthUser: vi.fn().mockResolvedValue(null),
+  // Session locale (lecture sans réseau, sync.md § 4.5) : aucune par défaut.
+  getLocalSessionUser: vi.fn().mockReturnValue(null),
   signInWithEmail: vi.fn(),
   signInWithGitHub: vi.fn(),
   signInWithGoogle: vi.fn(),
@@ -38,6 +40,8 @@ vi.mock('@kinetic/adapters-web', () => ({
 vi.mock('../../apps/web/src/deps.js', () => ({
   flushAndResetDeps: vi.fn().mockResolvedValue(undefined),
   resetDeps: vi.fn(),
+  // Rien en attente de synchro : la déconnexion n'a pas à demander confirmation.
+  pendingAfterFlush: vi.fn().mockResolvedValue(0),
 }));
 
 // ─── Cleanup after every test ─────────────────────────────────────────────────

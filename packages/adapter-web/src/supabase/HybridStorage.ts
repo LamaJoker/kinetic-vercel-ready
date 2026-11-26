@@ -1,7 +1,11 @@
-import type { StoragePort, StorageKey } from '@kinetic/core';
+import type { StoragePort, StorageKey, StorageWrite } from '@kinetic/core';
 import { STORAGE_KEYS } from '@kinetic/core';
 
 /**
+ * @deprecated Ancien client de synchro (outbox globale, last-write-wins sans version).
+ * Remplacé dans l'app par `SyncedStorage` (base par compte, `sync_push` conditionnel,
+ * docs/architecture/sync.md). Conservé pour la compatibilité et ses tests de non-régression.
+ *
  * HybridStorage — stockage offline-first :
  * - `local` (IndexedDB) : source de vérité pour les lectures (rapide, hors-ligne) ;
  * - `remote` (Supabase) : miroir cloud, alimenté par une OUTBOX persistante.
@@ -168,6 +172,14 @@ export class HybridStorage implements StoragePort {
     await this.local.remove(key);
     if (isLocalOnlyKey(key)) return;
     await this.enqueue(key, 'remove');
+  }
+
+  /** Écritures successives (non atomiques : ancien client). */
+  async setMany(writes: readonly StorageWrite[]): Promise<void> {
+    for (const w of writes) {
+      if (w.remove === true) await this.remove(w.key);
+      else await this.set(w.key, w.value);
+    }
   }
 
   async keys(): Promise<readonly StorageKey[]> {

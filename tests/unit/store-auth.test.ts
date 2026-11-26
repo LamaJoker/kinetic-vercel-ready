@@ -13,6 +13,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 vi.mock('@kinetic/adapters-web', () => ({
   supabase: null, // GUEST_MODE = true for these tests
   getAuthUser: vi.fn().mockResolvedValue(null),
+  // Session locale (lecture sans réseau, sync.md § 4.5) : aucune par défaut.
+  getLocalSessionUser: vi.fn().mockReturnValue(null),
   signInWithEmail: vi.fn().mockResolvedValue(undefined),
   signInWithGitHub: vi.fn().mockResolvedValue(undefined),
   signInWithGoogle: vi.fn().mockResolvedValue(undefined),
@@ -30,6 +32,8 @@ vi.mock('@kinetic/adapters-web', () => ({
 vi.mock('../../apps/web/src/deps.js', () => ({
   flushAndResetDeps: vi.fn().mockResolvedValue(undefined),
   resetDeps: vi.fn(),
+  // Rien en attente de synchro : la déconnexion n'a pas à demander confirmation.
+  pendingAfterFlush: vi.fn().mockResolvedValue(0),
 }));
 
 // ─── Import after mocks ───────────────────────────────────────────────────────

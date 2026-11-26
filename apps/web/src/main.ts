@@ -78,6 +78,7 @@ import { xpStore } from './stores/xp';
 import { vitaliteStore } from './stores/vitalite';
 import { rewardsStore } from './stores/rewards';
 import { offlineStore } from './stores/offline';
+import { syncStore } from './stores/sync';
 import { nutritionStore } from './stores/nutrition';
 import { goalsStore } from './stores/goals';
 import { achievementsStore } from './stores/achievements';
@@ -143,6 +144,7 @@ registerChipScrollDirective(Alpine as never);
 
 Alpine.store('notifications', notificationsStore());
 Alpine.store('offline', offlineStore());
+Alpine.store('sync', syncStore()); // état de synchro (profil), sync.md § 4.9
 Alpine.store('auth', authStore());
 Alpine.store('xp', xpStore());
 Alpine.store('vitalite', vitaliteStore());
@@ -349,9 +351,9 @@ afterFirstRender(scheduleStreakReminder);
 // Application Android : rappels reprogrammés au lancement et à chaque mise en
 // arrière-plan (les séances du jour sont alors comptées) ; pas et sommeil relus
 // dans Health Connect au retour dans l'application.
+/** Données réellement sauvegardées dans le cloud (rien en attente ni bloqué), et non « connecté » (F6). */
 function cloudSynced(): boolean {
-  const auth = Alpine.store('auth') as { isAuthenticated: boolean; isGuest: boolean };
-  return auth.isAuthenticated && !auth.isGuest;
+  return (Alpine.store('sync') as { cloudBackedUp: boolean }).cloudBackedUp;
 }
 function syncReminders(): void {
   void syncWeeklyRecap();

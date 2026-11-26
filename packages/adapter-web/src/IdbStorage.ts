@@ -1,5 +1,5 @@
 import { get, set, del, keys, clear, createStore } from 'idb-keyval';
-import type { StoragePort, StorageKey } from '@kinetic/core';
+import type { StoragePort, StorageKey, StorageWrite } from '@kinetic/core';
 import { validateStorageKey, validateStorageValue } from './validation.js';
 
 /**
@@ -17,13 +17,18 @@ export class IdbStorage implements StoragePort {
     this.store = createStore(dbName, storeName);
   }
 
+  /**
+   * `null` = clé absente. Un échec de lecture est LEVÉ (audit qualité F3) : le
+   * confondre avec « absent » faisait réécrire des valeurs par défaut par-dessus
+   * les données de l'utilisateur.
+   */
   async get<T>(key: StorageKey): Promise<T | null> {
     try {
       const value = await get<T>(key, this.store);
       return value ?? null;
     } catch (err) {
       console.error(`[IdbStorage] get failed for key "${key}":`, err);
-      return null;
+      throw err;
     }
   }
 
@@ -60,11 +65,23 @@ export class IdbStorage implements StoragePort {
     }
   }
 
+  /**
+   * Ancienne base (repli) : écritures successives, NON atomiques. La base par compte
+   * (SyncedStorage) écrit le lot en une seule transaction.
+   */
+  async setMany(writes: readonly StorageWrite[]): Promise<void> {
+    for (const w of writes) {
+      if (w.remove === true) await this.remove(w.key);
+      else await this.set(w.key, w.value);
+    }
+  }
+
   async remove(key: StorageKey): Promise<void> {
     try {
       await del(key, this.store);
     } catch (err) {
       console.error(`[IdbStorage] remove failed for key "${key}":`, err);
+      throw err;
     }
   }
 
@@ -74,7 +91,7 @@ export class IdbStorage implements StoragePort {
       return allKeys as string[];
     } catch (err) {
       console.error('[IdbStorage] keys() failed:', err);
-      return [];
+      throw err;
     }
   }
 

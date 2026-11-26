@@ -15,16 +15,21 @@ export interface Database {
           key: string;
           value: Json | null;
           updated_at: string;
+          /** Migration 010 : tombstone (suppression synchronisée). */
+          deleted: boolean;
+          deleted_at: string | null;
         };
         Insert: {
           user_id: string;
           key: string;
           value?: Json | null;
           updated_at?: string;
+          deleted?: boolean;
         };
         Update: {
           value?: Json | null;
           updated_at?: string;
+          deleted?: boolean;
         };
         Relationships: [];
       };
@@ -86,6 +91,24 @@ export interface Database {
       sync_pull: {
         Args: { p_since: string; p_after_key: string; p_limit: number };
         Returns: { key: string; value: Json; updated_at: string }[];
+      };
+      /** Migration 010 : écriture conditionnelle par lots. */
+      sync_push: {
+        Args: { p_items: Json };
+        Returns: Json;
+      };
+      /** Migration 010 : pull paginé avec tombstones et resync. */
+      sync_pull_v2: {
+        Args: { p_since: string | null; p_after_key: string; p_limit: number };
+        Returns: Json;
+      };
+      sync_delete_all: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      sync_usage: {
+        Args: Record<string, never>;
+        Returns: Json;
       };
       keep_alive: {
         Args: Record<string, never>;

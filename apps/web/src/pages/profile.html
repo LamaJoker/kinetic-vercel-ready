@@ -240,6 +240,89 @@
         Se déconnecter
       </button>
     </div>
+    <!-- Synchronisation (docs/architecture/sync.md § 4.9) -->
+    <div class="k-row" x-show="$store.sync.enabled" data-testid="sync-status">
+      <span class="flex-1 min-w-0">
+        <span
+          class="block text-base"
+          :class="$store.sync.isError ? 'text-kinetic-electric' : 'text-white'"
+          x-text="$store.sync.label"
+        ></span>
+        <span class="block text-xs text-gray-500" x-text="$store.sync.lastSyncLabel"></span>
+      </span>
+      <button
+        type="button"
+        @click="$store.sync.syncNow()"
+        :disabled="$store.sync.busy"
+        class="flex-shrink-0 h-9 px-4 rounded-full bg-kinetic-elevated text-white text-sm font-medium active:bg-kinetic-raised disabled:opacity-40"
+      >
+        <span x-show="!$store.sync.busy">Synchroniser</span>
+        <span x-show="$store.sync.busy">…</span>
+      </button>
+    </div>
+    <div class="k-row flex-col items-stretch" x-show="$store.sync.hasBlocked">
+      <span class="block text-sm text-white">Non synchronisé (conservé sur cet appareil)</span>
+      <template x-for="item in $store.sync.blockedItems" :key="item.key">
+        <span class="block text-xs text-gray-400">
+          <span x-text="item.label"></span>
+          <span class="text-gray-600"> · </span>
+          <span class="break-all" x-text="item.key"></span>
+        </span>
+      </template>
+      <span class="flex gap-2 mt-2">
+        <button
+          type="button"
+          @click="$store.sync.retryBlocked()"
+          :disabled="$store.sync.busy"
+          class="h-9 px-4 rounded-full bg-kinetic-elevated text-white text-sm font-medium active:bg-kinetic-raised disabled:opacity-40"
+        >
+          Réessayer
+        </button>
+        <button
+          type="button"
+          @click="exportJson()"
+          class="h-9 px-4 rounded-full bg-kinetic-elevated text-white text-sm font-medium active:bg-kinetic-raised"
+        >
+          Exporter une sauvegarde
+        </button>
+      </span>
+    </div>
+    <button
+      type="button"
+      class="k-row"
+      x-show="$store.sync.recoveryCount > 0"
+      @click="openRecovery()"
+    >
+      <span class="flex-1 min-w-0 text-left">
+        <span class="block text-base text-white">Éléments mis de côté</span>
+        <span class="block text-xs text-gray-500">
+          Copies conservées après une synchronisation : à restaurer ou supprimer
+        </span>
+      </span>
+      <span class="flex-shrink-0 text-sm text-gray-400" x-text="$store.sync.recoveryCount"></span>
+    </button>
+    <div class="k-row flex-col items-stretch" x-show="$store.sync.enabled && showGuestImport">
+      <span class="block text-base text-white">Données de cet appareil</span>
+      <span class="block text-xs text-gray-500" x-text="guestDataLabel"></span>
+      <span class="flex gap-2 mt-2">
+        <button
+          type="button"
+          @click="importGuestData()"
+          :disabled="guestBusy"
+          class="h-9 px-4 rounded-full bg-kinetic-neon text-kinetic-on-accent text-sm font-semibold disabled:opacity-40"
+        >
+          Ajouter à mon compte
+        </button>
+        <button
+          type="button"
+          x-show="guestDataDecision !== 'declined'"
+          @click="declineGuestData()"
+          class="h-9 px-4 rounded-full bg-kinetic-elevated text-white text-sm font-medium active:bg-kinetic-raised"
+        >
+          Ne pas les ajouter
+        </button>
+      </span>
+    </div>
     <div class="k-row" x-show="!$store.auth.isAuthenticated || $store.auth.isGuest">
       <span class="flex-1 min-w-0">
         <span class="block text-base text-white">Mode invité</span>
@@ -1030,10 +1113,27 @@
 
   <!-- Zone sensible -->
   <div class="k-list mb-8">
-    <button type="button" @click="showResetModal = true" class="k-row">
+    <button type="button" @click="openResetModal()" class="k-row">
       <span class="flex-1 min-w-0">
-        <span class="block text-base text-kinetic-electric">Réinitialiser la progression</span>
-        <span class="block text-xs text-gray-500">Supprime toutes les données de cet appareil</span>
+        <span class="block text-base text-kinetic-electric"
+          >Effacer les données de cet appareil</span
+        >
+        <span class="block text-xs text-gray-500" x-show="$store.sync.enabled">
+          Le cloud n’est pas touché : tes données reviendront à la prochaine synchronisation
+        </span>
+        <span class="block text-xs text-gray-500" x-show="!$store.sync.enabled">
+          Supprime toute la progression enregistrée sur cet appareil
+        </span>
+      </span>
+    </button>
+    <button type="button" x-show="$store.sync.enabled" @click="openCloudDelete()" class="k-row">
+      <span class="flex-1 min-w-0">
+        <span class="block text-base text-kinetic-electric">
+          Supprimer toutes mes données (cloud compris)
+        </span>
+        <span class="block text-xs text-gray-500">
+          Sur tous tes appareils. Le compte est conservé.
+        </span>
       </span>
     </button>
     <button
@@ -1298,14 +1398,147 @@
         </svg>
       </div>
       <h3 id="reset-title" class="mt-4 font-display font-bold text-xl text-white">
-        Réinitialiser ?
+        Effacer les données de cet appareil ?
       </h3>
       <p id="reset-desc" class="mt-1.5 text-sm text-gray-400">
-        Toute ta progression locale sera supprimée. Action irréversible.
+        <span x-show="$store.sync.enabled">
+          Les données enregistrées sur cet appareil seront effacées. Le cloud n’est pas touché.
+        </span>
+        <span x-show="!$store.sync.enabled">
+          Toute ta progression locale sera supprimée. Action irréversible.
+        </span>
+      </p>
+      <p
+        class="mt-2 text-sm text-kinetic-electric"
+        x-show="resetWarning !== ''"
+        x-text="resetWarning"
+      ></p>
+      <div class="mt-6 space-y-2">
+        <button type="button" @click="doReset()" class="k-btn-danger">Effacer</button>
+        <button type="button" @click="showResetModal = false" class="k-btn-2">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feuille : suppression des données cloud (sync.md § 4.7) -->
+  <div
+    x-show="showCloudDeleteModal"
+    @click.self="showCloudDeleteModal = false"
+    @keydown.escape.window="showCloudDeleteModal = false"
+    class="k-backdrop fixed"
+    style="display: none"
+  >
+    <div
+      class="k-sheet text-center"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="cloud-delete-title"
+    >
+      <h3 id="cloud-delete-title" class="font-display font-bold text-xl text-white">
+        Supprimer toutes tes données ?
+      </h3>
+      <p class="mt-1.5 text-sm text-gray-400" x-show="cloudDeleteState === 'idle'">
+        Tes données seront supprimées du cloud et de tous tes appareils. Le compte est conservé.
+        Action irréversible : pense à exporter une sauvegarde avant.
+      </p>
+      <p class="mt-1.5 text-sm text-gray-400" x-show="cloudDeleteState === 'pending'">
+        Suppression en attente de confirmation du serveur…
+      </p>
+      <p class="mt-1.5 text-sm text-white" x-show="cloudDeleteState === 'done'">
+        Données cloud supprimées.
+      </p>
+      <p
+        class="mt-1.5 text-sm text-kinetic-electric"
+        x-show="cloudDeleteState === 'error'"
+        x-text="cloudDeleteError"
+      ></p>
+      <div class="mt-6 space-y-2" x-show="cloudDeleteState !== 'done'">
+        <button
+          type="button"
+          @click="confirmCloudDelete()"
+          :disabled="cloudDeleteState === 'pending'"
+          class="k-btn-danger disabled:opacity-40"
+        >
+          <span x-show="cloudDeleteState !== 'error'">Supprimer</span>
+          <span x-show="cloudDeleteState === 'error'">Réessayer</span>
+        </button>
+        <button type="button" @click="showCloudDeleteModal = false" class="k-btn-2">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feuille : éléments mis de côté par la synchro (sync.md § 4.4) -->
+  <div
+    x-show="showRecovery"
+    @click.self="showRecovery = false"
+    @keydown.escape.window="showRecovery = false"
+    class="k-backdrop fixed"
+    style="display: none"
+  >
+    <div class="k-sheet" role="dialog" aria-modal="true" aria-labelledby="recovery-title">
+      <h3 id="recovery-title" class="font-display font-bold text-xl text-white">
+        Éléments mis de côté
+      </h3>
+      <p class="mt-1.5 text-sm text-gray-400">
+        Ces copies n’ont pas été perdues : restaure-les ou supprime-les définitivement.
+      </p>
+      <p class="mt-4 text-sm text-gray-500" x-show="recoveryItems.length === 0">Aucun élément.</p>
+      <div class="k-list mt-4 max-h-80 overflow-y-auto">
+        <template x-for="item in recoveryItems" :key="item.id">
+          <div class="k-row">
+            <span class="flex-1 min-w-0">
+              <span class="block text-sm text-white truncate" x-text="item.title"></span>
+              <span class="block text-xs text-gray-500" x-text="item.detail"></span>
+            </span>
+            <button
+              type="button"
+              @click="restoreRecoveryItem(item.id)"
+              class="flex-shrink-0 h-8 px-3 rounded-full bg-kinetic-elevated text-white text-xs font-medium"
+            >
+              Restaurer
+            </button>
+            <button
+              type="button"
+              @click="discardRecoveryItem(item.id)"
+              class="flex-shrink-0 h-8 px-3 rounded-full text-kinetic-electric text-xs font-medium"
+            >
+              Supprimer définitivement
+            </button>
+          </div>
+        </template>
+      </div>
+      <div class="mt-4">
+        <button type="button" @click="showRecovery = false" class="k-btn-2">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feuille : déconnexion avec modifications non synchronisées (sync.md § 4.1) -->
+  <div
+    x-show="$store.auth.showLogoutWarning"
+    @click.self="$store.auth.cancelLogout()"
+    @keydown.escape.window="$store.auth.cancelLogout()"
+    class="k-backdrop fixed"
+    style="display: none"
+  >
+    <div
+      class="k-sheet text-center"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="logout-title"
+    >
+      <h3 id="logout-title" class="font-display font-bold text-xl text-white">Se déconnecter ?</h3>
+      <p class="mt-1.5 text-sm text-gray-400" x-text="$store.auth.logoutWarningText"></p>
+      <p class="mt-1 text-sm text-gray-400">
+        Elles restent sur cet appareil et seront envoyées à ta prochaine connexion à ce compte.
       </p>
       <div class="mt-6 space-y-2">
-        <button type="button" @click="doReset()" class="k-btn-danger">Supprimer</button>
-        <button type="button" @click="showResetModal = false" class="k-btn-2">Annuler</button>
+        <button type="button" @click="$store.auth.cancelLogout()" class="k-btn-2">
+          Rester connecté
+        </button>
+        <button type="button" @click="$store.auth.forceLogout()" class="k-btn-danger">
+          Se déconnecter quand même
+        </button>
       </div>
     </div>
   </div>

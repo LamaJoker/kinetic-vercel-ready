@@ -17,6 +17,7 @@ import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import {
   supabase,
   getAuthUser,
+  getLocalSessionUser,
   signInWithEmail,
   signInWithGitHub,
   signInWithGoogle,
@@ -27,7 +28,7 @@ import {
 import type { AuthUser } from '@kinetic/adapters-web';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { isValidEmail } from '../lib/security.js';
-import { flushAndResetDeps, resetDeps } from '../deps';
+import { flushAndResetDeps, resetDeps, pendingAfterFlush } from '../deps';
 import { avatarText as computeAvatarText } from '../lib/avatar.js';
 
 // FIX #4 : Log explicite plutôt que dégradation silencieuse
@@ -43,6 +44,17 @@ if (GUEST_MODE && SUPABASE_URL && !SUPABASE_URL.includes('xxxxxxxxxxxxxxxxxxxx')
       'Expected: starts with "eyJ" (JWT) or "sb_publishable_". ' +
       `Got: "${SUPABASE_ANON_KEY?.slice(0, 20) ?? 'undefined'}..."`,
   );
+}
+
+/** Utilisateur d'une session Supabase (sans appel réseau). */
+function sessionUser(session: Session): AuthUser {
+  const meta = session.user.user_metadata ?? {};
+  return {
+    id: session.user.id,
+    email: session.user.email ?? null,
+    avatar_url: typeof meta['avatar_url'] === 'string' ? meta['avatar_url'] : null,
+    full_name: typeof meta['full_name'] === 'string' ? meta['full_name'] : null,
+  };
 }
 
 let _authReadyDispatched = false; // FIX #1 : guard contre le double dispatch
@@ -66,6 +78,10 @@ export function authStore() {
     _authSubscription: null as { unsubscribe: () => void } | null,
     /** Nom de profil local (Profil → prénom), renseigné par les pages accueil et profil. */
     profileName: '',
+    /** Déconnexion demandée alors que des modifications ne sont pas encore dans le cloud. */
+    showLogoutWarning: false,
+    logoutPendingCount: 0,
+    loggingOut: false,
 
     async init(): Promise<void> {
       _authReadyDispatched = false; // reset au cas où le store est réinstancié
@@ -90,14 +106,28 @@ export function authStore() {
           window.location.pathname.startsWith('/auth-callback') &&
           new URLSearchParams(window.location.search ?? '').has('code');
 
+        // Session enregistrée sur l'appareil (lecture locale, sans réseau, même expirée) :
+        // l'app démarre tout de suite sur la base du compte, même hors-ligne
+        // (docs/architecture/sync.md § 4.5). Le premier écran n'attend plus le réseau.
+        const localUser = isAuthCallbackWithCode ? null : getLocalSessionUser();
+        if (localUser) {
+          this.user = localUser;
+          this._initDone = true;
+          this.loading = false;
+          dispatchAuthReady();
+        }
+
         let user: AuthUser | null = null;
         if (!isAuthCallbackWithCode) {
-          // FIX #5 : Timeout porté à 8s pour les connexions lentes
+          // Validation réseau (profil à jour), hors du chemin critique quand une session
+          // locale existe. FIX #5 : timeout 8 s pour les connexions lentes.
           const userPromise = getAuthUser();
           const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000));
           user = await Promise.race([userPromise, timeout]);
         }
-        this.user = user;
+        // Hors-ligne ou réseau lent : la session locale reste valable. Une session
+        // révoquée est signalée par SIGNED_OUT (rafraîchissement refusé).
+        this.user = user ?? localUser;
         this._initDone = true;
 
         // FIX #1 : onAuthStateChange NE dispatche plus authReady.
@@ -111,7 +141,8 @@ export function authStore() {
           async (event: AuthChangeEvent, session: Session | null) => {
             if (session?.user) {
               const freshUser = await getAuthUser();
-              this.user = freshUser;
+              // Hors-ligne, getAuthUser échoue : l'utilisateur de la session fait foi.
+              this.user = freshUser ?? sessionUser(session);
 
               // FIX #5 : Si l'init avait timeout (user null), on rebascule les deps
               // sur HybridStorage maintenant qu'on sait que l'user est connecté.
@@ -148,7 +179,10 @@ export function authStore() {
       } catch (err) {
         console.error('[auth] init failed:', err);
         this.error = err instanceof Error ? err.message : 'Erreur auth';
-        this.user = { id: 'guest', email: null, full_name: 'Invité', avatar_url: null };
+        // Session locale présente : on la garde (erreur réseau ≠ déconnexion).
+        if (this.user === null || this.user.id === 'guest') {
+          this.user = { id: 'guest', email: null, full_name: 'Invité', avatar_url: null };
+        }
       } finally {
         this.loading = false;
         dispatchAuthReady(); // FIX #1 : dispatché UNE SEULE FOIS ici
@@ -207,10 +241,47 @@ export function authStore() {
       }
     },
 
+    /**
+     * Déconnexion : envoie d'abord ce qui attend ; s'il reste des modifications non
+     * enregistrées dans le cloud, demande confirmation (sync.md § 4.1). Elles restent
+     * dans la base de ce compte et partiront à sa prochaine connexion.
+     */
     async logout(): Promise<void> {
+      if (this.loggingOut) return;
+      this.loggingOut = true;
+      let pending = 0;
+      try {
+        pending = await pendingAfterFlush();
+      } catch (err) {
+        console.warn('[auth] état de synchro avant déconnexion :', err);
+      }
+      this.loggingOut = false;
+      if (pending > 0) {
+        this.logoutPendingCount = pending;
+        this.showLogoutWarning = true;
+        return;
+      }
+      await this.forceLogout();
+    },
+
+    /** « Se déconnecter quand même » : les modifications partiront à la prochaine connexion. */
+    async forceLogout(): Promise<void> {
+      this.showLogoutWarning = false;
       await flushAndResetDeps();
       await signOut();
       window.location.href = '/login';
+    },
+
+    /** « Rester connecté ». */
+    cancelLogout(): void {
+      this.showLogoutWarning = false;
+    },
+
+    get logoutWarningText(): string {
+      const n = this.logoutPendingCount;
+      return n > 1
+        ? `${n} modifications ne sont pas encore enregistrées dans le cloud.`
+        : '1 modification n’est pas encore enregistrée dans le cloud.';
     },
 
     destroy(): void {

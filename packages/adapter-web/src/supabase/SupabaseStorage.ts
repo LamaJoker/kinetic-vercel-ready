@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { StoragePort, StorageKey } from '@kinetic/core';
+import type { StoragePort, StorageKey, StorageWrite } from '@kinetic/core';
 import type { Database, Json } from './database.types.js';
 import type { PullCapableStorage, RemoteChange } from './HybridStorage.js';
 
@@ -42,6 +42,14 @@ export class SupabaseStorage implements StoragePort, PullCapableStorage {
     if (error) {
       console.error('[SupabaseStorage] set failed:', error.message);
       throw new Error(error.message);
+    }
+  }
+
+  /** Écritures successives (ancien chemin direct, non atomique). */
+  async setMany(writes: readonly StorageWrite[]): Promise<void> {
+    for (const w of writes) {
+      if (w.remove === true) await this.remove(w.key);
+      else await this.set(w.key, w.value);
     }
   }
 
