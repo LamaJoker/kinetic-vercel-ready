@@ -141,6 +141,33 @@ describe('createDepsManager', () => {
     expect(consoleSpy.mock.calls.flat().join(' ')).toContain('[deps]');
   });
 
+  it('IndexedDB sans réponse (IdbUnresponsiveError) : AUCUN repli vers une base vide, erreur remontée et signalée', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const marks = new Set<string>();
+    const createLocalStorage = vi.fn(() => new InMemoryStorage());
+    const onStorageUnresponsive = vi.fn();
+    const stuck = Object.assign(new Error('[idb] ouverture : IndexedDB ne répond pas'), {
+      name: 'IdbUnresponsiveError',
+    });
+    const manager = createDepsManager(
+      options({
+        createLocalStorage,
+        fallbackMarks: marks,
+        onStorageUnresponsive,
+        openStorage: async () => {
+          throw stuck;
+        },
+      }),
+    );
+    await expect(manager.getDeps()).rejects.toBe(stuck);
+    // Pas de repli (il montrerait une base vide), pas de mémo de repli, rien en cache.
+    expect(createLocalStorage).not.toHaveBeenCalled();
+    expect(marks.size).toBe(0);
+    expect(manager.currentOwner()).toBeNull();
+    expect(onStorageUnresponsive).toHaveBeenCalledTimes(1);
+    expect(onStorageUnresponsive).toHaveBeenCalledWith(stuck);
+  });
+
   it('repli mémorisé : la base du compte reprend ensuite les écritures, puis le mémo est effacé', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const marks = new Set<string>();

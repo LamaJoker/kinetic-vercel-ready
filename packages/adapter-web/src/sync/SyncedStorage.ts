@@ -29,7 +29,13 @@ import {
   type SyncKeyState,
   type SyncStatus,
 } from '@kinetic/core';
-import { deleteDatabase, requestToPromise, txEntries, txKeys } from './idb.js';
+import {
+  type IdbGuardOptions,
+  deleteDatabase,
+  requestToPromise,
+  txEntries,
+  txKeys,
+} from './idb.js';
 import {
   DELETE_ALL_KEY,
   GUEST_OWNER,
@@ -89,6 +95,8 @@ export interface SyncedStorageOptions {
   /** Serveur de synchro ; `null` = mode invité (aucune outbox). */
   remote: SyncRemote | null;
   factory?: IDBFactory;
+  /** Délais de la parade WebKit (ouverture, lecture bloquées) ; injectés par les tests. */
+  idbGuard?: Partial<IdbGuardOptions>;
   /** Registre de fusion (immédiat). Sinon chargé à la demande par `loadMerge`, sinon `lww`. */
   registry?: MergeRegistry;
   /**
@@ -224,11 +232,17 @@ export class SyncedStorage implements StoragePort {
   static async open(opts: SyncedStorageOptions): Promise<SyncedStorage> {
     const factory = opts.factory ?? globalThis.indexedDB;
     if (!factory) throw new Error('[sync] IndexedDB indisponible');
-    const db = await LocalSyncDb.open(factory, opts.owner);
+    const db = await LocalSyncDb.open(factory, opts.owner, opts.idbGuard);
     const storage = new SyncedStorage(db, opts);
-    const migrated = await db.tx([S_META], 'readonly', (tx) =>
-      requestToPromise(tx.objectStore(S_META).get(META_MIGRATED_FROM)),
-    );
+    let migrated: unknown;
+    try {
+      migrated = await db.tx([S_META], 'readonly', (tx) =>
+        requestToPromise(tx.objectStore(S_META).get(META_MIGRATED_FROM)),
+      );
+    } catch (err) {
+      db.close(); // lecture bloquée (WebKit) : aucune connexion orpheline
+      throw err;
+    }
     const names =
       typeof opts.migrateLegacy === 'object'
         ? {

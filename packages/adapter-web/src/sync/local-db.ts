@@ -6,7 +6,16 @@
  * pas au compte attendu n'est JAMAIS utilisée (OwnerMismatchError).
  */
 import type { SyncKeyState } from '@kinetic/core';
-import { openDatabase, runTransaction } from './idb.js';
+import {
+  type IdbGuardOptions,
+  IdbUnresponsiveError,
+  forgetWake,
+  idbGuard,
+  isIdbUnresponsive,
+  openDatabase,
+  reportUnresponsive,
+  runTransaction,
+} from './idb.js';
 
 export const GUEST_OWNER = 'guest';
 export const DB_VERSION = 1;
@@ -143,33 +152,70 @@ function isConnectionError(err: unknown): boolean {
   return name === 'InvalidStateError' || name === 'UnknownError';
 }
 
+/**
+ * Une lecture retenue par une écriture légitime en cours (page de pull, migration) voit
+ * son délai repoussé, au plus ce nombre de fois (≈ 35 s avec le délai par défaut).
+ */
+const READ_EXTENSIONS_WHILE_WRITING = 6;
+
+function readOwner(tx: IDBTransaction): Promise<unknown> {
+  const req = tx.objectStore(S_META).get(META_OWNER);
+  return new Promise<unknown>((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error ?? new Error('meta owner read failed'));
+  });
+}
+
 export class LocalSyncDb {
   private db: IDBDatabase | null;
   private reopening: Promise<IDBDatabase> | null = null;
+  /** Fermée par `close()` : plus aucune réouverture (une base supprimée ne renaît pas). */
+  private closed = false;
+  /**
+   * Transactions `readwrite` en cours, PAR connexion : seules celles de la connexion de
+   * la lecture peuvent la retenir (une écriture bloquée sur une connexion abandonnée ne
+   * repousse pas la lecture rejouée sur la nouvelle).
+   */
+  private readonly activeWrites = new Map<IDBDatabase, number>();
+  private readonly guard: IdbGuardOptions;
 
   private constructor(
     readonly factory: IDBFactory,
     readonly name: string,
     readonly owner: string,
     db: IDBDatabase,
+    guard: IdbGuardOptions,
   ) {
     this.db = db;
+    this.guard = guard;
     this.watch(db);
   }
 
-  static async open(factory: IDBFactory, owner: string): Promise<LocalSyncDb> {
+  static async open(
+    factory: IDBFactory,
+    owner: string,
+    guard?: Partial<IdbGuardOptions>,
+  ): Promise<LocalSyncDb> {
     const name = dbNameForOwner(owner);
-    const db = await LocalSyncDb.connect(factory, name, owner);
-    const local = new LocalSyncDb(factory, name, owner, db);
-    const found = await local.tx([S_META], 'readwrite', async (tx) => {
-      const req = tx.objectStore(S_META).get(META_OWNER);
-      const value = await new Promise<unknown>((resolve, reject) => {
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error ?? new Error('meta owner read failed'));
-      });
-      if (value === undefined) tx.objectStore(S_META).put(owner, META_OWNER);
-      return value;
-    });
+    const g = idbGuard(guard);
+    const db = await LocalSyncDb.connect(factory, name, owner, g);
+    const local = new LocalSyncDb(factory, name, owner, db, g);
+    let found: unknown;
+    try {
+      // 1re transaction de la connexion (souvent celle que WebKit « avale ») : une LECTURE,
+      // donc surveillée ; l'écriture n'a lieu que si le propriétaire manque (rare).
+      found = await local.tx([S_META], 'readonly', (tx) => readOwner(tx));
+      if (found === undefined) {
+        found = await local.tx([S_META], 'readwrite', async (tx) => {
+          const value = await readOwner(tx);
+          if (value === undefined) tx.objectStore(S_META).put(owner, META_OWNER);
+          return value;
+        });
+      }
+    } catch (err) {
+      local.close(); // aucune connexion orpheline (deleteDatabase, versionchange)
+      throw err;
+    }
     if (found !== undefined && found !== owner) {
       local.close();
       throw new OwnerMismatchError(name, owner, found);
@@ -177,15 +223,30 @@ export class LocalSyncDb {
     return local;
   }
 
-  private static connect(factory: IDBFactory, name: string, owner: string): Promise<IDBDatabase> {
-    return openDatabase(factory, name, DB_VERSION, (db, oldVersion, tx) => {
-      if (oldVersion < 1) {
-        for (const s of ALL_STORES) {
-          if (!db.objectStoreNames.contains(s)) db.createObjectStore(s);
+  private static connect(
+    factory: IDBFactory,
+    name: string,
+    owner: string,
+    guard: IdbGuardOptions,
+    cancelled?: () => boolean,
+  ): Promise<IDBDatabase> {
+    return openDatabase(
+      factory,
+      name,
+      DB_VERSION,
+      (db, oldVersion, tx) => {
+        // Réouverture d'une base fermée entre-temps : création annulée.
+        if (cancelled?.() === true) throw new Error(`[sync] base "${name}" fermée`);
+        if (oldVersion < 1) {
+          for (const s of ALL_STORES) {
+            if (!db.objectStoreNames.contains(s)) db.createObjectStore(s);
+          }
+          tx.objectStore(S_META).put(owner, META_OWNER);
         }
-        tx.objectStore(S_META).put(owner, META_OWNER);
-      }
-    });
+      },
+      guard,
+      cancelled,
+    );
   }
 
   private watch(db: IDBDatabase): void {
@@ -202,9 +263,20 @@ export class LocalSyncDb {
 
   private async connection(): Promise<IDBDatabase> {
     if (this.db) return this.db;
+    if (this.closed) throw new Error(`[sync] base "${this.name}" fermée`);
     if (!this.reopening) {
-      this.reopening = LocalSyncDb.connect(this.factory, this.name, this.owner)
+      this.reopening = LocalSyncDb.connect(
+        this.factory,
+        this.name,
+        this.owner,
+        this.guard,
+        () => this.closed,
+      )
         .then((db) => {
+          if (this.closed) {
+            db.close();
+            throw new Error(`[sync] base "${this.name}" fermée`);
+          }
           this.db = db;
           this.watch(db);
           return db;
@@ -220,6 +292,13 @@ export class LocalSyncDb {
    * Transaction atomique sur `stores`. En cas de perte de connexion (WebKit), la
    * base est rouverte et la transaction rejouée UNE fois : `fn` ne doit dépendre que
    * de ce qu'elle lit dans la transaction (aucun effet de bord hors IndexedDB).
+   *
+   * Une LECTURE (`readonly`) qui ne se termine jamais (blocage WebKit) est abandonnée
+   * après `readTimeoutMs` (délai repoussé tant qu'une écriture de cette base est en
+   * cours), puis rejouée UNE fois sur une connexion rouverte ; un second blocage lève
+   * `IdbUnresponsiveError` (signalé à l'app). Les écritures ne sont PAS surveillées : une
+   * écriture abandonnée par erreur pourrait avoir été validée quand même, et une page de
+   * pull ou la migration peuvent légitimement durer.
    */
   async tx<T>(
     stores: readonly string[],
@@ -228,9 +307,14 @@ export class LocalSyncDb {
   ): Promise<T> {
     const db = await this.connection();
     try {
-      return await runTransaction(db, stores, mode, fn);
+      return await this.run(db, stores, mode, fn);
     } catch (err) {
-      if (!isConnectionError(err)) throw err;
+      const stalled = isIdbUnresponsive(err);
+      if (!stalled && !isConnectionError(err)) throw err;
+      if (stalled) {
+        console.warn(`[sync] lecture de "${this.name}" sans réponse : base rouverte`);
+        forgetWake(this.factory); // nouveau réveil WebKit avant la réouverture
+      }
       try {
         db.close();
       } catch {
@@ -238,11 +322,41 @@ export class LocalSyncDb {
       }
       if (this.db === db) this.db = null;
       const fresh = await this.connection();
-      return runTransaction(fresh, stores, mode, fn);
+      try {
+        return await this.run(fresh, stores, mode, fn);
+      } catch (again) {
+        if (again instanceof IdbUnresponsiveError) throw reportUnresponsive(again);
+        throw again;
+      }
     }
   }
 
+  private async run<T>(
+    db: IDBDatabase,
+    stores: readonly string[],
+    mode: IDBTransactionMode,
+    fn: (tx: IDBTransaction) => Promise<T> | T,
+  ): Promise<T> {
+    if (mode !== 'readonly') {
+      this.activeWrites.set(db, (this.activeWrites.get(db) ?? 0) + 1);
+      try {
+        return await runTransaction(db, stores, mode, fn);
+      } finally {
+        const left = (this.activeWrites.get(db) ?? 1) - 1;
+        if (left > 0) this.activeWrites.set(db, left);
+        else this.activeWrites.delete(db);
+      }
+    }
+    return runTransaction(db, stores, mode, fn, {
+      ms: this.guard.readTimeoutMs,
+      timers: this.guard.timers,
+      keepWaiting: () => (this.activeWrites.get(db) ?? 0) > 0,
+      maxExtensions: READ_EXTENSIONS_WHILE_WRITING,
+    });
+  }
+
   close(): void {
+    this.closed = true;
     this.db?.close();
     this.db = null;
   }

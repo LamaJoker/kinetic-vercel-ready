@@ -68,6 +68,11 @@ export interface DepsFactoryOptions {
     owner: string,
     opts: { recoverFallbackWrites: boolean },
   ) => Promise<FlushableStorage>;
+  /**
+   * IndexedDB ne répond plus (`IdbUnresponsiveError`, parade WebKit) : AUCUN repli (il
+   * montrerait une base vide ou bloquerait de même), l'app recharge ou prévient.
+   */
+  onStorageUnresponsive?: (err: Error) => void;
   /** Base ouverte et adoptée : démarrage de la synchro (après le premier rendu). */
   onStorageReady?: (storage: FlushableStorage, owner: string) => void;
 }
@@ -137,6 +142,15 @@ export function createDepsManager(options: DepsFactoryOptions): DepsManager {
           storage = synced;
           if (recover && synced.fallbackRecovered === true) safeCall(() => marks?.delete(owner));
         } catch (err) {
+          if (isStorageUnresponsive(err)) {
+            // IndexedDB bloqué (WebKit) : les données sont là mais illisibles. Le repli
+            // (ancienne base, même IndexedDB) montrerait une base vide — ses seules
+            // écritures de repli une fois la migration faite — ou bloquerait aussi. Pas de
+            // repli, pas de mémo : l'erreur remonte et l'app recharge ou prévient.
+            console.warn("[deps] stockage de l'appareil sans réponse :", err);
+            safeCall(() => options.onStorageUnresponsive?.(err));
+            throw err;
+          }
           // Base du compte inutilisable (propriétaire différent, IndexedDB en panne,
           // migration échouée) : ancienne base locale, réessai au prochain lancement. Le
           // repli est mémorisé AVANT toute écriture : elles seront reprises par la base.
@@ -192,6 +206,11 @@ export function createDepsManager(options: DepsFactoryOptions): DepsManager {
       deps = mock;
     },
   };
+}
+
+/** `IdbUnresponsiveError` (reconnue par son nom : ce module ne dépend pas des adaptateurs). */
+export function isStorageUnresponsive(err: unknown): err is Error {
+  return err instanceof Error && err.name === 'IdbUnresponsiveError';
 }
 
 function safeHas(marks: FallbackMarks | undefined, owner: string): boolean {

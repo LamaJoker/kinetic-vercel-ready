@@ -9,10 +9,12 @@ import {
   NoopDailyLogSync,
   supabase,
   getLocalSessionUser,
+  onIdbUnresponsive,
 } from '@kinetic/adapters-web';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { createDepsManager, GUEST_OWNER } from './deps.factory';
 import { afterFirstRender } from './lib/performance';
+import { handleStorageUnresponsive } from './lib/storage-unresponsive';
 
 export type { AppDeps } from './deps.factory';
 
@@ -46,9 +48,14 @@ const fallbackMarks = {
   delete: (owner: string) => writeMarks(readMarks().filter((o) => o !== owner)),
 };
 
+// IndexedDB bloqué (WebKit) à l'ouverture OU pendant une lecture, réessais épuisés :
+// rechargement unique, puis message persistant (lib/storage-unresponsive.ts).
+onIdbUnresponsive(() => void handleStorageUnresponsive());
+
 const manager = createDepsManager({
   createLocalStorage: (owner) => openLegacyFallbackStorage({ owner }),
   fallbackMarks,
+  onStorageUnresponsive: () => void handleStorageUnresponsive(),
   createClock: () => new SystemClock(),
   createIdGen: () => new UuidGenerator(),
   createNotifier: () => new ToastNotifier(),

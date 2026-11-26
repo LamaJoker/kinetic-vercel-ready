@@ -17,6 +17,14 @@ export type {
 } from './sync/SyncedStorage.js';
 export { LocalSyncDb, OwnerMismatchError, GUEST_OWNER, dbNameForOwner } from './sync/local-db.js';
 export { isLocalOnlyKey, LOCAL_ONLY_KEYS } from './sync/local-keys.js';
+// Parade WebKit : IndexedDB qui ne répond plus (sync.md § 4.11).
+export {
+  IdbUnresponsiveError,
+  isIdbUnresponsive,
+  onIdbUnresponsive,
+  DEFAULT_IDB_GUARD,
+} from './sync/idb.js';
+export type { IdbGuardOptions, IdbTimers } from './sync/idb.js';
 export { SyncCallError } from './sync/remote.js';
 export type {
   SyncRemote,

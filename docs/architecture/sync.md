@@ -764,6 +764,71 @@ Limites connues pendant la transition (ancien client installé sur un autre appa
 - sans migration 010 côté serveur, le nouveau client repasse en mode compatibilité (PGRST202) :
   upsert / delete / `sync_pull`, sans écriture conditionnelle ni tombstones.
 
+### 4.11 Robustesse WebKit : IndexedDB qui ne répond plus
+
+**Constat** (test simulateur iPhone, Capacitor 8 / WKWebView) : environ un lancement sur six
+à dix, juste après le rechargement de la démo (`window.location.assign('/')`), toutes les
+lectures du stockage restent sans réponse pendant des minutes (`deps.storage.keys()` > 3 s
+à chaque écran) : écrans vides, aucune erreur. Non reproductible sous Chromium ni WebKit
+Linux. Cause retenue : défaut connu de WebKit (bug 226547 et apparentés, parade
+« safari-14-idb-fix ») — au démarrage ou juste après une navigation, `indexedDB.open` ou la
+première transaction ne répond jamais tant que le processus IndexedDB n'est pas « réveillé ».
+
+**Parade** (`packages/adapter-web/src/sync/idb.ts`, point unique d'ouverture) :
+
+- **Réveil** : avant la première ouverture d'un chargement de page, `indexedDB.databases()`
+  est appelé toutes les 100 ms jusqu'à la première réponse (succès ou erreur), au plus
+  3 s ; au-delà, l'ouverture est tentée quand même.
+- **Ouverture avec délai** : une requête `open` sans réponse (ni `success`, ni `error`, ni
+  `upgradeneeded`) en 4 s est abandonnée et une nouvelle est faite (nouveau réveil), 3
+  tentatives au plus, puis `IdbUnresponsiveError`. Une tentative abandonnée qui répond plus
+  tard voit sa connexion **fermée** (aucune fuite) et sa montée de version éventuelle
+  **annulée** (la tentative suivante, en file derrière elle, la fera). `onblocked` (autre
+  connexion ouverte, `versionchange`, `deleteDatabase`) n'est **pas** ce cas : pas de délai,
+  on attend la fermeture comme avant.
+- **Lecture surveillée** (`LocalSyncDb.tx`) : une transaction `readonly` sans fin (ni
+  `complete`, ni `error`, ni `abort`) après 5 s est abandonnée, la connexion fermée et
+  rouverte, la lecture rejouée **une** fois ; un second blocage lève `IdbUnresponsiveError`.
+  Tant qu'une écriture de la même **connexion** est en cours (page de pull, migration : elle
+  peut légitimement retenir la lecture), l'échéance est repoussée (6 fois au plus, ≈ 35 s) ;
+  une écriture bloquée sur une connexion abandonnée ne repousse pas la lecture rejouée.
+  Les **écritures ne sont pas surveillées** : abandonner une écriture qui a peut-être été
+  validée rendrait son résultat incertain, et les écritures longues sont légitimes. Le
+  contrôle du propriétaire à l'ouverture (1re transaction de la connexion, celle que WebKit
+  « avale » le plus souvent) est donc une **lecture** ; il n'écrit que si le propriétaire
+  manque. En cas d'échec, `LocalSyncDb.open` et `SyncedStorage.open` ferment la connexion.
+- **Fermeture** : `LocalSyncDb.close()` est définitive. Une réouverture en cours (après une
+  lecture bloquée) est annulée avant la requête d'ouverture, ou sa création de base refusée :
+  une base supprimée entre-temps (effacement, suppression du compte) ne renaît pas vide.
+- **`databaseExists`** : `databases()` a lui aussi un délai (repli sur une ouverture
+  surveillée) ; un blocage lève `IdbUnresponsiveError`, **jamais** « absente » — sinon la
+  migration noterait « pas d'ancienne base » et ne reprendrait plus jamais ses données.
+- Délais injectables (`IdbGuardOptions`, option `idbGuard` de `SyncedStorage.open`) pour
+  les tests.
+
+`IdbUnresponsiveError` n'est **jamais** interprétée comme « base vide ». Un échec définitif
+(réessais épuisés) est signalé aux abonnés de `onIdbUnresponsive`.
+
+**Côté app** (`apps/web/src/deps.factory.ts`, `deps.ts`, `lib/storage-unresponsive.ts`) :
+
+- à l'ouverture, `IdbUnresponsiveError` ne déclenche **pas** le repli `LegacyFallbackStorage`
+  (même IndexedDB, donc bloqué aussi ; et une fois la migration faite, il ne montre que ses
+  propres écritures de repli : un stockage vide). Ni repli, ni mémo de repli : l'erreur
+  remonte ;
+- reprise (ouverture ou lecture bloquée) : rechargement de la page **une seule fois**
+  (marqueur horodaté `kinetic:idb-unresponsive-reload-at` en sessionStorage) ; nouveau
+  blocage dans les 5 minutes, ou sessionStorage indisponible → message persistant plein
+  écran « Le stockage de l'appareil ne répond pas. Tes données ne sont pas perdues : ferme
+  complètement l'app puis rouvre-la. » avec un bouton « Réessayer » (rechargement demandé
+  par l'utilisateur). Aucun écran vide présenté comme normal, aucune valeur par défaut
+  écrite.
+
+**Limites** : la parade réduit le risque sans supprimer le défaut WebKit (un processus
+IndexedDB bloqué jusqu'à la fermeture de l'app reste possible : d'où le message). Le
+temps de détection au démarrage peut atteindre ≈ 15 s (réveil 3 s + 3 × 4 s) avant le
+rechargement. Tests : `tests/integration/idb-unresponsive.test.ts`,
+`tests/unit/storage-unresponsive.test.ts`, `tests/unit/deps.factory.test.ts`.
+
 ## 5. Déploiement, compatibilité, retour arrière
 
 Ordre :

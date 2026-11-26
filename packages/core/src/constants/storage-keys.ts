@@ -169,6 +169,8 @@ export const STORAGE_KEYS = {
   ITEM_TOMBSTONES_PREFIX: 'kinetic:deleted:' as const,
   /** sessionStorage : horodatage du dernier reload après un chunk introuvable (anti-boucle). */
   PRELOAD_RELOAD_AT: 'kinetic:preload-reload-at' as const,
+  /** sessionStorage : horodatage du dernier reload après un blocage d'IndexedDB (anti-boucle). */
+  STORAGE_UNRESPONSIVE_RELOAD_AT: 'kinetic:idb-unresponsive-reload-at' as const,
   SYNC_INITIAL_DONE: '_kinetic:initial-sync-done' as const,
   /** Ancienne base `keyval-store` : nom de la base par compte qui a reçu ses données (migration locale). */
   SYNC_MIGRATED_TO: 'kinetic:migrated-to' as const,
