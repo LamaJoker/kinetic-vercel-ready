@@ -41,6 +41,70 @@ export function parsePlan(raw: string): AutotestPlan | null {
   }
 }
 
+/** Résultat d'une promesse, ou `label` après `ms` millisecondes. */
+function within<T>(p: Promise<T>, ms: number, label: string): Promise<T | string> {
+  return Promise.race([p, new Promise<string>((r) => setTimeout(() => r(label), ms))]);
+}
+
+/**
+ * Diagnostic quand la lecture du stockage ne répond pas : type de stockage, bases
+ * présentes, ouverture et lecture DIRECTES d'IndexedDB (hors code de l'app) — pour
+ * distinguer un blocage d'IndexedDB d'une attente interne.
+ */
+async function rawIdbProbe(storage: unknown): Promise<string> {
+  const parts: string[] = [];
+  const s = storage as { constructor?: { name?: string }; owner?: unknown; target?: unknown };
+  parts.push(
+    `type=${s.constructor?.name ?? '?'} owner=${String(s.owner)} target=${String(s.target)}`,
+  );
+  try {
+    const list = await within(
+      typeof indexedDB.databases === 'function' ? indexedDB.databases() : Promise.resolve([]),
+      2000,
+      'databases() bloqué',
+    );
+    parts.push(
+      typeof list === 'string'
+        ? list
+        : `bases=${list.map((d) => `${d.name}@${d.version}`).join(',')}`,
+    );
+  } catch (err) {
+    parts.push(`databases() échec ${String(err).slice(0, 80)}`);
+  }
+  const name =
+    typeof s.owner === 'string'
+      ? `kinetic-${s.owner === 'guest' ? 'guest' : `u-${s.owner}`}`
+      : null;
+  if (!name) return parts.join(' | ');
+  const started = Date.now();
+  const opened = await within(
+    new Promise<string>((resolve) => {
+      const req = indexedDB.open(name);
+      req.onblocked = () => parts.push('open: blocked');
+      req.onerror = () => resolve(`open erreur ${String(req.error)}`);
+      req.onsuccess = () => {
+        const db = req.result;
+        try {
+          const tx = db.transaction(['kv'], 'readonly');
+          const c = tx.objectStore('kv').count();
+          c.onsuccess = () => {
+            resolve(`open+count ok ${String(c.result)} clés en ${Date.now() - started} ms`);
+            db.close();
+          };
+          c.onerror = () => resolve(`count erreur ${String(c.error)}`);
+        } catch (err) {
+          resolve(`tx erreur ${String(err).slice(0, 80)}`);
+          db.close();
+        }
+      };
+    }),
+    2500,
+    'open direct bloqué (2,5 s)',
+  );
+  parts.push(String(opened));
+  return parts.join(' | ');
+}
+
 export async function runAutotest(openRoute: (route: string) => void): Promise<void> {
   const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
   const where = { directory: Directory.Documents, encoding: Encoding.UTF8 } as const;
@@ -99,7 +163,9 @@ export async function runAutotest(openRoute: (route: string) => void): Promise<v
         const sessions = keys.filter((k) => k.includes('training:session')).length;
         return `${keys.length} clés, ${sessions} séances, ${Date.now() - started} ms`;
       })();
-      return await Promise.race([probe, timeout]);
+      const result = await Promise.race([probe, timeout]);
+      if (!result.startsWith('délai')) return result;
+      return `${result} | ${await rawIdbProbe(deps.storage)}`;
     } catch (err) {
       return `échec : ${String(err).slice(0, 160)}`;
     }
