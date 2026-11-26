@@ -81,7 +81,7 @@ jobs:
           mkdir -p ios-test
           xcrun simctl io ${{ steps.sim.outputs.udid }} recordVideo --codec h264 ios-test/parcours.mp4 &
           rec=$!
-          python3 tests/ios/drive.py ${{ steps.sim.outputs.udid }} ios-test || echo "pilotage interrompu"
+          KINETIC_REPEAT=4 python3 tests/ios/drive.py ${{ steps.sim.outputs.udid }} ios-test apps/web/ios/App/build/Build/Products/Debug-iphonesimulator/App.app || echo "pilotage interrompu"
           kill -INT $rec; sleep 3
 
       - name: Collect logs

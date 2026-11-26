@@ -8,6 +8,7 @@ affiche chaque écran (voir apps/web/src/lib/autotest.ts). L'application écrit
 l'étape en cours dans kinetic-autotest-step.json ; la capture suit chaque étape.
 """
 import json
+import re
 import os
 import subprocess
 import sys
@@ -38,52 +39,69 @@ def shot(name):
     print("capture", path, flush=True)
 
 
-docs = os.path.join(run("xcrun", "simctl", "get_app_container", UDID, BUNDLE, "data", check=True).strip(), "Documents")
-os.makedirs(docs, exist_ok=True)
-step_file = os.path.join(docs, "kinetic-autotest-step.json")
-ack_file = os.path.join(docs, "kinetic-autotest-ack.json")
-with open(os.path.join(docs, "kinetic-autotest.json"), "w") as fh:
-    json.dump({"demo": True, "routes": ROUTES, "stepMs": 1500}, fh)
+def run_once(it):
+    global problems
+    docs = os.path.join(run("xcrun", "simctl", "get_app_container", UDID, BUNDLE, "data", check=True).strip(), "Documents")
+    os.makedirs(docs, exist_ok=True)
+    step_file = os.path.join(docs, "kinetic-autotest-step.json")
+    ack_file = os.path.join(docs, "kinetic-autotest-ack.json")
+    with open(os.path.join(docs, "kinetic-autotest.json"), "w") as fh:
+        json.dump({"demo": True, "routes": ROUTES, "stepMs": 1500}, fh)
 
-t0 = time.time()
-run("xcrun", "simctl", "launch", UDID, BUNDLE, check=True)
-time.sleep(3)
-shot("00-demarrage-3s")
+    t0 = time.time()
+    run("xcrun", "simctl", "launch", UDID, BUNDLE, check=True)
+    time.sleep(3)
+    shot(f"{it}-00-demarrage-3s" if it else "00-demarrage-3s")
 
-seen = 0
-deadline = time.time() + 420
-while time.time() < deadline:
-    try:
-        with open(step_file) as fh:
-            step = json.load(fh)
-    except (OSError, ValueError):
-        step = None
-    if step and step["step"] != seen:
-        seen = step["step"]
-        if seen == 1:
-            print(f"premier écran de démo affiché après {time.time() - t0:.1f} s", flush=True)
-            try:
-                with open(os.path.join(docs, "kinetic-autotest-demo.json")) as fh:
-                    print("chargement de la démo :", fh.read(), flush=True)
-            except OSError:
-                print("chargement de la démo : pas de compte rendu", flush=True)
-        print(f"étape {seen} {step['route']} : {json.dumps(step.get('diag'), ensure_ascii=False)}", flush=True)
-        if step["route"] == "fin":
-            break
-        time.sleep(0.8)
-        name = step["route"].strip("/") or "accueil"
-        shot(f"{seen:02d}-{name}")
-        with open(ack_file, "w") as fh:
-            json.dump({"step": seen}, fh)
-    time.sleep(0.3)
-else:
-    problems.append(f"parcours incomplet : dernière étape {seen}/{len(ROUTES)}")
+    seen = 0
+    deadline = time.time() + 420
+    while time.time() < deadline:
+        try:
+            with open(step_file) as fh:
+                step = json.load(fh)
+        except (OSError, ValueError):
+            step = None
+        if step and step["step"] != seen:
+            seen = step["step"]
+            if seen == 1:
+                print(f"premier écran de démo affiché après {time.time() - t0:.1f} s", flush=True)
+                try:
+                    with open(os.path.join(docs, "kinetic-autotest-demo.json")) as fh:
+                        print("chargement de la démo :", fh.read(), flush=True)
+                except OSError:
+                    print("chargement de la démo : pas de compte rendu", flush=True)
+            print(f"étape {seen} {step['route']} : {json.dumps(step.get('diag'), ensure_ascii=False)}", flush=True)
+            storage = str((step.get("diag") or {}).get("storage", ""))
+            if storage and not re.match(r"^\d+ clés, \d+ séances", storage):
+                problems.append(f"stockage bloqué à l'étape {seen} ({step['route']}) : {storage[:300]}")
+            if step["route"] == "fin":
+                break
+            time.sleep(0.8)
+            name = step["route"].strip("/") or "accueil"
+            shot(f"{it}-{seen:02d}-{name}" if it else f"{seen:02d}-{name}")
+            with open(ack_file, "w") as fh:
+                json.dump({"step": seen}, fh)
+        time.sleep(0.3)
+    else:
+        problems.append(f"parcours incomplet : dernière étape {seen}/{len(ROUTES)}")
 
-alive = run("xcrun", "simctl", "spawn", UDID, "launchctl", "list")
-if BUNDLE not in alive:
-    problems.append("l'application ne tourne plus à la fin du parcours (plantage ?)")
+    alive = run("xcrun", "simctl", "spawn", UDID, "launchctl", "list")
+    if BUNDLE not in alive:
+        problems.append("l'application ne tourne plus à la fin du parcours (plantage ?)")
 
-print(f"parcours complet en {time.time() - t0:.0f} s", flush=True)
+    print(f"parcours {it + 1} complet en {time.time() - t0:.0f} s", flush=True)
+
+
+APP = sys.argv[3] if len(sys.argv) > 3 else None
+REPEAT = int(os.environ.get("KINETIC_REPEAT", "1")) if APP else 1
+for it in range(REPEAT):
+    if it > 0:
+        print(f"--- installation neuve n° {it + 1}", flush=True)
+        run("xcrun", "simctl", "terminate", UDID, BUNDLE)
+        run("xcrun", "simctl", "uninstall", UDID, BUNDLE, check=True)
+        run("xcrun", "simctl", "install", UDID, APP, check=True)
+    run_once(it)
+
 print("PROBLÈMES:", json.dumps(problems, ensure_ascii=False), flush=True)
 with open(f"{OUT}/problems.json", "w") as fh:
     json.dump(problems, fh, ensure_ascii=False, indent=2)
