@@ -45,7 +45,6 @@ import {
   type TimerPreset,
   type TimerSnapshot,
 } from '@kinetic/core';
-import { UuidGenerator } from '@kinetic/adapters-web';
 import { getDeps } from '../deps';
 import { hapticLight, hapticMedium, hapticHeavy, hapticSuccess } from '../lib/haptics';
 import {
@@ -61,6 +60,7 @@ import {
   writeActiveSession,
 } from '../lib/training/active-session';
 import { loadCustomExercises, saveCustomExercises } from '../lib/training/storage';
+import { notifyWriteFailed } from '../lib/write-errors';
 
 type Field = 'workSec' | 'restSec' | 'rounds' | 'warmupSec' | 'cooldownSec';
 interface FieldDef {
@@ -91,8 +91,6 @@ const FIELDS: Record<TimerMode, FieldDef[]> = {
     { key: 'cooldownSec', label: 'Retour au calme', step: 30, unit: 'sec' },
   ],
 };
-
-const idGen = new UuidGenerator();
 
 const notify = (kind: 'success' | 'info' | 'warning', message: string): void => {
   window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
@@ -282,11 +280,12 @@ export function timersPage() {
           JSON.parse(JSON.stringify(this.presets)),
         );
       } catch (err) {
-        console.warn('[minuteurs] presets save failed:', err);
+        notifyWriteFailed('tes préréglages de minuteur', err);
       }
     },
 
     async savePreset(): Promise<void> {
+      const { idGen } = await getDeps();
       this.presets = addTimerPreset(this.presets, idGen.newId(), this.cfg);
       await this._savePresets();
       hapticSuccess();

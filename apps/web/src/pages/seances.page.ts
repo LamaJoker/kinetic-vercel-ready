@@ -102,6 +102,10 @@ import {
   saveTemplates,
 } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
+import { createDerivedCache } from '../lib/derived-cache';
+import { rawOf } from '../lib/reactive-raw';
+import { notifyWriteFailed } from '../lib/write-errors';
+import { bestE1rmByExercise, mergeTimedBest, prWithCurrent } from '../lib/pr-index';
 import { estimateStrengthWorkoutCaloriesKcal } from '../lib/training/calories';
 import type { UserProfile } from '../lib/user/types';
 import { loadUserProfile } from '../lib/user/storage';
@@ -371,6 +375,13 @@ export function recentStatsOf(
 }
 
 export function seances() {
+  /**
+   * Records de l'historique (PERF-06), hors état réactif : une passe sur les séances
+   * BRUTES (sans proxy Alpine) quand `sessions` est remplacé, au lieu d'une par série
+   * affichée. La séance en cours, lue à travers le proxy (réactive), est combinée à la
+   * volée.
+   */
+  const records = createDerivedCache();
   return {
     // « Partager en image » (fin de séance, historique) : lib/session-share-sheet.ts
     ...sessionShareSheet(),
@@ -697,7 +708,12 @@ export function seances() {
               exercises: workout.exercises,
             };
             const updated = [...this.templates, newTemplate];
-            await saveTemplates(deps.storage, updated);
+            try {
+              await saveTemplates(deps.storage, updated);
+            } catch (err) {
+              notifyWriteFailed('le modèle partagé', err);
+              throw err;
+            }
             this.templates = updated;
             window.dispatchEvent(
               new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
@@ -961,24 +977,10 @@ export function seances() {
     },
 
     pr(exerciseId: string): number | null {
-      let best = 0;
-      for (const s of this.sessions) {
-        const entry = s.entries.find((e) => e.exerciseId === exerciseId);
-        if (!entry) continue;
-        for (const set of workSetsOf(entry.sets)) {
-          const e1rm = estimateE1rmKg(set.weightKg, set.reps);
-          if (e1rm > best) best = e1rm;
-        }
-      }
-      // ── Inclure aussi les séries déjà ajoutées à la séance en cours ──
-      const currentEntry = this.currentSession?.entries.find((e) => e.exerciseId === exerciseId);
-      if (currentEntry) {
-        for (const set of workSetsOf(currentEntry.sets)) {
-          const e1rm = estimateE1rmKg(set.weightKg, set.reps);
-          if (e1rm > best) best = e1rm;
-        }
-      }
-      return best > 0 ? best : null;
+      const history = rawOf(this.sessions);
+      const index = records.get('e1rm', [history], () => bestE1rmByExercise(history));
+      // Séries déjà ajoutées à la séance en cours comprises (lues via le proxy : réactif).
+      return prWithCurrent(index.get(exerciseId), this.currentSession, exerciseId);
     },
 
     /** True si la série en cours serait un nouveau PR */
@@ -1206,9 +1208,16 @@ export function seances() {
     },
 
     async deleteTemplate(templateId: string): Promise<void> {
-      const deps = await getDeps();
-      this.templates = this.templates.filter((t) => t.id !== templateId);
-      await saveTemplates(deps.storage, this.templates);
+      const previous = this.templates;
+      this.templates = previous.filter((t) => t.id !== templateId);
+      try {
+        const deps = await getDeps();
+        await saveTemplates(deps.storage, this.templates);
+      } catch (err) {
+        // Mise à jour optimiste annulée : le modèle réapparaît, avec un message (QA-08).
+        this.templates = previous;
+        notifyWriteFailed('la suppression du modèle', err);
+      }
     },
 
     // ─── Menus contextuels (appui long, lib/context-menu.ts) ────────────────
@@ -1270,9 +1279,15 @@ export function seances() {
     },
 
     async duplicateTemplate(id: string): Promise<void> {
-      const deps = await getDeps();
-      this.templates = withDuplicatedTemplate(this.templates, id, newId(), nowIso());
-      await saveTemplates(deps.storage, this.templates);
+      const previous = this.templates;
+      this.templates = withDuplicatedTemplate(previous, id, newId(), nowIso());
+      try {
+        const deps = await getDeps();
+        await saveTemplates(deps.storage, this.templates);
+      } catch (err) {
+        this.templates = previous;
+        notifyWriteFailed('le modèle dupliqué', err);
+      }
     },
 
     elapsedSec(): number {
@@ -1734,8 +1749,12 @@ export function seances() {
 
     /** Records chronométrés (séances passées + séance en cours). */
     _bestTimed(exerciseId: string): TimedBest | null {
-      const all = this.currentSession ? [...this.sessions, this.currentSession] : this.sessions;
-      return bestTimed(all, exerciseId);
+      const history = rawOf(this.sessions);
+      const past = records.get(`timed:${exerciseId}`, [history], () =>
+        bestTimed(history, exerciseId),
+      );
+      const current = this.currentSession ? bestTimed([this.currentSession], exerciseId) : null;
+      return mergeTimedBest(past, current);
     },
 
     /** Série chronométrée égale au record de durée (ou de distance). */
@@ -2075,9 +2094,9 @@ export function seances() {
       this._strengthGoals = this._strengthGoals.map((g) =>
         met.includes(g) ? { ...g, achievedAt: at } : g,
       );
-      void getDeps().then((deps) =>
-        deps.storage.set(STORAGE_KEYS.STRENGTH_GOALS, this._strengthGoals),
-      );
+      void getDeps()
+        .then((deps) => deps.storage.set(STORAGE_KEYS.STRENGTH_GOALS, this._strengthGoals))
+        .catch((err: unknown) => notifyWriteFailed('l’objectif atteint', err));
       return met.map((g) => goalCelebration(goalLabel(g, this.exerciseName(exerciseId))));
     },
 
@@ -2118,11 +2137,17 @@ export function seances() {
     },
 
     async hidePlateau(exerciseId: string): Promise<void> {
-      this.plateauDismissed = dismissPlateau(this.plateauDismissed, exerciseId, Date.now());
+      const previous = this.plateauDismissed;
+      this.plateauDismissed = dismissPlateau(previous, exerciseId, Date.now());
       this.plateauOpenFor = null;
       hapticLight();
-      const deps = await getDeps();
-      await deps.storage.set(STORAGE_KEYS.PLATEAU_DISMISSED, this.plateauDismissed);
+      try {
+        const deps = await getDeps();
+        await deps.storage.set(STORAGE_KEYS.PLATEAU_DISMISSED, this.plateauDismissed);
+      } catch (err) {
+        this.plateauDismissed = previous;
+        notifyWriteFailed('le masquage de l’alerte', err);
+      }
     },
 
     /** Piste « variante » : ouvre les alternatives (substitution existante). */
@@ -3196,16 +3221,29 @@ export function seances() {
 
     // ─── Save ────────────────────────────────────────────────
 
+    /** « Terminer » en cours d'enregistrement : un second appui est ignoré (QA-09). */
+    savingSession: false,
+
+    /** Bouton « Terminer » actif : séance avec au moins un exercice, pas déjà en cours d'enregistrement. */
+    get canFinishSession(): boolean {
+      return !!this.currentSession && this.currentEntries.length > 0 && !this.savingSession;
+    },
+
     async saveCurrentSession(): Promise<void> {
-      if (!this.currentSession) return;
+      // Double appui (téléphone lent) : un seul enregistrement, un seul toast, un seul
+      // SESSION_SAVED (défis, objectifs, succès, rappels ne sont pas relancés).
+      if (this.savingSession) return;
+      const current = this.currentSession;
+      if (!current) return;
+      this.savingSession = true;
       try {
         const deps = await getDeps();
         const endedAt = nowIso();
         const durationMin = Math.max(
           0,
-          Math.round((Date.parse(endedAt) - Date.parse(this.currentSession.startedAt)) / 60000),
+          Math.round((Date.parse(endedAt) - Date.parse(current.startedAt)) / 60000),
         );
-        const avgRpe = this.avgRpeOf(this.currentSession);
+        const avgRpe = this.avgRpeOf(current);
         const caloriesKcal = estimateStrengthWorkoutCaloriesKcal({
           durationMin,
           avgRpe,
@@ -3213,7 +3251,7 @@ export function seances() {
         });
 
         const finalized: WorkoutSession = {
-          ...this.currentSession,
+          ...current,
           endedAt,
           durationMin,
           ...(avgRpe != null ? { avgRpe } : {}),
@@ -3252,13 +3290,15 @@ export function seances() {
         const name = err instanceof Error ? err.name : 'Error';
         const isQuota = /Quota/i.test(name) || /Quota/i.test((err as Error)?.message ?? '');
         const message = isQuota
-          ? 'Stockage plein — va dans Profil → Stockage et appuie sur "Compacter" pour libérer de la place.'
+          ? 'Stockage plein : séance pas encore enregistrée. Garde l’app ouverte, libère de l’espace sur le téléphone (photos, apps) puis réessaie.'
           : `Échec de sauvegarde (${name}). Réessaie ou recharge la page.`;
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
             detail: { kind: 'error', message },
           }),
         );
+      } finally {
+        this.savingSession = false;
       }
     },
 

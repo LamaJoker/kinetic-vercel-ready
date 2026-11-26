@@ -743,9 +743,15 @@ Précisions de mise en œuvre :
   (`value_too_large`) sans être envoyée ; une nouvelle écriture de l'utilisateur la remet en
   attente ; « Réessayer » (Profil) remet en attente toutes les entrées bloquées.
 - `PENDING_TASK_MUTATION` (journal de reprise d'une tâche) est désormais propre à l'appareil.
-- Photos (`kinetic-photos`) : la base par compte des blobs n'est **pas encore** en place (les
-  métadonnées des photos, elles, sont dans la base du compte) ; à faire avec le passage des photos
-  vers Supabase Storage.
+- Photos : les images (Blob) sont dans une base **par compte** (`kinetic-photos-u-<id>` /
+  `kinetic-photos-guest`, `lib/photos.ts`, nom dérivé de `owner` de la base du compte ou de la
+  cible du repli). Une image encore dans l'ancienne base commune `kinetic-photos` est déplacée
+  dans celle du compte à sa première lecture. « Effacer les données de cet appareil » et la
+  suppression du compte effacent la base d'images du compte (et ses images restées dans
+  l'ancienne base, d'après ses métadonnées) avant les données. Les images ne sont pas
+  synchronisées (passage vers Supabase Storage à faire).
+- Clés propres à l'appareil ajoutées : `BACKUP_RESTORE_UNDO` (valeurs d'avant la dernière
+  restauration d'une sauvegarde, pour l'annuler sur cet appareil).
 
 Limites connues pendant la transition (ancien client installé sur un autre appareil) :
 

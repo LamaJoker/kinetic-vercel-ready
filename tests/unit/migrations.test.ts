@@ -73,9 +73,15 @@ describe('runMigrationsIfNeeded', () => {
   it('dispatches error notification when restoreSnapshot itself fails during rollback', async () => {
     const storage = new InMemoryStorage();
     await storage.set('kinetic:xp', { xp: 100 });
+    // Une migration qui écrit (pliage v2) : le retour arrière a quelque chose à défaire.
+    await storage.set(SCHEMA_VERSION_KEY, 1);
+    await storage.set('kinetic:training:sessions', [
+      { id: 'a', name: 'Push', startedAt: '2026-01-01T10:00:00Z', entries: [] },
+    ]);
 
-    // ALL set operations fail → migration fails AND restore-snapshot also fails
+    // ALL writes fail → migration fails AND the rollback also fails
     vi.spyOn(storage, 'set').mockRejectedValue(new Error('no space left'));
+    vi.spyOn(storage, 'remove').mockRejectedValue(new Error('no space left'));
 
     const dispatchSpy = vi.fn();
     vi.stubGlobal('window', { dispatchEvent: dispatchSpy });
@@ -108,9 +114,10 @@ describe('runMigrationsIfNeeded', () => {
     expect(await storage.get('kinetic:streak')).toEqual({ count: 7 });
   });
 
-  it('removes null-valued keys during snapshot restore (null entry cleanup path)', async () => {
+  it('rollback ne touche pas une clé que la migration n a pas écrite (valeur null comprise)', async () => {
     const storage = new InMemoryStorage();
-    // Store a key with null value — restoreSnapshot should remove it, not re-set it
+    // Clé présente avec une valeur null : la migration ne l'a pas écrite, le retour
+    // arrière la laisse telle quelle (avant : restoreSnapshot la supprimait).
     await storage.set('kinetic:xp', null as unknown as object);
 
     const originalSet = storage.set.bind(storage);
@@ -121,9 +128,8 @@ describe('runMigrationsIfNeeded', () => {
 
     await expect(runMigrationsIfNeeded(storage)).rejects.toThrow('disk full');
 
-    // After restore, the null-valued key must have been removed (not re-written as null)
-    const keys = await storage.keys();
-    expect(keys).not.toContain('kinetic:xp');
+    expect(storage.has('kinetic:xp')).toBe(true);
+    expect(await storage.get(SCHEMA_VERSION_KEY)).toBeNull();
   });
 
   it('logs a warning for unknown migration versions (covers default case at line 106)', async () => {
@@ -144,35 +150,90 @@ describe('runMigrationsIfNeeded', () => {
     expect(version).toBe(2);
   });
 
-  it('removes keys added during migration that were not in the original snapshot', async () => {
+  it('F2 : une clé écrite par l app PENDANT la migration n est pas supprimée au retour arrière', async () => {
     const storage = new InMemoryStorage();
-    await storage.set('kinetic:xp', { xp: 100 });
-
-    // Simulate a key appearing in storage between snapshot and restore (e.g. added by migration)
-    let keysCallCount = 0;
-    const origKeys = storage.keys.bind(storage);
-    vi.spyOn(storage, 'keys').mockImplementation(async () => {
-      keysCallCount++;
-      const keys = await origKeys();
-      // 2nd call is inside restoreSnapshot — inject an extra key
-      if (keysCallCount >= 2) {
-        return [...keys, 'kinetic:temp-migration-key'] as readonly string[];
+    await storage.set(SCHEMA_VERSION_KEY, 1);
+    await storage.set('kinetic:training:sessions', [
+      { id: 'a', name: 'Push', startedAt: '2026-01-01T10:00:00Z', entries: [] },
+    ]);
+    const originalSet = storage.set.bind(storage);
+    vi.spyOn(storage, 'set').mockImplementation(async (key: string, value: unknown) => {
+      if (key === 'kinetic:training:session:a') {
+        // Pendant le pliage v2, l'utilisateur termine une séance (écriture directe de la page).
+        await originalSet('kinetic:training:session:today', { id: 'today', name: 'Jambes' });
       }
-      return keys;
+      if (key === SCHEMA_VERSION_KEY) throw new DOMException('quota', 'QuotaExceededError');
+      return originalSet(key, value);
     });
 
-    const removeSpy = vi.spyOn(storage, 'remove');
+    await expect(runMigrationsIfNeeded(storage)).rejects.toThrow('quota');
 
+    // La séance du jour est intacte ; ce que la migration avait écrit est annulé ; l'ancien
+    // tableau est revenu (rien n'est perdu, la migration sera rejouée au lancement suivant).
+    expect(await storage.get('kinetic:training:session:today')).toEqual({
+      id: 'today',
+      name: 'Jambes',
+    });
+    expect(storage.has('kinetic:training:session:a')).toBe(false);
+    expect(await storage.get('kinetic:training:sessions')).toEqual([
+      { id: 'a', name: 'Push', startedAt: '2026-01-01T10:00:00Z', entries: [] },
+    ]);
+    expect(await storage.get(SCHEMA_VERSION_KEY)).toBe(1);
+  });
+
+  it('F2 : le retour arrière ne réécrit pas les clés que la migration n a pas touchées', async () => {
+    const storage = new InMemoryStorage();
+    await storage.set(SCHEMA_VERSION_KEY, 1);
+    await storage.set('kinetic:xp', { xp: 100 });
+    await storage.set('kinetic:training:sessions', [
+      { id: 'a', name: 'Push', startedAt: '2026-01-01T10:00:00Z', entries: [] },
+    ]);
     const originalSet = storage.set.bind(storage);
-    vi.spyOn(storage, 'set').mockImplementation((key: string, value: unknown) => {
-      if (key === SCHEMA_VERSION_KEY) return Promise.reject(new Error('disk full'));
+    const written: string[] = [];
+    const removed: string[] = [];
+    vi.spyOn(storage, 'set').mockImplementation(async (key: string, value: unknown) => {
+      if (key === SCHEMA_VERSION_KEY) throw new Error('disk full');
+      written.push(key);
       return originalSet(key, value);
+    });
+    const originalRemove = storage.remove.bind(storage);
+    vi.spyOn(storage, 'remove').mockImplementation(async (key: string) => {
+      removed.push(key);
+      return originalRemove(key);
     });
 
     await expect(runMigrationsIfNeeded(storage)).rejects.toThrow('disk full');
 
-    // The extra key that appeared after the snapshot must have been removed
-    expect(removeSpy).toHaveBeenCalledWith('kinetic:temp-migration-key');
+    // Seules les clés du pliage sont rejouées (pas de réécriture massive vers le cloud).
+    expect(new Set(written)).toEqual(
+      new Set(['kinetic:training:session:a', 'kinetic:training:sessions']),
+    );
+    expect(new Set(removed)).toEqual(
+      new Set(['kinetic:training:sessions', 'kinetic:training:session:a']),
+    );
+    expect(await storage.get('kinetic:xp')).toEqual({ xp: 100 });
+  });
+
+  it('F2 : une lecture en échec pendant la migration n efface rien (pas de cliché « null »)', async () => {
+    const storage = new InMemoryStorage();
+    await storage.set(SCHEMA_VERSION_KEY, 1);
+    await storage.set('kinetic:training:sessions', [
+      { id: 'a', name: 'Push', startedAt: '2026-01-01T10:00:00Z', entries: [] },
+    ]);
+    await storage.set('kinetic:training:session:old', { id: 'old', name: 'Ancienne' });
+    const originalGet = storage.get.bind(storage);
+    vi.spyOn(storage, 'get').mockImplementation(async (key: string) => {
+      if (key === 'kinetic:training:session:a') throw new Error('Connection lost');
+      return originalGet(key);
+    });
+
+    await expect(runMigrationsIfNeeded(storage)).rejects.toThrow('Connection lost');
+
+    expect(await originalGet('kinetic:training:session:old')).toEqual({
+      id: 'old',
+      name: 'Ancienne',
+    });
+    expect(await originalGet('kinetic:training:sessions')).toHaveLength(1);
   });
 
   it('v2 : replie le tableau legacy des séances en une clé par séance', async () => {

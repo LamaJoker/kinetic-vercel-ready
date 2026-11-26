@@ -438,21 +438,10 @@ void getDeps()
   })
   .catch(() => undefined);
 
-// Demander le stockage persistant : sans ça, iOS Safari (et Chrome sous
-// pression mémoire) peut évincer IndexedDB → perte des séances enregistrées.
-// `granted` requis pour que l'OS protège nos données.
-if (typeof navigator !== 'undefined' && typeof navigator.storage?.persist === 'function') {
-  afterFirstRender(requestPersistentStorage);
-}
-function requestPersistentStorage(): void {
-  navigator.storage
-    .persisted()
-    .then((already) => {
-      if (!already) {
-        navigator.storage.persist().catch((err) => {
-          console.warn('[storage] persist() failed:', err);
-        });
-      }
-    })
+// Stockage persistant (lib/persistent-storage.ts) : demandé après la première séance
+// enregistrée (persistance mieux accordée, demande compréhensible), une fois, sans bruit.
+window.addEventListener(STORAGE_KEYS.EVENT_SESSION_SAVED, () => {
+  void import('./lib/persistent-storage')
+    .then(({ requestPersistentStorage }) => requestPersistentStorage())
     .catch(() => undefined);
-}
+});

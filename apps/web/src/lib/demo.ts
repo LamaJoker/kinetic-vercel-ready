@@ -175,11 +175,14 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
   }
 
   // Pesées : 3 par semaine, de ~79,4 kg vers ~77,6 kg
+  // Marquées `demo` (les pesées n'ont pas d'identifiant) : une vraie pesée saisie pendant
+  // la démo est gardée quand on la quitte.
   const bodyweight: Array<{
     date: string;
     weight: number;
     bodyFatPct: number | null;
     note: string | null;
+    demo: true;
   }> = [];
   for (let d = WEEKS * 7; d >= 0; d -= 2) {
     const day = new Date(today);
@@ -191,6 +194,7 @@ export function buildDemoData(now: Date = new Date()): DemoDataset {
       weight: Math.round(weight * 10) / 10,
       bodyFatPct: d % 14 === 0 ? Math.round((17.5 - 1.5 * progress) * 10) / 10 : null,
       note: null,
+      demo: true,
     });
   }
   const lightWeek = bodyweight[bodyweight.length - 4];
@@ -651,9 +655,46 @@ export function isDemoPhotoId(id: unknown): id is string {
 }
 
 /**
- * Retire exactement les clés écrites par la démo, plus ce qu'elle laisse
- * ailleurs : images des photos de démo (store IndexedDB `kinetic-photos`),
- * alertes de plateau masquées pendant la démo, séance commencée pendant la démo.
+ * Élément d'une liste écrit par la démo : identifiant `demo-…`, ou pesée marquée `demo`
+ * (sans identifiant). Un élément sans identifiant d'une autre liste (récents, favoris)
+ * est considéré comme venant de la démo.
+ */
+function isDemoItem(key: StorageKey, item: unknown, flagged: boolean): boolean {
+  if (!item || typeof item !== 'object') return true;
+  if (key === STORAGE_KEYS.BODYWEIGHT_ENTRIES) {
+    // Démo chargée par une version antérieure (pesées non marquées) : toutes en viennent.
+    return !flagged || (item as { demo?: unknown }).demo === true;
+  }
+  const id = (item as { id?: unknown }).id;
+  return typeof id !== 'string' || id.startsWith('demo-');
+}
+
+/**
+ * Retire une clé de la démo. Pour une liste (pesées, mensurations, repas, photos,
+ * recettes…), seuls les éléments de la démo partent : ce que l'utilisateur a ajouté
+ * pendant la démo (sa vraie pesée, son repas du jour) est gardé (audit F10). Les autres
+ * valeurs (profil, niveau, série, programme) sont celles de la démo et partent entières.
+ */
+async function removeDemoKey(storage: StoragePort, key: StorageKey): Promise<void> {
+  const value = await storage.get<unknown>(key);
+  if (Array.isArray(value)) {
+    const flagged = value.some(
+      (item: unknown) => !!item && (item as { demo?: unknown }).demo === true,
+    );
+    const kept = value.filter((item: unknown) => !isDemoItem(key, item, flagged));
+    if (kept.length > 0) {
+      await storage.set(key, kept);
+      return;
+    }
+  }
+  await storage.remove(key);
+}
+
+/**
+ * Retire ce que la démo a écrit, plus ce qu'elle laisse ailleurs : images des photos
+ * de démo (base d'images du compte), alertes de plateau masquées pendant la démo,
+ * séance commencée pendant la démo. Les saisies réelles faites pendant la démo dans
+ * des listes sont gardées (removeDemoKey).
  */
 export async function clearDemoData(storage: StoragePort): Promise<void> {
   const manifest = await storage.get<StorageKey[]>(STORAGE_KEYS.DEMO_MANIFEST);
@@ -661,7 +702,7 @@ export async function clearDemoData(storage: StoragePort): Promise<void> {
   // Images des photos de démo : la liste est lue avant d'effacer les métadonnées.
   const photos = await storage.get<Array<{ id?: unknown }>>(STORAGE_KEYS.PROGRESS_PHOTOS);
   const photoIds = (Array.isArray(photos) ? photos : []).map((p) => p?.id).filter(isDemoPhotoId);
-  for (const key of manifest) await storage.remove(key);
+  for (const key of manifest) await removeDemoKey(storage, key);
   // Une séance commencée pendant la démo porte sur ses modèles : elle part avec.
   await storage.remove(STORAGE_KEYS.TRAINING_ACTIVE_SESSION);
   // Démo chargée par une version antérieure (manifeste sans cette clé) : sans
@@ -674,7 +715,7 @@ export async function clearDemoData(storage: StoragePort): Promise<void> {
   if (photoIds.length > 0) {
     try {
       const { deletePhotoBlobs } = await import('./photos');
-      await deletePhotoBlobs(photoIds);
+      await deletePhotoBlobs(storage, photoIds);
     } catch (err) {
       console.warn('[demo] images des photos de démo non effacées :', err);
     }

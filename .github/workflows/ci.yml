@@ -91,8 +91,8 @@ jobs:
       - name: Build packages/adapter-web
         run: pnpm --filter @kinetic/adapters-web build
 
-      - name: Run Vitest with coverage
-        run: pnpm coverage
+      - name: Run Vitest with coverage (seuils vérifiés, vitest.config.ts)
+        run: pnpm test:coverage
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v7
@@ -108,6 +108,38 @@ jobs:
         with:
           json-summary-path: tests/coverage/coverage-summary.json
           json-final-path: tests/coverage/coverage-final.json
+
+  # ─── 4 bis. Tests SQL (migrations Supabase, RLS, sécurité) ───
+  # scripts/test-sql.sh : cluster Postgres 16 jetable (initdb local), migrations
+  # appliquées deux fois (idempotence), puis tests/sql/NN_*. Pas de service container :
+  # le script crée et détruit lui-même son cluster.
+  sql:
+    name: SQL Tests (Postgres 16)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v6
+        with: { version: '${{ env.PNPM_VERSION }}' }
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '${{ env.NODE_VERSION }}'
+
+      - name: Install PostgreSQL 16
+        run: |
+          if [ ! -x /usr/lib/postgresql/16/bin/initdb ]; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends postgresql-16 postgresql-client-16
+          fi
+          # Le cluster du paquet n'est pas utilisé : le script lance le sien.
+          sudo systemctl stop postgresql || true
+
+      - name: Run SQL tests
+        run: pnpm test:sql
+        env:
+          TEST_SQL_MODE: local
+          PG_BIN: /usr/lib/postgresql/16/bin
 
   # ─── 5. Tests E2E ───────────────────────────────────────────
   e2e:

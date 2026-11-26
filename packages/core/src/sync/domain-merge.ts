@@ -87,7 +87,10 @@ const prefix = (p: string, spec: MergeSpec, why: string): SyncMergeRule => ({
  * Toute clé non listée : `lww` (synchronisée). Les clés localStorage/sessionStorage de
  * STORAGE_KEYS ne passent pas par le StoragePort et ne sont pas concernées.
  */
-export const SYNC_MERGE_RULES: readonly SyncMergeRule[] = [
+// Construit dans une fonction annotée @__PURE__ : sans appel au niveau du module, ce
+// registre (utile seulement aux conflits de synchro, chargé à la demande) n'est pas
+// embarqué dans le lot de démarrage (LAZY_CORE_MODULES, apps/web/vite.config.ts).
+export const SYNC_MERGE_RULES: readonly SyncMergeRule[] = /* @__PURE__ */ (() => [
   // ── Propres à l'appareil ──
   device(K.SYNC_OUTBOX, 'Outbox de synchro (ancien format).'),
   device(K.SYNC_CURSOR, 'Curseur de pull de cet appareil.'),
@@ -98,6 +101,7 @@ export const SYNC_MERGE_RULES: readonly SyncMergeRule[] = [
   device(K.SYNC_MIGRATED_TO, 'Marqueur de migration de l’ancienne base locale.'),
   device(K.SYNC_FALLBACK_JOURNAL, 'Écritures faites dans l’ancienne base pendant un repli.'),
   device(K.TRAINING_ACTIVE_SESSION, 'Brouillon de la séance en cours, écrit à chaque série.'),
+  device(K.BACKUP_RESTORE_UNDO, 'Annulation de la dernière restauration faite sur cet appareil.'),
   device(
     K.PENDING_TASK_MUTATION,
     'Journal de reprise après plantage (valeurs absolues) : rejoué sur un autre appareil, il écraserait XP et série.',
@@ -251,7 +255,7 @@ export const SYNC_MERGE_RULES: readonly SyncMergeRule[] = [
   exact(K.BODYWEIGHT_GOAL, LWW, 'Objectif de poids : scalaire.'),
   exact(K.REWARDS_THEME, LWW, 'Thème choisi : scalaire.'),
   exact(K.STATS, LWW, 'Cache recalculable.'),
-];
+])();
 
 export const DEFAULT_MERGE_RULE: SyncMergeRule = {
   scope: 'synced',
@@ -424,15 +428,17 @@ function strategyForRule(rule: SyncMergeRule): MergeStrategy {
 }
 
 /** Registre métier à passer à `resolveSyncConflict(domainMergeRegistry, input)`. */
-export const domainMergeRegistry: MergeRegistry = createMergeRegistry(
-  SYNC_MERGE_RULES.map((rule) => ({
-    // Prédicat (et non chaîne) : une clé exacte ne doit pas capturer ses « sous-clés »
-    // (`kinetic:xp` ≠ `kinetic:xp:earned:…`).
-    match: (key: string) => mergeRuleForKey(key) === rule,
-    strategy: strategyForRule(rule),
-  })),
-  strategyForRule(DEFAULT_MERGE_RULE),
-);
+// Fonction annotée @__PURE__ (ses arguments remplissent strategyCache) : voir SYNC_MERGE_RULES.
+export const domainMergeRegistry: MergeRegistry = /* @__PURE__ */ (() =>
+  createMergeRegistry(
+    SYNC_MERGE_RULES.map((rule) => ({
+      // Prédicat (et non chaîne) : une clé exacte ne doit pas capturer ses « sous-clés »
+      // (`kinetic:xp` ≠ `kinetic:xp:earned:…`).
+      match: (key: string) => mergeRuleForKey(key) === rule,
+      strategy: strategyForRule(rule),
+    })),
+    strategyForRule(DEFAULT_MERGE_RULE),
+  ))();
 
 function strategyFor(key: string): MergeStrategy {
   return strategyForRule(mergeRuleForKey(key));

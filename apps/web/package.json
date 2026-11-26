@@ -1,6 +1,6 @@
 {
   "name": "@kinetic/web",
-  "version": "9.15.0",
+  "version": "9.16.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,7 +23,7 @@
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",
     "@capacitor/camera": "^8.2.0",
-    "@capacitor/core": "^8.3.4",
+    "@capacitor/core": "8.6.2",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/local-notifications": "^8.2.0",
@@ -39,9 +39,9 @@
     "idb-keyval": "^6.2.1"
   },
   "devDependencies": {
-    "@capacitor/android": "^8.3.4",
-    "@capacitor/cli": "^8.3.4",
-    "@capacitor/ios": "^8.3.4",
+    "@capacitor/android": "8.6.2",
+    "@capacitor/cli": "8.6.2",
+    "@capacitor/ios": "8.6.2",
     "@types/alpinejs": "^3.13.10",
     "@types/node": "^20.19.41",
     "autoprefixer": "^10.4.19",

@@ -195,11 +195,51 @@ export interface ActiveSessionWriter {
   flush(): Promise<void>;
   /** Vrai si une écriture attend encore. */
   pending(): boolean;
+  /** Vrai tant que la dernière écriture a échoué (séance non protégée sur l'appareil). */
+  failing(): boolean;
 }
+
+/** Message affiché quand la séance en cours ne peut plus être enregistrée sur l'appareil. */
+export const ACTIVE_SESSION_UNSAVED_MESSAGE =
+  'Séance non protégée : impossible de l’enregistrer sur cet appareil (stockage plein ?). ' +
+  'Garde l’app ouverte et termine la séance pour l’enregistrer, ou libère de l’espace.';
+export const ACTIVE_SESSION_SAVED_AGAIN_MESSAGE = 'Séance de nouveau protégée sur cet appareil.';
+
+/** Échecs consécutifs entre deux rappels du message (un toast disparaît). */
+const REWARN_EVERY = 5;
+
+export interface ActiveSessionWriterEvents {
+  /** Écriture en échec (n = échecs consécutifs). Par défaut : notification visible. */
+  onFailure?: (err: unknown, consecutive: number) => void;
+  /** Première écriture réussie après des échecs. */
+  onRecovered?: () => void;
+}
+
+function notifyActiveSession(kind: 'error' | 'success', message: string): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+      detail: { kind, message, ...(kind === 'error' ? { duration: 10_000 } : {}) },
+    }),
+  );
+}
+
+const DEFAULT_EVENTS: Required<ActiveSessionWriterEvents> = {
+  onFailure: (_err, consecutive) => {
+    if (consecutive === 1 || consecutive % REWARN_EVERY === 0) {
+      notifyActiveSession('error', ACTIVE_SESSION_UNSAVED_MESSAGE);
+    }
+  },
+  onRecovered: () => notifyActiveSession('success', ACTIVE_SESSION_SAVED_AGAIN_MESSAGE),
+};
 
 /**
  * Écritures légères : plusieurs changements rapprochés (série + repos qui démarre)
  * donnent une seule écriture après `delayMs`. L'effacement n'attend pas.
+ *
+ * Une écriture en échec (stockage plein, base fermée) n'est plus seulement journalisée :
+ * l'utilisateur est prévenu que la séance n'est pas protégée contre une fermeture de
+ * l'app (audit stockage local F9), puis rassuré dès qu'une écriture réussit à nouveau.
  */
 export function createActiveSessionWriter(
   write: (snap: ActiveSessionSnapshot | null) => Promise<void>,
@@ -211,10 +251,12 @@ export function createActiveSessionWriter(
     set: (fn, ms) => setTimeout(fn, ms),
     clear: (h) => clearTimeout(h as ReturnType<typeof setTimeout>),
   },
+  events: ActiveSessionWriterEvents = DEFAULT_EVENTS,
 ): ActiveSessionWriter {
   let handle: unknown = null;
   let queued: { snap: ActiveSessionSnapshot | null } | null = null;
   let chain: Promise<void> = Promise.resolve();
+  let failures = 0;
 
   const run = (): Promise<void> => {
     if (handle !== null) {
@@ -227,7 +269,19 @@ export function createActiveSessionWriter(
     // Écritures en série : un effacement ne peut pas être doublé par une écriture plus ancienne.
     chain = chain
       .then(() => write(snap))
-      .catch((err: unknown) => console.warn('[active-session] write failed:', err));
+      .then(
+        () => {
+          if (failures > 0) {
+            failures = 0;
+            events.onRecovered?.();
+          }
+        },
+        (err: unknown) => {
+          failures += 1;
+          console.warn('[active-session] write failed:', err);
+          events.onFailure?.(err, failures);
+        },
+      );
     return chain;
   };
 
@@ -242,5 +296,6 @@ export function createActiveSessionWriter(
     },
     flush: run,
     pending: () => queued !== null,
+    failing: () => failures > 0,
   };
 }

@@ -12,43 +12,11 @@
 import type { StoragePort } from '@kinetic/core';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { foldLegacySessions } from './training/storage';
+import { journalWrites, undoJournal } from './write-journal';
+import { LOCAL_SCHEMA_VERSION } from './schema-version';
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = LOCAL_SCHEMA_VERSION;
 const KEY = STORAGE_KEYS.SCHEMA_VERSION;
-
-async function snapshotStorage(storage: StoragePort): Promise<Map<string, unknown>> {
-  const snapshot = new Map<string, unknown>();
-  const keys = await storage.keys();
-  await Promise.all(
-    keys.map(async (key) => {
-      snapshot.set(key, await storage.get(key));
-    }),
-  );
-  return snapshot;
-}
-
-async function restoreSnapshot(
-  storage: StoragePort,
-  snapshot: Map<string, unknown>,
-): Promise<void> {
-  const currentKeys = await storage.keys();
-  await Promise.all(
-    currentKeys.map(async (key) => {
-      if (!snapshot.has(key)) {
-        await storage.remove(key);
-      }
-    }),
-  );
-  await Promise.all(
-    [...snapshot.entries()].map(async ([key, value]) => {
-      if (value === null) {
-        await storage.remove(key);
-        return;
-      }
-      await storage.set(key, value);
-    }),
-  );
-}
 
 export async function runMigrationsIfNeeded(storage: StoragePort): Promise<void> {
   // navigator.locks prevents concurrent migration runs across tabs opening simultaneously.
@@ -68,16 +36,19 @@ async function _runMigrationsCore(storage: StoragePort): Promise<void> {
   if (stored >= SCHEMA_VERSION) return;
 
   for (let v = stored + 1; v <= SCHEMA_VERSION; v++) {
-    const snapshot = await snapshotStorage(storage);
+    // Retour arrière limité aux clés que CETTE migration a écrites (journal) : une clé
+    // écrite en parallèle par l'app (séance terminée pendant la migration) n'est jamais
+    // supprimée ni remise à une valeur ancienne (audit stockage local F2).
+    const journal = journalWrites(storage);
     try {
-      await runMigration(v, storage);
+      await runMigration(v, journal.storage);
       await storage.set(KEY, v);
     } catch (err) {
       try {
-        await restoreSnapshot(storage, snapshot);
+        await undoJournal(storage, journal.entries());
       } catch (restoreErr) {
         console.error(
-          '[migrations] restoreSnapshot échoué — données potentiellement corrompues:',
+          '[migrations] retour arrière échoué — données potentiellement incohérentes:',
           restoreErr,
         );
         if (typeof window !== 'undefined') {

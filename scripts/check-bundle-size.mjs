@@ -24,7 +24,11 @@
  *    lib/training/storage.ts ;
  *  - une grosse donnée de packages/core propre à un écran : l'ajouter à
  *    LAZY_CORE_MODULES (vite.config.ts), sans appel de fonction au niveau du
- *    module (ou annoté « @__PURE__ »), sinon Rollup l'importe partout.
+ *    module (ou annoté « @__PURE__ »), sinon Rollup l'importe partout. Un appel annoté
+ *    garde quand même ses ARGUMENTS : envelopper le tout (`/* @__PURE__ *\/ (() => …)()`) ;
+ *  - jamais `import('@kinetic/core')` ni `import('@kinetic/adapters-web')` : l'import()
+ *    du point d'entrée d'un paquet garde TOUS ses exports dans le lot de démarrage
+ *    (tests/unit/startup-bundle.test.ts).
  */
 
 import { readdirSync, statSync, readFileSync } from 'node:fs';
@@ -66,6 +70,17 @@ export function initialJsFiles(indexHtml) {
     if (url && !/^(https?:)?\/\//.test(url)) files.add(url.replace(/^\//, ''));
   }
   return [...files];
+}
+
+/**
+ * Sorties du compilateur TypeScript égarées dans dist (QA-05) : déclarations, sourcemaps,
+ * tsbuildinfo ou le dossier `src/` qu'émettait `tsc --build`. dist est copié tel quel
+ * dans les apps natives (`cap sync`) : ces fichiers y livreraient le code source.
+ * @param {string[]} relPaths chemins relatifs à dist, séparés par « / »
+ * @returns {string[]}
+ */
+export function compilerLeftovers(relPaths) {
+  return relPaths.filter((rel) => /\.(ts|map|tsbuildinfo)$/.test(rel) || rel.startsWith('src/'));
 }
 
 const PALETTE = {
@@ -168,6 +183,17 @@ function main() {
     } else if (f.endsWith('.css')) {
       totalCssGzip += gz;
     }
+  }
+
+  const leftovers = compilerLeftovers(
+    files.map((f) => f.slice(DIST.length + 1).replace(/\\/g, '/')),
+  );
+  if (leftovers.length > 0) {
+    console.error(
+      `${PALETTE.err}✗ Sorties de tsc dans dist (à ne pas livrer) : ${leftovers.slice(0, 5).join(', ')}` +
+        `${leftovers.length > 5 ? '…' : ''}${PALETTE.reset}`,
+    );
+    allOk = false;
   }
 
   if (initial.size === 0) {

@@ -19,6 +19,8 @@ export const LOCAL_ONLY_KEYS: ReadonlySet<string> = new Set([
   STORAGE_KEYS.TRAINING_ACTIVE_SESSION,
   // Journal d'écriture anticipée d'une mutation de tâche : rejoué sur CET appareil.
   STORAGE_KEYS.PENDING_TASK_MUTATION,
+  // Valeurs d'avant la dernière restauration d'une sauvegarde (annulation sur CET appareil).
+  STORAGE_KEYS.BACKUP_RESTORE_UNDO,
 ]);
 
 export function isLocalOnlyKey(key: string): boolean {

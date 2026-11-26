@@ -176,6 +176,14 @@ export const LAZY_CORE_MODULES = [
   'domain/interval-timer.domain', // minuteurs HIIT (page Minuteurs)
   'domain/gym-mode.domain', // mode salle grand format (Séances)
   'domain/first-run-tour.domain', // visite de première utilisation (accueil, à la demande)
+  // règles de fusion de la synchro (premier conflit, réconciliation : lib/sync-merge.ts)
+  'sync/domain-merge',
+  'sync/merge-strategies',
+];
+/** Modules de lib/ importés au démarrage ET par un lot à la demande (voir manualChunks). */
+export const STARTUP_SHARED_LIBS = [
+  'apps/web/src/lib/schema-version',
+  'apps/web/src/lib/write-journal',
 ];
 export const LAZY_TRAINING_MODULES = [
   'training/import', // import Strong / Hevy (Profil)
@@ -244,6 +252,10 @@ export default defineConfig({
           // Stores Alpine — partagés entre toutes les pages
           if (id.includes('apps/web/src/stores/')) return 'stores';
           // Libs utilitaires
+          // Petits modules partagés entre le démarrage (migrations, lecture des séances)
+          // et des lots à la demande (export, sauvegarde) : rangés avec le démarrage.
+          // Sinon Rollup les met dans le lot à la demande, alors chargé au démarrage.
+          if (STARTUP_SHARED_LIBS.some((m) => id.includes(m))) return 'lib-training';
           if (id.includes('apps/web/src/lib/training/')) {
             const lazy = LAZY_TRAINING_MODULES.find((m) => id.includes(m));
             return lazy ? `lib-training-${lazy.split('/').pop()!}` : 'lib-training';

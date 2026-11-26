@@ -9,6 +9,7 @@ import {
   type ResolvedSession,
 } from '@kinetic/core';
 import { getDeps } from '../deps';
+import { notifyWriteFailed } from '../lib/write-errors';
 
 const LIFT_LABELS: Record<LiftKey, string> = {
   squat: 'Squat',
@@ -77,12 +78,15 @@ export function programsPage() {
     async setOneRm(lift: LiftKey, value: string): Promise<void> {
       const num = Number(value);
       if (!Number.isFinite(num) || num < 0) return;
+      const previous = this.oneRms;
       this.oneRms = { ...this.oneRms, [lift]: num };
       try {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEYS.PROGRAM_ONE_RMS, this.oneRms);
       } catch (err) {
-        console.warn('[programs] persist 1RM failed:', err);
+        // L'écran ne montre pas une valeur qui ne survivrait pas au rechargement.
+        this.oneRms = previous;
+        notifyWriteFailed('ton 1RM', err);
       }
     },
 
@@ -143,7 +147,7 @@ export function programsPage() {
           selectedAt: new Date().toISOString(),
         });
       } catch (err) {
-        console.warn('[programs] persist active failed:', err);
+        notifyWriteFailed('la semaine du programme', err);
       }
     },
   };

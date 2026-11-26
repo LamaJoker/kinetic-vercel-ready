@@ -68,11 +68,32 @@ export default defineConfig({
         'apps/web/src/deps.ts',
       ],
 
+      // Seuils vérifiés par `pnpm test:coverage` (CI) : un peu sous la valeur mesurée
+      // (QA-06, novembre 2026), pour qu'une baisse nette fasse échouer la CI. Mesure du
+      // jour : global 85,2 / 89,0 / 90,3 (lignes / branches / fonctions) ; core 98,8 /
+      // 91,4 / 98,6 ; synchro 89,8 / 81,9 / 85,7 ; lib/training 96,5 / 91,2 / 96,7.
+      // À remonter quand la couverture progresse ; ne jamais les baisser pour passer.
       thresholds: {
-        lines: 70,
-        statements: 70,
-        functions: 72,
-        branches: 84,
+        lines: 83,
+        statements: 83,
+        functions: 88,
+        branches: 87,
+        // Domaine pur : règles métier, calculs de progression, fusion de synchro.
+        'packages/core/src/**': { lines: 97, statements: 97, functions: 97, branches: 89 },
+        // Moteur de synchro (outbox, pull/push, base par compte, migrations).
+        'packages/adapter-web/src/sync/**': {
+          lines: 87,
+          statements: 87,
+          functions: 83,
+          branches: 79,
+        },
+        // Séances : enregistrement, suppression, séance en cours, import/export.
+        'apps/web/src/lib/training/**': {
+          lines: 94,
+          statements: 94,
+          functions: 94,
+          branches: 88,
+        },
       },
     },
   },

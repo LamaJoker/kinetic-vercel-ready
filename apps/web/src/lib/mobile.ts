@@ -1,5 +1,8 @@
 import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS } from '@kinetic/core';
+// Import statique : le client est déjà chargé au démarrage (store auth). Un import()
+// du point d'entrée du paquet garderait TOUS ses exports dans le lot de démarrage.
+import { supabase } from '@kinetic/adapters-web';
 import { createDeepLinkGate, firstLaunchUrl, parseDeepLink } from './deep-link';
 import { currentHistoryIdx } from './nav-motion';
 import { pageBackground } from './palette';
@@ -130,7 +133,6 @@ export async function initMobile(): Promise<void> {
         // Après un rechargement de la page, le même lien revient : ne pas rejouer l'action.
         if (firstLaunchUrl(launch.url, sessionMemory())) handleDeepLink(launch.url);
       } else if (launch.url.startsWith('com.lamajoker.kinetic://')) {
-        const { supabase } = await import('@kinetic/adapters-web');
         if (supabase) {
           await handleOAuthCallback(supabase, launch.url);
           return;
@@ -145,7 +147,6 @@ export async function initMobile(): Promise<void> {
       debugLog(`appUrlOpen: ${url.slice(0, 200)}`);
       if (handleDeepLink(url)) return;
       if (!url.startsWith('com.lamajoker.kinetic://')) return;
-      const { supabase } = await import('@kinetic/adapters-web');
       if (supabase) await handleOAuthCallback(supabase, url);
       else debugLog('appUrlOpen: supabase=null !');
     });

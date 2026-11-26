@@ -4,6 +4,10 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "composite": true,
+    // Domaine pur : pas de lib DOM (aucune API navigateur ne doit compiler ici).
+    // Globaux communs à toutes les plateformes : src/platform-globals.d.ts.
+    "lib": ["ES2022"],
+    "types": [],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true

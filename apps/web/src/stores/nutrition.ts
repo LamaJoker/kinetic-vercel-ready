@@ -7,6 +7,7 @@ import type { NutritionPlan } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { fetchFoodByBarcode, normalizeBarcode } from '../lib/openfoodfacts';
 import { MACRO_COLORS } from '../lib/palette';
+import { reportWriteFailure } from '../lib/write-errors';
 
 // FIX: défini ici au lieu d'être importé depuis @kinetic/core
 export interface FoodEntry {
@@ -174,6 +175,7 @@ export function nutritionStore() {
         await deps.storage.set(KEY_PLAN, plan);
       } catch (err) {
         console.error('[nutrition] recalculate failed:', err);
+        reportWriteFailure('ton plan nutritionnel');
       }
     },
 

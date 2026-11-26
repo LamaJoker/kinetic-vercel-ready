@@ -7,6 +7,7 @@ import Alpine from 'alpinejs';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { getDeps } from './deps';
 import { afterFirstRender, ric } from './lib/performance';
+import { destroyPageComponents } from './lib/page-teardown';
 import { loadPageComponents } from './page-components';
 import {
   type NavDirection,
@@ -282,17 +283,6 @@ async function render(path: string, direction: NavDirection = 'none'): Promise<v
   const swap = (): void => {
     // Rendu plus récent arrivé pendant la capture de la View Transition : on le laisse faire.
     if (seq !== renderSeq) return;
-    host.querySelectorAll<HTMLElement>('[x-data]').forEach((el) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = (el as any)._x_dataStack?.[0];
-      if (data && typeof data.destroy === 'function') {
-        try {
-          data.destroy();
-        } catch (err) {
-          console.warn('[router] component destroy failed:', err);
-        }
-      }
-    });
 
     // Geste « retour » (iOS) : copie figée de la page quittée, montrée derrière
     // la page pendant le glissement (native-gestures.ts). Puis les calques
@@ -300,6 +290,8 @@ async function render(path: string, direction: NavDirection = 'none'): Promise<v
     if (leavingPath && snapshotsEnabled() && leavingPath !== normalizedPath) {
       storeSnapshot(leavingPath, host.cloneNode(true) as HTMLElement);
     }
+    // Composants de la page quittée détruits une seule fois (après la copie figée).
+    destroyPageComponents(host, Alpine);
     window.dispatchEvent(new CustomEvent(PAGE_SWAP_EVENT));
     host.innerHTML = html;
     // Reste éventuel du geste « retour » (native-gestures.ts) : la page sortante

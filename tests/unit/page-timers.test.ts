@@ -12,7 +12,10 @@ const storage = {
   remove: vi.fn(async (k: string) => void store.delete(k)),
   keys: vi.fn(async () => [...store.keys()]),
 };
-vi.mock('../../apps/web/src/deps', () => ({ getDeps: async () => ({ storage }) }));
+// Identifiants fournis par deps.idGen (QA-12 : la page n'instancie plus d'adaptateur).
+let nextId = 0;
+const idGen = { newId: vi.fn(() => `preset-${++nextId}`) };
+vi.mock('../../apps/web/src/deps', () => ({ getDeps: async () => ({ storage, idGen }) }));
 vi.mock('../../apps/web/src/lib/haptics', () => ({
   hapticLight: vi.fn(),
   hapticMedium: vi.fn(),
@@ -77,6 +80,10 @@ describe('page Minuteurs', () => {
     expect(store.get(STORAGE_KEYS.TIMER_PRESETS)).toMatchObject([
       { name: 'Tabata 20 s / 10 s × 8' },
     ]);
+    // L'identifiant du préréglage vient du port IdGenerator de deps.
+    expect(idGen.newId).toHaveBeenCalledTimes(1);
+    const [saved] = store.get(STORAGE_KEYS.TIMER_PRESETS) as Array<{ id: string }>;
+    expect(saved!.id).toBe(idGen.newId.mock.results[0]!.value);
   });
 
   it('déroulé : prêt, effort, pause, passer, fin', async () => {

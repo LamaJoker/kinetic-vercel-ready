@@ -16,6 +16,9 @@
  */
 
 import { STORAGE_KEYS } from '@kinetic/core';
+// Import statique (client déjà chargé au démarrage) : un import() du point d'entrée
+// du paquet garderait tous ses exports dans le lot de démarrage.
+import { supabase } from '@kinetic/adapters-web';
 
 const LAST_FLUSH_KEY = STORAGE_KEYS.ERRORS_LAST_FLUSH;
 const FLUSH_INTERVAL_MS = 30 * 60 * 1000;
@@ -119,7 +122,6 @@ export async function flushErrorsToServer(): Promise<{ sent: number; ok: boolean
     const url = `${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/report-error`;
     let token = SUPABASE_ANON_KEY;
     try {
-      const { supabase } = await import('@kinetic/adapters-web');
       if (supabase) {
         const sb = supabase as unknown as {
           auth: {

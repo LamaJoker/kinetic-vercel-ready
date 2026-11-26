@@ -8,6 +8,7 @@ import {
 } from '@kinetic/core';
 import type { Exercise, WorkoutSession, WorkoutTemplate } from './types';
 import { DEFAULT_EXERCISES, DEFAULT_TEMPLATES } from './seed';
+import { underlyingStorage } from '../write-journal';
 import { localizeExercises } from './exercise-names-fr';
 
 const KEY_EXERCISES = STORAGE_KEYS.TRAINING_EXERCISES;
@@ -178,11 +179,13 @@ const foldInflight = new WeakMap<StoragePort, Promise<number>>();
 /**
  * foldLegacySessions — déplace le tableau legacy vers une clé par séance.
  * N'écrase jamais une séance déjà stockée au nouveau format (plus récente).
- * Idempotent et dédoublonné par instance de storage.
+ * Idempotent et dédoublonné par stockage (le journal de la migration v2 et la lecture
+ * des séances partagent le même repli : jamais deux replis concurrents).
  * @returns nombre de séances déplacées.
  */
 export function foldLegacySessions(storage: StoragePort): Promise<number> {
-  const existing = foldInflight.get(storage);
+  const base = underlyingStorage(storage);
+  const existing = foldInflight.get(base);
   if (existing) return existing;
 
   const run = (async () => {
@@ -204,12 +207,77 @@ export function foldLegacySessions(storage: StoragePort): Promise<number> {
     return moved;
   })();
 
-  foldInflight.set(storage, run);
-  return run.finally(() => foldInflight.delete(storage));
+  foldInflight.set(base, run);
+  return run.finally(() => foldInflight.delete(base));
 }
 
 /** Lecture des séances en cours, par stockage (appels simultanés regroupés). */
 const sessionsInflight = new WeakMap<StoragePort, Promise<WorkoutSession[]>>();
+
+/**
+ * Dernière liste lue, par stockage réel (PERF-11) : à la lecture suivante, si la liste
+ * des clés de séances n'a pas changé (une seule requête, `keys()`) et que rien ne l'a
+ * invalidée, elle est resservie au lieu d'une requête IndexedDB par séance.
+ *
+ * Invalidation :
+ *  - écritures de ce module (`saveSession`, `deleteSession`) : génération incrémentée ;
+ *  - séance ajoutée ou supprimée par n'importe quel autre chemin (démo, import,
+ *    restauration, repli de l'ancien format…) : la liste des clés diffère ;
+ *  - synchro ou autre onglet (`EVENT_SYNC_APPLIED`, émis par SyncedStorage avec les
+ *    clés modifiées) : contenu d'une séance existante remplacé sans changer les clés.
+ * Chaque appel reçoit une COPIE : un appelant qui modifie sa liste ne touche ni le
+ * cache ni les autres pages.
+ */
+interface SessionsCacheEntry {
+  signature: string;
+  generation: string;
+  sessions: WorkoutSession[];
+}
+let sessionsCache = new WeakMap<StoragePort, SessionsCacheEntry>();
+const sessionsGeneration = new WeakMap<StoragePort, number>();
+/** Incrémenté quand TOUS les caches sont invalidés (synchro) : lectures en cours ignorées. */
+let sessionsEpoch = 0;
+let syncListenerInstalled = false;
+
+/** Version des séances de ce stockage : change à chaque invalidation (lui seul ou tous). */
+function generationOf(base: StoragePort): string {
+  return `${sessionsEpoch}:${sessionsGeneration.get(base) ?? 0}`;
+}
+
+/**
+ * Oublie la liste de séances gardée pour ce stockage (ou pour tous). À appeler après une
+ * écriture de séance qui ne passe pas par `saveSession` / `deleteSession`.
+ */
+export function invalidateSessionsCache(storage?: StoragePort): void {
+  if (!storage) {
+    sessionsCache = new WeakMap();
+    sessionsEpoch++;
+    return;
+  }
+  const base = underlyingStorage(storage);
+  sessionsCache.delete(base);
+  sessionsInflight.delete(storage);
+  sessionsInflight.delete(base);
+  sessionsGeneration.set(base, (sessionsGeneration.get(base) ?? 0) + 1);
+}
+
+/** Une clé modifiée par la synchro concerne-t-elle les séances ? (liste vide = tout) */
+export function syncTouchesSessions(keys: unknown): boolean {
+  if (!Array.isArray(keys) || keys.length === 0) return true;
+  return keys.some(
+    (k) => typeof k !== 'string' || k.startsWith(SESSION_PREFIX) || k === LEGACY_SESSIONS_KEY,
+  );
+}
+
+function installSyncListener(): void {
+  if (syncListenerInstalled || typeof window === 'undefined' || !window.addEventListener) return;
+  syncListenerInstalled = true;
+  window.addEventListener(STORAGE_KEYS.EVENT_SYNC_APPLIED, (e: Event) => {
+    if (syncTouchesSessions((e as CustomEvent<{ keys?: unknown }>).detail?.keys)) {
+      invalidateSessionsCache();
+    }
+  });
+}
 
 function cloneSessions(list: WorkoutSession[]): WorkoutSession[] {
   return typeof structuredClone === 'function'
@@ -220,10 +288,11 @@ function cloneSessions(list: WorkoutSession[]): WorkoutSession[] {
 /**
  * Toutes les séances, triées par date de début. Au démarrage, l'accueil, les
  * objectifs et les succès les demandent en même temps : une seule lecture du
- * stockage (une requête par séance) est faite, les appels simultanés en
- * reçoivent une copie. Rien n'est gardé en cache une fois la lecture finie.
+ * stockage est faite, les appels simultanés en reçoivent une copie. La liste lue
+ * est gardée (copie à chaque appel) tant qu'elle reste valable (voir ci-dessus).
  */
 export function loadSessions(storage: StoragePort): Promise<WorkoutSession[]> {
+  installSyncListener();
   const pending = sessionsInflight.get(storage);
   if (pending) return pending.then(cloneSessions);
   const run = readSessions(storage);
@@ -236,6 +305,8 @@ export function loadSessions(storage: StoragePort): Promise<WorkoutSession[]> {
 }
 
 async function readSessions(storage: StoragePort): Promise<WorkoutSession[]> {
+  const base = underlyingStorage(storage);
+  const generation = generationOf(base);
   try {
     await foldLegacySessions(storage);
   } catch (err) {
@@ -243,29 +314,52 @@ async function readSessions(storage: StoragePort): Promise<WorkoutSession[]> {
   }
 
   const keys = (await storage.keys()).filter((k) => k.startsWith(SESSION_PREFIX));
+  const signature = [...keys].sort().join('\n');
+  const cached = sessionsCache.get(base);
+  if (cached && cached.signature === signature && cached.generation === generationOf(base)) {
+    return cloneSessions(cached.sessions);
+  }
+
   const values = await Promise.all(keys.map((k) => storage.get<unknown>(k)));
   const sessions = values.filter(isSession);
 
   // Filet : si le fold a échoué, on lit quand même le legacy (sans doublons).
   const legacy = await storage.get<unknown>(LEGACY_SESSIONS_KEY);
+  let complete = true;
   if (Array.isArray(legacy)) {
+    complete = false; // ancien format encore présent : rien n'est gardé
     const ids = new Set(sessions.map((s) => s.id));
     for (const s of legacy) if (isSession(s) && !ids.has(s.id)) sessions.push(s);
   }
 
-  return sessions.sort(byStartedAt);
+  sessions.sort(byStartedAt);
+  // Écriture ou synchro pendant la lecture : résultat servi, mais pas gardé.
+  if (complete && generation === generationOf(base)) {
+    sessionsCache.set(base, { signature, generation, sessions: cloneSessions(sessions) });
+  }
+  return sessions;
 }
 
 /** Crée ou met à jour UNE séance (seule sa clé est écrite / synchronisée). */
 export async function saveSession(storage: StoragePort, session: WorkoutSession): Promise<void> {
-  sessionsInflight.delete(storage); // une lecture en cours ne doit pas servir l'ancienne liste
-  await storage.set(sessionStorageKey(session.id), plain(session));
+  // Une lecture en cours ou gardée ne doit pas servir l'ancienne liste (avant ET après
+  // l'écriture : une lecture lancée pendant l'écriture ne doit pas être gardée).
+  invalidateSessionsCache(storage);
+  try {
+    await storage.set(sessionStorageKey(session.id), plain(session));
+  } finally {
+    invalidateSessionsCache(storage);
+  }
 }
 
 /** Supprime UNE séance (la suppression est propagée au cloud). */
 export async function deleteSession(storage: StoragePort, id: string): Promise<void> {
-  sessionsInflight.delete(storage);
-  await storage.remove(sessionStorageKey(id));
+  invalidateSessionsCache(storage);
+  try {
+    await storage.remove(sessionStorageKey(id));
+  } finally {
+    invalidateSessionsCache(storage);
+  }
 }
 
 /**

@@ -23,7 +23,14 @@
 
 import { STORAGE_KEYS } from '@kinetic/core';
 import type { StoragePort } from '@kinetic/core';
-import { createStore, get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
+import {
+  createStore,
+  get as idbGet,
+  set as idbSet,
+  del as idbDel,
+  clear as idbClear,
+  type UseStore,
+} from 'idb-keyval';
 
 export interface PhotoEntry {
   id: string;
@@ -43,8 +50,37 @@ export interface PhotoEntry {
 const MAX_DIM = 1024;
 const JPEG_QUALITY = 0.75;
 
-// Store IDB dédié — Blob friendly (pas de sérialisation JSON).
-const photoStore = createStore('kinetic-photos', 'blobs');
+// Store IDB dédié — Blob friendly (pas de sérialisation JSON). Une base PAR COMPTE
+// (sync.md § 4.1) : `kinetic-photos-u-<id>` / `kinetic-photos-guest`. L'ancienne base
+// commune `kinetic-photos` n'est plus que lue : une image qui s'y trouve encore est
+// déplacée dans la base du compte à sa première lecture (audit stockage local F7).
+const LEGACY_PHOTO_DB = 'kinetic-photos';
+const legacyStore = createStore(LEGACY_PHOTO_DB, 'blobs');
+const ownerStores = new Map<string, UseStore>();
+
+/**
+ * Nom de la base d'images du compte d'un stockage : `owner` de la base du compte
+ * (SyncedStorage), ou base cible du repli (`kinetic-u-<id>`). Null : stockage sans
+ * compte (tests, ancien chemin) → ancienne base commune.
+ */
+export function photoDbName(storage: StoragePort): string | null {
+  const s = storage as { owner?: unknown; target?: unknown };
+  if (typeof s.owner === 'string' && s.owner) {
+    return s.owner === 'guest' ? 'kinetic-photos-guest' : `kinetic-photos-u-${s.owner}`;
+  }
+  if (typeof s.target === 'string' && s.target.startsWith('kinetic-')) {
+    return `kinetic-photos-${s.target.slice('kinetic-'.length)}`;
+  }
+  return null;
+}
+
+function storeFor(storage: StoragePort): UseStore {
+  const name = photoDbName(storage);
+  if (!name) return legacyStore;
+  let store = ownerStores.get(name);
+  if (!store) ownerStores.set(name, (store = createStore(name, 'blobs')));
+  return store;
+}
 
 // ─── Meta CRUD ──────────────────────────────────────────────────────────────
 
@@ -65,13 +101,37 @@ export async function deletePhoto(storage: StoragePort, id: string): Promise<Pho
   const current = await loadPhotos(storage);
   const next = current.filter((p) => p.id !== id);
   await savePhotos(storage, next);
-  await idbDel(id, photoStore).catch(() => null);
+  await deletePhotoBlobs(storage, [id]);
   return next;
 }
 
 /** Supprime les images (Blobs) de ces photos, sans toucher aux métadonnées. Idempotent. */
-export async function deletePhotoBlobs(ids: readonly string[]): Promise<void> {
-  for (const id of ids) await idbDel(id, photoStore).catch(() => null);
+export async function deletePhotoBlobs(
+  storage: StoragePort,
+  ids: readonly string[],
+): Promise<void> {
+  const store = storeFor(storage);
+  for (const id of ids) {
+    await idbDel(id, store).catch(() => null);
+    if (store !== legacyStore) await idbDel(id, legacyStore).catch(() => null);
+  }
+}
+
+/**
+ * Efface TOUTES les images de progrès du compte de ce stockage (« Effacer les données de
+ * cet appareil », suppression du compte) : sa base d'images, et ses images encore dans
+ * l'ancienne base commune (d'après ses métadonnées, à appeler AVANT d'effacer celles-ci).
+ * Les images des autres comptes de l'appareil ne sont pas touchées.
+ */
+export async function clearAllPhotoBlobs(storage: StoragePort): Promise<void> {
+  const store = storeFor(storage);
+  if (store === legacyStore) {
+    await idbClear(legacyStore);
+    return;
+  }
+  const ids = (await loadPhotos(storage)).map((p) => p.id);
+  for (const id of ids) await idbDel(id, legacyStore).catch(() => null);
+  await idbClear(store);
 }
 
 // ─── Blob CRUD ──────────────────────────────────────────────────────────────
@@ -85,7 +145,7 @@ export async function getPhotoBlob(storage: StoragePort, photo: PhotoEntry): Pro
   if (photo.dataUrl) {
     try {
       const blob = dataUrlToBlob(photo.dataUrl);
-      await idbSet(photo.id, blob, photoStore);
+      await idbSet(photo.id, blob, storeFor(storage));
       // On retire le dataUrl du meta (allège le tableau JSON et le réseau si sync)
       const all = await loadPhotos(storage);
       const cleaned: PhotoEntry[] = all.map((p) => {
@@ -101,8 +161,20 @@ export async function getPhotoBlob(storage: StoragePort, photo: PhotoEntry): Pro
       console.warn('[photos] legacy migration failed for', photo.id, err);
     }
   }
-  const blob = await idbGet<Blob>(photo.id, photoStore).catch(() => null);
-  return blob ?? null;
+  const store = storeFor(storage);
+  const blob = await idbGet<Blob>(photo.id, store).catch(() => null);
+  if (blob || store === legacyStore) return blob ?? null;
+  // Image encore dans l'ancienne base commune : déplacée dans celle du compte (la
+  // métadonnée est dans les données du compte, l'image lui appartient).
+  const legacy = await idbGet<Blob>(photo.id, legacyStore).catch(() => null);
+  if (!legacy) return null;
+  try {
+    await idbSet(photo.id, legacy, store);
+    await idbDel(photo.id, legacyStore);
+  } catch (err) {
+    console.warn('[photos] déplacement vers la base du compte impossible :', err);
+  }
+  return legacy;
 }
 
 /**
@@ -167,7 +239,7 @@ export async function addPhoto(
     takenAt: string;
   },
 ): Promise<PhotoEntry[]> {
-  await idbSet(meta.id, blob, photoStore);
+  await idbSet(meta.id, blob, storeFor(storage));
   const entry: PhotoEntry = {
     id: meta.id,
     takenAt: meta.takenAt,

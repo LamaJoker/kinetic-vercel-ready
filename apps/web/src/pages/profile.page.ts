@@ -8,9 +8,13 @@ import {
   type ProfileBestLift,
   type ReportPeriodKey,
   type TextSizePref,
+  type StoragePort,
   workSetsOf,
 } from '@kinetic/core';
 import Alpine from 'alpinejs';
+// Import statique (client déjà chargé au démarrage) : un import() du point d'entrée du
+// paquet garderait tous ses exports (anciens stockages compris) dans le lot de démarrage.
+import { supabase, signOut } from '@kinetic/adapters-web';
 import { getDeps, getSyncedStorage } from '../deps';
 import { exportAsJson, exportAsCsv } from '../lib/training/export';
 import { loadSessions, loadExercises, loadCustomExercises } from '../lib/training/storage';
@@ -27,6 +31,7 @@ import {
   parseStrongCsv,
   parseHevyCsv,
   mergeIntoStorage,
+  type ImportBundle,
   type ImportFormat,
   type ImportReport,
 } from '../lib/training/import';
@@ -111,7 +116,15 @@ async function programTrainingDays(): Promise<number[] | null> {
   return days.length > 0 ? days : null;
 }
 import { canPinWidget, requestPinWidget } from '../lib/widget';
-import { snapshotStorage, restoreStorage } from '../lib/backup';
+import {
+  snapshotStorage,
+  previewRestore,
+  restoreBackup,
+  lastRestoreUndo,
+  undoLastRestore,
+  forgetRestoreUndo,
+  type BackupPreview,
+} from '../lib/backup';
 import {
   autoBackupEnabled,
   backupFileLabel,
@@ -121,6 +134,22 @@ import {
   runAutoBackup,
   setAutoBackupEnabled,
 } from '../lib/auto-backup';
+
+/** Images des photos de progrès du compte (base d'images locale). Faux si l'effacement a échoué. */
+async function wipeLocalPhotos(storage: StoragePort): Promise<boolean> {
+  try {
+    const { clearAllPhotoBlobs } = await import('../lib/photos');
+    await clearAllPhotoBlobs(storage);
+    return true;
+  } catch (err) {
+    console.error('[profile] effacement des photos impossible :', err);
+    return false;
+  }
+}
+
+function notifyProfile(kind: 'success' | 'error', message: string): void {
+  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
+}
 
 interface BackupFile {
   name: string;
@@ -211,6 +240,12 @@ export function profile() {
     backupFiles: [] as BackupFile[],
     backupChoice: null as BackupFile | null,
     restoringBackup: false,
+    // ─── Restauration d'une sauvegarde complète : aperçu + confirmation (audit F5) ───
+    showRestoreSheet: false,
+    restorePreview: null as BackupPreview | null,
+    _restoreBundle: null as ImportBundle | null,
+    /** Dernière restauration annulable sur cet appareil (« 3 mars »), sinon ''. */
+    restoreUndoLabel: '',
     cloudSynced: false,
     // ─── Synchronisation (sync.md § 4.1, 4.4, 4.7) ───
     /** Modifications non envoyées au moment d'ouvrir « Effacer les données de cet appareil ». */
@@ -297,14 +332,15 @@ export function profile() {
       this.deleteAccountError = '';
       try {
         const env = (import.meta as ImportMeta & { env: Record<string, string | undefined> }).env;
-        const { supabase, signOut } = await import('@kinetic/adapters-web');
         const { deleteAccount, ACCOUNT_DELETED_FLAG } = await import('../lib/account');
         await deleteAccount({
           supabaseUrl: env['VITE_SUPABASE_URL'] ?? '',
           anonKey: env['VITE_SUPABASE_ANON_KEY'] ?? '',
           client: supabase as never,
         });
-        // Compte supprimé côté serveur (cascade) : la base locale du compte est supprimée.
+        // Compte supprimé côté serveur (cascade) : la base locale du compte est supprimée,
+        // photos de progrès comprises (audit F7).
+        await wipeLocalPhotos((await getDeps()).storage);
         const synced = await getSyncedStorage();
         if (synced) await synced.destroyLocalDatabase().catch(() => undefined);
         else await (await getDeps()).storage.clear().catch(() => undefined);
@@ -372,6 +408,7 @@ export function profile() {
 
         await this._refreshStorageUsage();
         void this._refreshSyncExtras();
+        void this._refreshRestoreUndo().catch(() => undefined);
         this.nativeApp = Capacitor.isNativePlatform();
         this.androidApp = this.nativeApp && Capacitor.getPlatform() === 'android';
         const reminders = getReminderPrefs();
@@ -707,44 +744,109 @@ export function profile() {
       this.showBackupSheet = true;
     },
 
-    pickBackup(file: BackupFile): void {
+    /** Sauvegarde choisie : lue puis montrée dans l'aperçu (rien n'est écrit avant confirmation). */
+    async pickBackup(file: BackupFile): Promise<void> {
       this.backupChoice = file;
+      try {
+        const bundle = parseKineticJson(await readBackupFile(file.name));
+        if (!bundle.data || Object.keys(bundle.data).length === 0) {
+          throw new Error('not a full backup');
+        }
+        this.showBackupSheet = false;
+        this.backupChoice = null;
+        await this._askRestore(bundle);
+      } catch (err) {
+        console.error('[profile] read backup failed:', err);
+        this.backupChoice = null;
+        notifyProfile('error', 'Sauvegarde illisible. Choisis-en une autre.');
+      }
     },
 
     closeBackupSheet(): void {
-      if (this.restoringBackup) return;
       this.showBackupSheet = false;
       this.backupChoice = null;
     },
 
-    /** Restaure la sauvegarde choisie (mêmes chemins que l'import d'un fichier Kinetic). */
-    async confirmRestoreBackup(): Promise<void> {
-      const choice = this.backupChoice;
-      if (!choice || this.restoringBackup) return;
+    /** Aperçu de ce que la sauvegarde remplacera ; la restauration attend la confirmation. */
+    async _askRestore(bundle: ImportBundle): Promise<void> {
+      const deps = await getDeps();
+      this._restoreBundle = bundle;
+      this.restorePreview = await previewRestore(deps.storage, bundle);
+      this.showRestoreSheet = true;
+    },
+
+    get restoreDateLabel(): string {
+      const at = this.restorePreview?.exportedAt;
+      const ms = at ? Date.parse(at) : NaN;
+      return Number.isFinite(ms)
+        ? new Date(ms).toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+        : 'date inconnue';
+    },
+
+    restoreLineText(line: { label: string; inBackup: number; onDevice: number }): string {
+      return `${line.label} : ${line.inBackup} dans la sauvegarde, ${line.onDevice} sur cet appareil`;
+    },
+
+    closeRestoreSheet(): void {
+      if (this.restoringBackup) return;
+      this.showRestoreSheet = false;
+      this.restorePreview = null;
+      this._restoreBundle = null;
+    },
+
+    /**
+     * Restauration confirmée : les valeurs remplacées sont gardées sur l'appareil
+     * (« Annuler la restauration » dans Profil › Données), puis l'app redémarre.
+     */
+    async confirmRestore(): Promise<void> {
+      const bundle = this._restoreBundle;
+      if (!bundle || this.restoringBackup || this.restorePreview?.tooNew) return;
       this.restoringBackup = true;
       try {
-        const bundle = parseKineticJson(await readBackupFile(choice.name));
-        if (!bundle.data || Object.keys(bundle.data).length === 0) {
-          throw new Error('not a full backup');
-        }
         const deps = await getDeps();
-        await restoreStorage(deps.storage, bundle.data);
-        if (bundle.sessions.length > 0)
-          await mergeIntoStorage(deps.storage, bundle, 'kinetic-json');
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: 'Sauvegarde restaurée. Redémarrage…' },
-          }),
+        await restoreBackup(deps.storage, bundle, (journaled) =>
+          mergeIntoStorage(journaled, bundle, 'kinetic-json'),
         );
+        notifyProfile('success', 'Sauvegarde restaurée. Redémarrage…');
         setTimeout(() => window.location.reload(), 1200);
       } catch (err) {
         console.error('[profile] restore backup failed:', err);
         this.restoringBackup = false;
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Sauvegarde illisible. Choisis-en une autre.' },
-          }),
-        );
+        notifyProfile('error', 'Restauration impossible : tes données n’ont pas été modifiées.');
+      }
+    },
+
+    async _refreshRestoreUndo(): Promise<void> {
+      const undo = await lastRestoreUndo((await getDeps()).storage);
+      this.restoreUndoLabel = undo
+        ? new Date(undo.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+        : '';
+    },
+
+    /** « Annuler la restauration » : remet les données d'avant la dernière restauration. */
+    async undoRestore(): Promise<void> {
+      try {
+        await undoLastRestore((await getDeps()).storage);
+        notifyProfile('success', 'Restauration annulée. Redémarrage…');
+        setTimeout(() => window.location.reload(), 1200);
+      } catch (err) {
+        console.error('[profile] undo restore failed:', err);
+        notifyProfile('error', 'Annulation impossible. Réessaie.');
+      }
+    },
+
+    /** Garde les données restaurées et libère la copie de secours. */
+    async keepRestore(): Promise<void> {
+      try {
+        await forgetRestoreUndo((await getDeps()).storage);
+        this.restoreUndoLabel = '';
+      } catch (err) {
+        console.error('[profile] forget restore undo failed:', err);
+        notifyProfile('error', 'Impossible de libérer la copie de secours. Réessaie.');
       }
     },
 
@@ -879,18 +981,12 @@ export function profile() {
           csvSkipped = r.skipped;
         }
 
-        const deps = await getDeps();
         if (bundle.data && Object.keys(bundle.data).length > 0) {
-          await restoreStorage(deps.storage, bundle.data);
-          if (bundle.sessions.length > 0) await mergeIntoStorage(deps.storage, bundle, format);
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'success', message: 'Sauvegarde restaurée. Redémarrage…' },
-            }),
-          );
-          setTimeout(() => window.location.reload(), 1200);
+          // Sauvegarde complète : aperçu et confirmation explicite avant tout remplacement.
+          await this._askRestore(bundle);
           return;
         }
+        const deps = await getDeps();
 
         if (bundle.sessions.length === 0) {
           window.dispatchEvent(
@@ -1102,11 +1198,18 @@ export function profile() {
       try {
         const deps = await getDeps();
         // Données de CET appareil seulement (le cloud n'est pas touché) ; les stores
-        // Alpine se rechargent proprement au reload.
+        // Alpine se rechargent proprement au reload. Photos d'abord (leur liste est dans
+        // les données effacées ensuite).
+        const photosWiped = await wipeLocalPhotos(deps.storage);
         await deps.storage.clear();
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: 'Données de cet appareil effacées ✓' },
+            detail: photosWiped
+              ? { kind: 'success', message: 'Données de cet appareil effacées ✓' }
+              : {
+                  kind: 'warning',
+                  message: 'Données effacées, mais certaines photos sont restées sur l’appareil.',
+                },
           }),
         );
         // Reload complet pour repartir de zéro

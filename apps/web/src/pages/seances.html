@@ -371,7 +371,7 @@
           <button
             type="button"
             @click="saveCurrentSession()"
-            :disabled="!currentSession || currentEntries.length === 0"
+            :disabled="!canFinishSession"
             class="k-pill h-12 px-5 font-semibold"
           >
             <svg

@@ -17,6 +17,8 @@ declare module 'alpinejs' {
     bind(el: HTMLElement, bindings: Record<string, unknown>): void;
     initTree(el: HTMLElement): void;
     destroyTree(el: HTMLElement): void;
+    /** Objet d'origine d'un proxy réactif (lecture sans suivi ni coût de proxy). */
+    raw<T>(obj: T): T;
     start(): void;
   }
 

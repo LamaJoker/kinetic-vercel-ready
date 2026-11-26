@@ -1,4 +1,6 @@
 ﻿import { loc } from '../lib/num';
+import { createDerivedCache, localDayKey } from '../lib/derived-cache';
+import { rawOf } from '../lib/reactive-raw';
 import { STORAGE_KEYS, defaultRecapPeriod, recapLabel, recapOf } from '@kinetic/core';
 import { getDeps } from '../deps';
 import {
@@ -75,6 +77,12 @@ export function progression() {
     sessions: null as unknown,
     map: new Map<string, PlateauReport | null>(),
   };
+  /**
+   * Statistiques dérivées de l'historique (PERF-05), hors état réactif : calculées une
+   * fois par historique (nouveau tableau `sessions` / `exercises`) et par jour, au lieu
+   * d'une fois par liaison du gabarit (bilan hebdo ×8, volume ×10, muscles ×12…).
+   */
+  const derived = createDerivedCache();
   return {
     loading: false,
     activeTab: 'force' as Tab,
@@ -87,8 +95,6 @@ export function progression() {
     goalsReady: false,
     /** Alertes de plateau masquées (exercice → fin du masquage). */
     plateauDismissed: {} as PlateauDismissals,
-    // M1 FIX: cache pour éviter de recalculer O(sessions×sets) à chaque getter Alpine
-    _cachedSets: null as AnalyticsSet[] | null,
     _sessionSavedHandler: null as ((e: Event) => void) | null,
 
     async init(): Promise<void> {
@@ -99,7 +105,6 @@ export function progression() {
         },
         (err: unknown) => console.warn('[progression] objectifs indisponibles :', err),
       );
-      this._cachedSets = null; // invalider le cache au rechargement
       // Lien direct vers un onglet (« /progression?tab=muscles » depuis l'accueil).
       const tab = new URLSearchParams(window.location?.search ?? '').get('tab');
       if (
@@ -117,9 +122,8 @@ export function progression() {
         this.exercises = await loadExercises(deps.storage);
         this.sessions = await loadSessions(deps.storage);
         await this._loadPlateauDismissed();
-        // Le premier rendu (avant chargement) a mis en cache une liste vide :
-        // sans cette invalidation, bilan hebdo, régularité et courbes restaient à 0.
-        this._cachedSets = null;
+        // Nouveaux tableaux `sessions` / `exercises` : les statistiques mises en cache
+        // au premier rendu (liste vide) sont recalculées (cf. _derive).
 
         const stats = this._stats();
         if (stats.length > 0) this.selectedExerciseId = stats[0]!.exerciseId;
@@ -139,7 +143,7 @@ export function progression() {
               ? this.sessions.map((s, i) => (i === idx ? session : s))
               : [...this.sessions, session];
         }
-        this._cachedSets = null; // forcer recalcul au prochain accès getter
+        // Nouveau tableau `sessions` : statistiques recalculées au prochain accès.
       };
       window.addEventListener(STORAGE_KEYS.EVENT_SESSION_SAVED, this._sessionSavedHandler);
     },
@@ -149,6 +153,7 @@ export function progression() {
         window.removeEventListener(STORAGE_KEYS.EVENT_SESSION_SAVED, this._sessionSavedHandler);
         this._sessionSavedHandler = null;
       }
+      derived.clear();
     },
 
     setTab(t: Tab): void {
@@ -172,30 +177,42 @@ export function progression() {
       return this.sessions.filter((s) => Date.parse(s.startedAt) >= since).length;
     },
 
-    _analyticsSets(): AnalyticsSet[] {
-      // M1 FIX: résultat mémoïzé — recalculé uniquement si le cache est null
-      // (invalidé dans init() à chaque rechargement des sessions)
-      if (this._cachedSets !== null) return this._cachedSets;
-      const muscleByEx = new Map<string, readonly string[]>();
-      for (const ex of this.exercises) muscleByEx.set(ex.id, ex.muscles ?? []);
-      this._cachedSets = this.sessions.flatMap((sess) =>
-        sess.entries.flatMap((e) =>
-          workSetsOf(e.sets).map((s) => ({
-            sessionId: sess.id,
-            exerciseId: e.exerciseId,
-            muscles: muscleByEx.get(e.exerciseId) ?? [],
-            reps: s.reps,
-            weightKg: s.weightKg,
-            rpe: s.rpe,
-            performedAt: s.performedAt,
-          })),
-        ),
+    /**
+     * Valeur dérivée mémorisée : recalculée seulement quand l'historique ou le catalogue
+     * change (nouveau tableau, comparé brut par identité) ou au changement de jour.
+     * Lire `this.sessions` / `this.exercises` ici garde la dépendance réactive d'Alpine :
+     * la liaison est réévaluée quand ils sont remplacés.
+     */
+    _derive<T>(name: string, compute: (sessions: WorkoutSession[], exercises: Exercise[]) => T): T {
+      const sessions = rawOf(this.sessions);
+      const exercises = rawOf(this.exercises);
+      return derived.get(name, [sessions, exercises, localDayKey()], () =>
+        compute(sessions, exercises),
       );
-      return this._cachedSets;
+    },
+
+    _analyticsSets(): AnalyticsSet[] {
+      return this._derive('sets', (sessions, exercises) => {
+        const muscleByEx = new Map<string, readonly string[]>();
+        for (const ex of exercises) muscleByEx.set(ex.id, ex.muscles ?? []);
+        return sessions.flatMap((sess) =>
+          sess.entries.flatMap((e) =>
+            workSetsOf(e.sets).map((s) => ({
+              sessionId: sess.id,
+              exerciseId: e.exerciseId,
+              muscles: muscleByEx.get(e.exerciseId) ?? [],
+              reps: s.reps,
+              weightKg: s.weightKg,
+              rpe: s.rpe,
+              performedAt: s.performedAt,
+            })),
+          ),
+        );
+      });
     },
 
     _stats(): ExerciseStats[] {
-      return perExerciseStats(this._analyticsSets());
+      return this._derive('stats', () => perExerciseStats(this._analyticsSets()));
     },
 
     // ─── Aides UI ─────────────────────────────────────────────
@@ -239,28 +256,32 @@ export function progression() {
     },
 
     get totalSets(): number {
-      return this.sessions.reduce(
-        (acc, s) => acc + s.entries.reduce((a, e) => a + workSetsOf(e.sets).length, 0),
-        0,
+      return this._derive('totalSets', (sessions) =>
+        sessions.reduce(
+          (acc, s) => acc + s.entries.reduce((a, e) => a + workSetsOf(e.sets).length, 0),
+          0,
+        ),
       );
     },
 
     get totalTonnage(): number {
-      let t = 0;
-      for (const s of this.sessions)
-        for (const e of s.entries)
-          for (const set of workSetsOf(e.sets)) t += set.reps * set.weightKg;
-      return Math.round(t);
+      return this._derive('totalTonnage', (sessions) => {
+        let t = 0;
+        for (const s of sessions)
+          for (const e of s.entries)
+            for (const set of workSetsOf(e.sets)) t += set.reps * set.weightKg;
+        return Math.round(t);
+      });
     },
 
     get consistency(): number {
-      return consistencyScore(this._analyticsSets(), 8);
+      return this._derive('consistency', () => consistencyScore(this._analyticsSets(), 8));
     },
 
     // ─── Bilan de la semaine ─────────────────────────────────
 
     get weeklyReview(): WeeklyReview {
-      return buildWeeklyReview(this._analyticsSets());
+      return this._derive('weeklyReview', () => buildWeeklyReview(this._analyticsSets()));
     },
 
     /** Libellé + emoji de tendance pour la carte bilan hebdo. */
@@ -286,10 +307,21 @@ export function progression() {
     },
 
     forcePoints(): { x: number; y: number; label: string }[] {
-      if (!this.selectedExerciseId) return [];
+      const exerciseId = this.selectedExerciseId;
+      if (!exerciseId) return [];
+      // Lue 7 fois par rendu (courbe, record, tendance…) : une seule passe par exercice.
+      return this._derive(`force:${exerciseId}`, (sessions) =>
+        this._forcePointsOf(sessions, exerciseId),
+      );
+    },
+
+    _forcePointsOf(
+      sessions: readonly WorkoutSession[],
+      exerciseId: string,
+    ): { x: number; y: number; label: string }[] {
       const points: { x: number; y: number; label: string }[] = [];
-      for (const session of this.sessions) {
-        const entry = session.entries.find((e) => e.exerciseId === this.selectedExerciseId);
+      for (const session of sessions) {
+        const entry = session.entries.find((e) => e.exerciseId === exerciseId);
         if (!entry || entry.sets.length === 0) continue;
         let best = 0;
         for (const s of workSetsOf(entry.sets)) {
@@ -574,8 +606,7 @@ export function progression() {
 
     get weeklyBuckets(): VolumeBucket[] {
       // Limite aux 12 dernières semaines pour une lecture mobile claire
-      const all = weeklyVolume(this._analyticsSets());
-      return all.slice(-12);
+      return this._derive('weeklyBuckets', () => weeklyVolume(this._analyticsSets()).slice(-12));
     },
 
     volumeMax(): number {
@@ -590,7 +621,7 @@ export function progression() {
     // ─── Onglet MUSCLES : répartition ────────────────────────
 
     get muscles(): MuscleShare[] {
-      return muscleDistribution(this._analyticsSets());
+      return this._derive('muscles', () => muscleDistribution(this._analyticsSets()));
     },
 
     muscleLabel(m: string): string {
@@ -617,7 +648,7 @@ export function progression() {
     // ─── Onglet RECORDS : timeline PR ────────────────────────
 
     get records(): PersonalRecord[] {
-      return [...detectPRs(this._analyticsSets())].reverse();
+      return this._derive('records', () => [...detectPRs(this._analyticsSets())].reverse());
     },
 
     // ─── Onglet HEATMAP : activité 20 semaines ───────────────

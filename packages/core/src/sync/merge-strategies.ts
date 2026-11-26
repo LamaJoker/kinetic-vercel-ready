@@ -20,8 +20,11 @@ export type MergeAncestor =
   | { readonly known: false }
   | { readonly known: true; readonly value: unknown };
 
-export const UNKNOWN_ANCESTOR: MergeAncestor = Object.freeze({ known: false });
-export const ABSENT_ANCESTOR: MergeAncestor = Object.freeze({ known: true, value: undefined });
+export const UNKNOWN_ANCESTOR: MergeAncestor = /* @__PURE__ */ Object.freeze({ known: false });
+export const ABSENT_ANCESTOR: MergeAncestor = /* @__PURE__ */ Object.freeze({
+  known: true,
+  value: undefined,
+});
 
 export function knownAncestor(value: unknown): MergeAncestor {
   return { known: true, value };

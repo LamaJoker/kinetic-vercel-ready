@@ -1,7 +1,13 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist",
+    // QA-05 : `tsc --build` ne vérifie que les types de l'app ; ses sorties (déclarations,
+    // tsbuildinfo) vont dans le cache, JAMAIS dans dist/ (sortie Vite copiée dans les
+    // apps natives par `cap sync`). Personne ne consomme ces fichiers.
+    "outDir": "../../node_modules/.cache/tsc-web",
+    "emitDeclarationOnly": true,
+    "declarationMap": false,
+    "sourceMap": false,
     "composite": true,
     "types": ["vite/client"]
   },

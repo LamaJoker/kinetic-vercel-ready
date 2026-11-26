@@ -11,6 +11,7 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { STORAGE_KEYS } from '@kinetic/core';
 import type { WorkoutSession, Exercise } from './types';
+import { LOCAL_SCHEMA_VERSION } from '../schema-version';
 
 export interface ExportBundle {
   version: 1 | 2;
@@ -19,6 +20,8 @@ export interface ExportBundle {
   exercises: readonly Exercise[];
   /** Version 2 : toutes les autres données de l'application (cf. lib/backup.ts). */
   data?: Record<string, unknown>;
+  /** Version du schéma local des données (`data`) au moment de l'export. */
+  schemaVersion?: number;
 }
 
 export function buildJsonExport(
@@ -31,7 +34,7 @@ export function buildJsonExport(
     exportedAt: new Date().toISOString(),
     sessions,
     exercises,
-    ...(data ? { data } : {}),
+    ...(data ? { data, schemaVersion: LOCAL_SCHEMA_VERSION } : {}),
   };
   return JSON.stringify(bundle, null, 2);
 }

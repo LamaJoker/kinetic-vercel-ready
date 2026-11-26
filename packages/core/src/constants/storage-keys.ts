@@ -188,6 +188,10 @@ export const STORAGE_KEYS = {
   BACKUP_LAST_AT: 'kinetic:backup:lastAt' as const, // localStorage, date du dernier export
   AUTO_BACKUP_LAST_AT: 'kinetic:backup:autoLastAt' as const, // localStorage, dernière sauvegarde auto (natif)
   AUTO_BACKUP_OFF: 'kinetic:backup:autoOff' as const, // localStorage, '1' = sauvegarde auto désactivée
+  /** IDB (propre à l'appareil) : valeurs d'avant la dernière restauration d'une sauvegarde, pour l'annuler. */
+  BACKUP_RESTORE_UNDO: 'kinetic:backup:restore-undo' as const,
+  /** localStorage : stockage persistant déjà demandé au navigateur (navigator.storage.persist). */
+  PERSIST_ASKED: 'kinetic:storage:persist-asked' as const,
   FIRST_SEEN_AT: 'kinetic:firstSeenAt' as const, // localStorage, premier lancement
   REST_ALERT_ASKED: 'kinetic:restAlert:asked' as const, // localStorage, permission d'alerte de repos déjà demandée
   BACKUP_REMINDED_AT: 'kinetic:backup:remindedAt' as const, // localStorage, dernier rappel de sauvegarde programmé

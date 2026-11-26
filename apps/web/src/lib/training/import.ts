@@ -41,6 +41,10 @@ export interface ImportBundle {
   createdExercises: readonly Exercise[];
   /** Sauvegarde complète (export JSON version 2) : autres données de l'application. */
   data?: Record<string, unknown>;
+  /** Date de l'export (sauvegarde Kinetic), si connue. */
+  exportedAt?: string;
+  /** Version du schéma local des données de la sauvegarde (absente : version 1 ou 2). */
+  schemaVersion?: number;
 }
 
 export interface ImportReport {
@@ -74,11 +78,17 @@ export function parseKineticJson(content: string): ImportBundle {
   const exercises = Array.isArray(data?.exercises) ? data.exercises : [];
   const extra = data?.data;
   const hasData = extra !== null && typeof extra === 'object' && !Array.isArray(extra);
+  const exportedAt: unknown = data?.exportedAt;
+  const schemaVersion: unknown = data?.schemaVersion;
   return {
     sessions: sessions.filter(isValidSession),
     exercises: exercises.filter(isValidExercise),
     createdExercises: [],
     ...(hasData ? { data: extra as Record<string, unknown> } : {}),
+    ...(typeof exportedAt === 'string' ? { exportedAt } : {}),
+    ...(typeof schemaVersion === 'number' && Number.isFinite(schemaVersion)
+      ? { schemaVersion }
+      : {}),
   };
 }
 

@@ -4,6 +4,8 @@ import { InMemoryStorage } from '../helpers/stubs.js';
 import {
   ACTIVE_SESSION_KEY,
   ACTIVE_SESSION_MAX_AGE_MS,
+  ACTIVE_SESSION_SAVED_AGAIN_MESSAGE,
+  ACTIVE_SESSION_UNSAVED_MESSAGE,
   createActiveSessionWriter,
   formatActiveDuration,
   formatActiveAge,
@@ -295,5 +297,76 @@ describe('bandeau « Séance en cours »', () => {
     expect(shouldShowActiveBanner(summary, '/onboarding')).toBe(false);
     expect(shouldShowActiveBanner(summary, '/legal/cgu')).toBe(false);
     expect(shouldShowActiveBanner(null, '/')).toBe(false);
+  });
+});
+
+describe('séance en cours non enregistrée (audit stockage local F9)', () => {
+  it('échec d écriture : l utilisateur est prévenu (pas seulement la console), puis rassuré', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const events: Array<{ kind: string; message: string; duration?: number }> = [];
+    vi.stubGlobal('window', {
+      dispatchEvent: (e: CustomEvent) => {
+        if (e.type === STORAGE_KEYS.EVENT_NOTIFY) events.push(e.detail);
+        return true;
+      },
+    });
+    let full = true;
+    const w = createActiveSessionWriter(async () => {
+      if (full) throw new DOMException('quota', 'QuotaExceededError');
+    });
+    w.schedule(snap());
+    await w.flush();
+    expect(w.failing()).toBe(true);
+    expect(events).toEqual([
+      { kind: 'error', message: ACTIVE_SESSION_UNSAVED_MESSAGE, duration: 10_000 },
+    ]);
+    // Échecs suivants : pas un toast par série, rappel tous les 5 échecs.
+    for (let i = 0; i < 3; i++) {
+      w.schedule(snap({ savedAtMs: i }));
+      await w.flush();
+    }
+    expect(events).toHaveLength(1);
+    w.schedule(snap({ savedAtMs: 9 }));
+    await w.flush();
+    expect(events).toHaveLength(2);
+
+    full = false;
+    w.schedule(snap({ savedAtMs: 10 }));
+    await w.flush();
+    expect(w.failing()).toBe(false);
+    expect(events.at(-1)).toEqual({ kind: 'success', message: ACTIVE_SESSION_SAVED_AGAIN_MESSAGE });
+    vi.unstubAllGlobals();
+    warn.mockRestore();
+  });
+
+  it('le message indique une piste de récupération (terminer la séance, libérer de l espace)', () => {
+    expect(ACTIVE_SESSION_UNSAVED_MESSAGE).toMatch(/non protégée/);
+    expect(ACTIVE_SESSION_UNSAVED_MESSAGE).toMatch(/termine la séance/);
+    expect(ACTIVE_SESSION_UNSAVED_MESSAGE).toMatch(/libère de l’espace/);
+  });
+
+  it('callbacks personnalisés : échecs consécutifs comptés, remis à zéro au succès', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const seen: number[] = [];
+    let recovered = 0;
+    let ok = false;
+    const w = createActiveSessionWriter(
+      async () => {
+        if (!ok) throw new Error('closed');
+      },
+      400,
+      undefined,
+      { onFailure: (_e, n) => void seen.push(n), onRecovered: () => void recovered++ },
+    );
+    w.schedule(snap());
+    await w.flush();
+    w.schedule(snap());
+    await w.flush();
+    ok = true;
+    w.schedule(snap());
+    await w.flush();
+    expect(seen).toEqual([1, 2]);
+    expect(recovered).toBe(1);
+    warn.mockRestore();
   });
 });

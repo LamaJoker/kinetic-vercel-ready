@@ -16,6 +16,7 @@ import {
   type PhotoEntry,
 } from '../lib/photos';
 import { hapticLight, hapticSuccess, hapticTap } from '../lib/haptics';
+import { notifyWriteFailed } from '../lib/write-errors';
 
 const _idGen = new UuidGenerator();
 const POSE_LABELS: Record<string, string> = { front: 'Face', side: 'Profil', back: 'Dos' };
@@ -326,7 +327,7 @@ export function photosPage() {
         if (id === this.compareBeforeId || id === this.compareAfterId) this._resetPair();
         hapticLight();
       } catch (err) {
-        console.error('[photos] removePhoto failed:', err);
+        notifyWriteFailed('la suppression de la photo', err);
       }
     },
   };

@@ -72,6 +72,56 @@ export default [
     },
   },
 
+  // ─── Frontières de l'architecture hexagonale (QA-12) ─────────
+  // Le core est pur : ni adaptateur, ni app, ni SDK de plateforme. (Sa lib TS n'a pas
+  // non plus le DOM : packages/core/tsconfig.json.)
+  {
+    files: ['packages/core/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            { name: '@kinetic/adapters-web', message: 'Le core ne dépend d’aucun adaptateur.' },
+            { name: 'idb-keyval', message: 'Stockage : passer par StoragePort (adaptateur).' },
+          ],
+          patterns: [
+            {
+              group: ['**/adapter-web/**', '**/apps/**', '@supabase/*', '@capacitor/*'],
+              message: 'Le core ne dépend ni des adaptateurs, ni de l’app, ni d’un SDK.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Les pages passent par getDeps() (idGen, storage, clock…) au lieu d'instancier
+  // les adaptateurs. Exceptions : auth-callback et profile (client d'authentification :
+  // échange du code OAuth, déconnexion, suppression du compte) ; seances et photos
+  // (UuidGenerator, à migrer vers deps.idGen).
+  {
+    files: ['apps/web/src/pages/**/*.ts'],
+    ignores: [
+      'apps/web/src/pages/auth-callback.page.ts',
+      'apps/web/src/pages/profile.page.ts',
+      'apps/web/src/pages/seances.page.ts',
+      'apps/web/src/pages/photos.page.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@kinetic/adapters-web',
+              message: 'Une page passe par getDeps() (deps.ts) au lieu d’un adaptateur.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // ─── Fichiers de config (pas de projet TS) ───────────────────
   {
     files: ['**/*.config.{js,mjs,ts}', 'scripts/**/*.{js,mjs}'],

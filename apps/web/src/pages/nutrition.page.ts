@@ -45,6 +45,7 @@ import {
   type RecentFood,
   type Recipe,
 } from '@kinetic/core';
+import { notifyWriteFailed } from '../lib/write-errors';
 
 interface ScannedFoodEntry {
   name: string;
@@ -571,13 +572,16 @@ export function nutrition() {
     // ── Favoris ───────────────────────────────────────────────────────────────
     async toggleFav(food: FoodPer100): Promise<void> {
       const wasFav = isFavorite(this.favorites, food);
+      const previous = this.favorites;
       this.favorites = toggleFavorite(plain(this.favorites), plain(food));
       hapticLight();
       try {
         const { storage } = await getDeps();
         await storage.set(STORAGE_KEYS.NUTRITION_FAVORITES, plain(this.favorites));
       } catch (err) {
-        console.warn('[nutrition] favorites save failed:', err);
+        this.favorites = previous;
+        notifyWriteFailed('tes favoris', err);
+        return;
       }
       notify('info', wasFav ? `${food.name} retiré des favoris` : `${food.name} épinglé en favori`);
     },
@@ -818,12 +822,14 @@ export function nutrition() {
         this.confirmDeleteRecipe = true;
         return;
       }
+      const previous = this.recipes;
       this.recipes = removeRecipe(plain(this.recipes), d.id);
       try {
         await this._saveRecipes();
         notify('info', `Recette « ${d.name} » supprimée`);
       } catch (err) {
-        console.error('[nutrition] recipe delete failed:', err);
+        this.recipes = previous; // la recette est toujours enregistrée
+        notifyWriteFailed('la suppression de la recette', err);
       }
       this.backToAdd();
     },
@@ -838,7 +844,7 @@ export function nutrition() {
         const { storage } = await getDeps();
         await storage.set(STORAGE_KEYS.NUTRITION_PREFS, plain(this.prefs));
       } catch (err) {
-        console.warn('[nutrition] prefs save failed:', err);
+        notifyWriteFailed('tes réglages de protéines', err);
       }
       this._afterLogChange();
     },
