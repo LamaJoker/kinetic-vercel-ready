@@ -37,7 +37,9 @@ export async function deleteAccount(deps: DeleteAccountDeps): Promise<void> {
     throw new Error(
       resp.status === 401
         ? 'Session expirée : reconnecte-toi puis réessaie.'
-        : `La suppression a échoué (HTTP ${resp.status}). Tes données sont intactes.`,
+        : resp.status === 429
+          ? 'Trop de tentatives : réessaie dans une heure. Tes données sont intactes.'
+          : `La suppression a échoué (HTTP ${resp.status}). Tes données sont intactes.`,
     );
   }
 }

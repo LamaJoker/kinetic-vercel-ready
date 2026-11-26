@@ -27,8 +27,13 @@ select t.ok((select convalidated from pg_constraint where conname = 'user_storag
 -- Anciens triggers remplacés.
 select t.ok(not exists (select 1 from pg_trigger where tgrelid = 'public.user_storage'::regclass
   and tgname in ('user_storage_updated_at', 'enforce_storage_quota')), 'anciens triggers retirés');
-select t.eq((select count(*) from pg_trigger where tgrelid = 'public.user_storage'::regclass
-  and tgname like 'user_storage\_%\_%' and not tgisinternal)::int, 3, 'trois nouveaux triggers');
+-- Les trois triggers de 010, plus celui de 011 (refus d'une écriture pour un autre
+-- utilisateur avant tout code SECURITY DEFINER) : ensemble exact, déclenché dans cet ordre.
+select t.eq((select string_agg(tgname, ',' order by tgname) from pg_trigger
+  where tgrelid = 'public.user_storage'::regclass
+  and tgname like 'user_storage\_%\_%' and not tgisinternal),
+  'user_storage_01_owner_check,user_storage_05_delete_as_tombstone,user_storage_10_before_write,user_storage_90_after_write',
+  'nouveaux triggers (010 + 011), ensemble exact');
 
 -- Droits : rien d'interne n'est exécutable par les clients (droits par défaut Supabase révoqués).
 select t.ok(not has_function_privilege('authenticated', 'public.user_storage_lock_user(uuid)', 'execute'),

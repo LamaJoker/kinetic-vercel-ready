@@ -125,6 +125,47 @@ describe('error-reporter', () => {
     expect(localStorage.getItem('kinetic:errors:last-flush')).not.toBeNull();
   });
 
+  it("n'envoie que les 50 rapports les plus récents, sans caractère de contrôle", async () => {
+    const lines = Array.from(
+      { length: 120 },
+      (_, i) => `[2026-05-27T10:00:00Z] error: erreur ${i}\u0007`,
+    );
+    localStorage.setItem('kinetic:errors', lines.join('\n'));
+    const fetchMock = vi.fn(async () => new Response('{"ok":true}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const { flushErrorsToServer } = await import('../../apps/web/src/lib/error-reporter.js');
+    await flushErrorsToServer();
+    const body = JSON.parse((fetchMock.mock.calls[0]![1] as { body: string }).body);
+    expect(body.reports).toHaveLength(50);
+    expect(body.reports[49].message).toBe('erreur 119 ');
+    expect(body.reports[0].message).toBe('erreur 70 ');
+  });
+
+  it('abandonne un buffer refusé par le serveur (400/413) pour ne pas boucler', async () => {
+    for (const status of [400, 413]) {
+      localStorage.setItem('kinetic:errors', '[2026-05-27T10:00:00Z] error: x');
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response('{}', { status })),
+      );
+      const { flushErrorsToServer } = await import('../../apps/web/src/lib/error-reporter.js');
+      expect((await flushErrorsToServer()).ok).toBe(false);
+      expect(localStorage.getItem('kinetic:errors')).toBeNull();
+    }
+  });
+
+  it('garde le buffer sur 429 (limite de débit) et marque le créneau', async () => {
+    localStorage.setItem('kinetic:errors', '[2026-05-27T10:00:00Z] error: x');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{}', { status: 429 })),
+    );
+    const { flushErrorsToServer } = await import('../../apps/web/src/lib/error-reporter.js');
+    expect((await flushErrorsToServer()).ok).toBe(false);
+    expect(localStorage.getItem('kinetic:errors')).not.toBeNull();
+    expect(localStorage.getItem('kinetic:errors:last-flush')).not.toBeNull();
+  });
+
   it('renvoie ok:false sur erreur réseau (fetch throws)', async () => {
     localStorage.setItem('kinetic:errors', '[2026-05-27T10:00:00Z] error: x');
     vi.stubGlobal(

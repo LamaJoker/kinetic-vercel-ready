@@ -15,7 +15,12 @@ export default [
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        project: ['./tsconfig.json', './apps/web/tsconfig.json', './packages/*/tsconfig.json'],
+        project: [
+          './tsconfig.json',
+          './apps/web/tsconfig.json',
+          './packages/*/tsconfig.json',
+          './tsconfig.edge.json',
+        ],
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {
@@ -112,8 +117,10 @@ export default [
       'packages/adapter-web/src/supabase/database.types.ts',
       // storage-keys.ts is the definitions file — it must declare the literal strings
       'packages/core/src/constants/storage-keys.ts',
-      // Supabase Edge Functions run on Deno, hors du graph TS du monorepo
-      'supabase/functions/**',
+      // Points d'entrée Deno des Edge Functions (imports distants, global Deno) :
+      // vérifiés par `deno check`. La logique (`_shared/`, `*/handler.ts`) est lintée.
+      'supabase/functions/*/index.ts',
+      'supabase/functions/_deno/**',
       'tests/coverage/**',
       'playwright-report/**',
     ],

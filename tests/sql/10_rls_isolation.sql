@@ -55,7 +55,8 @@ set role anon;
 select t.throws($$select public.sync_push('[]')$$, '42501', 'anon : sync_push refusé');
 select t.throws($$select public.sync_pull_v2(null)$$, '42501', 'anon : sync_pull_v2 refusé');
 select t.throws($$select public.sync_delete_all()$$, '42501', 'anon : sync_delete_all refusé');
-select t.eq((select count(*) from public.user_storage)::int, 0, 'anon : aucune ligne visible dans user_storage');
+-- Depuis 011 : anon n'a plus aucun droit sur user_storage (plus strict que « 0 ligne »).
+select t.throws($$select count(*) from public.user_storage$$, '42501', 'anon : user_storage illisible (aucun droit)');
 select t.throws($$select * from public.user_storage_usage$$, '42501', 'anon : compteur refusé');
 
 -- authenticated sans sub (JWT invalide) : erreur explicite, pas d'écriture.

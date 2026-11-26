@@ -94,13 +94,15 @@ Ou via le **SQL Editor** du dashboard — coller dans l'ordre :
 3. `supabase/migrations/003_security_hardening.sql` — **obligatoire pour la prod**
 4. `004_training_tables.sql` → `008_ai_coach_usage.sql` — tables d'entraînement, push, quota IA
 5. `supabase/migrations/009_sync_entitlements_hardening.sql` — **obligatoire** : RPC `sync_pull` (delta sync sur horloge serveur), quota corrigé, table `entitlements`, quota IA atomique, `keep_alive`
+6. `supabase/migrations/010_sync_reliability.sql` — **obligatoire** : synchronisation fiable (voir `docs/architecture/sync.md`)
+7. `supabase/migrations/011_security_hardening.sql` — **obligatoire, après 010** : RLS partout, droits minimaux, quotas IA / rate limit pour les fonctions Edge (voir `docs/architecture/security.md`, section « Mise en production »)
 
 La migration 003 ferme 5 vulnérabilités :
 
 - `SET search_path` sur toutes les `SECURITY DEFINER` (injection de schéma)
 - Validation d'entrée dans `upsert_daily_log` (bornes XP/tasks/streak)
 - Vues en `SECURITY INVOKER` explicite
-- Rate limit 60/min/IP sur `vitals_metrics`
+- Rate limit 60/min/IP sur `vitals_metrics` (collecte abandonnée : table fermée aux clients par 011)
 - `FORCE ROW LEVEL SECURITY` + permissions strictes (`daily_logs` append-only)
 
 ### 3. Auth
@@ -118,17 +120,27 @@ En dev, ajouter aussi `http://localhost:3000/auth-callback` dans les URLs autori
 ### 4. Edge Functions
 
 ```bash
+# Pré-requis : migrations 010 et 011 appliquées (sinon 503 : limiteurs et quotas absents)
+# Communes (delete-account, report-error, ai-coach) — OBLIGATOIRE : sans elle, 503 pour tous
+supabase secrets set ALLOWED_ORIGINS=https://<votre-domaine-vercel>,capacitor://localhost,https://localhost
+supabase secrets set RATE_LIMIT_SECRET=$(openssl rand -hex 32)
+supabase functions deploy delete-account
+supabase functions deploy report-error
+
+# Coach IA (optionnel) — réservé aux comptes Pro par défaut
 supabase functions deploy ai-coach
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
-supabase secrets set ANTHROPIC_MODEL=claude-sonnet-5   # optionnel
-supabase secrets set ALLOWED_ORIGINS=https://<votre-domaine-vercel>,capacitor://localhost,https://localhost
+supabase secrets set ANTHROPIC_MODEL=claude-sonnet-5   # optionnel, liste blanche
 ```
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` sont injectés automatiquement par Supabase.
+Toutes les variables, leurs valeurs par défaut et le comportement en échec fermé sont décrits dans
+[docs/architecture/security.md](docs/architecture/security.md#fonctions-edge).
 
 ## Checklist pré-production
 
-- [ ] Migrations 001 → 009 appliquées
+- [ ] Migrations 001 → 011 appliquées dans l'ordre (010 puis 011), **avant** le déploiement des fonctions Edge : elles appellent `consume_rate_limit` / `consume_ai_quota` (créées par 011) et répondent 503 tant qu'elles manquent (échec fermé, suppression de compte comprise)
+- [ ] Secret `ALLOWED_ORIGINS` défini (domaine Vercel, `capacitor://localhost`, `https://localhost`) et `RATE_LIMIT_SECRET`
 - [ ] Variables `VITE_SUPABASE_*` configurées dans Vercel
 - [ ] Redirect URL OAuth enregistrée côté Supabase pour chaque provider et chaque domaine (prod + preview)
 - [ ] `pnpm build` local passe sans warning

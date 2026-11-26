@@ -29,6 +29,7 @@
   "references": [
     { "path": "./packages/core" },
     { "path": "./packages/adapter-web" },
-    { "path": "./apps/web" }
+    { "path": "./apps/web" },
+    { "path": "./tsconfig.edge.json" }
   ]
 }

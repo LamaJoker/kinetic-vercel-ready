@@ -30,6 +30,18 @@ describe('deleteAccount', () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
+  it('explique la limite de tentatives (429) de la fonction serveur', async () => {
+    const fetchImpl = vi.fn(async () => new Response('{}', { status: 429 }));
+    await expect(
+      deleteAccount({
+        supabaseUrl: 'https://x',
+        anonKey: 'a',
+        client: client('jwt'),
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+      }),
+    ).rejects.toThrow(/Trop de tentatives/);
+  });
+
   it('signale un échec serveur sans prétendre avoir supprimé', async () => {
     const fetchImpl = vi.fn(async () => new Response('{}', { status: 500 }));
     await expect(

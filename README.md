@@ -226,10 +226,10 @@ Le pipeline GitHub Actions (`/.github/workflows/ci.yml`) exécute sur chaque pus
 ## 🔒 Sécurité
 
 - **CSP** via `vercel.json` — `script-src 'self'` sans `unsafe-eval` grâce au build `@alpinejs/csp`
-- **RLS** Supabase sur **toutes** les tables (y compris `vitals_metrics` depuis migration 006)
+- **RLS** Supabase activée et forcée sur **toutes** les tables, droits minimaux, `anon` sans accès aux données (migration 011, testé par `pnpm test:sql` ; voir `docs/architecture/security.md`)
 - **Quota** 20 000 clés / 50 MB par utilisateur (migration 009)
 - **Plan Pro vérifié côté serveur** : table `entitlements` en lecture seule pour le client, revérifiée par l'Edge Function `ai-coach` (quota atomique 10 req/h)
-- **Rate limiting** client-side (magic link : 3 / 5min) + trigger SQL sur `vitals_metrics`
+- **Rate limiting** client-side (magic link : 3 / 5min) + quotas SQL atomiques pour les Edge Functions (`consume_ai_quota`, `consume_rate_limit`)
 - **Sanitization** HTML-entity-encoding (whitelist) sur toutes les entrées utilisateur
 - **HTTPS** forcé via HSTS (max-age: 2 ans)
 

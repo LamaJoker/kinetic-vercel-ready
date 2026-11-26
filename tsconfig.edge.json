@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "allowImportingTsExtensions": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "outDir": "./node_modules/.cache/tsc-edge",
+    "rootDir": "./supabase/functions",
+    "types": []
+  },
+  "include": ["supabase/functions/_shared/**/*.ts", "supabase/functions/*/handler.ts"]
+}

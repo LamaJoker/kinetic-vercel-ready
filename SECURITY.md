@@ -41,8 +41,8 @@ Hors périmètre :
 
 - **CSP stricte** avec `default-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`.
 - **HSTS** avec preload.
-- **RLS Supabase** : toutes les tables user-data ont `FORCE ROW LEVEL SECURITY`.
-- **Rate limiting** côté serveur sur tables critiques (`vitals_metrics`).
+- **RLS Supabase** : toutes les tables du schéma `public` ont la RLS activée et forcée ; `anon` n'a accès à aucune donnée (migration 011, détails dans `docs/architecture/security.md`).
+- **Quotas et rate limiting** côté serveur, atomiques : coach IA (plafonds par utilisateur et global), limiteur générique pour les Edge Functions.
 - **Input sanitization** côté client (`apps/web/src/lib/security.ts`).
 - **Dependency audit** quotidien (workflow `security.yml`).
 - **CodeQL** scan sur chaque push.

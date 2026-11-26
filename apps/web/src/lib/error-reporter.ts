@@ -52,23 +52,37 @@ function clearBuffer(): void {
   }
 }
 
+/** Nombre maximal de rapports par envoi (le serveur n'en traite pas plus). */
+export const MAX_REPORTS_PER_FLUSH = 50;
+
+/** Remplace les caractères de contrôle (refusés par le serveur) par une espace. */
+function clean(text: string, max: number): string {
+  let out = '';
+  for (const ch of text) {
+    const code = ch.charCodeAt(0);
+    out += code < 0x20 || (code >= 0x7f && code <= 0x9f) ? ' ' : ch;
+  }
+  return out.slice(0, max);
+}
+
 function parseBuffer(raw: string): ErrorReport[] {
   if (!raw.trim()) return [];
   const lines = raw.split('\n').filter((l) => l.trim());
-  return lines.map((line) => {
+  // Les plus récents d'abord conservés : le buffer peut contenir des centaines de lignes.
+  return lines.slice(-MAX_REPORTS_PER_FLUSH).map((line) => {
     // Format : "[ISO] rejection: message" ou "[ISO] error: message"
     const m = /^\[(.+?)\]\s+(\w+):\s+(.+)$/.exec(line);
     if (m) {
       return {
-        occurredAt: m[1]!,
+        occurredAt: clean(m[1]!, 40),
         source: m[2] === 'rejection' ? 'unhandled_rejection' : 'uncaught_error',
-        message: m[3]!.slice(0, 500),
+        message: clean(m[3]!, 500),
       };
     }
     return {
       occurredAt: new Date().toISOString(),
       source: 'manual',
-      message: line.slice(0, 500),
+      message: clean(line, 500),
     };
   });
 }
@@ -141,6 +155,15 @@ export async function flushErrorsToServer(): Promise<{ sent: number; ok: boolean
       markFlushed();
       return { sent: 0, ok: false };
     }
+    // 400/413 : contenu refusé par le serveur (format ou taille) — le renvoyer
+    // tel quel échouerait toujours ; on l'abandonne pour ne pas boucler.
+    if (resp.status === 400 || resp.status === 413) {
+      clearBuffer();
+      markFlushed();
+      return { sent: 0, ok: false };
+    }
+    // 429 : limite de débit — on garde le buffer et on attend le prochain créneau.
+    if (resp.status === 429) markFlushed();
     return { sent: 0, ok: false };
   } catch (err) {
     console.warn('[error-reporter] flush failed:', err);
