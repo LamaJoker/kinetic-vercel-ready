@@ -25,6 +25,13 @@ export {
   DEFAULT_IDB_GUARD,
 } from './sync/idb.js';
 export type { IdbGuardOptions, IdbTimers } from './sync/idb.js';
+// Connexions fermées avant une navigation pleine page et quand la page est quittée.
+export {
+  closeAllLocalDatabases,
+  closeLocalDatabasesOnPageHide,
+  trackConnection,
+} from './sync/connections.js';
+export type { SuspendableConnection } from './sync/connections.js';
 export { SyncCallError } from './sync/remote.js';
 export type {
   SyncRemote,

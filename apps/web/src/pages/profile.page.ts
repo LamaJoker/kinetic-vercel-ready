@@ -86,10 +86,6 @@ function isCloudSynced(): boolean {
   return (Alpine.store('sync') as { cloudBackedUp: boolean }).cloudBackedUp;
 }
 
-function notify(kind: 'success' | 'error' | 'info', message: string): void {
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
-}
-
 const RECOVERY_REASONS: Record<string, string> = {
   resync: 'Absent du cloud',
   reconcile: 'Version de cet appareil',
@@ -134,6 +130,8 @@ import {
   runAutoBackup,
   setAutoBackupEnabled,
 } from '../lib/auto-backup';
+import { fullReload } from '../lib/full-reload';
+import { notify } from '../lib/notify';
 
 /** Images des photos de progrès du compte (base d'images locale). Faux si l'effacement a échoué. */
 async function wipeLocalPhotos(storage: StoragePort): Promise<boolean> {
@@ -145,10 +143,6 @@ async function wipeLocalPhotos(storage: StoragePort): Promise<boolean> {
     console.error('[profile] effacement des photos impossible :', err);
     return false;
   }
-}
-
-function notifyProfile(kind: 'success' | 'error', message: string): void {
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
 }
 
 interface BackupFile {
@@ -350,7 +344,7 @@ export function profile() {
         } catch {
           /* ignore */
         }
-        window.location.assign('/login');
+        await fullReload('/login');
       } catch (err) {
         this.deleteAccountError = err instanceof Error ? err.message : 'La suppression a échoué.';
         this.deletingAccount = false;
@@ -365,14 +359,10 @@ export function profile() {
         const deps = await getDeps();
         const { clearDemoData } = await import('../lib/demo');
         await clearDemoData(deps.storage);
-        window.location.assign('/onboarding');
+        await fullReload('/onboarding');
       } catch (err) {
         console.error('[profile] exitDemo failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: "Impossible d'effacer la démo." },
-          }),
-        );
+        notify('error', "Impossible d'effacer la démo.");
       }
     },
 
@@ -451,14 +441,7 @@ export function profile() {
         patch.backup === true;
       if (enabling && !(await requestReminderPermission())) {
         patch = { ...patch, routine: false, weekly: false, session: false, backup: false };
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'error',
-              message: 'Notifications refusées. Autorise-les dans les réglages du téléphone.',
-            },
-          }),
-        );
+        notify('error', 'Notifications refusées. Autorise-les dans les réglages du téléphone.');
       }
       const prefs = setReminderPrefs(patch);
       this.reminderRoutine = prefs.routine;
@@ -523,27 +506,13 @@ export function profile() {
       if (this.healthOn) {
         void (Alpine.store('vitalite') as { syncHealth(): Promise<void> }).syncHealth();
       } else {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'error',
-              message: 'Accès refusé. Tu peux l’autoriser dans Health Connect.',
-            },
-          }),
-        );
+        notify('error', 'Accès refusé. Tu peux l’autoriser dans Health Connect.');
       }
     },
 
     async addWidget(): Promise<void> {
       if (await requestPinWidget()) return;
-      window.dispatchEvent(
-        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: {
-            kind: 'info',
-            message: "Appui long sur l'écran d'accueil, puis Widgets, puis Kinetic.",
-          },
-        }),
-      );
+      notify('info', "Appui long sur l'écran d'accueil, puis Widgets, puis Kinetic.");
     },
 
     async _refreshStorageUsage(): Promise<void> {
@@ -562,24 +531,15 @@ export function profile() {
         const deps = await getDeps();
         const report = await compactStorage(deps.storage);
         await this._refreshStorageUsage();
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'success',
-              message:
-                report.removedKeys > 0
-                  ? `${plural(report.removedKeys, 'entrée journalière supprimée', 'entrées journalières supprimées')} (avant ${report.cutoffDate}).`
-                  : 'Stockage déjà optimal — aucune entrée à purger.',
-            },
-          }),
+        notify(
+          'success',
+          report.removedKeys > 0
+            ? `${plural(report.removedKeys, 'entrée journalière supprimée', 'entrées journalières supprimées')} (avant ${report.cutoffDate}).`
+            : 'Stockage déjà optimal — aucune entrée à purger.',
         );
       } catch (err) {
         console.error('[profile] compact failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec du compactage. Réessaie.' },
-          }),
-        );
+        notify('error', 'Échec du compactage. Réessaie.');
       } finally {
         this.compacting = false;
       }
@@ -608,11 +568,7 @@ export function profile() {
         }, 3000);
       } catch (err) {
         console.error('[profile] saveName failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec sauvegarde du nom. Réessaie.' },
-          }),
-        );
+        notify('error', 'Échec sauvegarde du nom. Réessaie.');
       }
     },
 
@@ -695,21 +651,13 @@ export function profile() {
         }
         try {
           await navigator.clipboard.writeText(url);
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'success', message: 'Lien profil copié ✓' },
-            }),
-          );
+          notify('success', 'Lien profil copié ✓');
         } catch {
           /* le lien est de toute façon affiché dans l'UI */
         }
       } catch (err) {
         console.error('[profile] shareProfile failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Impossible de générer le lien — réessaie.' },
-          }),
-        );
+        notify('error', 'Impossible de générer le lien — réessaie.');
       } finally {
         this.sharingProfile = false;
       }
@@ -758,7 +706,7 @@ export function profile() {
       } catch (err) {
         console.error('[profile] read backup failed:', err);
         this.backupChoice = null;
-        notifyProfile('error', 'Sauvegarde illisible. Choisis-en une autre.');
+        notify('error', 'Sauvegarde illisible. Choisis-en une autre.');
       }
     },
 
@@ -811,12 +759,12 @@ export function profile() {
         await restoreBackup(deps.storage, bundle, (journaled) =>
           mergeIntoStorage(journaled, bundle, 'kinetic-json'),
         );
-        notifyProfile('success', 'Sauvegarde restaurée. Redémarrage…');
-        setTimeout(() => window.location.reload(), 1200);
+        notify('success', 'Sauvegarde restaurée. Redémarrage…');
+        setTimeout(() => void fullReload(), 1200);
       } catch (err) {
         console.error('[profile] restore backup failed:', err);
         this.restoringBackup = false;
-        notifyProfile('error', 'Restauration impossible : tes données n’ont pas été modifiées.');
+        notify('error', 'Restauration impossible : tes données n’ont pas été modifiées.');
       }
     },
 
@@ -831,11 +779,11 @@ export function profile() {
     async undoRestore(): Promise<void> {
       try {
         await undoLastRestore((await getDeps()).storage);
-        notifyProfile('success', 'Restauration annulée. Redémarrage…');
-        setTimeout(() => window.location.reload(), 1200);
+        notify('success', 'Restauration annulée. Redémarrage…');
+        setTimeout(() => void fullReload(), 1200);
       } catch (err) {
         console.error('[profile] undo restore failed:', err);
-        notifyProfile('error', 'Annulation impossible. Réessaie.');
+        notify('error', 'Annulation impossible. Réessaie.');
       }
     },
 
@@ -846,7 +794,7 @@ export function profile() {
         this.restoreUndoLabel = '';
       } catch (err) {
         console.error('[profile] forget restore undo failed:', err);
-        notifyProfile('error', 'Impossible de libérer la copie de secours. Réessaie.');
+        notify('error', 'Impossible de libérer la copie de secours. Réessaie.');
       }
     },
 
@@ -877,19 +825,10 @@ export function profile() {
         await exportProgressPdf(this.pdfPeriod);
         this.pdfLoading = false;
         this.showPdfSheet = false;
-        if (!this.nativeApp)
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'success', message: 'Bilan PDF téléchargé.' },
-            }),
-          );
+        if (!this.nativeApp) notify('success', 'Bilan PDF téléchargé.');
       } catch (err) {
         console.error('[profile] exportPdf failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Impossible de créer le bilan PDF. Réessaie.' },
-          }),
-        );
+        notify('error', 'Impossible de créer le bilan PDF. Réessaie.');
       } finally {
         this.pdfLoading = false;
       }
@@ -911,11 +850,7 @@ export function profile() {
         this.lastBackupLabel = backupLabel();
       } catch (err) {
         console.error('[profile] exportJson failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec export JSON. Réessaie.' },
-          }),
-        );
+        notify('error', 'Échec export JSON. Réessaie.');
       } finally {
         this.exportLoading = false;
       }
@@ -933,20 +868,12 @@ export function profile() {
         const s = Array.isArray(sessions) ? sessions : [];
         const e = [...(Array.isArray(exercises) ? exercises : []), ...custom];
         if (s.length === 0) {
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'info', message: 'Aucune séance à exporter pour le moment.' },
-            }),
-          );
+          notify('info', 'Aucune séance à exporter pour le moment.');
         }
         await exportAsCsv(s, e);
       } catch (err) {
         console.error('[profile] exportCsv failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec export CSV. Réessaie.' },
-          }),
-        );
+        notify('error', 'Échec export CSV. Réessaie.');
       } finally {
         this.exportLoading = false;
       }
@@ -989,14 +916,7 @@ export function profile() {
         const deps = await getDeps();
 
         if (bundle.sessions.length === 0) {
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: {
-                kind: 'warning',
-                message: 'Aucune séance détectée dans le fichier. Vérifie le format.',
-              },
-            }),
-          );
+          notify('warning', 'Aucune séance détectée dans le fichier. Vérifie le format.');
           return;
         }
 
@@ -1010,21 +930,10 @@ export function profile() {
                 ? ` (${plural(report.duplicateSessions, 'doublon ignoré', 'doublons ignorés')})`
                 : '')
             : `Aucune nouvelle séance (${plural(report.duplicateSessions, 'doublon')})`;
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: label },
-          }),
-        );
+        notify('success', label);
       } catch (err) {
         console.error('[profile] import failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'error',
-              message: "Échec de l'import — fichier illisible ou format inconnu.",
-            },
-          }),
-        );
+        notify('error', "Échec de l'import — fichier illisible ou format inconnu.");
       } finally {
         this.importing = false;
         // Reset l'input pour permettre de re-sélectionner le même fichier
@@ -1041,29 +950,14 @@ export function profile() {
           syncFromRemote?: (opts?: { force?: boolean }) => Promise<void>;
         };
         if (typeof storage.syncFromRemote !== 'function') {
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'info', message: 'Cloud non configuré sur cet appareil.' },
-            }),
-          );
+          notify('info', 'Cloud non configuré sur cet appareil.');
           return;
         }
         await storage.syncFromRemote({ force: true });
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'success',
-              message: 'Restauration cloud terminée. Recharge la page pour voir les données.',
-            },
-          }),
-        );
+        notify('success', 'Restauration cloud terminée. Recharge la page pour voir les données.');
       } catch (err) {
         console.error('[profile] restoreFromCloud failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec de restauration. Vérifie ta connexion.' },
-          }),
-        );
+        notify('error', 'Échec de restauration. Vérifie ta connexion.');
       } finally {
         this.restoring = false;
       }
@@ -1185,7 +1079,7 @@ export function profile() {
           throw new Error('Aucun compte cloud sur cet appareil.');
         await storage.deleteAllCloudData();
         this.cloudDeleteState = 'done';
-        setTimeout(() => window.location.reload(), 1500);
+        setTimeout(() => void fullReload(), 1500);
       } catch (err) {
         this.cloudDeleteState = 'error';
         this.cloudDeleteError =
@@ -1213,19 +1107,10 @@ export function profile() {
           }),
         );
         // Reload complet pour repartir de zéro
-        setTimeout(() => {
-          window.location.reload();
-        }, 1200);
+        setTimeout(() => void fullReload(), 1200);
       } catch (err) {
         console.error('[profile] doReset failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'error',
-              message: 'Échec de la réinitialisation. Recharge la page et réessaie.',
-            },
-          }),
-        );
+        notify('error', 'Échec de la réinitialisation. Recharge la page et réessaie.');
       }
     },
   };

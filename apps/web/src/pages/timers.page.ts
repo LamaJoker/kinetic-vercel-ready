@@ -61,6 +61,7 @@ import {
 } from '../lib/training/active-session';
 import { loadCustomExercises, saveCustomExercises } from '../lib/training/storage';
 import { notifyWriteFailed } from '../lib/write-errors';
+import { notify } from '../lib/notify';
 
 type Field = 'workSec' | 'restSec' | 'rounds' | 'warmupSec' | 'cooldownSec';
 interface FieldDef {
@@ -90,10 +91,6 @@ const FIELDS: Record<TimerMode, FieldDef[]> = {
     { key: 'warmupSec', label: 'Échauffement', step: 30, unit: 'sec' },
     { key: 'cooldownSec', label: 'Retour au calme', step: 30, unit: 'sec' },
   ],
-};
-
-const notify = (kind: 'success' | 'info' | 'warning', message: string): void => {
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
 };
 
 // ─── Bips (Web Audio) ───────────────────────────────────────────────────────

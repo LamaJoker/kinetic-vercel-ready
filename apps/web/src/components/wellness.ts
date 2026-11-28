@@ -51,14 +51,11 @@ import {
 import { getDeps } from '../deps';
 import { hapticLight, hapticSuccess } from '../lib/haptics';
 import type { ScrubData } from '../lib/chart-scrub';
+import { notify } from '../lib/notify';
 
 const SLEEP_TASK = 'sleep-routine';
 const JOURNAL_TASK = 'journaling';
 const WATER_TASK = 'hydration';
-
-function notify(kind: 'success' | 'info' | 'error', message: string): void {
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
-}
 
 /** Coche une tâche de la routine si elle est affichée et pas encore faite. */
 async function completeRoutineTask(id: string): Promise<boolean> {

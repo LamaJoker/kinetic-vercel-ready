@@ -9,6 +9,7 @@ import {
   type PlateLoad,
 } from '@kinetic/core';
 import { getDeps } from '../deps';
+import { notify } from '../lib/notify';
 
 const KEY_PLATE_PREFS = STORAGE_KEYS.PLATE_PREFS;
 
@@ -234,11 +235,7 @@ export function plates() {
       } catch (err) {
         // Non-bloquant — l'utilisateur peut continuer même si la persistance échoue
         console.warn('[plates] persist failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'warning', message: 'Préférences non sauvegardées (mode privé ?)' },
-          }),
-        );
+        notify('warning', 'Préférences non sauvegardées (mode privé ?)');
       }
     },
 

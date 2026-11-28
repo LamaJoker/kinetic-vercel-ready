@@ -19,6 +19,7 @@ vi.mock('@kinetic/adapters-web', () => ({
   signInWithGitHub: vi.fn().mockResolvedValue(undefined),
   signInWithGoogle: vi.fn().mockResolvedValue(undefined),
   signOut: vi.fn().mockResolvedValue(undefined),
+  closeAllLocalDatabases: vi.fn().mockResolvedValue(undefined),
   authRateLimiter: {
     canSendMagicLink: vi.fn().mockReturnValue(true),
     getWaitTimeMs: vi.fn().mockReturnValue(60_000),
@@ -46,6 +47,7 @@ import {
   signOut,
   authRateLimiter,
   callbackUrl,
+  closeAllLocalDatabases,
 } from '@kinetic/adapters-web';
 import { flushAndResetDeps } from '../../apps/web/src/deps.js';
 
@@ -69,7 +71,13 @@ const rl = authRateLimiter as {
 describe('authStore', () => {
   let store: ReturnType<typeof authStore>;
   const dispatchFn = vi.fn();
-  const location = { href: '/' };
+  // Navigation pleine page : `location.replace` (lib/full-reload.ts), notée dans `href`.
+  const location = {
+    href: '/',
+    replace(path: string) {
+      this.href = path;
+    },
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -261,6 +269,16 @@ describe('authStore', () => {
     it('redirects to /login', async () => {
       await store.logout();
       expect(location.href).toBe('/login');
+    });
+
+    it('ferme les bases IndexedDB avant la navigation pleine page (sync.md § 4.11 bis)', async () => {
+      const order: string[] = [];
+      vi.mocked(closeAllLocalDatabases).mockImplementationOnce(async () => {
+        order.push(`fermeture (href=${location.href})`);
+      });
+      await store.logout();
+      order.push(`navigation (href=${location.href})`);
+      expect(order).toEqual(['fermeture (href=/)', 'navigation (href=/login)']);
     });
   });
 

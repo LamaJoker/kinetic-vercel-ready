@@ -8,7 +8,7 @@
  * pour reproduire le défaut : requête d'ouverture ou transaction qui ne déclenche AUCUN
  * événement, `databases()` qui ne répond jamais. Délais courts injectés (horloge réelle).
  */
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { STORAGE_KEYS } from '@kinetic/core';
 import {
   databaseExists,
@@ -21,6 +21,15 @@ import {
 } from '../../packages/adapter-web/src/sync/idb.js';
 import { LocalSyncDb, S_KV } from '../../packages/adapter-web/src/sync/local-db.js';
 import { SyncedStorage } from '../../packages/adapter-web/src/sync/SyncedStorage.js';
+import {
+  closeAllLocalDatabases,
+  closeLocalDatabasesOnPageHide,
+} from '../../packages/adapter-web/src/sync/connections.js';
+import { LegacyFallbackStorage } from '../../packages/adapter-web/src/sync/fallback-storage.js';
+import {
+  createStorageRecovery,
+  type StorageRecoveryEnv,
+} from '../../apps/web/src/lib/storage-unresponsive.js';
 import {
   createFakeIndexedDB,
   type FakeDatabase,
@@ -491,5 +500,229 @@ describe('revue : première transaction, fermeture, écriture bloquée', () => {
     // Aucune connexion orpheline (WebKit bloqué ne délivre pas forcément versionchange).
     expect(connections.filter((c) => !c._closed)).toHaveLength(0);
     await within(500, deleteDatabase(factory, 'kinetic-guest'));
+  });
+});
+
+// ─── Fermeture avant navigation / sortie de page (sync.md § 4.11 bis) ─────────────
+
+describe('suspension des connexions (navigation pleine page, pagehide)', () => {
+  it('suspend : écriture en cours terminée AVANT la fermeture, réouverture au prochain accès', async () => {
+    const { factory, connections, stats } = wrappedFactory();
+    const storage = await SyncedStorage.open({
+      owner: 'guest',
+      remote: null,
+      factory,
+      migrateLegacy: false,
+      idbGuard: GUARD,
+    });
+    const writing = storage.set(STORAGE_KEYS.USER_PROFILE, { name: 'Léa' });
+    let written = false;
+    void writing.then(() => (written = true));
+    await closeAllLocalDatabases({ waitMs: 1000 });
+    expect(written).toBe(true);
+    expect(connections.filter((c) => !c._closed)).toHaveLength(0);
+    // Prochain accès : base rouverte, données là (rien de perdu, rien d'annulé).
+    const opens = stats.opens;
+    expect(await storage.get(STORAGE_KEYS.USER_PROFILE)).toEqual({ name: 'Léa' });
+    expect(stats.opens).toBe(opens + 1);
+    storage.dispose();
+  });
+
+  it('waitMs : 0 (pagehide) — fermeture immédiate, l’écriture déjà lancée va quand même à son terme', async () => {
+    const { factory, connections } = wrappedFactory();
+    const db = await LocalSyncDb.open(factory, 'guest', GUARD);
+    const writing = db.tx([S_KV], 'readwrite', (tx) => {
+      tx.objectStore(S_KV).put('v', 'k');
+    });
+    await pause(0); // transaction créée
+    void closeAllLocalDatabases({ waitMs: 0 });
+    expect(connections.filter((c) => !c._closed)).toHaveLength(0); // fermée tout de suite
+    await expect(writing).resolves.toBeUndefined();
+    expect(
+      await db.tx([S_KV], 'readonly', (tx) => requestToPromise(tx.objectStore(S_KV).get('k'))),
+    ).toBe('v');
+    db.close();
+  });
+
+  it('transaction demandée sur la connexion suspendue : rejouée sur une connexion rouverte', async () => {
+    const { factory } = wrappedFactory();
+    const db = await LocalSyncDb.open(factory, 'guest', GUARD);
+    await db.tx([S_KV], 'readwrite', (tx) => {
+      tx.objectStore(S_KV).put(1, 'a');
+    });
+    // Lecture qui a déjà sa connexion quand la suspension la ferme.
+    const reading = db.tx([S_KV], 'readonly', (tx) =>
+      requestToPromise(tx.objectStore(S_KV).count()),
+    );
+    void db.suspend(0);
+    await expect(reading).resolves.toBe(1);
+    db.close();
+  });
+
+  it('suspension puis fermeture définitive : la base supprimée ne renaît pas', async () => {
+    const { factory, fake } = wrappedFactory();
+    const db = await LocalSyncDb.open(factory, 'guest', GUARD);
+    await db.suspend(0);
+    db.close(); // effacement / suppression du compte
+    await within(500, deleteDatabase(factory, 'kinetic-guest'));
+    await expect(db.tx([S_KV], 'readonly', (tx) => txCountOf(tx))).rejects.toThrow(/fermée/);
+    await pause(20);
+    expect(fake.hasDatabase('kinetic-guest')).toBe(false);
+  });
+
+  it('pagehide / freeze : connexions fermées, rouvertes au retour (cache de retour arrière)', async () => {
+    const { factory, connections } = wrappedFactory();
+    const win = new EventTarget();
+    const doc = new EventTarget();
+    const stop = closeLocalDatabasesOnPageHide({
+      window: win as unknown as Window,
+      document: doc as unknown as Document,
+    });
+    const db = await LocalSyncDb.open(factory, 'guest', GUARD);
+    win.dispatchEvent(new Event('pagehide'));
+    expect(connections.filter((c) => !c._closed)).toHaveLength(0);
+    expect(await db.tx([S_KV], 'readonly', (tx) => txCountOf(tx))).toBe(0); // rouverte
+    doc.dispatchEvent(new Event('freeze'));
+    expect(connections.filter((c) => !c._closed)).toHaveLength(0);
+    stop();
+    await db.tx([S_KV], 'readonly', (tx) => txCountOf(tx));
+    win.dispatchEvent(new Event('pagehide')); // écouteur retiré : rien n'est fermé
+    expect(connections.filter((c) => !c._closed)).toHaveLength(1);
+    db.close();
+  });
+
+  it('écriture lancée PENDANT la fermeture (page qui réagit encore) : attendue puis refermée avant de partir', async () => {
+    const { factory, connections } = wrappedFactory();
+    const storage = await SyncedStorage.open({
+      owner: 'guest',
+      remote: null,
+      factory,
+      migrateLegacy: false,
+      idbGuard: GUARD,
+    });
+    // Écriture A, puis B déclenchée peu après la fin de A (ex. tableau de bord rendu par
+    // la page qui part) : B rouvre la base pendant la fermeture.
+    let wroteB = false;
+    void storage.set(STORAGE_KEYS.USER_PROFILE, { name: 'Léa' }).then(async () => {
+      await pause(5);
+      await storage.set(STORAGE_KEYS.BODYWEIGHT_ENTRIES, [{ date: '2026-11-28', weight: 77.6 }]);
+      wroteB = true;
+    });
+    await closeAllLocalDatabases({ waitMs: 1000 });
+    // Au départ de la page : B écrite, et AUCUNE connexion laissée ouverte.
+    expect(wroteB).toBe(true);
+    expect(connections.filter((c) => !c._closed)).toHaveLength(0);
+    storage.dispose();
+  });
+
+  it('réouverture en cours au moment de la suspension : la connexion obtenue est refermée avant de partir', async () => {
+    const { factory, connections } = wrappedFactory();
+    const db = await LocalSyncDb.open(factory, 'guest', GUARD);
+    await db.suspend(0);
+    // Lecture qui rouvre la base ; la suspension arrive pendant la réouverture.
+    const reading = db.tx([S_KV], 'readonly', (tx) => txCountOf(tx));
+    await closeAllLocalDatabases({ waitMs: 1000 });
+    await expect(reading).resolves.toBe(0);
+    expect(connections.filter((c) => !c._closed)).toHaveLength(0);
+    db.close();
+  });
+
+  it('repli (ancienne base) : suspendu puis rouvert, écritures de repli conservées', async () => {
+    const { factory, connections } = wrappedFactory();
+    const fallback = new LegacyFallbackStorage({ owner: 'guest', factory });
+    await fallback.set(STORAGE_KEYS.USER_PROFILE, { name: 'Léa' });
+    await closeAllLocalDatabases({ waitMs: 500 });
+    expect(connections.filter((c) => !c._closed)).toHaveLength(0);
+    expect(await fallback.get(STORAGE_KEYS.USER_PROFILE)).toEqual({ name: 'Léa' });
+    fallback.dispose();
+  });
+});
+
+const txCountOf = (tx: IDBTransaction): Promise<number> =>
+  requestToPromise(tx.objectStore(S_KV).count());
+
+// ─── Chaîne complète : lecture bloquée → erreur → rechargement → 2e blocage → message ──
+
+describe('reprise : lecture bloquée jusqu’au message de secours', () => {
+  /** Appareil : sessionStorage conservé d'un chargement de page à l'autre. */
+  function device() {
+    const session = new Map<string, string>();
+    const reload = vi.fn();
+    const showMessage = vi.fn<(retry: () => void) => void>();
+    const env: StorageRecoveryEnv = {
+      now: () => Date.now(),
+      session: () => ({
+        getItem: (k: string) => session.get(k) ?? null,
+        setItem: (k: string, v: string) => void session.set(k, v),
+      }),
+      reload,
+      showMessage,
+      later: () => undefined, // page remplacée par le rechargement : minuterie sans effet
+    };
+    return { env, session, reload, showMessage };
+  }
+
+  /** Un chargement de page : gestionnaire branché sur `onIdbUnresponsive` (comme deps.ts). */
+  function pageLoad(env: StorageRecoveryEnv): () => void {
+    const handle = createStorageRecovery(env);
+    return onIdbUnresponsive(() => void handle());
+  }
+
+  it('1er blocage : IdbUnresponsiveError (jamais une liste vide) et UN rechargement ; 2e blocage après rechargement : message', async () => {
+    const d = device();
+    const { factory, plan } = wrappedFactory();
+
+    // Page 1 : la démo est écrite, puis toutes les lectures ne répondent plus (WebKit).
+    let stop = pageLoad(d.env);
+    const page1 = await SyncedStorage.open({
+      owner: 'guest',
+      remote: null,
+      factory,
+      migrateLegacy: false,
+      idbGuard: GUARD,
+    });
+    await page1.set(STORAGE_KEYS.USER_PROFILE, { name: 'Léa' });
+    await pause(20);
+    plan.stallReads = 2; // lecture + lecture rejouée sur une connexion rouverte
+    await expect(page1.keys()).rejects.toBeInstanceOf(IdbUnresponsiveError);
+    expect(d.reload).toHaveBeenCalledTimes(1);
+    expect(d.session.has(STORAGE_KEYS.STORAGE_UNRESPONSIVE_RELOAD_AT)).toBe(true);
+    expect(d.showMessage).not.toHaveBeenCalled();
+    // Autres lectures bloquées de la même page : pas de 2e rechargement.
+    plan.stallReads = 2;
+    await expect(page1.keys()).rejects.toBeInstanceOf(IdbUnresponsiveError);
+    expect(d.reload).toHaveBeenCalledTimes(1);
+    page1.dispose();
+    stop();
+
+    // Page 2 (après le rechargement) : l'ouverture elle-même ne répond plus.
+    stop = pageLoad(d.env);
+    plan.stallOpens = 3;
+    await expect(
+      within(
+        2000,
+        SyncedStorage.open({
+          owner: 'guest',
+          remote: null,
+          factory,
+          migrateLegacy: false,
+          idbGuard: GUARD,
+        }),
+      ),
+    ).rejects.toBeInstanceOf(IdbUnresponsiveError);
+    expect(d.reload).toHaveBeenCalledTimes(1); // pas de boucle de rechargements
+    expect(d.showMessage).toHaveBeenCalledTimes(1);
+    stop();
+
+    // Données intactes : WebKit débloqué, tout est relu.
+    const page3 = await SyncedStorage.open({
+      owner: 'guest',
+      remote: null,
+      factory,
+      migrateLegacy: false,
+      idbGuard: GUARD,
+    });
+    expect(await page3.get(STORAGE_KEYS.USER_PROFILE)).toEqual({ name: 'Léa' });
+    page3.dispose();
   });
 });

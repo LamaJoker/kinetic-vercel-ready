@@ -42,15 +42,12 @@ import {
   saveTemplates,
 } from '../lib/training/storage';
 import type { Exercise, WorkoutTemplate } from '../lib/training/types';
+import { notify } from '../lib/notify';
 
 const EDIT_KEY = STORAGE_KEYS.TEMPLATE_EDITOR_ID;
 
 type View = 'template' | 'exercises' | 'exercise';
 type LineField = 'sets' | 'targetReps' | 'targetRpe';
-
-function notify(kind: 'success' | 'error', message: string): void {
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
-}
 
 function blankForm() {
   return {

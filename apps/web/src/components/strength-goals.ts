@@ -26,10 +26,9 @@ import type { Exercise, WorkoutSession } from '../lib/training/types';
 import { celebrate } from '../lib/celebration';
 import { hapticLight, hapticSuccess } from '../lib/haptics';
 import type { ContextMenuRequest } from '../lib/context-menu';
+import { notify as toast, type NotifyKind } from '../lib/notify';
 
-const notify = (message: string, kind = 'success'): void => {
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
-};
+const notify = (message: string, kind: NotifyKind = 'success'): void => toast(kind, message);
 const kg = (n: number): string => n.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
 
 /** Objectif atteint : même carte que les records. */

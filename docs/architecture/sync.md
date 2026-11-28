@@ -797,7 +797,8 @@ première transaction ne répond jamais tant que le processus IndexedDB n'est pa
   contrôle du propriétaire à l'ouverture (1re transaction de la connexion, celle que WebKit
   « avale » le plus souvent) est donc une **lecture** ; il n'écrit que si le propriétaire
   manque. En cas d'échec, `LocalSyncDb.open` et `SyncedStorage.open` ferment la connexion.
-- **Fermeture** : `LocalSyncDb.close()` est définitive. Une réouverture en cours (après une
+- **Fermeture** : `LocalSyncDb.close()` est définitive (`suspend()`, elle, permet la
+  réouverture : voir § 4.11 bis). Une réouverture en cours (après une
   lecture bloquée) est annulée avant la requête d'ouverture, ou sa création de base refusée :
   une base supprimée entre-temps (effacement, suppression du compte) ne renaît pas vide.
 - **`databaseExists`** : `databases()` a lui aussi un délai (repli sur une ouverture
@@ -828,6 +829,68 @@ IndexedDB bloqué jusqu'à la fermeture de l'app reste possible : d'où le messa
 temps de détection au démarrage peut atteindre ≈ 15 s (réveil 3 s + 3 × 4 s) avant le
 rechargement. Tests : `tests/integration/idb-unresponsive.test.ts`,
 `tests/unit/storage-unresponsive.test.ts`, `tests/unit/deps.factory.test.ts`.
+
+### 4.11 bis Connexions fermées avant de quitter la page
+
+**Constat** (run CI iOS 46139726618, version 9.17.0) : sur une installation neuve sur quatre,
+juste après la démo (écriture réussie, 52 clés lues en 6 ms) puis la navigation pleine page,
+même une ouverture DIRECTE `indexedDB.open('kinetic-guest')` (hors code de l'app) reste sans
+réponse pendant toute la session (≈ 7 min), alors que `indexedDB.databases()` répond : le
+moteur IndexedDB de WebKit est figé pour l'origine, pas une file d'attente de l'app.
+Fréquence ≈ 1 lancement sur 7. Non reproduit sous Playwright WebKit Linux (79 contextes
+neufs : démo puis `assign` / `replace` / `reload`, avec écritures de 1 Mo en cours, transaction
+`readwrite` maintenue vivante, montée de version en attente au moment de la navigation :
+0 gel). Cause la plus probable : la page quittée garde des connexions (et parfois une
+écriture en cours) pendant son déchargement ou dans le cache de retour arrière, et le
+serveur IndexedDB de WebKit met en file les ouvertures de la page suivante derrière elles.
+
+**Parades** :
+
+- `closeAllLocalDatabases({ waitMs })` (`packages/adapter-web/src/sync/connections.ts`) :
+  attend au plus `waitMs` les écritures en cours (suivies dès l'appel de `LocalSyncDb.tx`,
+  attente de connexion comprise), puis ferme toutes les connexions inscrites : base du
+  compte (`LocalSyncDb.suspend`), repli (`LegacyFallbackStorage.suspend`), bases d'images
+  (`lib/photos.ts`, idb-keyval : connexion fermée depuis une transaction, store oublié). C'est
+  une **suspension** : la base est rouverte au prochain accès ; une transaction demandée sur
+  la connexion fermée (`InvalidStateError`) est rejouée sur une connexion rouverte.
+  `close()` d'IndexedDB laisse finir les transactions déjà créées : aucune écriture perdue ;
+  l'attente évite qu'un déchargement ne les annule. Après `close()` (définitive), aucune
+  suspension ne rouvre : une base supprimée ne renaît pas. La page qui part réagit encore
+  (rendu du tableau de bord après la démo, écriture enchaînée, réouverture en cours) : après
+  chaque fermeture, `closeAllLocalDatabases` observe 25 ms ; toute base rouverte entre-temps
+  (`active()`) est attendue puis refermée, dans la limite de `waitMs`.
+- `pagehide` (et `freeze`, Chromium) : connexions fermées tout de suite (`waitMs: 0`),
+  rouvertes au retour si la page est restaurée du cache.
+- Navigations pleine page voulues par l'app (`apps/web/src/lib/full-reload.ts`) : « Voir la
+  démo », parcours de test, restauration / annulation de restauration, effacement de
+  l'appareil, suppression des données cloud ou du compte, sortie de la démo, déconnexion,
+  stockage bloqué (« Réessayer » et rechargement automatique, attente réduite à 1 s) et
+  chunk introuvable : fermeture d'abord, puis `location.replace` (la page quittée n'a plus
+  d'entrée d'historique : elle ne reste pas en cache de retour arrière) ou `reload`. Retour
+  OAuth (repli) et `browserFinished` : fermeture puis navigation.
+- Pas de navigation par le routeur après la démo : seuls `goals` et `achievements` se
+  rechargent sur `kinetic:deps-ready` ; XP, série, récompenses, nutrition, vitalité
+  garderaient leur état vide. Le rechargement complet est gardé, précédé de la fermeture.
+- Rechargement automatique demandé mais page toujours là 10 s plus tard (navigation
+  retenue) : le message de secours est affiché quand même (`RELOAD_GRACE_MS`).
+- `lib/photos.ts` n'ouvre plus l'ancienne base `kinetic-photos` à l'import du module
+  (idb-keyval ouvre — et crée — la base dès `createStore`) : seulement au premier usage.
+
+**Natif iOS** : pas de plugin « relancer la vue ». Capacitor ne permet de recréer ni le
+processus WebContent ni la `WKWebView` du pont sans API privée (`_killWebContentProcess`,
+refusée à l'App Store) ou sans remplacer `CAPBridgeViewController` ; `webView.reload()`
+garde le même processus et la même connexion au serveur IndexedDB (processus réseau
+partagé) : il n'apporte rien de plus que le rechargement JS. Le message reste donc « ferme
+complètement l'app puis rouvre-la ».
+
+**Diagnostic du parcours de test** (`lib/autotest.ts`, `tests/ios/drive.py`) : chaque étape
+rapporte aussi `secours` (message plein écran `#k-storage-stuck` affiché, hors de
+`#app-outlet`), `rechargementAuto` (âge du marqueur de rechargement automatique) et
+`reloads`. Le plan n'est plus supprimé au début : il est réécrit avant chaque étape
+(`next`), un rechargement reprend le parcours à cette étape (3 rechargements au plus, puis
+abandon noté). Tests : `tests/integration/idb-unresponsive.test.ts` (suspension, `pagehide`,
+chaîne lecture bloquée → erreur → rechargement → 2e blocage → message),
+`tests/unit/full-reload.test.ts`, `tests/unit/autotest.test.ts`.
 
 ## 5. Déploiement, compatibilité, retour arrière
 

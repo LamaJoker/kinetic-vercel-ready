@@ -39,6 +39,7 @@ import { loadExercises, loadSessions } from '../lib/training/storage';
 import { estimateE1rmKg } from '../lib/training/rpe';
 import { loadMuscleMap, loadStrengthGoals } from '../lib/lazy-component';
 import type { ScrubData } from '../lib/chart-scrub';
+import { notify } from '../lib/notify';
 
 type Tab = 'force' | 'volume' | 'muscles' | 'records' | 'heatmap' | 'compare';
 
@@ -554,11 +555,7 @@ export function progression() {
       this.plateauDismissed = dismissPlateau(this.plateauDismissed, exerciseId, Date.now());
       const deps = await getDeps();
       await deps.storage.set(STORAGE_KEYS.PLATEAU_DISMISSED, this.plateauDismissed);
-      window.dispatchEvent(
-        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'info', message: 'Alerte masquée pour 3 semaines sur cet exercice.' },
-        }),
-      );
+      notify('info', 'Alerte masquée pour 3 semaines sur cet exercice.');
     },
 
     /** Ouvre la feuille « Nouvel objectif » (composant strengthGoals) pour l'exercice affiché. */

@@ -46,6 +46,7 @@ import {
   type Recipe,
 } from '@kinetic/core';
 import { notifyWriteFailed } from '../lib/write-errors';
+import { notify } from '../lib/notify';
 
 interface ScannedFoodEntry {
   name: string;
@@ -134,10 +135,6 @@ export function macroViews(bars: readonly MacroBarLike[]): MacroView[] {
       dotStyle: `background-color: ${c.from}`,
     };
   });
-}
-
-function notify(kind: 'success' | 'error' | 'warning' | 'info', message: string): void {
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
 }
 
 /** Copie brute (sans Proxy Alpine), clonable par IndexedDB. */

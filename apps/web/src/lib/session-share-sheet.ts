@@ -5,7 +5,8 @@
  * intacte. Le dessin et le partage (lib/session-share-image.ts) n'arrivent
  * qu'au premier aperçu, par import().
  */
-import { STORAGE_KEYS, type ShareCardFormat, type ShareSessionInput } from '@kinetic/core';
+import type { ShareCardFormat, ShareSessionInput } from '@kinetic/core';
+import { notify } from './notify';
 
 type ShareModule = typeof import('./session-share-image');
 type ShareImage = Awaited<ReturnType<ShareModule['createShareCardImage']>>;
@@ -43,10 +44,6 @@ export interface ShareHost {
   _renderShareCard(): Promise<void>;
   closeShareCard(): void;
   openShareCard(id: string): void;
-}
-
-function notify(kind: 'success' | 'error' | 'info', message: string): void {
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
 }
 
 export function sessionShareSheet() {

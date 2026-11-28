@@ -10,11 +10,13 @@ import {
   supabase,
   getLocalSessionUser,
   onIdbUnresponsive,
+  closeLocalDatabasesOnPageHide,
 } from '@kinetic/adapters-web';
 import { STORAGE_KEYS } from '@kinetic/core';
 import { createDepsManager, GUEST_OWNER } from './deps.factory';
 import { afterFirstRender } from './lib/performance';
 import { handleStorageUnresponsive } from './lib/storage-unresponsive';
+import { notify } from './lib/notify';
 
 export type { AppDeps } from './deps.factory';
 
@@ -51,6 +53,12 @@ const fallbackMarks = {
 // IndexedDB bloqué (WebKit) à l'ouverture OU pendant une lecture, réessais épuisés :
 // rechargement unique, puis message persistant (lib/storage-unresponsive.ts).
 onIdbUnresponsive(() => void handleStorageUnresponsive());
+
+// Page quittée (navigation, cache de retour arrière) ou gelée : connexions IndexedDB
+// fermées, rouvertes au prochain accès (sync.md § 4.11 bis).
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  closeLocalDatabasesOnPageHide({ window, document });
+}
 
 const manager = createDepsManager({
   createLocalStorage: (owner) => openLegacyFallbackStorage({ owner }),
@@ -97,14 +105,9 @@ function offerGuestData(storage: SyncedStorage): void {
       .guestDataSummary()
       .then(({ count, decision }) => {
         if (count === 0 || decision !== null) return;
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'info',
-              message:
-                'Des données enregistrées sur cet appareil en mode invité peuvent être ajoutées à ton compte (Profil › Compte).',
-            },
-          }),
+        notify(
+          'info',
+          'Des données enregistrées sur cet appareil en mode invité peuvent être ajoutées à ton compte (Profil › Compte).',
         );
       })
       .catch(() => undefined);

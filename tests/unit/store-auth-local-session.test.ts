@@ -16,6 +16,7 @@ vi.mock('@kinetic/adapters-web', () => ({
   signInWithGitHub: vi.fn(),
   signInWithGoogle: vi.fn(),
   signOut: vi.fn().mockResolvedValue(undefined),
+  closeAllLocalDatabases: vi.fn().mockResolvedValue(undefined),
   authRateLimiter: {
     canSendMagicLink: vi.fn().mockReturnValue(true),
     getWaitTimeMs: vi.fn().mockReturnValue(0),
@@ -40,7 +41,13 @@ const LOCAL = { id: 'u1', email: 'a@kinetic.app', full_name: 'A', avatar_url: nu
 
 describe('authStore — session locale', () => {
   const dispatchFn = vi.fn();
-  const location = { href: '/' };
+  // Navigation pleine page : `location.replace` (lib/full-reload.ts), notée dans `href`.
+  const location = {
+    href: '/',
+    replace(path: string) {
+      this.href = path;
+    },
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -103,7 +110,13 @@ describe('authStore — session locale', () => {
 });
 
 describe('authStore — déconnexion avec modifications en attente', () => {
-  const location = { href: '/' };
+  // Navigation pleine page : `location.replace` (lib/full-reload.ts), notée dans `href`.
+  const location = {
+    href: '/',
+    replace(path: string) {
+      this.href = path;
+    },
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();

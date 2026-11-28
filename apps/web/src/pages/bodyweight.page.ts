@@ -15,6 +15,7 @@ import { notifyWriteFailed } from '../lib/write-errors';
 import { getDeps } from '../deps';
 import { BODY_CHANGED_EVENT } from '../components/body-fat';
 import type { ScrubData } from '../lib/chart-scrub';
+import { notify } from '../lib/notify';
 
 interface BodyweightEntry {
   date: string;
@@ -23,10 +24,6 @@ interface BodyweightEntry {
   note: string | null;
   /** Date de modification (fusion de la synchro : la plus récente l'emporte). */
   updatedAt?: string;
-}
-
-function notify(kind: 'success' | 'error', message: string): void {
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
 }
 
 /**

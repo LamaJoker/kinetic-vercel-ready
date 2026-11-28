@@ -4,7 +4,6 @@
  * Logique : lib/deep-link.ts et lib/app-icon.ts.
  */
 import { Capacitor } from '@capacitor/core';
-import { STORAGE_KEYS } from '@kinetic/core';
 import { SHORTCUTS, type ShortcutDef } from '../lib/shortcut-list';
 import {
   APP_ICONS,
@@ -15,10 +14,7 @@ import {
   type AppIconId,
 } from '../lib/app-icon';
 import { hapticLight, hapticSuccess } from '../lib/haptics';
-
-function notify(kind: 'success' | 'info' | 'error', message: string): void {
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
-}
+import { notify } from '../lib/notify';
 
 /** Copie un texte (API presse-papiers, sinon sélection d'un champ temporaire). */
 async function copyText(text: string): Promise<boolean> {

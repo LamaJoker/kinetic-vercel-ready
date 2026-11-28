@@ -2,10 +2,11 @@ import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS } from '@kinetic/core';
 // Import statique : le client est déjà chargé au démarrage (store auth). Un import()
 // du point d'entrée du paquet garderait TOUS ses exports dans le lot de démarrage.
-import { supabase } from '@kinetic/adapters-web';
+import { closeAllLocalDatabases, supabase } from '@kinetic/adapters-web';
 import { createDeepLinkGate, firstLaunchUrl, parseDeepLink } from './deep-link';
 import { currentHistoryIdx } from './nav-motion';
 import { pageBackground } from './palette';
+import { notify } from './notify';
 
 // Structural type — avoids SupabaseClient generic-mismatch errors when
 // supabase-js adds new class generics (e.g. ClientOptions in 2.105+).
@@ -205,11 +206,7 @@ export async function handleOAuthCallback(supabase: SupabaseAuthLike, url: strin
       const decoded = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
       debugLog(`OAuth error from provider: ${decoded}`);
       try {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: `Connexion refusée : ${decoded}` },
-          }),
-        );
+        notify('error', `Connexion refusée : ${decoded}`);
       } catch {
         /* ignore */
       }
@@ -277,6 +274,8 @@ export async function handleOAuthCallback(supabase: SupabaseAuthLike, url: strin
       window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_AUTH_CHANGED));
     } catch (e) {
       debugLog(`SPA-nav err, fallback hard reload: ${String(e).slice(0, 80)}`);
+      // Bases IndexedDB fermées avant la navigation pleine page (sync.md § 4.11 bis).
+      await closeAllLocalDatabases();
       window.location.href = '/';
     }
   }

@@ -16,6 +16,7 @@ import {
   reportUnresponsive,
   runTransaction,
 } from './idb.js';
+import { settleWithin, trackConnection } from './connections.js';
 
 export const GUEST_OWNER = 'guest';
 export const DB_VERSION = 1;
@@ -177,6 +178,9 @@ export class LocalSyncDb {
    * repousse pas la lecture rejouée sur la nouvelle).
    */
   private readonly activeWrites = new Map<IDBDatabase, number>();
+  /** Écritures en cours, toutes connexions (attendues avant une suspension). */
+  private readonly writesInFlight = new Set<Promise<unknown>>();
+  private readonly untrack: () => void;
   private readonly guard: IdbGuardOptions;
 
   private constructor(
@@ -189,6 +193,7 @@ export class LocalSyncDb {
     this.db = db;
     this.guard = guard;
     this.watch(db);
+    this.untrack = trackConnection(this);
   }
 
   static async open(
@@ -300,7 +305,21 @@ export class LocalSyncDb {
    * écriture abandonnée par erreur pourrait avoir été validée quand même, et une page de
    * pull ou la migration peuvent légitimement durer.
    */
-  async tx<T>(
+  tx<T>(
+    stores: readonly string[],
+    mode: IDBTransactionMode,
+    fn: (tx: IDBTransaction) => Promise<T> | T,
+  ): Promise<T> {
+    const job = this.attempt(stores, mode, fn);
+    if (mode === 'readonly') return job;
+    // Écriture suivie dès l'appel (attente de connexion comprise) : `suspend` l'attend.
+    this.writesInFlight.add(job);
+    const forget = (): void => void this.writesInFlight.delete(job);
+    job.then(forget, forget);
+    return job;
+  }
+
+  private async attempt<T>(
     stores: readonly string[],
     mode: IDBTransactionMode,
     fn: (tx: IDBTransaction) => Promise<T> | T,
@@ -355,8 +374,35 @@ export class LocalSyncDb {
     });
   }
 
+  /**
+   * SUSPENSION (navigation pleine page, `pagehide`) : attend au plus `waitMs` la fin des
+   * écritures en cours, puis ferme la connexion. Contrairement à `close()`, la base est
+   * rouverte au prochain accès. Les transactions déjà créées vont à leur terme (`close()`
+   * d'IndexedDB ne les annule pas) ; une transaction demandée sur la connexion fermée
+   * échoue (`InvalidStateError`) et est rejouée sur une connexion rouverte (`tx`).
+   */
+  async suspend(waitMs = 0): Promise<void> {
+    if (waitMs > 0 && this.writesInFlight.size > 0) {
+      await settleWithin(this.writesInFlight, waitMs);
+    }
+    const db = this.db;
+    this.db = null;
+    try {
+      db?.close();
+    } catch {
+      /* déjà fermée */
+    }
+  }
+
+  /** Connexion ouverte ou en cours d'ouverture, ou écriture en cours (`connections.ts`). */
+  active(): boolean {
+    return this.db !== null || this.reopening !== null || this.writesInFlight.size > 0;
+  }
+
+  /** Fermeture DÉFINITIVE : plus aucune réouverture (une base supprimée ne renaît pas). */
   close(): void {
     this.closed = true;
+    this.untrack();
     this.db?.close();
     this.db = null;
   }

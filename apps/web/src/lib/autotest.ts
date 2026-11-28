@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from '@kinetic/core';
+import { finishCountUps } from './count-up';
 
 /**
  * Parcours automatique pour le test dans le simulateur iPhone.
@@ -11,13 +12,22 @@ import { STORAGE_KEYS } from '@kinetic/core';
  *   2. chaque route est affichée tour à tour ; `kinetic-autotest-step.json`
  *      indique l'étape en cours, et l'app attend `kinetic-autotest-ack.json`
  *      (capture prise) avant de passer à la suivante ;
- *   3. le fichier de plan est supprimé : le parcours ne se rejoue pas.
+ *   3. le plan est réécrit avant chaque étape (`next` : étape à refaire) : un
+ *      rechargement de la page (stockage bloqué, sync.md § 4.11) reprend le parcours à
+ *      cette étape et le compte (`reloads`) ; le plan n'est supprimé qu'à la fin.
  */
 export interface AutotestPlan {
   demo?: boolean;
   routes?: string[];
   stepMs?: number;
+  /** Parcours en cours : index de l'étape à (re)faire après un rechargement. */
+  next?: number;
+  /** Rechargements de la page subis pendant le parcours. */
+  reloads?: number;
 }
+
+/** Au-delà, le parcours est abandonné (aucune boucle de rechargements). */
+export const MAX_AUTOTEST_RELOADS = 3;
 
 const PLAN_FILE = 'kinetic-autotest.json';
 const STEP_FILE = 'kinetic-autotest-step.json';
@@ -28,13 +38,16 @@ export function parsePlan(raw: string): AutotestPlan | null {
   try {
     const plan = JSON.parse(raw) as unknown;
     if (!plan || typeof plan !== 'object') return null;
-    const { demo, routes, stepMs } = plan as Record<string, unknown>;
+    const { demo, routes, stepMs, next, reloads } = plan as Record<string, unknown>;
+    const count = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0;
     return {
       demo: demo === true,
       routes: Array.isArray(routes)
         ? routes.filter((r): r is string => typeof r === 'string' && /^\/[a-z-]*$/.test(r))
         : [],
       stepMs: typeof stepMs === 'number' && stepMs >= 500 && stepMs <= 30000 ? stepMs : 3500,
+      ...(count(next) ? { next } : {}),
+      ...(count(reloads) ? { reloads } : {}),
     };
   } catch {
     return null;
@@ -105,6 +118,35 @@ async function rawIdbProbe(storage: unknown): Promise<string> {
   return parts.join(' | ');
 }
 
+/**
+ * Ce que montre la reprise du stockage bloqué : message de secours affiché (hors de
+ * `#app-outlet`) et rechargement automatique fait (marqueur en sessionStorage, âge en ms).
+ */
+export function recoveryState(
+  doc: Pick<Document, 'getElementById'>,
+  session: Pick<Storage, 'getItem'> | null,
+  now: number,
+): { secours: boolean; rechargementAuto: number | null } {
+  let at = NaN;
+  try {
+    at = Number(session?.getItem(STORAGE_KEYS.STORAGE_UNRESPONSIVE_RELOAD_AT) ?? NaN);
+  } catch {
+    /* sessionStorage indisponible */
+  }
+  return {
+    secours: doc.getElementById('k-storage-stuck') !== null,
+    rechargementAuto: Number.isFinite(at) ? now - at : null,
+  };
+}
+
+/** Étape de départ : 0, ou celle à refaire après un rechargement ; `null` = abandon. */
+export function resumeStep(plan: AutotestPlan): { start: number; reloads: number } | null {
+  if (plan.next === undefined) return { start: 0, reloads: plan.reloads ?? 0 };
+  const reloads = (plan.reloads ?? 0) + 1;
+  if (reloads > MAX_AUTOTEST_RELOADS) return null;
+  return { start: Math.min(plan.next, plan.routes?.length ?? 0), reloads };
+}
+
 export async function runAutotest(openRoute: (route: string) => void): Promise<void> {
   const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
   const where = { directory: Directory.Documents, encoding: Encoding.UTF8 } as const;
@@ -123,6 +165,7 @@ export async function runAutotest(openRoute: (route: string) => void): Promise<v
   // invisibles sinon dans les journaux du simulateur.
   const errors: string[] = [];
   const t0 = Date.now();
+  let reloads = plan.reloads ?? 0;
   window.addEventListener('error', (e) => errors.push(`error: ${e.message}`));
   window.addEventListener('unhandledrejection', (e) =>
     errors.push(`rejection: ${describe((e as PromiseRejectionEvent).reason).slice(0, 200)}`),
@@ -171,6 +214,9 @@ export async function runAutotest(openRoute: (route: string) => void): Promise<v
     }
   };
   const snapshot = () => {
+    // Chiffres animés (x-count) posés à leur valeur finale : sinon le relevé peut tomber
+    // sur une image de l'animation (« Poids actuel 63,2 kg » en route vers 77,6).
+    finishCountUps();
     const outlet = document.getElementById('app-outlet');
     return {
       ms: Date.now() - t0,
@@ -178,6 +224,12 @@ export async function runAutotest(openRoute: (route: string) => void): Promise<v
       busy: outlet?.getAttribute('aria-busy') ?? null,
       nav: document.documentElement.dataset.kNav ?? null,
       text: (outlet?.innerText ?? '').replace(/\s+/g, ' ').slice(0, 160),
+      ...recoveryState(
+        document,
+        typeof sessionStorage === 'undefined' ? null : sessionStorage,
+        Date.now(),
+      ),
+      reloads,
       errors: errors.splice(0),
     };
   };
@@ -214,7 +266,9 @@ export async function runAutotest(openRoute: (route: string) => void): Promise<v
         ...where,
       });
       window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_ONBOARDING_COMPLETE));
-      window.location.assign('/');
+      // Comme « Voir la démo » : écritures terminées, bases fermées, `location.replace`.
+      const { fullReload } = await import('./full-reload');
+      await fullReload('/');
       return;
     }
   }
@@ -236,14 +290,28 @@ export async function runAutotest(openRoute: (route: string) => void): Promise<v
     }
   };
 
-  await Filesystem.deleteFile({ path: PLAN_FILE, directory: Directory.Documents });
+  const resume = resumeStep(plan);
   const routes = plan.routes ?? [];
-  for (let i = 0; i < routes.length; i++) {
+  if (!resume) {
+    // Rechargements répétés : parcours abandonné (plan supprimé), dernier état noté.
+    await Filesystem.deleteFile({ path: PLAN_FILE, directory: Directory.Documents });
+    await writeStep(routes.length + 1, 'abandon (rechargements répétés)');
+    return;
+  }
+  reloads = resume.reloads;
+  for (let i = resume.start; i < routes.length; i++) {
     const route = routes[i] as string;
+    // État réécrit AVANT l'étape : un rechargement pendant celle-ci la refait.
+    await Filesystem.writeFile({
+      path: PLAN_FILE,
+      data: JSON.stringify({ ...plan, demo: false, next: i, reloads }),
+      ...where,
+    });
     openRoute(route);
     await new Promise((resolve) => setTimeout(resolve, 1200));
     await writeStep(i + 1, route);
     await waitForAck(i + 1, plan.stepMs ?? 3500);
   }
+  await Filesystem.deleteFile({ path: PLAN_FILE, directory: Directory.Documents });
   await writeStep(routes.length + 1, 'fin');
 }

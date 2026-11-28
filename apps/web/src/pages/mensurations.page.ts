@@ -16,6 +16,7 @@ import { BODY_CHANGED_EVENT } from '../components/body-fat';
 import type { ScrubData } from '../lib/chart-scrub';
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { notify } from '../lib/notify';
 
 export interface MeasurementEntry {
   id: string;
@@ -535,15 +536,10 @@ export function mensurations() {
         if (finalBytes > MAX_PHOTO_BYTES) {
           const mb = loc((finalBytes / 1_048_576).toFixed(1));
           const maxMb = loc((MAX_PHOTO_BYTES / 1_048_576).toFixed(1));
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: {
-                kind: 'error',
-                message:
-                  `Photo trop volumineuse (${mb} Mo > ${maxMb} Mo max). ` +
-                  `Essaie une photo moins détaillée ou depuis l'appli Appareil photo.`,
-              },
-            }),
+          notify(
+            'error',
+            `Photo trop volumineuse (${mb} Mo > ${maxMb} Mo max). ` +
+              `Essaie une photo moins détaillée ou depuis l'appli Appareil photo.`,
           );
           return;
         }
@@ -565,24 +561,16 @@ export function mensurations() {
         const existingMeta: PhotoMeta[] = this.photos.map(({ base64: _b2, ...m }) => m);
         await deps.storage.set(PHOTOS_KEY, [...existingMeta, meta]);
         this.photos = [...this.photos, entry];
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: 'Photo de progression ajoutée ✓' },
-          }),
-        );
+        notify('success', 'Photo de progression ajoutée ✓');
       } catch (err) {
         console.error('[mensurations] takePhoto failed:', err);
         const msg = err instanceof Error ? err.message : String(err);
         const isPermission = /permission|denied|not allowed/i.test(msg);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'error',
-              message: isPermission
-                ? "Accès à la caméra refusé. Autorise l'accès dans les réglages."
-                : 'Impossible de sauvegarder la photo. Réessaie.',
-            },
-          }),
+        notify(
+          'error',
+          isPermission
+            ? "Accès à la caméra refusé. Autorise l'accès dans les réglages."
+            : 'Impossible de sauvegarder la photo. Réessaie.',
         );
       } finally {
         this.takingPhoto = false;
@@ -628,11 +616,7 @@ export function mensurations() {
         if (this.selectedPhotoId === id) this.selectedPhotoId = null;
       } catch (err) {
         console.error('[mensurations] deletePhoto failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec suppression de la photo. Réessaie.' },
-          }),
-        );
+        notify('error', 'Échec suppression de la photo. Réessaie.');
       }
     },
 
@@ -695,11 +679,7 @@ export function mensurations() {
         } else {
           // L'annulation précédente ne doit pas effacer cette nouvelle mesure.
           this.undoEntries = null;
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'success', message: `Mensurations enregistrées${when} ✓` },
-            }),
-          );
+          notify('success', `Mensurations enregistrées${when} ✓`);
         }
       } catch (err) {
         notifyWriteFailed('les mensurations', err);
@@ -743,11 +723,7 @@ export function mensurations() {
         );
       } catch (err) {
         console.error('[mensurations] removeEntry failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec suppression. Réessaie.' },
-          }),
-        );
+        notify('error', 'Échec suppression. Réessaie.');
       }
     },
 

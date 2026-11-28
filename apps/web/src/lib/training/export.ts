@@ -9,9 +9,9 @@
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { STORAGE_KEYS } from '@kinetic/core';
 import type { WorkoutSession, Exercise } from './types';
 import { LOCAL_SCHEMA_VERSION } from '../schema-version';
+import { notify } from '../notify';
 
 export interface ExportBundle {
   version: 1 | 2;
@@ -200,9 +200,4 @@ export async function exportAsCsv(
 /** Toujours entre guillemets (RFC 4180 — plus sûr pour Excel/Sheets). */
 function csvCell(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
-}
-
-function notify(kind: 'success' | 'error' | 'info', message: string): void {
-  if (typeof window === 'undefined') return;
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
 }

@@ -18,6 +18,7 @@ import {
   type StorageWrite,
 } from '@kinetic/core';
 import { openDatabase, requestToPromise, runTransaction } from './idb.js';
+import { settleWithin, trackConnection } from './connections.js';
 import { dbNameForOwner } from './local-db.js';
 import { toPlain } from './shared.js';
 
@@ -55,12 +56,47 @@ export class LegacyFallbackStorage implements StoragePort {
   private readonly dbName: string;
   private readonly storeName: string;
   private db: Promise<IDBDatabase> | null = null;
+  /** Écritures en cours (attendues avant une suspension, voir `connections.ts`). */
+  private readonly writes = new Set<Promise<unknown>>();
+  private readonly untrack: () => void;
 
   constructor(opts: LegacyFallbackStorageOptions) {
     this.target = dbNameForOwner(opts.owner);
     this.factory = opts.factory ?? globalThis.indexedDB;
     this.dbName = opts.dbName ?? FALLBACK_DB_NAME;
     this.storeName = opts.storeName ?? FALLBACK_STORE_NAME;
+    this.untrack = trackConnection(this);
+  }
+
+  /** Transaction sur la connexion courante ; les écritures sont suivies (`suspend`). */
+  private async run<T>(
+    mode: IDBTransactionMode,
+    fn: (tx: IDBTransaction) => Promise<T>,
+  ): Promise<T> {
+    const job = this.connection().then((db) => runTransaction(db, [this.storeName], mode, fn));
+    if (mode === 'readonly') return job;
+    this.writes.add(job);
+    try {
+      return await job;
+    } finally {
+      this.writes.delete(job);
+    }
+  }
+
+  /**
+   * Suspension : écritures en cours attendues (au plus `waitMs`), connexion fermée,
+   * rouverte au prochain accès. (Repli seulement en panne : une transaction demandée à
+   * l'instant même de la fermeture échoue, sans rien écrire, au lieu d'être rejouée.)
+   */
+  async suspend(waitMs = 0): Promise<void> {
+    if (waitMs > 0 && this.writes.size > 0) await settleWithin(this.writes, waitMs);
+    const db = this.db;
+    this.db = null;
+    void db?.then((c) => c.close()).catch(() => undefined);
+  }
+
+  active(): boolean {
+    return this.db !== null || this.writes.size > 0;
   }
 
   private connection(): Promise<IDBDatabase> {
@@ -95,8 +131,7 @@ export class LegacyFallbackStorage implements StoragePort {
 
   async get<T>(key: StorageKey): Promise<T | null> {
     if (HIDDEN.has(key)) return null;
-    const db = await this.connection();
-    const value = await runTransaction(db, [this.storeName], 'readonly', async (tx) => {
+    const value = await this.run('readonly', async (tx) => {
       const store = tx.objectStore(this.storeName);
       const visible = await this.scope(store);
       if (visible && !visible.has(key)) return undefined;
@@ -124,8 +159,7 @@ export class LegacyFallbackStorage implements StoragePort {
       }
     }
     if (writes.length === 0) return;
-    const db = await this.connection();
-    await runTransaction(db, [this.storeName], 'readwrite', async (tx) => {
+    await this.run('readwrite', async (tx) => {
       const store = tx.objectStore(this.storeName);
       // Ancienne base pas encore migrée : la première écriture de repli la réserve pour
       // cette base cible (même règle que la migration : la première base qui la réclame).
@@ -147,8 +181,7 @@ export class LegacyFallbackStorage implements StoragePort {
   }
 
   async keys(): Promise<readonly StorageKey[]> {
-    const db = await this.connection();
-    const { keys, visible } = await runTransaction(db, [this.storeName], 'readonly', async (tx) => {
+    const { keys, visible } = await this.run('readonly', async (tx) => {
       const store = tx.objectStore(this.storeName);
       return {
         visible: await this.scope(store),
@@ -170,8 +203,7 @@ export class LegacyFallbackStorage implements StoragePort {
    * seules les écritures de repli de cette base-ci sont effacées.
    */
   async clear(): Promise<void> {
-    const db = await this.connection();
-    await runTransaction(db, [this.storeName], 'readwrite', async (tx) => {
+    await this.run('readwrite', async (tx) => {
       const store = tx.objectStore(this.storeName);
       const visible = await this.scope(store);
       const journal = readJournal(
@@ -189,6 +221,7 @@ export class LegacyFallbackStorage implements StoragePort {
   }
 
   dispose(): void {
+    this.untrack();
     void this.db?.then((db) => db.close()).catch(() => undefined);
     this.db = null;
   }

@@ -83,6 +83,18 @@ export function countFrame(from: number, to: CountFormat, t: number): string {
   return formatLike(from + (to.value - from) * easeOutCubic(t), to);
 }
 
+/** Animations en cours ou points de départ affichés : de quoi poser la valeur finale. */
+const finishers = new Set<() => void>();
+
+/**
+ * Pose tout de suite la valeur finale de chaque chiffre animé (ou en attente à son point
+ * de départ). Pour un relevé du texte de l'écran (parcours de test) : une image
+ * d'animation (ex. « 63,2 kg » en route vers 77,6) n'y est pas prise pour la valeur.
+ */
+export function finishCountUps(): void {
+  for (const finish of [...finishers]) finish();
+}
+
 function reducedMotion(): boolean {
   try {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -105,6 +117,8 @@ export function bindCountUp(el: HTMLElement): () => void {
   // Proche de l'écran (une demi-hauteur d'écran) : le point de départ peut être affiché.
   let near = visible;
 
+  let finalText: string | null = null; // texte final de l'animation en cours
+
   let mo: MutationObserver | null = null;
   // Nos propres écritures ne doivent pas être prises pour une nouvelle valeur :
   // leurs mutations sont retirées de la file aussitôt. (Comparer au dernier
@@ -116,26 +130,30 @@ export function bindCountUp(el: HTMLElement): () => void {
     mo?.takeRecords();
   };
 
-  const animate = (finalText: string): void => {
+  const animate = (text: string): void => {
     cancelAnimationFrame(raf);
-    const target = parseCountText(finalText);
+    finalText = null;
+    const target = parseCountText(text);
     if (!target) {
       shown = null;
-      if (el.textContent !== finalText) write(finalText);
+      if (el.textContent !== text) write(text);
       return;
     }
     const from = shown ?? 0;
     if (from === target.value) {
       shown = target.value;
-      if (el.textContent !== finalText) write(finalText);
+      if (el.textContent !== text) write(text);
       return;
     }
     const start = performance.now();
+    finalText = text;
     write(countFrame(from, target, 0));
     const step = (now: number): void => {
+      if (finalText !== text) return; // animation posée (finishCountUps) ou remplacée
       const t = (now - start) / COUNT_DURATION_MS;
       if (t >= 1) {
-        write(finalText);
+        finalText = null;
+        write(text);
         shown = target.value;
         return;
       }
@@ -165,6 +183,18 @@ export function bindCountUp(el: HTMLElement): () => void {
     const target = parseCountText(pendingText);
     if (target) write(countFrame(0, target, 0));
   };
+
+  const finish = (): void => {
+    if (finalText !== null) {
+      cancelAnimationFrame(raf);
+      write(finalText);
+      shown = parseCountText(finalText)?.value ?? null;
+      finalText = null;
+    } else if (pendingText !== null && el.textContent !== pendingText) {
+      write(pendingText); // point de départ « 0 » affiché : la vraie valeur, gardée en attente
+    }
+  };
+  finishers.add(finish);
 
   mo = new MutationObserver(onChange);
   mo.observe(el, { childList: true, characterData: true, subtree: true });
@@ -202,6 +232,7 @@ export function bindCountUp(el: HTMLElement): () => void {
   if (el.textContent) onChange();
 
   return () => {
+    finishers.delete(finish);
     cancelAnimationFrame(raf);
     mo.disconnect();
     io?.disconnect();

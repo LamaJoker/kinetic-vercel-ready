@@ -16,6 +16,7 @@ import {
 import { getDeps } from '../deps';
 import { loadSessions } from '../lib/training/storage';
 import { announceLevelUp, highestLevelUp } from '../lib/celebration';
+import { notify } from '../lib/notify';
 
 const KEY_GOALS = STORAGE_KEYS.GOALS_WEEKLY;
 type SessionList = Awaited<ReturnType<typeof loadSessions>>;
@@ -138,11 +139,7 @@ export function goalsStore() {
         });
       } catch (err) {
         console.error('[goals] save failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec de la sauvegarde des objectifs. Réessaie.' },
-          }),
-        );
+        notify('error', 'Échec de la sauvegarde des objectifs. Réessaie.');
       }
     },
 
@@ -175,14 +172,7 @@ export function goalsStore() {
       this.xpAwardedWeek = this.weekKey;
       await this.save();
 
-      window.dispatchEvent(
-        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: {
-            kind: 'success',
-            message: `Objectifs semaine atteints - +${WEEKLY_GOAL_BONUS_XP} XP !`,
-          },
-        }),
-      );
+      notify('success', `Objectifs semaine atteints - +${WEEKLY_GOAL_BONUS_XP} XP !`);
       window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_XP_UPDATED));
       // Le bonus de la semaine peut faire gagner un niveau : on le célèbre.
       announceLevelUp(highestLevelUp([result]));

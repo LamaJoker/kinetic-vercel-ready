@@ -6,6 +6,8 @@ import type { ActivityLevel, UserGoal, UserProfile } from '../lib/user/types';
 import { saveUserProfile, loadUserProfile } from '../lib/user/storage';
 import { estimateTdeeKcal, estimateTargetCaloriesKcal } from '../lib/user/nutrition';
 import { navigate } from '../router';
+import { fullReload } from '../lib/full-reload';
+import { notify } from '../lib/notify';
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -141,15 +143,12 @@ export function onboarding() {
         window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_ONBOARDING_COMPLETE));
         console.info(`[onboarding] démo chargée : ${count} séances`);
         // Rechargement complet : chaque store (XP, série, objectifs…) repart
-        // des données de démo au lieu de son état vide déjà en mémoire.
-        window.location.assign('/');
+        // des données de démo au lieu de son état vide déjà en mémoire. Écritures de la
+        // démo terminées et bases fermées avant de partir (lib/full-reload.ts).
+        await fullReload('/');
       } catch (err) {
         console.error('[onboarding] demo failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Impossible de charger la démo.' },
-          }),
-        );
+        notify('error', 'Impossible de charger la démo.');
       } finally {
         this.saving = false;
       }
@@ -170,21 +169,13 @@ export function onboarding() {
         await saveUserProfile(deps.storage, next);
         queueFirstRunTour();
 
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: 'Profil créé' },
-          }),
-        );
+        notify('success', 'Profil créé');
         window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_ONBOARDING_COMPLETE));
 
         navigate('/', true);
       } catch (err) {
         console.error('[onboarding] save failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Erreur sauvegarde profil' },
-          }),
-        );
+        notify('error', 'Erreur sauvegarde profil');
       } finally {
         this.saving = false;
       }

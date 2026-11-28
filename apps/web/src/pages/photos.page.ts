@@ -17,6 +17,7 @@ import {
 } from '../lib/photos';
 import { hapticLight, hapticSuccess, hapticTap } from '../lib/haptics';
 import { notifyWriteFailed } from '../lib/write-errors';
+import { notify } from '../lib/notify';
 
 const _idGen = new UuidGenerator();
 const POSE_LABELS: Record<string, string> = { front: 'Face', side: 'Profil', back: 'Dos' };
@@ -251,19 +252,11 @@ export function photosPage() {
           this.gapLabel,
         );
         if (outcome === 'downloaded') {
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'success', message: 'Image enregistrée ✓' },
-            }),
-          );
+          notify('success', 'Image enregistrée ✓');
         }
       } catch (err) {
         console.error('[photos] shareCompare failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: "Impossible de créer l'image." },
-          }),
-        );
+        notify('error', "Impossible de créer l'image.");
       } finally {
         this.sharing = false;
       }
@@ -274,11 +267,7 @@ export function photosPage() {
       const file = target.files?.[0];
       if (!file) return;
       if (!file.type.startsWith('image/')) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'warning', message: 'Fichier non reconnu comme image.' },
-          }),
-        );
+        notify('warning', 'Fichier non reconnu comme image.');
         return;
       }
       this.adding = true;
@@ -299,18 +288,10 @@ export function photosPage() {
         this._resetPair();
         target.value = '';
         hapticSuccess();
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: 'Photo ajoutée ✓' },
-          }),
-        );
+        notify('success', 'Photo ajoutée ✓');
       } catch (err) {
         console.error('[photos] addPhoto failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: "Impossible d'ajouter cette photo." },
-          }),
-        );
+        notify('error', "Impossible d'ajouter cette photo.");
       } finally {
         this.adding = false;
       }

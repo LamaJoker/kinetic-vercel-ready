@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { STORAGE_KEYS } from '@kinetic/core';
 import {
   createStorageRecovery,
+  RELOAD_GRACE_MS,
   RELOAD_WINDOW_MS,
   STORAGE_UNRESPONSIVE_MESSAGE,
   type StorageRecoveryEnv,
@@ -18,6 +19,8 @@ function device(start = 1_000_000) {
   let now = start;
   const reload = vi.fn();
   const showMessage = vi.fn<(retry: () => void) => void>();
+  /** Minuteries en attente (page toujours là après le rechargement demandé). */
+  const timers: Array<{ fn: () => void; ms: number }> = [];
   const env: StorageRecoveryEnv = {
     now: () => now,
     session: () => ({
@@ -26,9 +29,11 @@ function device(start = 1_000_000) {
     }),
     reload,
     showMessage,
+    later: (fn, ms) => void timers.push({ fn, ms }),
   };
   return {
     env,
+    timers,
     session,
     reload,
     showMessage,
@@ -116,6 +121,19 @@ describe('reprise du stockage bloqué', () => {
     d.session.set(STORAGE_KEYS.STORAGE_UNRESPONSIVE_RELOAD_AT, String(2_000_000));
     // Marqueur « dans le futur » : pas une preuve de rechargement récent → rechargement unique.
     expect(d.pageLoad()()).toBe('reload');
+    expect(d.reload).toHaveBeenCalledTimes(2);
+  });
+
+  it('rechargement demandé mais la page est toujours là (navigation retenue) : message quand même', () => {
+    const d = device();
+    expect(d.pageLoad()()).toBe('reload');
+    expect(d.timers).toHaveLength(1);
+    expect(d.timers[0]!.ms).toBe(RELOAD_GRACE_MS);
+    expect(d.showMessage).not.toHaveBeenCalled();
+    d.timers[0]!.fn(); // 10 s plus tard, la page n'a pas été remplacée
+    expect(d.showMessage).toHaveBeenCalledTimes(1);
+    // « Réessayer » : nouveau rechargement demandé par l'utilisateur.
+    d.showMessage.mock.calls[0]![0]();
     expect(d.reload).toHaveBeenCalledTimes(2);
   });
 

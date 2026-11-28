@@ -8,6 +8,7 @@ import { getDeps } from '../deps';
 import { fetchFoodByBarcode, normalizeBarcode } from '../lib/openfoodfacts';
 import { MACRO_COLORS } from '../lib/palette';
 import { reportWriteFailure } from '../lib/write-errors';
+import { notify } from '../lib/notify';
 
 // FIX: défini ici au lieu d'être importé depuis @kinetic/core
 export interface FoodEntry {
@@ -181,11 +182,7 @@ export function nutritionStore() {
 
     async addMealItem(mealName: string, food: FoodEntry, grams: number): Promise<boolean> {
       if (!Number.isFinite(grams) || grams <= 0) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'warning', message: 'Quantité invalide (doit être > 0 g).' },
-          }),
-        );
+        notify('warning', 'Quantité invalide (doit être > 0 g).');
         return false;
       }
       if (this._pendingMealNames.includes(mealName)) return false;
@@ -219,11 +216,7 @@ export function nutritionStore() {
         return true;
       } catch (err) {
         console.error('[nutrition] addMealItem failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: "Impossible d'ajouter cet aliment. Réessaie." },
-          }),
-        );
+        notify('error', "Impossible d'ajouter cet aliment. Réessaie.");
         return false;
       } finally {
         this._pendingMealNames = this._pendingMealNames.filter((n) => n !== mealName);
@@ -243,11 +236,7 @@ export function nutritionStore() {
         return true;
       } catch (err) {
         console.error('[nutrition] applyTodayLog failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: "Impossible d'enregistrer le journal. Réessaie." },
-          }),
-        );
+        notify('error', "Impossible d'enregistrer le journal. Réessaie.");
         return false;
       }
     },
@@ -269,11 +258,7 @@ export function nutritionStore() {
         this.todayLog = nextLog;
       } catch (err) {
         console.error('[nutrition] removeMealItem failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Impossible de retirer cet aliment. Réessaie.' },
-          }),
-        );
+        notify('error', 'Impossible de retirer cet aliment. Réessaie.');
       }
     },
 
@@ -285,20 +270,12 @@ export function nutritionStore() {
     async scanBarcode(barcode: string): Promise<FoodEntry | null> {
       const code = normalizeBarcode(barcode);
       if (code.length < 8) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'warning', message: 'Code-barres invalide (8 chiffres minimum).' },
-          }),
-        );
+        notify('warning', 'Code-barres invalide (8 chiffres minimum).');
         return null;
       }
       const scanned = await fetchFoodByBarcode(code);
       if (!scanned) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'warning', message: 'Produit introuvable dans OpenFoodFacts.' },
-          }),
-        );
+        notify('warning', 'Produit introuvable dans OpenFoodFacts.');
         return null;
       }
       return {

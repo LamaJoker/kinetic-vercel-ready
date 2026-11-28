@@ -182,3 +182,61 @@ describe('chiffres qui défilent : branchement', () => {
     }
   });
 });
+
+describe('chiffres qui défilent : relevé de l’écran', () => {
+  // Constat iOS : le parcours de test relevait « Poids actuel 63,2 kg », image de
+  // l'animation 0 → 77,6 kg, au lieu de la valeur affichée une fois posée.
+  it('finishCountUps pose la valeur finale d’une animation en cours', async () => {
+    const { vi } = await import('vitest');
+    const { bindCountUp, finishCountUps } = await import('../../apps/web/src/lib/count-up.js');
+    let moCb: (() => void) | null = null;
+    class FakeMO {
+      constructor(cb: () => void) {
+        moCb = cb;
+      }
+      observe(): void {}
+      disconnect(): void {}
+      takeRecords(): unknown[] {
+        return [];
+      }
+    }
+    let frames: ((t: number) => void)[] = [];
+    vi.stubGlobal('MutationObserver', FakeMO);
+    vi.stubGlobal('IntersectionObserver', undefined);
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) });
+    vi.stubGlobal('requestAnimationFrame', (f: (t: number) => void) => frames.push(f));
+    vi.stubGlobal('cancelAnimationFrame', () => undefined);
+    const nowSpy = vi.spyOn(performance, 'now').mockReturnValue(1000);
+    try {
+      let text = '';
+      const el = {
+        get textContent() {
+          return text;
+        },
+        set textContent(v: string) {
+          text = v;
+        },
+      };
+      const stop = bindCountUp(el as unknown as HTMLElement);
+      el.textContent = '77,6'; // x-text : pesées de la démo chargées
+      moCb!();
+      // ~260 ms après le départ : image intermédiaire.
+      const f = frames;
+      frames = [];
+      f.forEach((cb) => cb(1000 + 258));
+      expect(text).toBe('63,2');
+      finishCountUps();
+      expect(text).toBe('77,6');
+      // L'animation ne reprend pas par-dessus la valeur finale.
+      frames.forEach((cb) => cb(1000 + 300));
+      expect(text).toBe('77,6');
+      stop();
+      el.textContent = '80,0';
+      finishCountUps(); // élément démonté : plus suivi
+      expect(text).toBe('80,0');
+    } finally {
+      nowSpy.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+});

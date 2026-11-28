@@ -36,6 +36,7 @@ import { hapticLight } from '../lib/haptics';
 import { muscleMapSvg } from '../components/muscle-map-svg';
 import '../components/visual-views.css';
 import '../styles/recap.css';
+import { notify } from '../lib/notify';
 
 const fmt = (n: number, digits = 0): string =>
   n.toLocaleString('fr-FR', { maximumFractionDigits: digits }).replace(/[\u202f\u00a0]/g, ' ');
@@ -479,19 +480,11 @@ export function bilan() {
         const { shareRecapImage } = await import('../lib/recap-share-image');
         const outcome = await shareRecapImage(this.recap, (id) => this.name(id));
         if (outcome === 'downloaded') {
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'success', message: 'Image enregistrée ✓' },
-            }),
-          );
+          notify('success', 'Image enregistrée ✓');
         }
       } catch (err) {
         console.error('[bilan] partage impossible :', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: "Impossible de créer l'image." },
-          }),
-        );
+        notify('error', "Impossible de créer l'image.");
       } finally {
         this.sharing = false;
       }

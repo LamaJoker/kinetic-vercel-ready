@@ -14,6 +14,7 @@ import { STORAGE_KEYS } from '@kinetic/core';
 import { foldLegacySessions } from './training/storage';
 import { journalWrites, undoJournal } from './write-journal';
 import { LOCAL_SCHEMA_VERSION } from './schema-version';
+import { notify } from './notify';
 
 const SCHEMA_VERSION = LOCAL_SCHEMA_VERSION;
 const KEY = STORAGE_KEYS.SCHEMA_VERSION;
@@ -52,14 +53,7 @@ async function _runMigrationsCore(storage: StoragePort): Promise<void> {
           restoreErr,
         );
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: {
-                kind: 'error',
-                message: "Migration échouée. Sauvegardez vos données et rechargez l'application.",
-              },
-            }),
-          );
+          notify('error', "Migration échouée. Sauvegardez vos données et rechargez l'application.");
         }
       }
       throw err;

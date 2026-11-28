@@ -24,6 +24,7 @@ import {
 import { getDeps } from '../deps';
 import type { Exercise, WorkoutSession } from '../lib/training/types';
 import { loadExercises, loadSessions } from '../lib/training/storage';
+import { notify } from '../lib/notify';
 
 const RECENT_DAYS = 7;
 
@@ -253,11 +254,7 @@ export function records() {
         }
       } catch (err) {
         console.error('[records] init failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Impossible de charger les records.' },
-          }),
-        );
+        notify('error', 'Impossible de charger les records.');
       } finally {
         this.loading = false;
       }

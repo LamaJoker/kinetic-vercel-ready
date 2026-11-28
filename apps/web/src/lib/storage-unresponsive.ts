@@ -9,6 +9,7 @@
  *     normal, jamais de valeurs par défaut écrites à la place des données.
  */
 import { STORAGE_KEYS } from '@kinetic/core';
+import { fullReload } from './full-reload';
 
 export const STORAGE_UNRESPONSIVE_MESSAGE =
   "Le stockage de l'appareil ne répond pas. Tes données ne sont pas perdues : ferme complètement l'app puis rouvre-la.";
@@ -22,7 +23,15 @@ export interface StorageRecoveryEnv {
   session(): Pick<Storage, 'getItem' | 'setItem'> | null;
   reload(): void;
   showMessage(retry: () => void): void;
+  /** Minuterie (tests) ; défaut `setTimeout`. */
+  later?(fn: () => void, ms: number): void;
 }
+
+/**
+ * Rechargement demandé mais la page est toujours là après ce délai (navigation retenue par
+ * WebKit) : message affiché quand même, jamais un écran vide sans explication.
+ */
+export const RELOAD_GRACE_MS = 10_000;
 
 export type RecoveryAction = 'reload' | 'message' | 'already-handled';
 
@@ -65,6 +74,7 @@ export function createStorageRecovery(env: StorageRecoveryEnv): () => RecoveryAc
       return 'message';
     }
     env.reload();
+    (env.later ?? setTimeout)(() => env.showMessage(retry), RELOAD_GRACE_MS);
     return 'reload';
   };
 }
@@ -94,6 +104,7 @@ export function showStorageUnresponsiveMessage(retry: () => void): void {
 export const handleStorageUnresponsive = createStorageRecovery({
   now: () => Date.now(),
   session: () => (typeof sessionStorage === 'undefined' ? null : sessionStorage),
-  reload: () => window.location.reload(),
+  // Écritures en cours attendues peu de temps : IndexedDB ne répond justement plus.
+  reload: () => void fullReload(undefined, 1000),
   showMessage: showStorageUnresponsiveMessage,
 });

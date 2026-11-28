@@ -24,12 +24,9 @@ import { loadSessions, loadTemplates } from './training/storage';
 import { buildTrainingSnapshot } from './training/next-session';
 import { loadActiveSession } from './training/active-session';
 import { loadProgramWeek, templateForToday } from './program-week';
+import { notify } from './notify';
 
 type OpenRoute = (route: string) => void;
-
-function notify(kind: 'success' | 'info' | 'error', message: string): void {
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
-}
 
 /**
  * Attend que la page demandée soit affichée (et que le routeur ait remis le

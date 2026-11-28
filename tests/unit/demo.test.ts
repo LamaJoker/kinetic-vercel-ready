@@ -96,3 +96,37 @@ describe('données de démo : objectifs de force et plateau', () => {
     expect(states['dl']).toBe('achieved');
   });
 });
+
+describe('données de démo : poids actuel', () => {
+  // Constat iOS (9.17.0) : « Poids actuel 63,2 kg » sur une installation, 77,6 kg sur les
+  // autres. La démo n'en est pas la cause : à heure, jour ou date de lancement quelconques,
+  // le poids actuel est la dernière pesée de l'historique, dans la plage de la démo.
+  const launches = [
+    NOW,
+    new Date(2026, 10, 28, 0, 5),
+    new Date(2026, 10, 28, 23, 55),
+    new Date(2026, 9, 3, 7, 30),
+    new Date(2027, 0, 1, 12, 0),
+  ];
+  it.each(launches)('lancement %s : poids actuel = dernière pesée de l’historique', async (at) => {
+    const { currentBodyweightKg, sortByDate, STORAGE_KEYS } = await import('@kinetic/core');
+    const { values } = buildDemoData(at);
+    const entries = values.find(([k]) => k === STORAGE_KEYS.BODYWEIGHT_ENTRIES)?.[1] as Array<{
+      date: string;
+      weight: number;
+    }>;
+    const dates = entries.map((e) => e.date);
+    expect(new Set(dates).size).toBe(dates.length); // une pesée par jour
+    expect(sortByDate(entries)).toEqual(entries); // déjà triées
+    const history = sortByDate(entries);
+    expect(currentBodyweightKg(entries)).toBe(history.at(-1)!.weight);
+    for (const e of entries) {
+      expect(e.weight).toBeGreaterThan(76.5);
+      expect(e.weight).toBeLessThan(80.5);
+    }
+    const profile = values.find(([k]) => k === STORAGE_KEYS.USER_PROFILE)?.[1] as {
+      weightKg: number;
+    };
+    expect(profile.weightKg).toBe(history.at(-1)!.weight);
+  });
+});

@@ -23,6 +23,7 @@
 
 import { STORAGE_KEYS } from '@kinetic/core';
 import type { StoragePort } from '@kinetic/core';
+import { trackConnection } from '@kinetic/adapters-web';
 import {
   createStore,
   get as idbGet,
@@ -55,8 +56,38 @@ const JPEG_QUALITY = 0.75;
 // commune `kinetic-photos` n'est plus que lue : une image qui s'y trouve encore est
 // déplacée dans la base du compte à sa première lecture (audit stockage local F7).
 const LEGACY_PHOTO_DB = 'kinetic-photos';
-const legacyStore = createStore(LEGACY_PHOTO_DB, 'blobs');
+/**
+ * Bases d'images ouvertes, créées au premier usage (idb-keyval ouvre la base dès
+ * `createStore` : jamais à l'import du module). Avant une navigation pleine page ou à la
+ * sortie de la page, leurs connexions sont fermées et oubliées ; le prochain usage rouvre.
+ */
 const ownerStores = new Map<string, UseStore>();
+
+function openStore(name: string): UseStore {
+  let store = ownerStores.get(name);
+  if (!store) ownerStores.set(name, (store = createStore(name, 'blobs')));
+  return store;
+}
+
+const legacyPhotoStore = (): UseStore => openStore(LEGACY_PHOTO_DB);
+
+trackConnection({
+  active: () => ownerStores.size > 0,
+  suspend: () => {
+    const stores = [...ownerStores.values()];
+    ownerStores.clear();
+    for (const store of stores) {
+      try {
+        // La connexion d'idb-keyval n'est accessible que par une transaction : fermée
+        // depuis celle-ci (qui se termine normalement, comme celles déjà en cours).
+        void store('readonly', (os) => os.transaction.db.close()).catch(() => undefined);
+      } catch {
+        /* store factice (tests) */
+      }
+    }
+    return Promise.resolve();
+  },
+});
 
 /**
  * Nom de la base d'images du compte d'un stockage : `owner` de la base du compte
@@ -75,11 +106,7 @@ export function photoDbName(storage: StoragePort): string | null {
 }
 
 function storeFor(storage: StoragePort): UseStore {
-  const name = photoDbName(storage);
-  if (!name) return legacyStore;
-  let store = ownerStores.get(name);
-  if (!store) ownerStores.set(name, (store = createStore(name, 'blobs')));
-  return store;
+  return openStore(photoDbName(storage) ?? LEGACY_PHOTO_DB);
 }
 
 // ─── Meta CRUD ──────────────────────────────────────────────────────────────
@@ -111,6 +138,7 @@ export async function deletePhotoBlobs(
   ids: readonly string[],
 ): Promise<void> {
   const store = storeFor(storage);
+  const legacyStore = legacyPhotoStore();
   for (const id of ids) {
     await idbDel(id, store).catch(() => null);
     if (store !== legacyStore) await idbDel(id, legacyStore).catch(() => null);
@@ -125,6 +153,7 @@ export async function deletePhotoBlobs(
  */
 export async function clearAllPhotoBlobs(storage: StoragePort): Promise<void> {
   const store = storeFor(storage);
+  const legacyStore = legacyPhotoStore();
   if (store === legacyStore) {
     await idbClear(legacyStore);
     return;
@@ -162,6 +191,7 @@ export async function getPhotoBlob(storage: StoragePort, photo: PhotoEntry): Pro
     }
   }
   const store = storeFor(storage);
+  const legacyStore = legacyPhotoStore();
   const blob = await idbGet<Blob>(photo.id, store).catch(() => null);
   if (blob || store === legacyStore) return blob ?? null;
   // Image encore dans l'ancienne base commune : déplacée dans celle du compte (la

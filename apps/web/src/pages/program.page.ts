@@ -3,6 +3,7 @@ import { getDeps } from '../deps';
 import { navigate } from '../router';
 import { loadWeekPlan } from '../lib/lazy-component';
 import type { PlanTodayDetail } from '../components/week-plan';
+import { notify } from '../lib/notify';
 
 interface ProgramDay {
   dayOfWeek: number;
@@ -318,17 +319,9 @@ export function program() {
           await deps.storage.set(STORAGE_KEYS.TRAINING_TEMPLATES, merged);
           this.generatedCount = newTemplates.length;
           await deps.storage.set(STORAGE_KEYS.PROGRAM_GENERATED_COUNT, this.generatedCount);
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'success', message: newTemplates.length + ' templates créés ✓' },
-            }),
-          );
+          notify('success', newTemplates.length + ' templates créés ✓');
         } else {
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'info', message: 'Templates déjà existants pour ce programme' },
-            }),
-          );
+          notify('info', 'Templates déjà existants pour ce programme');
         }
       } catch (err) {
         console.error('[program] generateTemplates failed:', err);
@@ -372,18 +365,10 @@ export function program() {
         await deps.storage.set(STORAGE_KEYS.PROGRAM_ACTIVE, prog);
         this.activeProgram = prog;
         void this._showWeekPlan();
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: 'Programme activé ✓' },
-          }),
-        );
+        notify('success', 'Programme activé ✓');
       } catch (err) {
         console.error('[program] selectSplit failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec activation du programme. Réessaie.' },
-          }),
-        );
+        notify('error', 'Échec activation du programme. Réessaie.');
       }
     },
 
@@ -402,11 +387,7 @@ export function program() {
               STORAGE_KEYS.PROGRAM_COMPLETED_DAYS(this.weekKey()),
               this.completedDayIds,
             );
-            window.dispatchEvent(
-              new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-                detail: { kind: 'success', message: 'Séance complète !+50 XP' },
-              }),
-            );
+            notify('success', 'Séance complète !+50 XP');
           }
         }
       } catch (err) {

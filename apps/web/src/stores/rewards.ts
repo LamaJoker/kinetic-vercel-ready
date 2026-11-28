@@ -15,6 +15,7 @@
 import { STORAGE_KEYS, REWARDS, processActivity } from '@kinetic/core';
 import type { StreakState } from '@kinetic/core';
 import { getDeps } from '../deps';
+import { notify } from '../lib/notify';
 
 // ─── Clés storage ────────────────────────────────────────────────────────────
 const KEY_FREEZE_TOKENS = STORAGE_KEYS.REWARDS_FREEZE_TOKENS;
@@ -54,10 +55,6 @@ function isoWeekKey(date: Date = new Date()): string {
   const jan1 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   const week = Math.ceil(((d.getTime() - jan1.getTime()) / 86_400_000 + 1) / 7);
   return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
-}
-
-function notify(kind: 'success' | 'error' | 'info', message: string): void {
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
 }
 
 // ─── Store ───────────────────────────────────────────────────────────────────

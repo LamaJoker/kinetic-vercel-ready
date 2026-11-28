@@ -147,6 +147,7 @@ import {
   writeActiveSession,
   formatActiveAge,
 } from '../lib/training/active-session';
+import { notify } from '../lib/notify';
 
 type Draft = {
   reps: number;
@@ -528,14 +529,7 @@ export function seances() {
       // Évite les doublons : si l'exo cible est déjà dans la séance, fusion
       const alreadyHasNew = this.currentSession.entries.some((e) => e.exerciseId === newExerciseId);
       if (alreadyHasNew) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'warning',
-              message: 'Cet exercice est déjà dans ta séance.',
-            },
-          }),
-        );
+        notify('warning', 'Cet exercice est déjà dans ta séance.');
         return;
       }
       this.currentSession = {
@@ -547,14 +541,7 @@ export function seances() {
       if (this.activeExerciseId === oldExerciseId) this.setActiveEntry(newExerciseId);
       this.substitutionFor = null;
       this.substitutionResults = [];
-      window.dispatchEvent(
-        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: {
-            kind: 'success',
-            message: `Remplacé par "${replacement.name}".`,
-          },
-        }),
-      );
+      notify('success', `Remplacé par "${replacement.name}".`);
     },
     // Cache for progressionSuggestion — keyed by exerciseId, invalidated when
     // sessions array changes (tracked via its length as a cheap version counter).
@@ -723,14 +710,7 @@ export function seances() {
               throw err;
             }
             this.templates = updated;
-            window.dispatchEvent(
-              new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-                detail: {
-                  kind: 'success',
-                  message: `Modèle "${workout.name}" importé depuis le lien partagé.`,
-                },
-              }),
-            );
+            notify('success', `Modèle "${workout.name}" importé depuis le lien partagé.`);
           }
         } catch (err) {
           console.warn('[seances] shared import handling failed:', err);
@@ -756,23 +736,12 @@ export function seances() {
 
         if (autoTemplateId && this.currentSession) {
           // Une séance est déjà en cours : on ne l'écrase pas.
-          window.dispatchEvent(
-            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-              detail: { kind: 'info', message: 'Séance en cours reprise.' },
-            }),
-          );
+          notify('info', 'Séance en cours reprise.');
         } else if (autoTemplateId) {
           const t = this.templates.find((x) => x.id === autoTemplateId);
           if (t) {
             this.startFromTemplate(t.id);
-            window.dispatchEvent(
-              new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-                detail: {
-                  kind: 'info',
-                  message: `Séance « ${t.name} » prête`,
-                },
-              }),
-            );
+            notify('info', `Séance « ${t.name} » prête`);
           }
         }
       } catch (err) {
@@ -924,11 +893,7 @@ export function seances() {
       if (this.undoSet?.scope === 'current') this.undoSet = null;
       this._persistActive(); // efface la séance enregistrée sur l'appareil (jamais synchronisée)
       hapticMedium();
-      window.dispatchEvent(
-        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'info', message: 'Séance annulée : rien n’a été enregistré.' },
-        }),
-      );
+      notify('info', 'Séance annulée : rien n’a été enregistré.');
     },
 
     /**
@@ -1063,13 +1028,9 @@ export function seances() {
         })),
       });
       if (generated.exercises.length === 0) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'warning',
-              message: 'Aucun exercice adapté trouvé pour ce focus. Ajoute-en dans ton catalogue.',
-            },
-          }),
+        notify(
+          'warning',
+          'Aucun exercice adapté trouvé pour ce focus. Ajoute-en dans ton catalogue.',
         );
         return;
       }
@@ -1081,14 +1042,7 @@ export function seances() {
       };
       this.showAutoGen = false;
       this.showTemplates = false;
-      window.dispatchEvent(
-        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: {
-            kind: 'success',
-            message: `Séance auto-générée : ${generated.exercises.length} exercices`,
-          },
-        }),
-      );
+      notify('success', `Séance auto-générée : ${generated.exercises.length} exercices`);
     },
 
     /**
@@ -1101,11 +1055,7 @@ export function seances() {
         .filter((s) => s.endedAt)
         .sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
       if (!lastFinished) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'info', message: 'Aucune séance précédente à reprendre.' },
-          }),
-        );
+        notify('info', 'Aucune séance précédente à reprendre.');
         return;
       }
       this.currentSession = {
@@ -1122,13 +1072,9 @@ export function seances() {
       };
       this.showTemplates = false;
       this.showAutoGen = false;
-      window.dispatchEvent(
-        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: {
-            kind: 'success',
-            message: `Reprise : ${plural(lastFinished.entries.length, 'exercice chargé', 'exercices chargés')}.`,
-          },
-        }),
+      notify(
+        'success',
+        `Reprise : ${plural(lastFinished.entries.length, 'exercice chargé', 'exercices chargés')}.`,
       );
     },
 
@@ -1169,20 +1115,9 @@ export function seances() {
       }
       try {
         await navigator.clipboard.writeText(url);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: 'Lien copié dans le presse-papier ✓' },
-          }),
-        );
+        notify('success', 'Lien copié dans le presse-papier ✓');
       } catch {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'info',
-              message: `Lien : ${url.slice(0, 60)}…`,
-            },
-          }),
-        );
+        notify('info', `Lien : ${url.slice(0, 60)}…`);
       }
     },
 
@@ -1273,24 +1208,16 @@ export function seances() {
       const past = this.sessions.find((s) => s.id === id);
       if (!past) return;
       if (this.currentSession) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'info', message: "Termine d'abord la séance en cours." },
-          }),
-        );
+        notify('info', "Termine d'abord la séance en cours.");
         return;
       }
       this.currentSession = sessionFromPast(past, newId(), nowIso());
       this.showTemplates = false;
       this.showAutoGen = false;
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      window.dispatchEvent(
-        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: {
-            kind: 'success',
-            message: `Séance dupliquée : ${plural(past.entries.length, 'exercice chargé', 'exercices chargés')}.`,
-          },
-        }),
+      notify(
+        'success',
+        `Séance dupliquée : ${plural(past.entries.length, 'exercice chargé', 'exercices chargés')}.`,
       );
     },
 
@@ -1492,14 +1419,7 @@ export function seances() {
       this._draftKey = '';
       this._syncDraft();
       hapticLight();
-      window.dispatchEvent(
-        new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: {
-            kind: 'success',
-            message: 'Séance allégée : −10 % de charge et une série de moins par exercice.',
-          },
-        }),
-      );
+      notify('success', 'Séance allégée : −10 % de charge et une série de moins par exercice.');
     },
 
     /** « Garder » : séance normale, la proposition ne revient pas pour cette séance. */
@@ -1608,27 +1528,15 @@ export function seances() {
       const weightKg = Number(this.draft.weightKg);
       const rpe = Number(this.draft.rpe);
       if (!Number.isFinite(reps) || reps <= 0) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'warning', message: 'Reps invalides (min 1).' },
-          }),
-        );
+        notify('warning', 'Reps invalides (min 1).');
         return;
       }
       if (!Number.isFinite(weightKg) || weightKg < 0) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'warning', message: 'Charge invalide (≥ 0 kg).' },
-          }),
-        );
+        notify('warning', 'Charge invalide (≥ 0 kg).');
         return;
       }
       if (!Number.isFinite(rpe) || rpe < 6 || rpe > 10) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'warning', message: 'RPE invalide (6–10).' },
-          }),
-        );
+        notify('warning', 'RPE invalide (6–10).');
         return;
       }
 
@@ -1712,11 +1620,7 @@ export function seances() {
       };
       const error = validateTimedSetInput(input, measure);
       if (error) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'warning', message: error },
-          }),
-        );
+        notify('warning', error);
         return;
       }
       const warmup = this.draftWarmup === true;
@@ -2359,11 +2263,7 @@ export function seances() {
         ...(ex?.incrementKg ? { incrementKg: ex.incrementKg } : {}),
       });
       if (ramp.length === 0) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'info', message: 'Charge trop légère pour un échauffement.' },
-          }),
-        );
+        notify('info', 'Charge trop légère pour un échauffement.');
         return;
       }
       const at = nowIso();
@@ -2428,11 +2328,7 @@ export function seances() {
         await exportAsJson(this.sessions, this.exercises);
       } catch (err) {
         console.error('[seances] exportJson failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec export JSON. Réessaie.' },
-          }),
-        );
+        notify('error', 'Échec export JSON. Réessaie.');
       }
     },
 
@@ -2441,11 +2337,7 @@ export function seances() {
         await exportAsCsv(this.sessions, this.exercises);
       } catch (err) {
         console.error('[seances] exportCsv failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec export CSV. Réessaie.' },
-          }),
-        );
+        notify('error', 'Échec export CSV. Réessaie.');
       }
     },
 
@@ -2543,18 +2435,10 @@ export function seances() {
         this.sessions = next;
         this.confirmDeleteId = null;
         this.expandedSessionId = null;
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: 'Séance supprimée.' },
-          }),
-        );
+        notify('success', 'Séance supprimée.');
       } catch (err) {
         console.error('[seances] deleteSession failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec de la suppression.' },
-          }),
-        );
+        notify('error', 'Échec de la suppression.');
       } finally {
         this.deletingSession = false;
       }
@@ -2837,9 +2721,7 @@ export function seances() {
       if (!draft || this.savingEdit) return;
       const isNew = this.editingIsNew;
       const warn = (message: string): void => {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind: 'warning', message } }),
-        );
+        notify('warning', message);
       };
       const entries = normalizeSupersets(draft.entries.filter((e) => e.sets.length > 0));
       if (entries.length === 0) {
@@ -2904,15 +2786,9 @@ export function seances() {
         this.setEditor = null;
         if (this.undoSet?.scope === 'history') this.undoSet = null;
         hapticSuccess();
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'success',
-              message: isNew
-                ? `Séance ajoutée au ${this.formatDateLong(next.startedAt)}.`
-                : 'Séance modifiée.',
-            },
-          }),
+        notify(
+          'success',
+          isNew ? `Séance ajoutée au ${this.formatDateLong(next.startedAt)}.` : 'Séance modifiée.',
         );
         // Objectifs (remplacement par id), succès et progression se recalculent.
         window.dispatchEvent(
@@ -2920,11 +2796,7 @@ export function seances() {
         );
       } catch (err) {
         console.error('[seances] saveEditedSession failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec de l’enregistrement. Réessaie.' },
-          }),
-        );
+        notify('error', 'Échec de l’enregistrement. Réessaie.');
       } finally {
         this.savingEdit = false;
       }
@@ -3435,13 +3307,9 @@ export function seances() {
         this.justSavedSessionId = finalized.id; // carte « Séance terminée » (partage)
         hapticSuccess(); // séance sauvegardée
 
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'success',
-              message: `Séance sauvegardée — ${durationMin} min${caloriesKcal ? ` · ~${caloriesKcal} kcal` : ''}`,
-            },
-          }),
+        notify(
+          'success',
+          `Séance sauvegardée — ${durationMin} min${caloriesKcal ? ` · ~${caloriesKcal} kcal` : ''}`,
         );
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_SESSION_SAVED, {
@@ -3455,11 +3323,7 @@ export function seances() {
         const message = isQuota
           ? 'Stockage plein : séance pas encore enregistrée. Garde l’app ouverte, libère de l’espace sur le téléphone (photos, apps) puis réessaie.'
           : `Échec de sauvegarde (${name}). Réessaie ou recharge la page.`;
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message },
-          }),
-        );
+        notify('error', message);
       } finally {
         this.savingSession = false;
       }
@@ -3487,22 +3351,14 @@ export function seances() {
         await saveTemplates(deps.storage, next);
         this.templates = next;
         this.templateName = '';
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: `Modèle "${name}" créé` },
-          }),
-        );
+        notify('success', `Modèle "${name}" créé`);
       } catch (err) {
         console.error('[seances] saveTemplate failed:', err);
         const name = err instanceof Error ? err.name : 'Error';
         const detail = err instanceof Error && err.message ? err.message.slice(0, 120) : '';
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'error',
-              message: `Échec création du modèle (${name})${detail ? ` — ${detail}` : ''}. Réessaie.`,
-            },
-          }),
+        notify(
+          'error',
+          `Échec création du modèle (${name})${detail ? ` — ${detail}` : ''}. Réessaie.`,
         );
       }
     },

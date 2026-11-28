@@ -292,7 +292,10 @@ window.addEventListener('vite:preloadError', (event) => {
     /* sessionStorage indisponible : on tente quand même un rechargement */
   }
   event.preventDefault();
-  window.location.reload();
+  void import('./lib/full-reload').then(
+    ({ fullReload }) => fullReload(),
+    () => window.location.reload(),
+  );
 });
 
 // ─── Service Worker (prod) ───────────────────────────────────

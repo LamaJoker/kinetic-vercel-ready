@@ -7,7 +7,7 @@
  * Émet `k-plan-today` sur window : { name, done, template } — la séance prévue
  * aujourd'hui, pour « Séance du jour » (accueil) et le focus du jour (/program).
  */
-import { STORAGE_KEYS, moveTargets, PLAN_DAY_NAMES, type PlanItem } from '@kinetic/core';
+import { moveTargets, PLAN_DAY_NAMES, type PlanItem } from '@kinetic/core';
 import { getDeps } from '../deps';
 import {
   loadProgramWeek,
@@ -17,6 +17,7 @@ import {
   type ProgramWeekView,
 } from '../lib/program-week';
 import { hapticLight, hapticSuccess } from '../lib/haptics';
+import { notify } from '../lib/notify';
 
 export interface PlanTodayDetail {
   name: string | null;
@@ -239,17 +240,11 @@ export function weekPlan() {
         this.view = await saveProgramWeekAdjust(deps.storage, v, adjust);
         this.sheetOpen = false;
         hapticSuccess();
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind: 'success', message } }),
-        );
+        notify('success', message);
         await this._announce(false);
       } catch (err) {
         console.error('[week-plan] enregistrement impossible :', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Planning non enregistré. Réessaie.' },
-          }),
-        );
+        notify('error', 'Planning non enregistré. Réessaie.');
       }
     },
 

@@ -71,9 +71,15 @@ def run_once(it):
                 except OSError:
                     print("chargement de la démo : pas de compte rendu", flush=True)
             print(f"étape {seen} {step['route']} : {json.dumps(step.get('diag'), ensure_ascii=False)}", flush=True)
-            storage = str((step.get("diag") or {}).get("storage", ""))
+            diag = step.get("diag") or {}
+            storage = str(diag.get("storage", ""))
             if storage and not re.match(r"^\d+ clés, \d+ séances", storage):
                 problems.append(f"stockage bloqué à l'étape {seen} ({step['route']}) : {storage[:300]}")
+            # Reprise du stockage bloqué (sync.md § 4.11) : message affiché, rechargements subis.
+            if diag.get("secours"):
+                problems.append(f"message « stockage ne répond pas » affiché à l'étape {seen}")
+            if diag.get("reloads"):
+                print(f"  rechargements pendant le parcours : {diag['reloads']} (auto il y a {diag.get('rechargementAuto')} ms)", flush=True)
             if step["route"] == "fin":
                 break
             time.sleep(0.8)

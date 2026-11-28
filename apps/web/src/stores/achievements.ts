@@ -21,6 +21,7 @@ import { loadSessions, loadExercises } from '../lib/training/storage';
 import type { Exercise, WorkoutSession } from '../lib/training/types';
 import { estimateE1rmKg } from '../lib/training/rpe';
 import type { AchievementMetrics } from '../lib/achievement-progress';
+import { notify } from '../lib/notify';
 
 interface StreakShape {
   count?: number;
@@ -171,14 +172,7 @@ export function achievementsStore() {
           for (const id of newOnes) {
             const ach = catalogById.get(id);
             if (!ach) continue;
-            window.dispatchEvent(
-              new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-                detail: {
-                  kind: 'success',
-                  message: `${ach.emoji} Achievement débloqué : ${ach.title}`,
-                },
-              }),
-            );
+            notify('success', `${ach.emoji} Achievement débloqué : ${ach.title}`);
           }
         }
       } catch (err) {

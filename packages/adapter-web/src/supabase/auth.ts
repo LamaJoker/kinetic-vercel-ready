@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './database.types.js';
+import { closeAllLocalDatabases } from '../sync/connections.js';
 
 const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'] as string | undefined;
 const SUPABASE_ANON_KEY = import.meta.env['VITE_SUPABASE_ANON_KEY'] as string | undefined;
@@ -216,7 +217,9 @@ async function signInWithOAuth(provider: 'google' | 'github'): Promise<void> {
           data: { session },
         } = await supabase!.auth.getSession();
         if (session) {
-          window.location.href = '/';
+          // Bases IndexedDB fermées avant la navigation pleine page (sync.md § 4.11 bis).
+          await closeAllLocalDatabases();
+          window.location.replace('/');
         }
       } catch {
         /* ignore */

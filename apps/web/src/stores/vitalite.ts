@@ -14,6 +14,7 @@ import { syncRoutineReminder } from '../lib/reminders';
 import { readHealthToday, SLEEP_GOAL_MIN, STEPS_GOAL } from '../lib/health';
 import { hapticSuccess } from '../lib/haptics';
 import { announceLevelUp, celebrate, highestLevelUp, routineCelebration } from '../lib/celebration';
+import { notify } from '../lib/notify';
 
 const PRIORITY_LABEL = { high: 'haute', med: 'moyenne', low: 'faible' } as const;
 const STEPS_TASK = 'evening-walk';
@@ -135,13 +136,6 @@ function buildTasks(customSpecs: CustomTaskSpec[]): Task[] {
       createdAt: today,
     }),
   );
-}
-
-function notify(kind: 'success' | 'error' | 'warning' | 'info', message: string): void {
-  // Defensive: notifications are UI-only side effects. In non-browser contexts
-  // (node tests, SSR), silently skip rather than throwing on missing `window`.
-  if (typeof window === 'undefined') return;
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
 }
 
 export function vitaliteStore() {

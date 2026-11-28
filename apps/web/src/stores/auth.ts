@@ -30,6 +30,7 @@ import { STORAGE_KEYS } from '@kinetic/core';
 import { isValidEmail } from '../lib/security.js';
 import { flushAndResetDeps, resetDeps, pendingAfterFlush } from '../deps';
 import { avatarText as computeAvatarText } from '../lib/avatar.js';
+import { fullReload } from '../lib/full-reload';
 
 // FIX #4 : Log explicite plutôt que dégradation silencieuse
 const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'] as string | undefined;
@@ -269,7 +270,7 @@ export function authStore() {
       this.showLogoutWarning = false;
       await flushAndResetDeps();
       await signOut();
-      window.location.href = '/login';
+      await fullReload('/login');
     },
 
     /** « Rester connecté ». */

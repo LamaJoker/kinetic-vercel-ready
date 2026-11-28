@@ -33,6 +33,7 @@ import { getDeps } from '../deps';
 import { loadExercises, loadSessions } from './training/storage';
 import type { Exercise } from './training/types';
 import { announceLevelUp, celebrate, challengeCelebration, highestLevelUp } from './celebration';
+import { notify as toast, type NotifyKind } from './notify';
 
 export interface ChallengeSnapshot {
   progress: ChallengeProgress[];
@@ -74,9 +75,7 @@ async function readContext(
   };
 }
 
-const notify = (message: string, kind = 'success'): void => {
-  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
-};
+const notify = (message: string, kind: NotifyKind = 'success'): void => toast(kind, message);
 
 /** Une évaluation à la fois : deux appels rapprochés ne récompensent pas deux fois. */
 let queue: Promise<unknown> = Promise.resolve();

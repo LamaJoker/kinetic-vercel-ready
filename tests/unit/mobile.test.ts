@@ -27,6 +27,7 @@ vi.mock('@capacitor/browser', () => ({
 // Supabase adapter stub
 vi.mock('@kinetic/adapters-web', () => ({
   supabase: null,
+  closeAllLocalDatabases: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { Capacitor } from '@capacitor/core';
