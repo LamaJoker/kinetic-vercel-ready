@@ -88,6 +88,7 @@ export * from './domain/auto-backup.domain.js';
 export * from './domain/workout-sets.domain.js';
 export * from './domain/template-editor.domain.js';
 export * from './domain/session-edit.domain.js';
+export * from './domain/past-session.domain.js';
 export * from './domain/superset.domain.js';
 export * from './domain/exercise-measure.domain.js';
 export * from './domain/training-calendar.domain.js';
@@ -110,6 +111,7 @@ export * from './domain/interval-timer.domain.js';
 export * from './domain/gym-mode.domain.js';
 export * from './domain/text-size.domain.js';
 export * from './domain/first-run-tour.domain.js';
+export * from './domain/dated-log.domain.js';
 
 // ─── Use Cases (orchestration) ────────────────────────────────
 export { completeTask_usecase } from './usecases/complete-task.usecase.js';

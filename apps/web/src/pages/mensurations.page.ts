@@ -1,6 +1,16 @@
 ﻿import { loc } from '../lib/num';
 import { ROLE_COLORS } from '../lib/palette';
-import { STORAGE_KEYS } from '@kinetic/core';
+import {
+  MIN_LOG_DATE,
+  STORAGE_KEYS,
+  localDayDate,
+  localIsoDay,
+  logDateError,
+  placeByDate,
+  sortByDate,
+} from '@kinetic/core';
+import { hapticLight, hapticSuccess } from '../lib/haptics';
+import { notifyWriteFailed } from '../lib/write-errors';
 import { getDeps } from '../deps';
 import { BODY_CHANGED_EVENT } from '../components/body-fat';
 import type { ScrubData } from '../lib/chart-scrub';
@@ -22,6 +32,8 @@ export interface MeasurementEntry {
   leftCalf?: number;
   rightCalf?: number;
   note?: string;
+  /** Date de modification (fusion de la synchro : la plus récente l'emporte). */
+  updatedAt?: string;
 }
 
 type MetricKey =
@@ -59,6 +71,21 @@ const METRICS: readonly MetricDef[] = [
 ] as const;
 
 const STORAGE_KEY = STORAGE_KEYS.MEASUREMENTS_ENTRIES;
+
+/** Mesure ↔ champ du formulaire (propriétés plates pour x-model). */
+const FORM_FIELDS: ReadonlyArray<readonly [MetricKey, string]> = [
+  ['neck', 'fNeck'],
+  ['shoulders', 'fShoulders'],
+  ['chest', 'fChest'],
+  ['waist', 'fWaist'],
+  ['hips', 'fHips'],
+  ['leftBicep', 'fLeftBicep'],
+  ['rightBicep', 'fRightBicep'],
+  ['leftThigh', 'fLeftThigh'],
+  ['rightThigh', 'fRightThigh'],
+  ['leftCalf', 'fLeftCalf'],
+  ['rightCalf', 'fRightCalf'],
+];
 
 /**
  * Tracé lissé (interpolation cubique monotone) : passe par chaque mesure
@@ -108,7 +135,9 @@ export function smoothLine(pts: ReadonlyArray<readonly [number, number]>): strin
 
 /** Année affichée seulement hors de l'année en cours (« 11 nov. » / « 16 sept. 2025 »). */
 function yearOption(iso: string): { year?: 'numeric' } {
-  return new Date(iso).getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {};
+  return (localDayDate(iso) ?? new Date(iso)).getFullYear() !== new Date().getFullYear()
+    ? { year: 'numeric' }
+    : {};
 }
 const PHOTOS_KEY = STORAGE_KEYS.MEASUREMENTS_PHOTOS;
 // Limite IDB côté validateStorageValue = 1 MB. On garde 48 KB de marge pour
@@ -212,6 +241,43 @@ export function mensurations() {
     fLeftCalf: null as number | null,
     fRightCalf: null as number | null,
     fNote: '',
+    /** Date des mesures (jour local), indépendante des valeurs ; aujourd'hui par défaut. */
+    fDate: localIsoDay(new Date()),
+    minDate: MIN_LOG_DATE,
+    /** Identifiant de l'entrée en cours de modification (`null` : nouvelle saisie). */
+    editingId: null as string | null,
+    /** Date pour laquelle la fusion avec des mesures existantes attend confirmation. */
+    pendingMergeDate: '',
+    /** Annulation possible quelques secondes après une suppression ou une fusion. */
+    undoEntries: null as MeasurementEntry[] | null,
+    undoLabel: '',
+    _undoTimer: null as ReturnType<typeof setTimeout> | null,
+
+    get maxDate(): string {
+      return localIsoDay(new Date());
+    },
+    get dateError(): string | null {
+      return logDateError(this.fDate, localIsoDay(new Date()));
+    },
+    get canSave(): boolean {
+      return this.hasFormData && !this.dateError;
+    },
+    /** Mesures déjà saisies à la date choisie (hors entrée en cours de modification). */
+    get mergeTarget(): MeasurementEntry | null {
+      return this.entries.find((e) => e.date === this.fDate && e.id !== this.editingId) ?? null;
+    },
+    get askMerge(): boolean {
+      return !!this.mergeTarget && this.pendingMergeDate === this.fDate;
+    },
+    get mergeMessage(): string {
+      const t = this.mergeTarget;
+      return t
+        ? `Des mesures existent déjà le ${this.formatDate(t.date)}. Les compléter ? Les valeurs saisies remplacent celles de ce jour-là ; les autres dates ne changent pas.`
+        : '';
+    },
+    get formTitle(): string {
+      return this.editingId ? 'Modifier la mesure' : 'Nouvelle mesure';
+    },
 
     // ── Computed ─────────────────────────────────────────────
 
@@ -334,7 +400,7 @@ export function mensurations() {
           deps.storage.get(STORAGE_KEY),
           deps.storage.get<unknown[]>(PHOTOS_KEY),
         ]);
-        this.entries = Array.isArray(stored) ? (stored as MeasurementEntry[]) : [];
+        this.entries = Array.isArray(stored) ? sortByDate(stored as MeasurementEntry[]) : [];
 
         // Photos stockées par clé séparée (évite le dépassement du seuil 1 MB par entrée)
         if (Array.isArray(storedMeta) && storedMeta.length > 0) {
@@ -482,7 +548,7 @@ export function mensurations() {
           return;
         }
 
-        const today = new Date().toISOString().slice(0, 10);
+        const today = localIsoDay(new Date());
         const entry: ProgressPhoto = {
           id: crypto.randomUUID(),
           date: today,
@@ -572,7 +638,7 @@ export function mensurations() {
 
     formatPhotoDate(iso: string): string {
       try {
-        return new Date(iso).toLocaleDateString('fr-FR', {
+        return (localDayDate(iso) ?? new Date(iso)).toLocaleDateString('fr-FR', {
           weekday: 'short',
           day: 'numeric',
           month: 'short',
@@ -584,63 +650,97 @@ export function mensurations() {
     },
 
     async addEntry(): Promise<void> {
-      if (!this.hasFormData) return;
-
-      const fieldMap: Record<string, number | null> = {
-        neck: this.fNeck,
-        shoulders: this.fShoulders,
-        chest: this.fChest,
-        waist: this.fWaist,
-        hips: this.fHips,
-        leftBicep: this.fLeftBicep,
-        rightBicep: this.fRightBicep,
-        leftThigh: this.fLeftThigh,
-        rightThigh: this.fRightThigh,
-        leftCalf: this.fLeftCalf,
-        rightCalf: this.fRightCalf,
+      if (!this.canSave) return;
+      const date = this.fDate;
+      // Des mesures existent déjà ce jour-là : confirmation avant de les compléter.
+      if (this.mergeTarget && this.pendingMergeDate !== date) {
+        this.pendingMergeDate = date;
+        hapticLight();
+        return;
+      }
+      const target = this.mergeTarget;
+      const editingId = this.editingId;
+      const before = this.entries;
+      const form = this as unknown as Record<string, unknown>;
+      const entry: MeasurementEntry = {
+        id: editingId ?? crypto.randomUUID(),
+        date,
+        updatedAt: new Date().toISOString(),
       };
-
-      const today = new Date().toISOString().slice(0, 10);
-      const entry: MeasurementEntry = { id: crypto.randomUUID(), date: today };
-      for (const [k, v] of Object.entries(fieldMap)) {
+      for (const [k, f] of FORM_FIELDS) {
+        const v = form[f];
         if (typeof v === 'number' && v > 0) (entry as unknown as Record<string, unknown>)[k] = v;
       }
       if (this.fNote.trim()) entry.note = this.fNote.trim();
-
-      const existing = this.entries.findIndex((e) => e.date === today);
-      const next =
-        existing >= 0
-          ? this.entries.map((e, i) => (i === existing ? { ...e, ...entry, id: e.id } : e))
-          : [...this.entries, entry].sort((a, b) => a.date.localeCompare(b.date));
-
+      // Fusion avec les mesures de ce jour (seulement celles-là) ; les autres dates restent intactes.
+      const saved: MeasurementEntry = target ? { ...target, ...entry, id: target.id } : entry;
+      const next = placeByDate(
+        before,
+        saved,
+        (e) => e.id === editingId || (target !== null && e.id === target.id),
+      );
       try {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEY, next);
         this.entries = next;
         window.dispatchEvent(new Event(BODY_CHANGED_EVENT));
         this._resetForm();
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: 'Mensurations enregistrées ✓' },
-          }),
-        );
+        if (this.period < 9999 && Date.parse(date) < Date.now() - this.period * 86_400_000) {
+          this.period = 9999;
+        }
+        hapticSuccess();
+        const when = date === localIsoDay(new Date()) ? '' : ` pour le ${this.formatDate(date)}`;
+        if (target || editingId) {
+          this._offerUndo(before, `Mensurations${when} mises à jour`);
+        } else {
+          // L'annulation précédente ne doit pas effacer cette nouvelle mesure.
+          this.undoEntries = null;
+          window.dispatchEvent(
+            new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
+              detail: { kind: 'success', message: `Mensurations enregistrées${when} ✓` },
+            }),
+          );
+        }
       } catch (err) {
-        console.error('[mensurations] addEntry failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec enregistrement. Réessaie.' },
-          }),
-        );
+        notifyWriteFailed('les mensurations', err);
       }
     },
 
+    /** Charge une entrée de l'historique dans le formulaire (valeurs et date modifiables). */
+    startEdit(entry: MeasurementEntry): void {
+      const form = this as unknown as Record<string, unknown>;
+      for (const [k, f] of FORM_FIELDS) form[f] = val(entry, k) ?? null;
+      this.fNote = entry.note ?? '';
+      this.fDate = entry.date;
+      this.editingId = entry.id;
+      this.pendingMergeDate = '';
+      hapticLight();
+      document.getElementById('mens-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+
+    cancelEdit(): void {
+      this._resetForm();
+    },
+
+    cancelMerge(): void {
+      this.pendingMergeDate = '';
+    },
+
     async removeEntry(id: string): Promise<void> {
-      const next = this.entries.filter((e) => e.id !== id);
+      const before = this.entries;
+      const removed = before.find((e) => e.id === id);
+      const next = before.filter((e) => e.id !== id);
       try {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEY, next);
         this.entries = next;
+        if (this.editingId === id) this._resetForm();
         window.dispatchEvent(new Event(BODY_CHANGED_EVENT));
+        hapticLight();
+        this._offerUndo(
+          before,
+          removed ? `Mesures du ${this.formatDate(removed.date)} supprimées` : 'Mesures supprimées',
+        );
       } catch (err) {
         console.error('[mensurations] removeEntry failed:', err);
         window.dispatchEvent(
@@ -651,18 +751,45 @@ export function mensurations() {
       }
     },
 
+    _offerUndo(before: MeasurementEntry[], label: string): void {
+      this.undoEntries = before;
+      this.undoLabel = label;
+      if (this._undoTimer) clearTimeout(this._undoTimer);
+      this._undoTimer = setTimeout(() => {
+        this.undoEntries = null;
+      }, 6000);
+    },
+
+    async undoLast(): Promise<void> {
+      const before = this.undoEntries;
+      if (!before) return;
+      this.undoEntries = null;
+      if (this._undoTimer) clearTimeout(this._undoTimer);
+      try {
+        const deps = await getDeps();
+        await deps.storage.set(STORAGE_KEY, before);
+        this.entries = before;
+        window.dispatchEvent(new Event(BODY_CHANGED_EVENT));
+      } catch (err) {
+        notifyWriteFailed('les mensurations', err);
+      }
+    },
+
     _resetForm(): void {
       this.fNeck = this.fShoulders = this.fChest = this.fWaist = this.fHips = null;
       this.fLeftBicep = this.fRightBicep = this.fLeftThigh = this.fRightThigh = null;
       this.fLeftCalf = this.fRightCalf = null;
       this.fNote = '';
+      this.fDate = localIsoDay(new Date());
+      this.editingId = null;
+      this.pendingMergeDate = '';
     },
 
     // ── Formatting ────────────────────────────────────────────
 
     formatDate(iso: string): string {
       try {
-        return new Date(iso).toLocaleDateString('fr-FR', {
+        return (localDayDate(iso) ?? new Date(iso)).toLocaleDateString('fr-FR', {
           day: 'numeric',
           month: 'short',
           ...yearOption(iso),
@@ -688,10 +815,7 @@ export function mensurations() {
         if (parts.length >= 2) break;
       }
       const extraCount =
-        Object.keys(entry).filter(
-          (k) =>
-            k !== 'id' && k !== 'date' && k !== 'note' && val(entry, k as MetricKey) !== undefined,
-        ).length - parts.length;
+        FORM_FIELDS.filter(([k]) => val(entry, k) !== undefined).length - parts.length;
       if (extraCount > 0) parts.push(`+${extraCount}\u00a0autres`);
       return parts.join(' · ') || entry.note || '';
     },

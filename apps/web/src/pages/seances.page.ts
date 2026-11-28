@@ -26,6 +26,14 @@ import {
   retimeSession,
   workAvgRpe,
   toLocalInputValue,
+  parseLocalDateTime,
+  localDateTime,
+  validatePastMove,
+  validatePastTiming,
+  defaultPastTiming,
+  pastSessionEntries,
+  buildPastSession,
+  upsertSessionByDate,
   exerciseMeasure,
   isTimedSet,
   loadSetsOf,
@@ -82,6 +90,7 @@ import {
   nextGymExercise,
   parseGymModePref,
   type GymView,
+  currentBodyweightKg,
 } from '@kinetic/core';
 import { UuidGenerator } from '@kinetic/adapters-web';
 import { getDeps } from '../deps';
@@ -313,8 +322,7 @@ function sessionsCacheVersion(sessions: readonly WorkoutSession[]): string {
   return `${sessions.length}:${last?.id ?? ''}:${last?.startedAt ?? ''}:${last?.endedAt ?? ''}`;
 }
 
-function defaultSessionName(): string {
-  const d = new Date();
+function defaultSessionName(d: Date = new Date()): string {
   const label = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
   return `Séance libre (${label})`;
 }
@@ -669,9 +677,9 @@ export function seances() {
         const bwEntries = await deps.storage.get<Array<{ weight: number }>>(
           STORAGE_KEYS.BODYWEIGHT_ENTRIES,
         );
-        if (Array.isArray(bwEntries) && bwEntries.length > 0) {
-          this.latestBodyweight = bwEntries.at(-1)?.weight ?? null;
-        }
+        // Poids actuel = pesée la plus récente par date (pas la dernière saisie).
+        const bwNow = currentBodyweightKg(bwEntries);
+        if (bwNow !== null) this.latestBodyweight = bwNow;
         this._plates = await deps.storage.get<{ barKg?: number; enabledPlates?: number[] }>(
           STORAGE_KEYS.PLATE_PREFS,
         );
@@ -898,7 +906,12 @@ export function seances() {
       this.confirmAbandon = false;
     },
 
-    /** Abandon explicite de la séance en cours : rien n'est enregistré dans l'historique. */
+    /**
+     * « Annuler la séance » (séance lancée par erreur) : rien n'est enregistré dans
+     * l'historique ni envoyé au cloud. Repos, alerte de fin de repos, chronomètre,
+     * séance en cours enregistrée sur l'appareil et bandeau « Séance en cours »
+     * (écran allumé compris) sont effacés.
+     */
     abandonCurrentSession(): void {
       if (!this.currentSession) return;
       this.stopRest();
@@ -906,11 +919,14 @@ export function seances() {
       this.currentSession = null;
       this.confirmAbandon = false;
       this.templateName = '';
-      this._persistActive();
+      this.menuFor = null;
+      if (this.setEditor?.scope === 'current') this.setEditor = null;
+      if (this.undoSet?.scope === 'current') this.undoSet = null;
+      this._persistActive(); // efface la séance enregistrée sur l'appareil (jamais synchronisée)
       hapticMedium();
       window.dispatchEvent(
         new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-          detail: { kind: 'info', message: 'Séance abandonnée.' },
+          detail: { kind: 'info', message: 'Séance annulée : rien n’a été enregistré.' },
         }),
       );
     },
@@ -2444,7 +2460,19 @@ export function seances() {
 
     /** Séances visibles dans l'historique, de la plus récente à la plus ancienne. */
     visibleSessions(): WorkoutSession[] {
-      return this.sessions.slice().reverse().slice(0, this.historyLimit);
+      const list = this.sessions.slice().reverse().slice(0, this.historyLimit);
+      // Séance passée en cours de saisie : en tête, ouverte en modification.
+      const draft = this.editingIsNew ? this.editingSession : null;
+      return draft ? [draft, ...list] : list;
+    },
+
+    /** Historique vide (aucune séance, aucune séance passée en cours de saisie). */
+    historyEmpty(): boolean {
+      return this.sessions.length === 0 && !this.editingIsNew;
+    },
+
+    historyListShown(): boolean {
+      return !this.historyEmpty() && this.historyView === 'list';
     },
 
     /** Déplie tout l'historique. */
@@ -2489,6 +2517,8 @@ export function seances() {
 
     /** Bascule l'affichage détaillé d'une séance dans l'historique. */
     toggleSessionDetail(id: string): void {
+      // La séance passée en cours de saisie reste ouverte (« Annuler » pour l'abandonner).
+      if (this.editingIsNew && this.editingSession?.id === id) return;
       if (this.editingSession) this.cancelEditSession();
       this.expandedSessionId = this.expandedSessionId === id ? null : id;
     },
@@ -2573,6 +2603,18 @@ export function seances() {
     _undoTimer: null as ReturnType<typeof setTimeout> | null,
     /** Brouillon de la séance passée en cours de modification. */
     editingSession: null as WorkoutSession | null,
+    /** Le brouillon est une séance passée ajoutée (pas encore dans l'historique). */
+    editingIsNew: false,
+    /** Exercice à ajouter au brouillon. */
+    pastExerciseId: '',
+    /** Feuille « Ajouter une séance passée ». */
+    pastSheet: null as {
+      date: string;
+      time: string;
+      duration: string | number;
+      templateId: string;
+      error: string;
+    } | null,
     editName: '',
     editStart: '',
     savingEdit: false,
@@ -2764,6 +2806,7 @@ export function seances() {
     startEditSession(id: string): void {
       const s = this.sessions.find((x) => x.id === id);
       if (!s) return;
+      this.editingIsNew = false;
       this.editingSession = JSON.parse(JSON.stringify(s)) as WorkoutSession;
       this.editName = s.name;
       this.editStart = toLocalInputValue(s.startedAt);
@@ -2772,6 +2815,8 @@ export function seances() {
     },
 
     cancelEditSession(): void {
+      if (this.editingIsNew) this.expandedSessionId = null;
+      this.editingIsNew = false;
       this.editingSession = null;
       this.setEditor = null;
       if (this.undoSet?.scope === 'history') this.undoSet = null;
@@ -2790,15 +2835,18 @@ export function seances() {
     async saveEditedSession(): Promise<void> {
       const draft = this.editingSession;
       if (!draft || this.savingEdit) return;
+      const isNew = this.editingIsNew;
+      const warn = (message: string): void => {
+        window.dispatchEvent(
+          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind: 'warning', message } }),
+        );
+      };
       const entries = normalizeSupersets(draft.entries.filter((e) => e.sets.length > 0));
       if (entries.length === 0) {
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: {
-              kind: 'warning',
-              message: 'Plus aucune série : supprime plutôt la séance.',
-            },
-          }),
+        warn(
+          isNew
+            ? 'Ajoute au moins un exercice et une série.'
+            : 'Plus aucune série : supprime plutôt la séance.',
         );
         return;
       }
@@ -2807,10 +2855,28 @@ export function seances() {
         name: this.editName.trim().slice(0, 80) || draft.name,
         entries,
       };
-      const start = new Date(this.editStart);
-      if (this.editStart && Number.isFinite(start.getTime())) {
-        next = retimeSession(next, start.toISOString());
+      // Date et heure en heure locale : jamais dans le futur ni avant 2000.
+      const start = this.editStart ? parseLocalDateTime(this.editStart) : null;
+      const moved = !!start && start.getTime() !== Date.parse(draft.startedAt);
+      if (this.editStart && !start) {
+        warn('Date ou heure invalide.');
+        return;
       }
+      const timingError =
+        start && isNew
+          ? validatePastTiming(start, Number(draft.durationMin) || 1, new Date())
+          : start && moved
+            ? validatePastMove(
+                start,
+                Date.parse(draft.endedAt ?? '') - Date.parse(draft.startedAt),
+                new Date(),
+              )
+            : null;
+      if (timingError) {
+        warn(timingError);
+        return;
+      }
+      if (start && moved) next = retimeSession(next, start.toISOString());
       // Champs dérivés stockés : RPE moyen et calories recalculés.
       const avgRpe = workAvgRpe(next);
       const caloriesKcal = estimateStrengthWorkoutCaloriesKcal({
@@ -2818,7 +2884,7 @@ export function seances() {
         avgRpe,
         profile: this.userProfile,
       });
-      const hadCalories = next.caloriesKcal != null;
+      const hadCalories = isNew || next.caloriesKcal != null;
       next = { ...next };
       delete next.avgRpe;
       delete next.caloriesKcal;
@@ -2828,19 +2894,24 @@ export function seances() {
       try {
         const deps = await getDeps();
         await saveSession(deps.storage, next);
-        this.sessions = this.sessions
-          .map((s) => (s.id === next.id ? next : s))
-          .sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+        // Insérée (séance passée, id neuf) ou remplacée à sa date : aucune autre séance touchée.
+        this.sessions = upsertSessionByDate(this.sessions, next);
         // Caches « la dernière fois » / progression : la séance a pu changer sans changer la longueur.
         this._lastCacheVersion = '';
         this._suggestionCacheVersion = '';
         this.editingSession = null;
+        this.editingIsNew = false;
         this.setEditor = null;
         if (this.undoSet?.scope === 'history') this.undoSet = null;
         hapticSuccess();
         window.dispatchEvent(
           new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: 'Séance modifiée.' },
+            detail: {
+              kind: 'success',
+              message: isNew
+                ? `Séance ajoutée au ${this.formatDateLong(next.startedAt)}.`
+                : 'Séance modifiée.',
+            },
           }),
         );
         // Objectifs (remplacement par id), succès et progression se recalculent.
@@ -2857,6 +2928,98 @@ export function seances() {
       } finally {
         this.savingEdit = false;
       }
+    },
+
+    // ── Ajouter une séance passée ──
+
+    /** Feuille : date (aujourd'hui par défaut), heure de début, durée, modèle ou séance libre. */
+    openPastSession(): void {
+      const d = defaultPastTiming(new Date());
+      this.pastSheet = {
+        date: d.date,
+        time: d.time,
+        duration: d.durationMin,
+        templateId: '',
+        error: '',
+      };
+    },
+
+    closePastSession(): void {
+      this.pastSheet = null;
+    },
+
+    /** Bornes des champs date (« AAAA-MM-JJ ») et date-heure (« …THH:mm »), heure locale. */
+    pastMaxDate(): string {
+      return toLocalInputValue(new Date().toISOString()).slice(0, 10);
+    },
+    pastMaxDateTime(): string {
+      return toLocalInputValue(new Date().toISOString());
+    },
+
+    /**
+     * Crée le brouillon (id neuf) et l'ouvre en modification dans l'historique :
+     * séries du modèle pré-remplies (charges de la dernière fois avant cette date).
+     */
+    createPastSession(): void {
+      const f = this.pastSheet;
+      if (!f) return;
+      const start = localDateTime(f.date, f.time);
+      const durationMin = Number(f.duration);
+      const error = validatePastTiming(start, durationMin, new Date());
+      if (error || !start) {
+        f.error = error ?? 'Date ou heure invalide.';
+        return;
+      }
+      const t = this.templates.find((x) => x.id === f.templateId);
+      const entries = t
+        ? normalizeSupersets(
+            pastSessionEntries(t.exercises, rawOf(this.sessions), start, durationMin),
+          )
+        : [];
+      const draft: WorkoutSession = buildPastSession({
+        id: newId(),
+        name: t ? t.name : defaultSessionName(start),
+        ...(t ? { templateId: t.id } : {}),
+        start,
+        durationMin,
+        entries,
+      });
+      this.cancelEditSession();
+      this.editingSession = draft;
+      this.editingIsNew = true;
+      this.editName = draft.name;
+      this.editStart = toLocalInputValue(draft.startedAt);
+      this.pastExerciseId = '';
+      this.confirmDeleteId = null;
+      this.historyView = 'list';
+      this.expandedSessionId = draft.id;
+      this.pastSheet = null;
+      hapticLight();
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => {
+          document
+            .getElementById(`history-${draft.id}`)
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+    },
+
+    /** Ajoute un exercice au brouillon avec une première série à corriger. */
+    addPastExercise(): void {
+      const session = this.editingSession;
+      const id = this.pastExerciseId;
+      this.pastExerciseId = '';
+      if (!session || !id || session.entries.some((e) => e.exerciseId === id)) return;
+      const start = new Date(session.startedAt);
+      const [entry] = pastSessionEntries(
+        [{ exerciseId: id, sets: 1, targetReps: 8, targetRpe: 8 }],
+        rawOf(this.sessions),
+        start,
+        Number(session.durationMin) || 60,
+      );
+      if (!entry) return;
+      this.editingSession = { ...session, entries: [...session.entries, entry] };
+      this._openSetEditor('history', id, 0, true);
     },
 
     /** Retourne le nom de l'exercice à partir de son id. */

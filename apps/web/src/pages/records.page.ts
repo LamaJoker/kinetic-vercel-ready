@@ -19,6 +19,7 @@ import {
   exerciseMeasure,
   formatDuration,
   formatDistance,
+  currentBodyweightKg,
 } from '@kinetic/core';
 import { getDeps } from '../deps';
 import type { Exercise, WorkoutSession } from '../lib/training/types';
@@ -247,8 +248,8 @@ export function records() {
           this.scoreBodyweightKg = Number(scoreProfile.bodyweightKg) || 0;
           this.scoreSex = scoreProfile.sex === 'female' ? 'female' : 'male';
         } else if (Array.isArray(bwEntries) && bwEntries.length > 0) {
-          // Fallback : dernier poids enregistré dans le module bodyweight
-          this.scoreBodyweightKg = Number(bwEntries.at(-1)?.weight) || 0;
+          // Fallback : pesée la plus récente (par date) du module bodyweight
+          this.scoreBodyweightKg = currentBodyweightKg(bwEntries) ?? 0;
         }
       } catch (err) {
         console.error('[records] init failed:', err);

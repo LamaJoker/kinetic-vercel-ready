@@ -278,9 +278,36 @@
     </p>
   </section>
 
-  <!-- Nouvelle pesée -->
-  <section class="mb-8">
-    <h2 class="k-section mb-2.5">Nouvelle pesée</h2>
+  <!-- Nouvelle pesée / modification -->
+  <section id="bw-form" class="mb-8 scroll-mt-4">
+    <div class="flex items-baseline justify-between mb-2.5">
+      <h2 class="k-section" x-text="formTitle">Nouvelle pesée</h2>
+      <button type="button" x-show="editingDate" class="k-link text-sm" @click="cancelEdit()">
+        Annuler la modification
+      </button>
+    </div>
+    <div class="k-list mb-3">
+      <label for="f-bodyweight-date" class="k-row">
+        <span class="text-base text-white flex-shrink-0">Date de la pesée</span>
+        <input
+          id="f-bodyweight-date"
+          type="date"
+          x-model="newDate"
+          :min="minDate"
+          :max="maxDate"
+          required
+          :aria-invalid="dateError ? 'true' : 'false'"
+          aria-describedby="bw-date-help"
+          class="flex-1 min-w-0 bg-transparent text-right text-base text-white tabular-nums focus:outline-none"
+        />
+      </label>
+    </div>
+    <p
+      x-show="dateError"
+      class="k-caption -mt-1 mb-3 text-kinetic-electric"
+      role="alert"
+      x-text="dateError"
+    ></p>
     <div class="k-list">
       <label for="f-bodyweight-1" class="k-row">
         <span class="text-base text-white flex-shrink-0">Poids</span>
@@ -339,12 +366,24 @@
         <span class="w-6 flex-shrink-0" aria-hidden="true"></span>
       </label>
     </div>
-    <p class="k-caption mt-2">Une pesée par jour : une nouvelle saisie remplace celle du jour.</p>
+    <p id="bw-date-help" class="k-caption mt-2">
+      Une pesée par jour. Choisis une date passée pour compléter ton historique : les autres jours
+      ne changent pas, et le poids actuel reste ta pesée la plus récente.
+    </p>
+
+    <div x-show="askReplace" class="k-card mt-4" role="alert">
+      <p class="text-sm text-white text-pretty" x-text="replaceMessage"></p>
+      <div class="flex gap-2 mt-3">
+        <button type="button" class="k-btn-2 flex-1" @click="cancelReplace()">Annuler</button>
+        <button type="button" class="k-btn-primary flex-1" @click="addEntry()">Remplacer</button>
+      </div>
+    </div>
 
     <button
       type="button"
+      x-show="!askReplace"
       @click="addEntry()"
-      :disabled="!newWeight || newWeight < 30"
+      :disabled="!canSave"
       class="k-btn mt-4 disabled:bg-none disabled:bg-kinetic-raised disabled:text-gray-500 disabled:opacity-100"
     >
       Enregistrer
@@ -423,9 +462,31 @@
           <button
             type="button"
             x-show="editing"
+            @click="startEdit(entry)"
+            class="k-icon-btn bg-transparent text-gray-500 active:bg-kinetic-elevated active:text-white"
+            :aria-label="'Modifier la pesée du ' + formatDate(entry.date)"
+          >
+            <svg
+              class="w-[1.125rem] h-[1.125rem]"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            x-show="editing"
             @click="removeEntry(entry.date)"
             class="k-icon-btn bg-transparent text-gray-500 active:bg-kinetic-elevated active:text-kinetic-electric"
-            aria-label="Supprimer"
+            :aria-label="'Supprimer la pesée du ' + formatDate(entry.date)"
           >
             <svg
               class="w-[1.125rem] h-[1.125rem]"
@@ -455,4 +516,15 @@
       </li>
     </ul>
   </section>
+
+  <!-- Suppression / remplacement : annulation possible quelques secondes -->
+  <div
+    x-show="undoEntries"
+    style="display: none"
+    class="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[90] mx-auto flex max-w-md items-center gap-3 rounded-2xl k-toast px-4 py-2.5"
+    role="status"
+  >
+    <span class="flex-1 min-w-0 truncate text-sm text-white" x-text="undoLabel"></span>
+    <button type="button" class="k-link" @click="undoLast()">Annuler</button>
+  </div>
 </div>

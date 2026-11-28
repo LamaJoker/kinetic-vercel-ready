@@ -4,7 +4,7 @@
  * Sans effet sur le web.
  */
 import { Capacitor } from '@capacitor/core';
-import { STORAGE_KEYS } from '@kinetic/core';
+import { STORAGE_KEYS, localDayDate } from '@kinetic/core';
 import type { HealthDataType, HealthSample } from '@capgo/capacitor-health';
 
 export const STEPS_GOAL = 8000;
@@ -81,12 +81,24 @@ export async function openHealthSettings(): Promise<void> {
   }
 }
 
-/** Enregistre une pesée (et la masse grasse) dans Health Connect. */
-export async function writeBodyweight(weightKg: number, bodyFatPct: number | null): Promise<void> {
+/**
+ * Enregistre une pesée (et la masse grasse) dans Health Connect. `day` (« AAAA-MM-JJ »,
+ * local) : pesée d'un jour passé, datée de ce jour à midi pour ne pas passer pour le
+ * poids actuel ; sans `day` (ou pour aujourd'hui), datée de maintenant.
+ */
+export async function writeBodyweight(
+  weightKg: number,
+  bodyFatPct: number | null,
+  day?: string,
+): Promise<void> {
   if (!isAndroid() || !healthEnabled()) return;
   try {
     const health = await plugin();
-    const at = new Date().toISOString();
+    const now = new Date();
+    const past = day ? localDayDate(day) : null;
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (past) past.setHours(12);
+    const at = (past && past < startOfToday ? past : now).toISOString();
     await health.saveSample({
       dataType: 'weight',
       value: weightKg,

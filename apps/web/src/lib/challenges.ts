@@ -27,6 +27,7 @@ import {
   type CustomChallengeInput,
   type StoragePort,
   type WaterPrefs,
+  currentBodyweightKg,
 } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { loadExercises, loadSessions } from './training/storage';
@@ -55,8 +56,7 @@ async function readContext(
     storage.get<{ weightKg?: number }>(STORAGE_KEYS.USER_PROFILE),
     storage.get<Array<{ weight?: number }>>(STORAGE_KEYS.BODYWEIGHT_ENTRIES),
   ]);
-  const last = Array.isArray(entries) ? Number(entries.at(-1)?.weight) : NaN;
-  const w = Number.isFinite(last) && last > 0 ? last : Number(profile?.weightKg);
+  const w = currentBodyweightKg(entries) ?? Number(profile?.weightKg);
   const names = new Map(exercises.map((e) => [e.id, e.name]));
   return {
     ctx: {

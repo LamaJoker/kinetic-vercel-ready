@@ -14,6 +14,7 @@ import {
   waterTotal,
   type WaterLog,
   type WaterPrefs,
+  currentBodyweightKg,
 } from '@kinetic/core';
 import { getDeps } from '../deps';
 import type { ShortcutAction } from './deep-link';
@@ -124,8 +125,7 @@ async function addGlass(open: OpenRoute): Promise<void> {
     deps.storage.get<{ weightKg?: number }>(STORAGE_KEYS.USER_PROFILE),
     deps.storage.get<Array<{ weight?: number }>>(STORAGE_KEYS.BODYWEIGHT_ENTRIES),
   ]);
-  const last = Array.isArray(entries) ? Number(entries.at(-1)?.weight) : NaN;
-  const weight = Number.isFinite(last) && last > 0 ? last : Number(profile?.weightKg);
+  const weight = currentBodyweightKg(entries) ?? Number(profile?.weightKg);
   const goal = waterGoal(prefs, Number.isFinite(weight) && weight > 0 ? weight : null);
   const glass = glassSize(prefs);
   const before = waterTotal(log, date);

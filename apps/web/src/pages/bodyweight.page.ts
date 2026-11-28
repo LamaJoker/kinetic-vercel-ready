@@ -1,7 +1,17 @@
 ﻿import { writeBodyweight } from '../lib/health';
 import { localIsoDate } from '../lib/widget';
 import { loc } from '../lib/num';
-import { STORAGE_KEYS } from '@kinetic/core';
+import {
+  MIN_LOG_DATE,
+  STORAGE_KEYS,
+  latestByDate,
+  localDayDate,
+  logDateError,
+  placeByDate,
+  sortByDate,
+} from '@kinetic/core';
+import { hapticLight, hapticSuccess } from '../lib/haptics';
+import { notifyWriteFailed } from '../lib/write-errors';
 import { getDeps } from '../deps';
 import { BODY_CHANGED_EVENT } from '../components/body-fat';
 import type { ScrubData } from '../lib/chart-scrub';
@@ -11,6 +21,12 @@ interface BodyweightEntry {
   weight: number;
   bodyFatPct: number | null;
   note: string | null;
+  /** Date de modification (fusion de la synchro : la plus récente l'emporte). */
+  updatedAt?: string;
+}
+
+function notify(kind: 'success' | 'error', message: string): void {
+  window.dispatchEvent(new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, { detail: { kind, message } }));
 }
 
 /**
@@ -103,6 +119,17 @@ export function bodyweight() {
     newWeight: null as number | null,
     newBf: null as number | null,
     newNote: '',
+    /** Date de la pesée (jour local), indépendante des valeurs ; aujourd'hui par défaut. */
+    newDate: localIsoDate(),
+    minDate: MIN_LOG_DATE,
+    /** Date d'origine de la pesée en cours de modification (`null` : nouvelle pesée). */
+    editingDate: null as string | null,
+    /** Date pour laquelle le remplacement d'une pesée existante attend confirmation. */
+    pendingReplaceDate: '',
+    /** Annulation possible quelques secondes après une suppression ou un remplacement. */
+    undoEntries: null as BodyweightEntry[] | null,
+    undoLabel: '',
+    _undoTimer: null as ReturnType<typeof setTimeout> | null,
     goalWeight: null as number | null,
     period: 90,
     /** Historique : mode édition (corbeilles visibles) et liste complète. */
@@ -117,8 +144,37 @@ export function bodyweight() {
       return this.entries.filter((e) => Date.parse(e.date) >= cutoff);
     },
 
+    /** Poids actuel : la pesée la plus RÉCENTE par date (une saisie passée ne le change pas). */
     get latest(): BodyweightEntry | null {
-      return this.entries.at(-1) ?? null;
+      return latestByDate(this.entries);
+    },
+
+    get maxDate(): string {
+      return localIsoDate();
+    },
+    get dateError(): string | null {
+      return logDateError(this.newDate, localIsoDate());
+    },
+    get canSave(): boolean {
+      return !!this.newWeight && this.newWeight >= 30 && !this.dateError;
+    },
+    /** Pesée existante à la date choisie (hors pesée en cours de modification). */
+    get replaceTarget(): BodyweightEntry | null {
+      return (
+        this.entries.find((e) => e.date === this.newDate && e.date !== this.editingDate) ?? null
+      );
+    },
+    get askReplace(): boolean {
+      return !!this.replaceTarget && this.pendingReplaceDate === this.newDate;
+    },
+    get replaceMessage(): string {
+      const t = this.replaceTarget;
+      return t
+        ? `Une pesée existe déjà le ${this.formatDate(t.date)} (${loc(t.weight.toFixed(1))} kg). La remplacer ? Les autres jours ne changent pas.`
+        : '';
+    },
+    get formTitle(): string {
+      return this.editingDate ? 'Modifier la pesée' : 'Nouvelle pesée';
     },
     get earliest(): BodyweightEntry | null {
       return this.filteredEntries[0] ?? null;
@@ -200,7 +256,7 @@ export function bodyweight() {
           deps.storage.get(STORAGE_KEY_ENTRIES),
           deps.storage.get(STORAGE_KEY_GOAL),
         ]);
-        this.entries = Array.isArray(stored) ? (stored as BodyweightEntry[]) : [];
+        this.entries = Array.isArray(stored) ? sortByDate(stored as BodyweightEntry[]) : [];
         if (typeof goal === 'number') this.goalWeight = goal;
       } catch (err) {
         console.error('[bodyweight] init failed:', err);
@@ -208,19 +264,26 @@ export function bodyweight() {
     },
 
     async addEntry(): Promise<void> {
-      if (!this.newWeight || this.newWeight < 30) return;
-      const today = localIsoDate();
-      const idx = this.entries.findIndex((e) => e.date === today);
+      if (!this.canSave || !this.newWeight) return;
+      const date = this.newDate;
+      // Une pesée existe déjà ce jour-là : confirmation avant de la remplacer.
+      if (this.replaceTarget && this.pendingReplaceDate !== date) {
+        this.pendingReplaceDate = date;
+        hapticLight();
+        return;
+      }
+      const replaced = this.replaceTarget;
+      const editing = this.editingDate;
+      const before = this.entries;
       const entry: BodyweightEntry = {
-        date: today,
+        date,
         weight: +this.newWeight,
         bodyFatPct: this.newBf != null ? +this.newBf : null,
         note: this.newNote.trim() || null,
+        updatedAt: new Date().toISOString(),
       };
-      const next =
-        idx >= 0
-          ? this.entries.map((e, i) => (i === idx ? entry : e))
-          : [...this.entries, entry].sort((a, b) => a.date.localeCompare(b.date));
+      // Seules la pesée de cette date et celle qu'on modifie sont remplacées.
+      const next = placeByDate(before, entry, (e) => e.date === date || e.date === editing);
       try {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEY_ENTRIES, next);
@@ -229,45 +292,100 @@ export function bodyweight() {
         }
         this.entries = next;
         window.dispatchEvent(new Event(BODY_CHANGED_EVENT));
-        void writeBodyweight(entry.weight, entry.bodyFatPct);
-        this.newWeight = null;
-        this.newBf = null;
-        this.newNote = '';
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'success', message: loc(entry.weight.toFixed(1)) + ' kg enregistré' },
-          }),
-        );
+        // Santé : datée du jour de la pesée (une pesée passée n'y devient pas le poids actuel).
+        void writeBodyweight(entry.weight, entry.bodyFatPct, date);
+        this._resetForm();
+        // Pesée hors de la période affichée : on affiche tout pour la voir dans l'historique.
+        if (this.period < 9999 && Date.parse(date) < Date.now() - this.period * 86_400_000) {
+          this.period = 9999;
+        }
+        hapticSuccess();
+        const when = date === localIsoDate() ? '' : ` pour le ${this.formatDate(date)}`;
+        if (replaced || editing) {
+          this._offerUndo(before, `Pesée${when} mise à jour`);
+        } else {
+          // L'annulation précédente ne doit pas effacer cette nouvelle pesée.
+          this.undoEntries = null;
+          notify('success', loc(entry.weight.toFixed(1)) + ' kg enregistré' + when);
+        }
       } catch (err) {
-        console.error('[bodyweight] addEntry failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec enregistrement du poids. Réessaie.' },
-          }),
-        );
+        notifyWriteFailed('la pesée', err);
       }
     },
 
+    /** Charge une pesée de l'historique dans le formulaire (valeurs et date modifiables). */
+    startEdit(entry: BodyweightEntry): void {
+      this.editingDate = entry.date;
+      this.newDate = entry.date;
+      this.newWeight = entry.weight;
+      this.newBf = entry.bodyFatPct;
+      this.newNote = entry.note ?? '';
+      this.pendingReplaceDate = '';
+      hapticLight();
+      document.getElementById('bw-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+
+    cancelEdit(): void {
+      this._resetForm();
+    },
+
+    cancelReplace(): void {
+      this.pendingReplaceDate = '';
+    },
+
+    _resetForm(): void {
+      this.newWeight = null;
+      this.newBf = null;
+      this.newNote = '';
+      this.newDate = localIsoDate();
+      this.editingDate = null;
+      this.pendingReplaceDate = '';
+    },
+
     async removeEntry(date: string): Promise<void> {
-      const next = this.entries.filter((e) => e.date !== date);
+      const before = this.entries;
+      const next = before.filter((e) => e.date !== date);
       try {
         const deps = await getDeps();
         await deps.storage.set(STORAGE_KEY_ENTRIES, next);
         this.entries = next;
+        if (this.editingDate === date) this._resetForm();
         window.dispatchEvent(new Event(BODY_CHANGED_EVENT));
+        hapticLight();
+        this._offerUndo(before, `Pesée du ${this.formatDate(date)} supprimée`);
       } catch (err) {
         console.error('[bodyweight] removeEntry failed:', err);
-        window.dispatchEvent(
-          new CustomEvent(STORAGE_KEYS.EVENT_NOTIFY, {
-            detail: { kind: 'error', message: 'Échec de suppression. Réessaie.' },
-          }),
-        );
+        notify('error', 'Échec de suppression. Réessaie.');
+      }
+    },
+
+    _offerUndo(before: BodyweightEntry[], label: string): void {
+      this.undoEntries = before;
+      this.undoLabel = label;
+      if (this._undoTimer) clearTimeout(this._undoTimer);
+      this._undoTimer = setTimeout(() => {
+        this.undoEntries = null;
+      }, 6000);
+    },
+
+    async undoLast(): Promise<void> {
+      const before = this.undoEntries;
+      if (!before) return;
+      this.undoEntries = null;
+      if (this._undoTimer) clearTimeout(this._undoTimer);
+      try {
+        const deps = await getDeps();
+        await deps.storage.set(STORAGE_KEY_ENTRIES, before);
+        this.entries = before;
+        window.dispatchEvent(new Event(BODY_CHANGED_EVENT));
+      } catch (err) {
+        notifyWriteFailed('la pesée', err);
       }
     },
 
     formatDate(iso: string): string {
       try {
-        return new Date(iso).toLocaleDateString('fr-FR', {
+        return (localDayDate(iso) ?? new Date(iso)).toLocaleDateString('fr-FR', {
           day: '2-digit',
           month: 'short',
           year: '2-digit',
@@ -340,7 +458,8 @@ export function bodyweight() {
         typeof document !== 'undefined' &&
         document.documentElement.getAttribute('data-mode') === 'light';
       const areaTop = isLight ? '0.2' : '0.3';
-      const version = `${isLight ? 'l' : 'd'}:${pts.length}:${pts[0]?.date ?? ''}:${pts.at(-1)?.date ?? ''}:${pts.at(-1)?.weight ?? ''}:${this.goalWeight ?? ''}:${this.period}`;
+      const sum = pts.reduce((a, e) => a + e.weight, 0);
+      const version = `${isLight ? 'l' : 'd'}:${sum}:${pts.length}:${pts[0]?.date ?? ''}:${pts.at(-1)?.date ?? ''}:${pts.at(-1)?.weight ?? ''}:${this.goalWeight ?? ''}:${this.period}`;
       if (this._chartSvgVersion === version && this._chartSvgCache) return this._chartSvgCache;
 
       const { W, H, plotL, plotR, plotB, lo, hi, goal, showGoal, sy, coords } =

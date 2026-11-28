@@ -80,6 +80,14 @@
       <button type="button" @click="exitGymMode()" class="k-stage-btn min-h-[3rem] px-4 text-base">
         Quitter le mode salle
       </button>
+      <button
+        type="button"
+        @click="askAbandon()"
+        class="k-stage-btn min-h-[3rem] px-4 text-base"
+        aria-label="Annuler la séance"
+      >
+        Annuler
+      </button>
       <p
         class="k-stage-muted ml-auto text-xl font-semibold tabular-nums"
         x-text="$num.loc(elapsedLabel())"
@@ -321,8 +329,16 @@
 
   <!-- ── Séance en cours ─────────────────────────────────────────────────── -->
   <section x-show="currentSession" class="mb-8 k-enter">
-    <div class="mb-2.5 flex items-center justify-between gap-2">
-      <h2 class="k-section">Séance en cours</h2>
+    <div class="mb-2.5 flex items-center gap-2">
+      <h2 class="k-section mr-auto">Séance en cours</h2>
+      <button
+        type="button"
+        @click="askAbandon()"
+        class="k-pill h-9 bg-kinetic-raised text-sm text-kinetic-electric"
+        aria-label="Annuler la séance"
+      >
+        Annuler
+      </button>
       <button
         type="button"
         @click="enterGymMode()"
@@ -1909,35 +1925,10 @@
         </svg>
       </a>
 
-      <!-- Abandon explicite (rien n'est ajouté à l'historique) -->
-      <div class="flex justify-center pt-1">
-        <button
-          type="button"
-          x-show="!confirmAbandon"
-          @click="askAbandon()"
-          class="h-11 px-4 text-sm text-gray-500 transition active:opacity-60"
-        >
-          Abandonner la séance
-        </button>
-        <div
-          x-show="confirmAbandon"
-          class="k-card w-full"
-          role="alertdialog"
-          aria-labelledby="seances-abandon"
-        >
-          <p id="seances-abandon" class="text-sm text-white">
-            Abandonner cette séance ? Les séries ne seront pas enregistrées.
-          </p>
-          <div class="mt-3 flex gap-2">
-            <button type="button" @click="cancelAbandon()" class="k-btn-2 h-11 text-sm">
-              Continuer
-            </button>
-            <button type="button" @click="abandonCurrentSession()" class="k-btn h-11 text-sm">
-              Abandonner
-            </button>
-          </div>
-        </div>
-      </div>
+      <!-- Annulation (séance lancée par erreur) : rien n'est ajouté à l'historique -->
+      <button type="button" @click="askAbandon()" class="k-btn-2">
+        <span class="text-kinetic-electric">Annuler la séance</span>
+      </button>
     </div>
   </section>
 
@@ -2370,11 +2361,15 @@
       </button>
     </div>
 
-    <template x-if="sessions.length === 0">
+    <button type="button" @click="openPastSession()" class="k-btn-2 mb-3">
+      + Ajouter une séance passée
+    </button>
+
+    <template x-if="historyEmpty()">
       <p class="k-card text-sm text-gray-500">Aucune séance enregistrée.</p>
     </template>
 
-    <div class="k-list k-stagger" x-show="sessions.length > 0 && historyView === 'list'">
+    <div class="k-list k-stagger" x-show="historyListShown()">
       <template x-for="s in visibleSessions()" :key="s.id">
         <div
           class="k-item scroll-mt-20"
@@ -2469,6 +2464,8 @@
                   <input
                     :id="'edit-start-' + s.id"
                     type="datetime-local"
+                    min="2000-01-01T00:00"
+                    :max="pastMaxDateTime()"
                     x-model="editStart"
                     class="k-field bg-kinetic-elevated"
                   />
@@ -2528,6 +2525,32 @@
                     class="k-link mt-1.5 text-sm"
                   >
                     + Ajouter une série
+                  </button>
+                </div>
+              </template>
+              <template x-if="isEditingSession(s.id)">
+                <div class="flex gap-2">
+                  <select
+                    x-model="pastExerciseId"
+                    aria-label="Exercice à ajouter"
+                    class="k-field flex-1 bg-kinetic-elevated"
+                  >
+                    <option value="">Ajouter un exercice…</option>
+                    <template x-for="group in exercisesByGroup" :key="group.category">
+                      <optgroup :label="group.category">
+                        <template x-for="ex in group.exercises" :key="ex.id">
+                          <option :value="ex.id" x-text="ex.name"></option>
+                        </template>
+                      </optgroup>
+                    </template>
+                  </select>
+                  <button
+                    type="button"
+                    @click="addPastExercise()"
+                    :disabled="!pastExerciseId"
+                    class="k-pill h-11"
+                  >
+                    Ajouter
                   </button>
                 </div>
               </template>
@@ -2874,6 +2897,91 @@
           </button>
           <button type="button" class="k-link mx-auto flex" @click="closeShareCard()">
             Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ── Annuler la séance en cours (confirmation) ─────────────────────── -->
+  <template x-if="confirmAbandon">
+    <div class="k-backdrop" @click.self="cancelAbandon()" @keydown.escape.window="cancelAbandon()">
+      <div class="k-sheet" role="alertdialog" aria-modal="true" aria-labelledby="seances-abandon">
+        <h3 id="seances-abandon" class="font-display text-xl font-bold text-white text-center">
+          Annuler la séance ?
+        </h3>
+        <p class="mt-2 text-center text-sm text-gray-400">Rien ne sera enregistré.</p>
+        <div class="mt-5 space-y-2">
+          <button type="button" class="k-btn-2" @click="cancelAbandon()">
+            Continuer la séance
+          </button>
+          <button type="button" class="k-btn-danger" @click="abandonCurrentSession()">
+            Annuler la séance
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ── Ajouter une séance passée ─────────────────────────────────────── -->
+  <template x-if="pastSheet">
+    <div
+      class="k-backdrop"
+      @click.self="closePastSession()"
+      @keydown.escape.window="closePastSession()"
+    >
+      <div class="k-sheet" role="dialog" aria-modal="true" aria-labelledby="past-title">
+        <h3 id="past-title" class="font-display text-xl font-bold text-white text-center">
+          Séance passée
+        </h3>
+        <div class="mt-4 grid grid-cols-2 gap-2">
+          <div class="col-span-2">
+            <label class="k-label" for="past-date">Date</label>
+            <input
+              id="past-date"
+              type="date"
+              min="2000-01-01"
+              :max="pastMaxDate()"
+              x-model="pastSheet.date"
+              class="k-field"
+            />
+          </div>
+          <div>
+            <label class="k-label" for="past-time">Heure de début</label>
+            <input id="past-time" type="time" x-model="pastSheet.time" class="k-field" />
+          </div>
+          <div>
+            <label class="k-label" for="past-duration">Durée (min)</label>
+            <input
+              id="past-duration"
+              type="number"
+              min="1"
+              max="600"
+              inputmode="numeric"
+              x-model="pastSheet.duration"
+              class="k-field tabular-nums"
+            />
+          </div>
+        </div>
+        <label class="k-label mt-3" for="past-template">Séance</label>
+        <select id="past-template" x-model="pastSheet.templateId" class="k-field">
+          <option value="">Séance libre</option>
+          <template x-for="t in templates" :key="t.id">
+            <option :value="t.id" x-text="t.name"></option>
+          </template>
+        </select>
+        <p
+          x-show="pastSheet.error"
+          x-text="pastSheet.error"
+          class="mt-2 text-sm text-kinetic-electric"
+          role="alert"
+        ></p>
+        <div class="mt-5 space-y-2">
+          <button type="button" class="k-btn-primary" @click="createPastSession()">
+            Saisir les exercices
+          </button>
+          <button type="button" class="k-link mx-auto flex" @click="closePastSession()">
+            Annuler
           </button>
         </div>
       </div>

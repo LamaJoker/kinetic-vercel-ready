@@ -231,3 +231,158 @@ describe('séance passée : « Modifier »', () => {
     expect(page.undoSet).toBeNull();
   });
 });
+
+describe('séance en cours : « Annuler la séance »', () => {
+  it('confirmation puis suppression : rien n’est enregistré, repos et sauvegarde locale effacés', async () => {
+    const { cancelRestAlert } = await import('../../apps/web/src/lib/training/rest-alert.js');
+    const page = makePage();
+    const schedule = vi.fn();
+    page._activeWriter = {
+      schedule,
+      flush: vi.fn(async () => {}),
+      pending: () => false,
+      failing: () => false,
+    };
+    page.restEndsAtMs = Date.now() + 60_000;
+    page.openSetEditor('bench', 0);
+    page.askAbandon();
+    expect(page.confirmAbandon).toBe(true);
+    page.cancelAbandon(); // « Continuer la séance »
+    expect(page.currentSession).not.toBeNull();
+    page.askAbandon();
+    page.abandonCurrentSession();
+    expect(page.currentSession).toBeNull();
+    expect(page.confirmAbandon).toBe(false);
+    expect(page.setEditor).toBeNull();
+    expect(page.restEndsAtMs).toBe(0);
+    expect(cancelRestAlert).toHaveBeenCalled();
+    expect(schedule).toHaveBeenLastCalledWith(null); // séance en cours effacée de l'appareil
+    expect(store.size).toBe(0); // aucune séance enregistrée (donc rien à synchroniser)
+    expect(page.sessions.map((s) => s.id)).toEqual(['old', 'typo']);
+    expect(events(STORAGE_KEYS.EVENT_SESSION_SAVED)).toHaveLength(0);
+    expect(events(STORAGE_KEYS.EVENT_NOTIFY).at(-1)!.detail.message).toMatch(/annulée/);
+  });
+});
+
+describe('« Ajouter une séance passée »', () => {
+  const NOW = new Date(2026, 10, 28, 10, 0); // 28 nov. 2026, 10 h (heure locale)
+  const template = {
+    id: 'tpl-haut',
+    name: 'Haut du corps',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    exercises: [{ exerciseId: 'bench', sets: 2, targetReps: 6, targetRpe: 8 }],
+  };
+
+  it('feuille : aujourd’hui par défaut ; date future refusée', () => {
+    vi.setSystemTime(NOW);
+    const page = makePage();
+    page.openPastSession();
+    expect(page.pastSheet).toMatchObject({
+      date: '2026-11-28',
+      time: '08:59',
+      duration: 60,
+      templateId: '',
+    });
+    expect(page.pastMaxDate()).toBe('2026-11-28');
+    page.pastSheet!.date = '2026-11-29';
+    page.createPastSession();
+    expect(page.pastSheet!.error).toMatch(/futur/);
+    expect(page.editingSession).toBeNull();
+  });
+
+  it('modèle : brouillon pré-rempli, enregistré à sa date sans toucher aux autres séances', async () => {
+    vi.setSystemTime(NOW);
+    const page = makePage();
+    page.templates = [template];
+    page.openPastSession();
+    Object.assign(page.pastSheet!, {
+      date: '2026-11-05',
+      time: '18:30',
+      duration: '45',
+      templateId: 'tpl-haut',
+    });
+    page.createPastSession();
+    expect(page.pastSheet).toBeNull();
+    const draft = page.editingSession!;
+    expect(page.editingIsNew).toBe(true);
+    expect(['old', 'typo', 'now']).not.toContain(draft.id); // identifiant neuf
+    // Visible en tête de l'historique, pas encore enregistré.
+    expect(page.visibleSessions()[0]!.id).toBe(draft.id);
+    expect(page.sessions).toHaveLength(2);
+    // Charge de la dernière fois AVANT le 5 novembre (séance du 3 : 60 kg).
+    expect(draft.entries[0]!.sets.map((s) => [s.weightKg, s.reps])).toEqual([
+      [60, 6],
+      [60, 6],
+    ]);
+    // Replier la ligne ne perd pas la saisie.
+    page.toggleSessionDetail(draft.id);
+    expect(page.editingSession).not.toBeNull();
+
+    await page.saveEditedSession();
+    const saved = store.get(STORAGE_KEYS.TRAINING_SESSION(draft.id)) as WorkoutSession;
+    expect(new Date(saved.startedAt).getDate()).toBe(5);
+    expect(new Date(saved.startedAt).getHours()).toBe(18);
+    expect(saved).toMatchObject({ templateId: 'tpl-haut', durationMin: 45, name: 'Haut du corps' });
+    expect(Date.parse(saved.endedAt!) - Date.parse(saved.startedAt)).toBe(45 * 60_000);
+    expect(page.sessions.map((s) => s.id)).toEqual(['old', draft.id, 'typo']);
+    expect(store.size).toBe(1); // seule la nouvelle séance est écrite
+    expect(page.editingSession).toBeNull();
+    expect(page.editingIsNew).toBe(false);
+    expect(page.currentSession?.id).toBe('now'); // séance en cours intacte
+    expect(events(STORAGE_KEYS.EVENT_SESSION_SAVED)[0]!.detail.session.id).toBe(draft.id);
+  });
+
+  it('séance libre : exercice ajouté puis série saisie ; « Annuler » ne laisse rien', async () => {
+    vi.setSystemTime(NOW);
+    const page = makePage();
+    page.openPastSession();
+    Object.assign(page.pastSheet!, { date: '2026-11-27', time: '07:00', duration: 50 });
+    page.createPastSession();
+    await page.saveEditedSession(); // aucune série : refusé
+    expect(events(STORAGE_KEYS.EVENT_NOTIFY).at(-1)!.detail.message).toMatch(/au moins/);
+    expect(store.size).toBe(0);
+
+    page.pastExerciseId = 'bench';
+    page.addPastExercise();
+    expect(page.setEditor).toMatchObject({ scope: 'history', isNew: true, setIndex: 0 });
+    page.setForm.weightKg = '80';
+    page.setForm.reps = 5;
+    page.saveSetEditor();
+    const id = page.editingSession!.id;
+    await page.saveEditedSession();
+    const saved = store.get(STORAGE_KEYS.TRAINING_SESSION(id)) as WorkoutSession;
+    expect(saved.entries[0]!.sets.map((s) => [s.weightKg, s.reps])).toEqual([[80, 5]]);
+    expect(page.sessions.map((s) => s.id)).toEqual(['old', 'typo', id]);
+
+    page.openPastSession();
+    page.createPastSession();
+    page.cancelEditSession();
+    expect(page.visibleSessions().map((s) => s.id)).toEqual([id, 'typo', 'old']);
+    expect(page.expandedSessionId).toBeNull();
+  });
+
+  it('séance existante déplacée dans le futur : refusée', async () => {
+    vi.setSystemTime(NOW);
+    const page = makePage();
+    page.startEditSession('old');
+    page.editStart = '2026-11-30T10:00';
+    await page.saveEditedSession();
+    expect(store.size).toBe(0);
+    expect(events(STORAGE_KEYS.EVENT_NOTIFY).at(-1)!.detail.message).toMatch(/futur/);
+    expect(page.editingSession).not.toBeNull();
+  });
+
+  it('séance existante déplacée à aujourd’hui : refusée si elle finirait dans le futur', async () => {
+    vi.setSystemTime(NOW); // 10 h ; la séance dure 1 h
+    const page = makePage();
+    page.startEditSession('old');
+    page.editStart = '2026-11-28T09:30';
+    await page.saveEditedSession();
+    expect(store.size).toBe(0);
+    expect(events(STORAGE_KEYS.EVENT_NOTIFY).at(-1)!.detail.message).toMatch(/futur/);
+    page.editStart = '2026-11-28T08:30';
+    await page.saveEditedSession();
+    const saved = store.get(STORAGE_KEYS.TRAINING_SESSION('old')) as WorkoutSession;
+    expect(Date.parse(saved.endedAt!)).toBeLessThanOrEqual(NOW.getTime());
+  });
+});

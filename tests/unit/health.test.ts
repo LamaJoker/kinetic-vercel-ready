@@ -96,6 +96,16 @@ describe('writeBodyweight', () => {
     await writeBodyweight(80, null);
     expect(health.saveSample).toHaveBeenCalledTimes(1);
   });
+
+  it('une pesée d’un jour passé est datée de ce jour (pas comme poids actuel)', async () => {
+    health.requestAuthorization.mockResolvedValueOnce(granted);
+    await enableHealth();
+    await writeBodyweight(82, null, '2025-03-10');
+    const at = new Date(2025, 2, 10, 12).toISOString();
+    expect(health.saveSample).toHaveBeenCalledWith(
+      expect.objectContaining({ dataType: 'weight', value: 82, startDate: at, endDate: at }),
+    );
+  });
 });
 
 describe('sommeil', () => {

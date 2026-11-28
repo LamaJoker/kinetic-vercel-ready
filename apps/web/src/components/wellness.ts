@@ -46,6 +46,7 @@ import {
   type WaterDay,
   type WaterLog,
   type WaterPrefs,
+  currentBodyweightKg,
 } from '@kinetic/core';
 import { getDeps } from '../deps';
 import { hapticLight, hapticSuccess } from '../lib/haptics';
@@ -337,8 +338,8 @@ export function waterTracker() {
         ]);
         this.log = log && typeof log === 'object' ? log : {};
         this.prefs = prefs && typeof prefs === 'object' ? prefs : {};
-        const last = Array.isArray(entries) ? Number(entries.at(-1)?.weight) : NaN;
-        const w = Number.isFinite(last) && last > 0 ? last : Number(profile?.weightKg);
+        // Poids actuel = pesée la plus récente par date (pas la dernière saisie).
+        const w = currentBodyweightKg(entries) ?? Number(profile?.weightKg);
         this.weightKg = Number.isFinite(w) && w > 0 ? w : null;
       } catch (err) {
         console.warn('[eau] lecture impossible :', err);

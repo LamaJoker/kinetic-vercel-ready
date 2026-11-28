@@ -265,9 +265,40 @@
     </template>
   </div>
 
-  <!-- Formulaire d'enregistrement -->
-  <h2 class="k-section mb-2.5">Nouvelle mesure</h2>
+  <!-- Formulaire d'enregistrement / modification -->
+  <div id="mens-form" class="flex items-baseline justify-between mb-2.5 scroll-mt-4">
+    <h2 class="k-section" x-text="formTitle">Nouvelle mesure</h2>
+    <button type="button" x-show="editingId" class="k-link text-sm" @click="cancelEdit()">
+      Annuler la modification
+    </button>
+  </div>
   <div class="mb-8">
+    <!-- Date, indépendante des valeurs -->
+    <div class="k-list mb-2">
+      <label for="f-mensurations-date" class="k-row cursor-text">
+        <span class="flex-1 text-base text-white">Date des mesures</span>
+        <input
+          id="f-mensurations-date"
+          type="date"
+          x-model="fDate"
+          :min="minDate"
+          :max="maxDate"
+          required
+          :aria-invalid="dateError ? 'true' : 'false'"
+          class="bg-transparent text-right text-base text-white tabular-nums caret-kinetic-neon focus:outline-none"
+        />
+      </label>
+    </div>
+    <p
+      x-show="dateError"
+      class="k-caption mb-2 text-kinetic-electric"
+      role="alert"
+      x-text="dateError"
+    ></p>
+    <p class="k-caption mb-5">
+      Choisis une date passée pour compléter ton historique : les autres dates ne changent pas.
+    </p>
+
     <!-- Haut du corps -->
     <p class="k-caption mb-1.5">Haut du corps</p>
     <div class="k-list mb-5">
@@ -466,17 +497,26 @@
       </label>
     </div>
 
+    <div x-show="askMerge" class="k-card mb-3" role="alert">
+      <p class="text-sm text-white text-pretty" x-text="mergeMessage"></p>
+      <div class="flex gap-2 mt-3">
+        <button type="button" class="k-btn-2 flex-1" @click="cancelMerge()">Annuler</button>
+        <button type="button" class="k-btn-primary flex-1" @click="addEntry()">Compléter</button>
+      </div>
+    </div>
+
     <button
       type="button"
+      x-show="!askMerge"
       @click="addEntry()"
-      :disabled="!hasFormData"
+      :disabled="!canSave"
       class="k-btn disabled:bg-none disabled:bg-kinetic-raised disabled:text-gray-500 disabled:opacity-100"
     >
       Enregistrer les mensurations
     </button>
     <p class="k-caption mt-2 text-center">
-      Remplis seulement ce que tu as mesuré. Une saisie le même jour complète celle du jour. Cou,
-      taille et hanches servent aussi à estimer ta masse grasse.
+      Remplis seulement ce que tu as mesuré. Une saisie à une date déjà renseignée complète
+      celle-ci, après confirmation. Cou, taille et hanches servent aussi à estimer ta masse grasse.
     </p>
   </div>
 
@@ -515,9 +555,30 @@
         </div>
         <button
           type="button"
+          @click="startEdit(entry)"
+          class="-my-1.5 flex-shrink-0 w-11 h-11 inline-flex items-center justify-center rounded-full text-gray-500 transition active:scale-90 active:text-white hover:text-white"
+          :aria-label="'Modifier les mesures du ' + formatDate(entry.date)"
+        >
+          <svg
+            class="w-[1.125rem] h-[1.125rem]"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"
+            />
+          </svg>
+        </button>
+        <button
+          type="button"
           @click="removeEntry(entry.id)"
           class="-my-1.5 flex-shrink-0 w-11 h-11 inline-flex items-center justify-center rounded-full text-gray-500 transition active:scale-90 active:text-kinetic-electric hover:text-kinetic-electric"
-          aria-label="Supprimer"
+          :aria-label="'Supprimer les mesures du ' + formatDate(entry.date)"
         >
           <svg
             class="w-[1.125rem] h-[1.125rem]"
@@ -676,5 +737,16 @@
         x-text="'+ ' + $plural(photos.length - 12, 'photo plus ancienne', 'photos plus anciennes')"
       ></p>
     </div>
+  </div>
+
+  <!-- Suppression / fusion : annulation possible quelques secondes -->
+  <div
+    x-show="undoEntries"
+    style="display: none"
+    class="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[90] mx-auto flex max-w-md items-center gap-3 rounded-2xl k-toast px-4 py-2.5"
+    role="status"
+  >
+    <span class="flex-1 min-w-0 truncate text-sm text-white" x-text="undoLabel"></span>
+    <button type="button" class="k-link" @click="undoLast()">Annuler</button>
   </div>
 </div>
